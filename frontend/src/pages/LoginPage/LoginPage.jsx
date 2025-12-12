@@ -223,7 +223,7 @@ const LoginPage = () => {
           </S.SubmitButton>
 
           <S.TestButton type="button" onClick={() => alert('테스트 버튼이 작동합니다!')}>
-            테스트 버튼
+            🚀 테스트 버튼
           </S.TestButton>
 
           <S.LinkContainer>

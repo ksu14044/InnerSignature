@@ -1,4 +1,4 @@
-name: Build Docker Images
+name: Build and Deploy
 
 on:
   push:
@@ -34,3 +34,20 @@ jobs:
         context: ./frontend
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/innersignature-frontend:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 로컬 환경에 자동 배포
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.LOCAL_HOST }}
+        username: ${{ secrets.LOCAL_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          echo "🚀 GitHub Actions에서 자동 배포 시작!"
+          cd "${{ secrets.PROJECT_PATH }}"
+          ./update.sh
+          echo "✅ 배포 완료! http://localhost:5173 에서 확인하세요"
