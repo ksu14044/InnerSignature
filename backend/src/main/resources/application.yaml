@@ -1,0 +1,11 @@
+# 기본 설정
+spring:
+  profiles:
+    active: dev  # 기본적으로 개발 환경 사용
+
+# 공통 설정
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: NULL

@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.ExpenseMapper">
+
+    <select id="selectExpenseList" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT 
+            r.*, 
+            u.korean_name AS drafterName 
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        ORDER BY r.expense_report_id DESC
+    </select>
+
+    <select id="selectExpenseListWithPagination" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT 
+            r.*, 
+            u.korean_name AS drafterName 
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        ORDER BY r.expense_report_id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countExpenseList" resultType="long">
+        SELECT COUNT(*)
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+    </select>
+
+    <select id="selectExpenseListWithFilters" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT 
+            r.*, 
+            u.korean_name AS drafterName 
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        <where>
+            <if test="startDate != null">
+                AND r.report_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND r.report_date &lt;= #{endDate}
+            </if>
+            <if test="minAmount != null">
+                AND r.total_amount &gt;= #{minAmount}
+            </if>
+            <if test="maxAmount != null">
+                AND r.total_amount &lt;= #{maxAmount}
+            </if>
+            <if test="statuses != null and statuses.size() > 0">
+                AND r.status IN
+                <foreach collection="statuses" item="status" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="category != null and category != ''">
+                AND EXISTS (
+                    SELECT 1 FROM expense_detail_tb d
+                    WHERE d.expense_report_id = r.expense_report_id
+                      AND d.category = #{category}
+                )
+            </if>
+            <if test="taxProcessed != null">
+                AND r.tax_processed = #{taxProcessed}
+            </if>
+            <if test="isSecret != null">
+                AND r.is_secret = #{isSecret}
+            </if>
+        </where>
+        ORDER BY r.expense_report_id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countExpenseListWithFilters" resultType="long">
+        SELECT COUNT(*)
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        <where>
+            <if test="startDate != null">
+                AND r.report_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND r.report_date &lt;= #{endDate}
+            </if>
+            <if test="minAmount != null">
+                AND r.total_amount &gt;= #{minAmount}
+            </if>
+            <if test="maxAmount != null">
+                AND r.total_amount &lt;= #{maxAmount}
+            </if>
+            <if test="statuses != null and statuses.size() > 0">
+                AND r.status IN
+                <foreach collection="statuses" item="status" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="category != null and category != ''">
+                AND EXISTS (
+                    SELECT 1 FROM expense_detail_tb d
+                    WHERE d.expense_report_id = r.expense_report_id
+                      AND d.category = #{category}
+                )
+            </if>
+            <if test="taxProcessed != null">
+                AND r.tax_processed = #{taxProcessed}
+            </if>
+            <if test="isSecret != null">
+                AND r.is_secret = #{isSecret}
+            </if>
+        </where>
+    </select>
+
+    <!-- 카테고리별 합계/건수 요약 (세무사용) -->
+    <select id="selectCategorySummary" resultType="com.innersignature.backend.dto.CategorySummaryDto">
+        SELECT
+            d.category AS category,
+            COALESCE(SUM(d.amount), 0) AS totalAmount,
+            COUNT(*) AS itemCount,
+            COUNT(DISTINCT d.expense_report_id) AS reportCount
+        FROM expense_detail_tb d
+        JOIN expense_report_tb r ON d.expense_report_id = r.expense_report_id
+        <where>
+            <if test="startDate != null">
+                AND r.report_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND r.report_date &lt;= #{endDate}
+            </if>
+            <if test="statuses != null and statuses.size() > 0">
+                AND r.status IN
+                <foreach collection="statuses" item="status" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="taxProcessed != null">
+                AND r.tax_processed = #{taxProcessed}
+            </if>
+            <if test="isSecret != null">
+                AND r.is_secret = #{isSecret}
+            </if>
+        </where>
+        GROUP BY d.category
+        ORDER BY totalAmount DESC
+    </select>
+
+    <select id="selectExpenseReportById" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT 
+            r.*, 
+            u.korean_name AS drafterName 
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        WHERE r.expense_report_id = #{expenseReportId}
+    </select>
+
+    <select id="selectExpenseDetails" resultType="com.innersignature.backend.dto.ExpenseDetailDto">
+        SELECT * FROM expense_detail_tb
+        WHERE expense_report_id = #{expenseReportId}
+    </select>
+
+    <select id="selectApprovalLines" resultType="com.innersignature.backend.dto.ApprovalLineDto">
+        SELECT 
+            al.*,
+            u.korean_name AS approverName,
+            u.position AS approverPosition
+        FROM approval_line_tb al
+        JOIN user_tb u ON al.approver_id = u.user_id
+        WHERE al.expense_report_id = #{expenseReportId}
+        ORDER BY al.step_order ASC
+    </select>
+
+    <update id="updateApprovalLine">
+        UPDATE approval_line_tb
+        SET
+            status = 'APPROVED',
+            signature_data = #{signatureData},
+            approval_date = NOW()
+        WHERE
+            expense_report_id = #{expenseReportId}
+            AND approver_id = #{approverId}
+    </update>
+
+    <update id="rejectApprovalLine">
+        UPDATE approval_line_tb
+        SET
+            status = 'REJECTED',
+            rejection_reason = #{rejectionReason},
+            approval_date = NOW()
+        WHERE
+            expense_report_id = #{expenseReportId}
+            AND approver_id = #{approverId}
+    </update>
+
+    <update id="updateExpenseReportStatus">
+        UPDATE expense_report_tb
+        SET status = #{status}
+        WHERE expense_report_id = #{expenseReportId}
+    </update>
+
+    <insert id="insertExpenseReport" useGeneratedKeys="true" keyProperty="expenseReportId">
+        INSERT INTO expense_report_tb (
+            drafter_id,
+            report_date,
+            title,
+            total_amount,
+            status,
+            payment_req_date,
+            is_secret
+        ) VALUES (
+            #{drafterId},
+            #{reportDate},
+            #{title},
+            #{totalAmount},
+            #{status, jdbcType=VARCHAR},
+            #{paymentReqDate},
+            #{isSecret, jdbcType=TINYINT}
+        )
+    </insert>
+
+    <insert id="insertExpenseDetail">
+        INSERT INTO expense_detail_tb (
+            expense_report_id,
+            category,
+            description,
+            amount,
+            note
+        ) VALUES (
+            #{expenseReportId},
+            #{category},
+            #{description},
+            #{amount},
+            #{note}
+        )
+    </insert>
+
+    <insert id="insertApprovalLine">
+        INSERT INTO approval_line_tb (
+            expense_report_id,
+            approver_id,
+            step_order,
+            status,
+            approval_date,
+            signature_data,
+            rejection_reason
+        ) VALUES (
+            #{expenseReportId},
+            #{approverId},
+            #{stepOrder},
+            #{status, jdbcType=VARCHAR},
+            #{approvalDate},
+            #{signatureData},
+            #{rejectionReason}
+        )
+    </insert>
+
+    <delete id="deleteExpenseReport">
+        DELETE FROM expense_report_tb
+        WHERE expense_report_id = #{expenseReportId}
+    </delete>
+
+    <select id="selectPendingApprovalsByUserId" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT DISTINCT
+            r.*,
+            u.korean_name AS drafterName
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        JOIN approval_line_tb al ON r.expense_report_id = al.expense_report_id
+        WHERE al.approver_id = #{userId}
+          AND al.status = 'WAIT'
+          AND r.status != 'REJECTED'
+        ORDER BY r.expense_report_id DESC
+    </select>
+
+    <!-- 영수증 목록 조회 -->
+    <select id="selectReceiptsByExpenseReportId" resultType="com.innersignature.backend.dto.ReceiptDto">
+        SELECT 
+            r.*,
+            u.korean_name AS uploadedByName
+        FROM receipt_tb r
+        JOIN user_tb u ON r.uploaded_by = u.user_id
+        WHERE r.expense_report_id = #{expenseReportId}
+        ORDER BY r.uploaded_at DESC
+    </select>
+
+    <!-- 영수증 저장 -->
+    <insert id="insertReceipt" useGeneratedKeys="true" keyProperty="receiptId">
+        INSERT INTO receipt_tb (
+            expense_report_id,
+            file_path,
+            original_filename,
+            file_size,
+            uploaded_by,
+            uploaded_at
+        ) VALUES (
+            #{expenseReportId},
+            #{filePath},
+            #{originalFilename},
+            #{fileSize},
+            #{uploadedBy},
+            #{uploadedAt}
+        )
+    </insert>
+
+    <!-- 영수증 삭제 -->
+    <delete id="deleteReceipt">
+        DELETE FROM receipt_tb
+        WHERE receipt_id = #{receiptId}
+    </delete>
+
+    <!-- 영수증 조회 (단건) -->
+    <select id="selectReceiptById" resultType="com.innersignature.backend.dto.ReceiptDto">
+        SELECT 
+            r.*,
+            u.korean_name AS uploadedByName
+        FROM receipt_tb r
+        JOIN user_tb u ON r.uploaded_by = u.user_id
+        WHERE r.receipt_id = #{receiptId}
+    </select>
+
+    <!-- 세무처리 완료 업데이트 -->
+    <update id="updateTaxProcessed">
+        UPDATE expense_report_tb
+        SET tax_processed = #{taxProcessed},
+            tax_processed_at = #{taxProcessedAt}
+        WHERE expense_report_id = #{expenseReportId}
+    </update>
+
+    <!-- 대시보드 전체 요약 통계 조회 -->
+    <select id="selectDashboardStats" resultType="com.innersignature.backend.dto.DashboardStatsDto">
+        SELECT 
+            COALESCE(SUM(total_amount), 0) AS totalAmount,
+            COUNT(*) AS totalCount,
+            COALESCE(AVG(total_amount), 0) AS averageAmount,
+            COALESCE(MAX(total_amount), 0) AS maxAmount,
+            COALESCE(MIN(total_amount), 0) AS minAmount,
+            SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) AS pendingCount
+        FROM expense_report_tb
+        <where>
+            <if test="startDate != null">
+                AND report_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND report_date &lt;= #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 월별 지출 추이 조회 -->
+    <select id="selectMonthlyTrend" resultType="com.innersignature.backend.dto.MonthlyTrendDto">
+        SELECT 
+            DATE_FORMAT(report_date, '%Y-%m') AS yearMonth,
+            COALESCE(SUM(total_amount), 0) AS totalAmount,
+            COUNT(*) AS count
+        FROM expense_report_tb
+        <where>
+            <if test="startDate != null">
+                AND report_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND report_date &lt;= #{endDate}
+            </if>
+        </where>
+        GROUP BY DATE_FORMAT(report_date, '%Y-%m')
+        ORDER BY yearMonth ASC
+    </select>
+
+    <!-- 상태별 통계 조회 -->
+    <select id="selectStatusStats" resultType="com.innersignature.backend.dto.StatusStatsDto">
+        SELECT 
+            status,
+            COUNT(*) AS count,
+            COALESCE(SUM(total_amount), 0) AS totalAmount
+        FROM expense_report_tb
+        <where>
+            <if test="startDate != null">
+                AND report_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND report_date &lt;= #{endDate}
+            </if>
+        </where>
+        GROUP BY status
+        ORDER BY count DESC
+    </select>
+
+    <!-- 카테고리별 비율 조회 -->
+    <select id="selectCategoryRatio" resultType="com.innersignature.backend.dto.CategoryRatioDto">
+        SELECT 
+            d.category AS category,
+            COALESCE(SUM(d.amount), 0) AS amount,
+            0.0 AS ratio
+        FROM expense_detail_tb d
+        JOIN expense_report_tb r ON d.expense_report_id = r.expense_report_id
+        <where>
+            <if test="startDate != null">
+                AND r.report_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND r.report_date &lt;= #{endDate}
+            </if>
+        </where>
+        GROUP BY d.category
+        ORDER BY amount DESC
+    </select>
+
+    <!-- 세무처리 대기 건 조회 (PAID 상태이지만 taxProcessed=false) -->
+    <select id="selectTaxPendingReports" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT 
+            r.*, 
+            u.korean_name AS drafterName 
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        WHERE r.status = 'PAID' 
+          AND (r.tax_processed = 0 OR r.tax_processed IS NULL)
+        <if test="startDate != null">
+            AND r.report_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND r.report_date &lt;= #{endDate}
+        </if>
+        ORDER BY r.report_date DESC, r.expense_report_id DESC
+    </select>
+
+    <!-- 세무처리 현황 통계 조회 -->
+    <select id="selectTaxStatus" resultType="com.innersignature.backend.dto.TaxStatusDto">
+        SELECT 
+            COUNT(*) AS totalCount,
+            SUM(CASE WHEN (tax_processed = 0 OR tax_processed IS NULL) THEN 1 ELSE 0 END) AS pendingCount,
+            SUM(CASE WHEN tax_processed = 1 THEN 1 ELSE 0 END) AS completedCount,
+            CASE 
+                WHEN COUNT(*) > 0 THEN 
+                    CAST(SUM(CASE WHEN tax_processed = 1 THEN 1 ELSE 0 END) AS DECIMAL) / COUNT(*)
+                ELSE 0.0 
+            END AS completionRate,
+            COALESCE(SUM(total_amount), 0) AS totalAmount,
+            COALESCE(SUM(CASE WHEN (tax_processed = 0 OR tax_processed IS NULL) THEN total_amount ELSE 0 END), 0) AS pendingAmount,
+            COALESCE(SUM(CASE WHEN tax_processed = 1 THEN total_amount ELSE 0 END), 0) AS completedAmount
+        FROM expense_report_tb
+        WHERE status = 'PAID'
+        <if test="startDate != null">
+            AND report_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND report_date &lt;= #{endDate}
+        </if>
+    </select>
+
+    <!-- 월별 세무처리 집계 조회 -->
+    <select id="selectMonthlyTaxSummary" resultType="com.innersignature.backend.dto.MonthlyTaxSummaryDto">
+        SELECT 
+            DATE_FORMAT(report_date, '%Y-%m') AS yearMonth,
+            SUM(CASE WHEN tax_processed = 1 THEN 1 ELSE 0 END) AS completedCount,
+            COALESCE(SUM(total_amount), 0) AS totalAmount,
+            COALESCE(SUM(CASE WHEN tax_processed = 1 THEN total_amount ELSE 0 END), 0) AS completedAmount
+        FROM expense_report_tb
+        WHERE status = 'PAID'
+        <if test="startDate != null">
+            AND report_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND report_date &lt;= #{endDate}
+        </if>
+        GROUP BY DATE_FORMAT(report_date, '%Y-%m')
+        ORDER BY yearMonth ASC
+    </select>
+
+</mapper>

@@ -1,0 +1,75 @@
+# 프로덕션 환경 설정
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 프로덕션 DB 정보로 변경 필요
+    url: jdbc:mysql://prod-db-server:3306/signature_prod?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      # 프로덕션 환경 연결 풀 설정 (더 큰 풀 크기)
+      minimum-idle: 10  # 최소 유휴 연결 수
+      maximum-pool-size: 50  # 최대 연결 풀 크기
+      connection-timeout: 30000  # 연결 타임아웃 (30초)
+      idle-timeout: 600000  # 유휴 연결 타임아웃 (10분)
+      max-lifetime: 1800000  # 연결 최대 수명 (30분)
+      leak-detection-threshold: 60000  # 연결 누수 감지 임계값 (60초)
+      connection-test-query: SELECT 1  # 연결 테스트 쿼리
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: NULL
+
+# JWT 설정 (프로덕션에서는 환경변수 필수)
+jwt:
+  secret: ${JWT_SECRET}  # 환경변수로 반드시 설정해야 함
+  expiration: ${JWT_EXPIRATION:3600000} # 1시간 (밀리초)
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:1209600000} # 14일 (밀리초)
+
+# 파일 업로드 설정
+file:
+  upload:
+    base-dir: ${FILE_UPLOAD_BASE_DIR:uploads}
+    receipts-dir: ${FILE_UPLOAD_RECEIPTS_DIR:receipts}
+
+# 프론트엔드 URL 설정
+app:
+  frontend:
+    url: ${FRONTEND_URL}
+
+logging:
+  level:
+    root: WARN
+    com.innersignature.backend: INFO  # 프로덕션에서는 INFO 레벨만
+    com.innersignature.backend.security: WARN
+    com.innersignature.backend.service: INFO
+    org.springframework.security: WARN
+    org.mybatis: WARN
+    org.springframework.web: WARN
+
+ratelimit:
+  ip:
+    limit: ${RATE_LIMIT_IP:100}
+  user:
+    limit: ${RATE_LIMIT_USER:200}
+  window-ms: ${RATE_LIMIT_WINDOW_MS:60000}

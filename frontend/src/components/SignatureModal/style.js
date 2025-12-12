@@ -1,0 +1,151 @@
+import styled from '@emotion/styled';
+
+export const Overlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+`;
+
+export const Content = styled.div`
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+
+  @media (max-width: 768px) {
+    max-width: 95vw;
+    margin: 0 10px;
+  }
+`;
+
+export const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px;
+`;
+
+export const Title = styled.h3`
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--dark-color);
+`;
+
+export const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--secondary-color);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: var(--light-color);
+    color: var(--dark-color);
+  }
+`;
+
+export const Instruction = styled.p`
+  margin: 0 24px 20px 24px;
+  color: var(--secondary-color);
+  font-size: 14px;
+  text-align: center;
+`;
+
+export const CanvasContainer = styled.div`
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background-color: #fafafa;
+  margin: 0 24px 24px 24px;
+  overflow: hidden;
+
+  .sigCanvas {
+    display: block;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 200px;
+  }
+
+  @media (max-width: 768px) {
+    margin: 0 16px 20px 16px;
+
+    .sigCanvas {
+      min-height: 150px;
+    }
+  }
+`;
+
+export const ButtonGroup = styled.div`
+  display: flex;
+  gap: 12px;
+  padding: 0 24px 24px 24px;
+  justify-content: flex-end;
+
+  @media (max-width: 768px) {
+    padding: 0 16px 20px 16px;
+    flex-direction: column;
+  }
+`;
+
+export const ActionButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+
+  ${props => props.variant === 'primary' ? `
+    background-color: var(--success-color);
+    color: white;
+
+    &:hover {
+      background-color: #218838;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  ` : `
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    border: 1px solid var(--border-color);
+
+    &:hover {
+      background-color: #e9ecef;
+      border-color: var(--secondary-color);
+    }
+  `}
+
+  @media (max-width: 768px) {
+    justify-content: center;
+    padding: 14px 20px;
+  }
+`;

@@ -1,0 +1,24 @@
+#root {
+  min-height: 100vh;
+  background-color: var(--light-color);
+}
+
+/* 공통 컴포넌트 스타일 */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-container {
+    padding: 10px;
+  }
+}

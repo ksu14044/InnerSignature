@@ -1,0 +1,87 @@
+# 개발 환경 설정
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:signature}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:1q2w3e4r!}  # 기본값 (실제로는 환경변수로 설정 권장)
+    hikari:
+      # 연결 풀 설정
+      minimum-idle: 5  # 최소 유휴 연결 수
+      maximum-pool-size: 20  # 최대 연결 풀 크기
+      connection-timeout: 30000  # 연결 타임아웃 (30초)
+      idle-timeout: 600000  # 유휴 연결 타임아웃 (10분)
+      max-lifetime: 1800000  # 연결 최대 수명 (30분)
+      leak-detection-threshold: 60000  # 연결 누수 감지 임계값 (60초)
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+  mail:
+    # 개발 환경용 설정 (프로덕션에서는 환경변수 사용 필수)
+    host: ${MAIL_HOST:smtp.naver.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:mhm1404}
+    password: ${MAIL_PASSWORD:78V1YGX87PN9}
+    from: ${MAIL_FROM:mhm1404@naver.com}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: smtp.naver.com
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+# JWT 설정
+jwt:
+  # 최소 32바이트(256비트) 이상의 키가 필요합니다
+  # 프로덕션 환경에서는 반드시 환경변수로 설정하세요
+  secret: ${JWT_SECRET:c206e4d5a5fb9c12c6e4615f6ffc9128185b3e35085b212acd2c53dd9c531702}
+  expiration: ${JWT_EXPIRATION:3600000} # 1시간 (밀리초)
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:1209600000} # 14일 (밀리초)
+
+# 파일 업로드 설정
+file:
+  upload:
+    base-dir: ${FILE_UPLOAD_BASE_DIR:uploads}
+    receipts-dir: ${FILE_UPLOAD_RECEIPTS_DIR:receipts}
+
+# 프론트엔드 URL 설정
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: NULL
+
+logging:
+  file:
+    name: logs/application.log  # 로그 파일 경로
+  level:
+    root: INFO
+    SECURITY: INFO  # SECURITY 로거 레벨 설정
+    com.innersignature.backend: DEBUG  # 개발 환경에서는 DEBUG 레벨
+    com.innersignature.backend.security: DEBUG
+    com.innersignature.backend.service: DEBUG
+    org.springframework.security: DEBUG
+    org.mybatis: DEBUG
+    org.springframework.web: DEBUG
+
+ratelimit:
+  ip:
+    limit: ${RATE_LIMIT_IP:100}
+  user:
+    limit: ${RATE_LIMIT_USER:200}
+  window-ms: ${RATE_LIMIT_WINDOW_MS:60000}

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.UserMapper">
+    <select id="login" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT * FROM user_tb
+        WHERE username = #{username} AND password = #{password}
+    </select>
+
+    <select id="findAdminUsers" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT user_id, username, korean_name, email, position, role
+        FROM user_tb
+        WHERE role = 'ADMIN'
+        ORDER BY user_id
+    </select>
+
+    <insert id="register" parameterType="com.innersignature.backend.dto.UserDto">
+        INSERT INTO user_tb (username, password, korean_name, email, position, role)
+        VALUES (#{username}, #{password}, #{koreanName}, #{email}, #{position}, #{role})
+    </insert>
+
+    <select id="findByUsername" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT * FROM user_tb
+        WHERE username = #{username}
+    </select>
+
+    <select id="selectUserById" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT * FROM user_tb
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectUsersByRole" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT * FROM user_tb
+        WHERE role = #{role}
+        ORDER BY user_id
+    </select>
+
+    <select id="selectAllUsers" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT user_id, username, korean_name, email, position, role, is_active
+        FROM user_tb
+        ORDER BY user_id
+    </select>
+
+    <update id="updateUser" parameterType="com.innersignature.backend.dto.UserDto">
+        UPDATE user_tb
+        SET korean_name = #{koreanName},
+            email = #{email},
+            position = #{position},
+            role = #{role},
+            is_active = #{isActive}
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="deleteUser">
+        UPDATE user_tb
+        SET is_active = false
+        WHERE user_id = #{userId}
+    </update>
+
+    <select id="countUsersByRole" resultType="int">
+        SELECT COUNT(*)
+        FROM user_tb
+        WHERE role = #{role} AND (is_active IS NULL OR is_active = true)
+    </select>
+
+    <update id="updatePassword">
+        UPDATE user_tb
+        SET password = #{password}
+        WHERE user_id = #{userId}
+    </update>
+
+    <select id="findByEmailAndKoreanName" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT user_id, username, korean_name, email, position, role
+        FROM user_tb
+        WHERE email = #{email} AND korean_name = #{koreanName}
+        LIMIT 1
+    </select>
+
+    <select id="findByEmail" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT * FROM user_tb
+        WHERE email = #{email}
+        LIMIT 1
+    </select>
+
+    <select id="isEmailExists" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM user_tb
+        WHERE email = #{email}
+    </select>
+</mapper>
