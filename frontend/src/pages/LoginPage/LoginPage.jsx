@@ -222,10 +222,6 @@ const LoginPage = () => {
             <span>{isLoggingIn ? '로그인 중...' : '로그인'}</span>
           </S.SubmitButton>
 
-          <S.TestButton type="button" onClick={() => alert('테스트 버튼이 작동합니다!')}>
-            🚀 테스트 버튼
-          </S.TestButton>
-
           <S.LinkContainer>
             <Link to="/find-id">아이디 찾기</Link>
             <span> | </span>

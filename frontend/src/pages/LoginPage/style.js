@@ -141,34 +141,6 @@ export const SubmitButton = styled.button`
   }
 `;
 
-export const TestButton = styled.button`
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background-color: #ff6b6b;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-bottom: 16px;
-
-  &:hover {
-    background-color: #ff5252;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-`;
-
 export const LinkContainer = styled.div`
   text-align: center;
   margin: 16px 0;
