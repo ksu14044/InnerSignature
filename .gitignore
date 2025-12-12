@@ -1,2 +1,3 @@
-.yml
-.sh
+build.yml
+docker-compose.yml
+update.sh
