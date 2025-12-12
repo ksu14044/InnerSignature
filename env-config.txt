@@ -1,0 +1,6 @@
+# Docker Hub 사용자명 설정
+# 이 파일을 .env로 복사해서 사용하세요
+DOCKER_USERNAME=your-dockerhub-username
+
+# 로컬에서는 사용하지 않음 (GitHub Actions용)
+# DOCKER_PASSWORD=your-password

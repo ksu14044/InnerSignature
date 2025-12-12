@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: innersignature-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 1q2w3e4r!
+      MYSQL_DATABASE: signature
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+    networks:
+      - innersignature-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p1q2w3e4r!"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ${DOCKER_USERNAME}/innersignature-backend:latest
+    container_name: innersignature-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: signature
+      DB_USERNAME: root
+      DB_PASSWORD: 1q2w3e4r!
+      JWT_SECRET: c206e4d5a5fb9c12c6e4615f6ffc9128185b3e35085b212acd2c53dd9c531702
+      FRONTEND_URL: http://localhost:5173
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - innersignature-network
+
+  frontend:
+    image: ${DOCKER_USERNAME}/innersignature-frontend:latest
+    container_name: innersignature-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - innersignature-network
+
+networks:
+  innersignature-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

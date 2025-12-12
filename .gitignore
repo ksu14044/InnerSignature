@@ -1,3 +1,4 @@
 build.yml
 docker-compose.yml
 update.sh
+.env
