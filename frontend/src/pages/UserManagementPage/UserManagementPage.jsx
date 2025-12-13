@@ -140,8 +140,7 @@ const UserManagementPage = () => {
     try {
       setIsUpdating(true);
       const updateData = {
-        koreanName: formData.koreanName,
-        email: formData.email,
+        // koreanName과 email 제거 (SUPERADMIN은 수정 불가)
         position: formData.position,
         role: formData.role,
         isActive: formData.isActive
@@ -355,12 +354,12 @@ const UserManagementPage = () => {
                   />
                 </S.FormGroup>
                 <S.FormGroup>
-                  <label>이름 *</label>
+                  <label>이름</label>
                   <S.Input
                     type="text"
                     value={formData.koreanName}
-                    onChange={(e) => setFormData({ ...formData, koreanName: e.target.value })}
-                    required
+                    disabled
+                    title="SUPERADMIN은 이름을 수정할 수 없습니다."
                   />
                 </S.FormGroup>
                 <S.FormGroup>
@@ -368,7 +367,8 @@ const UserManagementPage = () => {
                   <S.Input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled
+                    title="SUPERADMIN은 이메일을 수정할 수 없습니다."
                   />
                 </S.FormGroup>
                 <S.FormGroup>

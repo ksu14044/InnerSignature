@@ -156,6 +156,7 @@ public class UserController {
     /**
      * 사용자 정보 수정 API (SUPERADMIN 전용)
      * 주소: PUT /api/users/{userId}
+     * SUPERADMIN은 직급, 권한, 상태만 수정 가능 (이름과 이메일은 수정 불가)
      */
     @PreAuthorize("hasRole('SUPERADMIN')")
     @PutMapping("/users/{userId}")
@@ -165,10 +166,19 @@ public class UserController {
         Long currentUserId = SecurityUtil.getCurrentUserId();
         logger.info("사용자 정보 수정 요청 - operatorId: {}, targetUserId: {}", currentUserId, userId);
 
+        // 기존 사용자 정보 조회 (이름과 이메일은 기존 값 유지)
+        UserDto existingUser = userService.selectUserById(userId);
+        if (existingUser == null) {
+            logger.error("사용자 정보 조회 실패 - userId: {}", userId);
+            return new ApiResponse<>(false, "사용자를 찾을 수 없습니다.", null);
+        }
+
         UserDto userDto = new UserDto();
         userDto.setUserId(userId);
-        userDto.setKoreanName(request.getKoreanName());
-        userDto.setEmail(request.getEmail());
+        // 이름과 이메일은 기존 값 유지 (SUPERADMIN은 수정 불가)
+        userDto.setKoreanName(existingUser.getKoreanName());
+        userDto.setEmail(existingUser.getEmail());
+        // 직급, 권한, 상태만 수정 가능
         userDto.setPosition(request.getPosition());
         userDto.setRole(request.getRole());
         userDto.setIsActive(request.getIsActive());
@@ -500,14 +510,8 @@ public class UserController {
 
     @Data
     static class UserUpdateRequest {
-        @jakarta.validation.constraints.NotBlank(message = "이름은 필수입니다.")
-        @jakarta.validation.constraints.Size(max = 50, message = "이름은 50자 이하여야 합니다.")
-        private String koreanName;
-
-        @jakarta.validation.constraints.Email(message = "올바른 이메일 형식이 아닙니다.")
-        @jakarta.validation.constraints.Size(max = 100, message = "이메일은 100자 이하여야 합니다.")
-        private String email;
-
+        // 이름과 이메일 필드 제거 (SUPERADMIN은 수정 불가)
+        
         @jakarta.validation.constraints.Size(max = 50, message = "직급은 50자 이하여야 합니다.")
         private String position;
 
