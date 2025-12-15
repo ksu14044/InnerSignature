@@ -33,6 +33,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         
+        // Swagger UI 및 API 문서 경로는 필터 제외
+        String path = request.getRequestURI();
+        if (path.startsWith("/swagger-ui") || 
+            path.startsWith("/v3/api-docs") ||
+            path.startsWith("/webjars") ||
+            path.startsWith("/swagger-resources")) {
+            chain.doFilter(request, response);
+            return;
+        }
+        
         String token = getTokenFromRequest(request);
         
         if (token != null && !jwtBlacklistService.isBlacklisted(token) && jwtUtil.validateToken(token)) {

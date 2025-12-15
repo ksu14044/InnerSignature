@@ -42,11 +42,15 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * SecurityFilterChain 설정
+     * Swagger 경로는 필터에서 제외되므로 permitAll()만으로 충분
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화 (REST API용)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 .accessDeniedHandler(customAccessDeniedHandler)
@@ -56,22 +60,32 @@ public class SecurityConfig {
                 .frameOptions(frame -> frame.deny())
                 .addHeaderWriter(new StaticHeadersWriter("X-XSS-Protection", "1; mode=block"))
                 .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
-                .httpStrictTransportSecurity(hsts -> hsts.disable()) // HTTP 환경 지원, HTTPS에서만 활성 고려
+                .httpStrictTransportSecurity(hsts -> hsts.disable())
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // 세션 사용 안 함 (토큰 기반)
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/register", "/api/login").permitAll() // 회원가입, 로그인 허용
-                .requestMatchers("/api/refresh-token", "/api/logout").permitAll() // 토큰 재발급, 로그아웃 허용
-                .requestMatchers("/api/find-username", "/api/request-password-reset", "/api/reset-password").permitAll() // 아이디 찾기, 비밀번호 재설정 허용
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger UI 허용
-                .requestMatchers("/api/expenses/**").authenticated() // 지출결의서 API는 인증 필요
-                .requestMatchers("/api/users/admins").authenticated() // ADMIN 목록도 인증 필요
-                .anyRequest().authenticated() // 그 외 모든 요청은 인증 필요
+                // Swagger - 최소 필수 경로만 허용 (순서 중요)
+                .requestMatchers(
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs",
+                    "/v3/api-docs/**",
+                    "/webjars/**",
+                    "/swagger-resources/**"
+                ).permitAll()
+                // 공개 API
+                .requestMatchers("/api/register", "/api/login").permitAll()
+                .requestMatchers("/api/refresh-token", "/api/logout").permitAll()
+                .requestMatchers("/api/find-username", "/api/request-password-reset", "/api/reset-password").permitAll()
+                // 인증 필요 API
+                .requestMatchers("/api/expenses/**").authenticated()
+                .requestMatchers("/api/users/admins").authenticated()
+                .anyRequest().authenticated()
             )
-            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class) // Rate Limit 필터 추가 (먼저)
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // JWT 필터 추가 (그 다음)
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

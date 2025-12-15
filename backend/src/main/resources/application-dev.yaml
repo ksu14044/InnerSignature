@@ -1,6 +1,11 @@
 # 개발 환경 설정
 server:
   port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 spring:
   datasource:
@@ -40,6 +45,18 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+
+# SpringDoc OpenAPI (Swagger) 설정
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true          # dev에서만 활성
+    operations-sorter: method  # 메서드명 순 정렬
+    tags-sorter: alpha         # 태그 알파벳 정렬
+    try-it-out-enabled: true   # Try it out 활성화 (dev 용)
+    # prod에서는 application-prod.yaml에서 enabled=false로 비활성화
 
 # JWT 설정
 jwt:

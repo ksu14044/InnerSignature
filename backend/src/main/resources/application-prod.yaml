@@ -67,6 +67,13 @@ logging:
     org.mybatis: WARN
     org.springframework.web: WARN
 
+# Swagger 비활성화 (운영)
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 ratelimit:
   ip:
     limit: ${RATE_LIMIT_IP:100}

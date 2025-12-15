@@ -15,6 +15,8 @@ import com.innersignature.backend.dto.TaxStatusDto;
 import com.innersignature.backend.service.ExpenseService;
 import com.innersignature.backend.util.SecurityUtil;
 import com.innersignature.backend.util.SecurityLogger;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
 import lombok.Data;
@@ -42,6 +44,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Tag(name = "Expense", description = "지출결의서 관리 API")
 @RestController // "여기는 API 요청을 받는 곳입니다"
 @RequestMapping("/api/expenses") // 모든 주소 앞에 /api/expenses 가 붙습니다.
 @RequiredArgsConstructor
@@ -64,6 +67,7 @@ public class ExpenseController {
      * @param taxProcessed 세무처리 완료 여부 (optional, true: 완료, false: 미완료, null: 전체)
      * @param isSecret 비밀글 여부 (optional, true: 비밀글만, false: 일반글만, null: 전체)
      */
+    @Operation(summary = "지출결의서 목록 조회", description = "페이지네이션/필터 조건으로 지출결의 목록을 조회합니다.")
     @GetMapping
     public ApiResponse<PagedResponse<ExpenseReportDto>> getExpenseList(
             @RequestParam(defaultValue = "1") int page,
@@ -119,6 +123,7 @@ public class ExpenseController {
      * 2. 상세 조회 API
      * 주소: GET /api/expenses/1 (숫자는 변함)
      */
+    @Operation(summary = "지출결의서 단건 조회", description = "expenseId로 결의서 상세를 조회합니다.")
     @GetMapping("/{expenseId}")
     public ApiResponse<ExpenseReportDto> getExpenseDetail(@PathVariable Long expenseId) {
         // 현재 사용자 ID 조회
@@ -137,6 +142,7 @@ public class ExpenseController {
      * 3. 결제 승인 API
      * POST /api/expenses/{expenseId}/approve
      */
+    @Operation(summary = "결재 승인", description = "결의서를 승인하고 서명 데이터(옵션)를 남깁니다.")
     @PostMapping("/{expenseId}/approve")
     public ApiResponse<Void> approveExpense(
         @PathVariable Long expenseId,
@@ -152,6 +158,7 @@ public class ExpenseController {
      * 3-1. 결제 반려 API
      * POST /api/expenses/{expenseId}/reject
      */
+    @Operation(summary = "결재 반려", description = "반려 사유와 함께 결의서를 반려합니다.")
     @PostMapping("/{expenseId}/reject")
     public ApiResponse<Void> rejectExpense(
         @PathVariable Long expenseId,
@@ -174,6 +181,7 @@ public class ExpenseController {
      * 주소: POST /api/expenses
      * 설명: 프론트에서 작성한 데이터를 받아서 저장합니다.
      */
+    @Operation(summary = "지출결의서 생성", description = "기안서를 생성합니다.")
     @PostMapping("/create")
     public ApiResponse<Long> createExpense(@Valid @RequestBody ExpenseReportDto request) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
@@ -189,6 +197,7 @@ public class ExpenseController {
      * 주소: POST /api/expenses/{expenseId}/approval-lines
      * 설명: 이미 생성된 지출결의서에 결재 라인을 설정합니다.
      */
+    @Operation(summary = "결재 라인 설정", description = "지출결의서에 결재 라인을 설정합니다.")
     @PostMapping("/{expenseId}/approval-lines")
     public ApiResponse<Void> setApprovalLines(
             @PathVariable Long expenseId,
@@ -209,6 +218,7 @@ public class ExpenseController {
      * 설명: ACCOUNTANT 권한을 가진 사용자만 상태를 변경할 수 있습니다.
      */
     @PreAuthorize("hasRole('ACCOUNTANT')")
+    @Operation(summary = "지출결의서 상태 변경", description = "ACCOUNTANT가 결의서 상태를 변경합니다.")
     @PutMapping("/{expenseId}/status")
     public ApiResponse<Void> updateExpenseStatus(
             @PathVariable Long expenseId,
@@ -231,6 +241,7 @@ public class ExpenseController {
      * DELETE /api/expenses/{expenseId}
      * 설명: 작성자 본인 또는 ADMIN 권한을 가진 사용자만 삭제 가능
      */
+    @Operation(summary = "지출결의서 삭제", description = "작성자 또는 ADMIN이 결의서를 삭제합니다.")
     @DeleteMapping("/{expenseId}")
     public ApiResponse<Void> deleteExpense(@PathVariable Long expenseId) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
@@ -245,6 +256,7 @@ public class ExpenseController {
      * GET /api/expenses/pending-approvals
      * 설명: 현재 사용자가 서명해야 할 미완료 건 목록을 반환합니다.
      */
+    @Operation(summary = "미서명 결재건 조회", description = "사용자가 서명해야 할 결의서 목록을 조회합니다.")
     @GetMapping("/pending-approvals")
     public ApiResponse<List<ExpenseReportDto>> getPendingApprovals() {
         Long currentUserId = SecurityUtil.getCurrentUserId();
@@ -257,6 +269,7 @@ public class ExpenseController {
      * POST /api/expenses/{expenseId}/receipt
      * 설명: PAID 상태의 결의서에 영수증을 첨부합니다. (작성자 또는 ACCOUNTANT만 가능)
      */
+    @Operation(summary = "영수증 업로드", description = "PAID 상태 결의서에 영수증을 첨부합니다.")
     @PostMapping(value = "/{expenseId}/receipt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<Void> uploadReceipt(
             @PathVariable Long expenseId,
@@ -273,6 +286,7 @@ public class ExpenseController {
      * GET /api/expenses/{expenseId}/receipts
      * 설명: 영수증 목록을 반환합니다. (모든 로그인 사용자 조회 가능)
      */
+    @Operation(summary = "영수증 목록 조회", description = "결의서에 첨부된 영수증 목록을 조회합니다.")
     @GetMapping("/{expenseId}/receipts")
     public ApiResponse<List<ReceiptDto>> getReceipts(@PathVariable Long expenseId) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
@@ -286,6 +300,7 @@ public class ExpenseController {
      * GET /api/expenses/receipts/{receiptId}/download
      * 설명: 영수증 파일을 다운로드합니다. (권한이 있는 사용자만 다운로드 가능)
      */
+    @Operation(summary = "영수증 다운로드", description = "권한이 있는 사용자가 영수증 파일을 다운로드합니다.")
     @GetMapping("/receipts/{receiptId}/download")
     public ResponseEntity<?> downloadReceipt(@PathVariable Long receiptId) {
         try {
@@ -343,6 +358,7 @@ public class ExpenseController {
      * DELETE /api/expenses/receipts/{receiptId}
      * 설명: 영수증을 삭제합니다. (작성자 또는 ACCOUNTANT만 가능)
      */
+    @Operation(summary = "영수증 삭제", description = "작성자 또는 ACCOUNTANT가 영수증을 삭제합니다.")
     @DeleteMapping("/receipts/{receiptId}")
     public ApiResponse<Void> deleteReceipt(@PathVariable Long receiptId) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
@@ -357,6 +373,7 @@ public class ExpenseController {
      * GET /api/expenses/summary/by-category?startDate=2024-01-01&endDate=2024-12-31&taxProcessed=true
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
+    @Operation(summary = "카테고리별 요약", description = "기간/상태/세무처리/비밀글 여부로 카테고리 요약을 조회합니다. (TAX_ACCOUNTANT)")
     @GetMapping("/summary/by-category")
     public ApiResponse<List<CategorySummaryDto>> getCategorySummary(
             @RequestParam(required = false) String startDate,
@@ -401,6 +418,7 @@ public class ExpenseController {
      * 설명: TAX_ACCOUNTANT 권한을 가진 사용자만 세무처리를 완료할 수 있습니다.
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
+    @Operation(summary = "세무처리 완료", description = "TAX_ACCOUNTANT가 결의서의 세무처리를 완료로 표시합니다.")
     @PutMapping("/{expenseId}/tax-processing/complete")
     public ApiResponse<Void> completeTaxProcessing(@PathVariable Long expenseId) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
@@ -416,6 +434,7 @@ public class ExpenseController {
      * 설명: ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    @Operation(summary = "대시보드 통계", description = "기간별 지출 통계를 조회합니다. (ADMIN/ACCOUNTANT)")
     @GetMapping("/dashboard/stats")
     public ApiResponse<DashboardStatsDto> getDashboardStats(
             @RequestParam(required = false) String startDate,
@@ -446,6 +465,7 @@ public class ExpenseController {
      * 설명: ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    @Operation(summary = "월별 지출 추이", description = "기간별 월간 지출 추이를 조회합니다. (ADMIN/ACCOUNTANT)")
     @GetMapping("/dashboard/monthly-trend")
     public ApiResponse<List<MonthlyTrendDto>> getMonthlyTrend(
             @RequestParam(required = false) String startDate,
@@ -476,6 +496,7 @@ public class ExpenseController {
      * 설명: ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    @Operation(summary = "상태별 통계", description = "기간별 상태별 지출결의 건수를 조회합니다. (ADMIN/ACCOUNTANT)")
     @GetMapping("/dashboard/status-stats")
     public ApiResponse<List<StatusStatsDto>> getStatusStats(
             @RequestParam(required = false) String startDate,
@@ -506,6 +527,7 @@ public class ExpenseController {
      * 설명: ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    @Operation(summary = "카테고리별 비율", description = "기간별 카테고리 지출 비율을 조회합니다. (ADMIN/ACCOUNTANT)")
     @GetMapping("/dashboard/category-ratio")
     public ApiResponse<List<CategoryRatioDto>> getCategoryRatio(
             @RequestParam(required = false) String startDate,
@@ -536,6 +558,7 @@ public class ExpenseController {
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
+    @Operation(summary = "세무처리 대기 건 조회", description = "세무사(TAX_ACCOUNTANT)가 처리 대기 문서를 조회합니다.")
     @GetMapping("/tax/pending")
     public ApiResponse<List<ExpenseReportDto>> getTaxPendingReports(
             @RequestParam(required = false) String startDate,
@@ -566,6 +589,7 @@ public class ExpenseController {
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
+    @Operation(summary = "세무처리 현황", description = "세무 처리 상태별 통계를 조회합니다. (TAX_ACCOUNTANT)")
     @GetMapping("/tax/status")
     public ApiResponse<TaxStatusDto> getTaxStatus(
             @RequestParam(required = false) String startDate,
@@ -596,6 +620,7 @@ public class ExpenseController {
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
+    @Operation(summary = "월별 세무처리 집계", description = "월별 세무 처리 집계를 조회합니다. (TAX_ACCOUNTANT)")
     @GetMapping("/tax/monthly-summary")
     public ApiResponse<List<MonthlyTaxSummaryDto>> getMonthlyTaxSummary(
             @RequestParam(required = false) String startDate,
@@ -626,6 +651,7 @@ public class ExpenseController {
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
+    @Operation(summary = "세무처리 일괄 완료", description = "선택한 문서들에 대해 세무처리를 일괄 완료합니다. (TAX_ACCOUNTANT)")
     @PostMapping("/tax/batch-complete")
     public ApiResponse<Void> batchCompleteTaxProcessing(@RequestBody BatchCompleteRequest request) {
         Long currentUserId = SecurityUtil.getCurrentUserId();

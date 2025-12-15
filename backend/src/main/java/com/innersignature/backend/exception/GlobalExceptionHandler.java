@@ -13,6 +13,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -123,7 +124,16 @@ public class GlobalExceptionHandler {
      */
     @Order(2)
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
+        // Swagger 관련 경로는 예외 처리 제외 (SpringDoc 내부 예외는 그대로 전파)
+        String path = request.getRequestURI();
+        if (path != null && (path.startsWith("/swagger-ui") || 
+            path.startsWith("/v3/api-docs") ||
+            path.startsWith("/webjars") ||
+            path.startsWith("/swagger-resources"))) {
+            throw ex; // 원래 예외를 다시 던짐
+        }
+        
         logger.error("런타임 예외 발생", ex);
         String message = isProduction() 
             ? "서버 오류가 발생했습니다." 
@@ -138,7 +148,16 @@ public class GlobalExceptionHandler {
      */
     @Order(3)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleException(Exception ex) {
+    public ResponseEntity<ApiResponse<Void>> handleException(Exception ex, HttpServletRequest request) {
+        // Swagger 관련 경로는 예외 처리 제외 (SpringDoc 내부 예외는 그대로 전파)
+        String path = request.getRequestURI();
+        if (path != null && (path.startsWith("/swagger-ui") || 
+            path.startsWith("/v3/api-docs") ||
+            path.startsWith("/webjars") ||
+            path.startsWith("/swagger-resources"))) {
+            throw new RuntimeException(ex); // 원래 예외를 RuntimeException으로 래핑하여 다시 던짐
+        }
+        
         logger.error("예외 발생", ex);
         String message = isProduction() 
             ? "서버 오류가 발생했습니다." 

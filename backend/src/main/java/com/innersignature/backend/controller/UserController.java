@@ -17,11 +17,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Tag(name = "User", description = "사용자 인증 및 계정 관리 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -34,6 +37,7 @@ public class UserController {
     private final EmailService emailService;
     private final PasswordResetService passwordResetService;
 
+    @Operation(summary = "로그인", description = "JWT와 Refresh 토큰을 발급합니다.")
     @PostMapping("/login")
     public ApiResponse<Map<String, Object>> login(@RequestBody LoginRequest request) {
         logger.info("로그인 시도 - username: {}", request.getUsername());
@@ -63,6 +67,7 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "회원가입", description = "신규 사용자를 등록합니다.")
     @PostMapping("/register")
     public ApiResponse<String> register(@Valid @RequestBody RegisterRequest request) {
         logger.info("회원가입 시도 - username: {}, koreanName: {}", request.getUsername(), request.getKoreanName());
@@ -95,6 +100,7 @@ public class UserController {
      * ADMIN 사용자 목록 조회 API
      * 주소: GET /api/users/admins
      */
+    @Operation(summary = "ADMIN 사용자 목록 조회", description = "ADMIN 역할 사용자 목록을 조회합니다.")
     @GetMapping("/users/admins")
     public ApiResponse<List<UserDto>> getAdminUsers() {
         try {
@@ -110,6 +116,7 @@ public class UserController {
      * 전체 사용자 목록 조회 API (SUPERADMIN 전용)
      * 주소: GET /api/users
      */
+    @Operation(summary = "전체 사용자 목록 조회", description = "SUPERADMIN 전용 전체 사용자 목록 조회")
     @PreAuthorize("hasRole('SUPERADMIN')")
     @GetMapping("/users")
     public ApiResponse<List<UserDto>> getAllUsers() {
@@ -126,6 +133,7 @@ public class UserController {
      * 사용자 생성 API (SUPERADMIN 전용)
      * 주소: POST /api/users
      */
+    @Operation(summary = "사용자 생성", description = "SUPERADMIN 전용 사용자 생성")
     @PreAuthorize("hasRole('SUPERADMIN')")
     @PostMapping("/users")
     public ApiResponse<Long> createUser(@Valid @RequestBody UserCreateRequest request) {
@@ -158,6 +166,7 @@ public class UserController {
      * 주소: PUT /api/users/{userId}
      * SUPERADMIN은 직급, 권한, 상태만 수정 가능 (이름과 이메일은 수정 불가)
      */
+    @Operation(summary = "사용자 정보 수정 (SUPERADMIN)", description = "직급/권한/활성화 상태를 수정합니다. 이름/이메일은 유지됩니다.")
     @PreAuthorize("hasRole('SUPERADMIN')")
     @PutMapping("/users/{userId}")
     public ApiResponse<Void> updateUser(
@@ -199,6 +208,7 @@ public class UserController {
      * 사용자 삭제 API (SUPERADMIN 전용, soft delete)
      * 주소: DELETE /api/users/{userId}
      */
+    @Operation(summary = "사용자 삭제 (SUPERADMIN)", description = "소프트 삭제로 사용자 비활성 처리합니다.")
     @PreAuthorize("hasRole('SUPERADMIN')")
     @DeleteMapping("/users/{userId}")
     public ApiResponse<Void> deleteUser(@PathVariable Long userId) {
@@ -220,6 +230,7 @@ public class UserController {
      * 현재 로그인한 사용자 정보 조회 API
      * 주소: GET /api/users/me
      */
+    @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 정보를 조회합니다.")
     @GetMapping("/users/me")
     public ApiResponse<UserDto> getCurrentUser() {
         Long currentUserId = SecurityUtil.getCurrentUserId();
@@ -239,6 +250,7 @@ public class UserController {
      * 현재 로그인한 사용자 정보 수정 API
      * 주소: PUT /api/users/me
      */
+    @Operation(summary = "내 정보 수정", description = "현재 로그인한 사용자의 이름/이메일/직급을 수정합니다.")
     @PutMapping("/users/me")
     public ApiResponse<Void> updateCurrentUser(@Valid @RequestBody MyProfileUpdateRequest request) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
@@ -274,6 +286,7 @@ public class UserController {
      * 현재 로그인한 사용자 비밀번호 변경 API
      * 주소: PUT /api/users/me/password
      */
+    @Operation(summary = "비밀번호 변경", description = "현재 비밀번호 검증 후 새 비밀번호로 변경합니다.")
     @PutMapping("/users/me/password")
     public ApiResponse<Void> changePassword(@Valid @RequestBody PasswordChangeRequest request) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
@@ -303,6 +316,7 @@ public class UserController {
      * 토큰 재발급 API
      * 주소: POST /api/refresh-token
      */
+    @Operation(summary = "토큰 재발급", description = "Refresh 토큰으로 Access/Refresh 토큰을 재발급합니다.")
     @PostMapping("/refresh-token")
     public ApiResponse<Map<String, Object>> refreshToken(@RequestBody RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
@@ -336,6 +350,7 @@ public class UserController {
      * 로그아웃 (토큰 블랙리스트 처리)
      * 주소: POST /api/logout
      */
+    @Operation(summary = "로그아웃", description = "Access/Refresh 토큰을 블랙리스트 처리하여 로그아웃합니다.")
     @PostMapping("/logout")
     public ApiResponse<Void> logout(@RequestHeader(value = "Authorization", required = false) String authHeader,
                                     @RequestBody(required = false) RefreshTokenRequest request) {
@@ -372,6 +387,7 @@ public class UserController {
      * 아이디 찾기 API
      * 주소: POST /api/find-username
      */
+    @Operation(summary = "아이디 찾기", description = "이메일/이름으로 사용자 아이디를 조회합니다.")
     @PostMapping("/find-username")
     public ApiResponse<Map<String, String>> findUsername(@Valid @RequestBody FindUsernameRequest request) {
         logger.info("아이디 찾기 요청 - email: {}", request.getEmail());
@@ -399,6 +415,7 @@ public class UserController {
      * 비밀번호 재설정 요청 API
      * 주소: POST /api/request-password-reset
      */
+    @Operation(summary = "비밀번호 재설정 요청", description = "비밀번호 재설정 이메일을 발송합니다.")
     @PostMapping("/request-password-reset")
     public ApiResponse<Map<String, String>> requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
         logger.info("비밀번호 재설정 요청 - email: {}", request.getEmail());
@@ -434,6 +451,7 @@ public class UserController {
      * 비밀번호 재설정 API
      * 주소: POST /api/reset-password
      */
+    @Operation(summary = "비밀번호 재설정", description = "토큰 검증 후 새 비밀번호를 설정합니다.")
     @PostMapping("/reset-password")
     public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         logger.info("비밀번호 재설정 시도 - token: {}", request.getToken() != null ? "provided" : "null");
