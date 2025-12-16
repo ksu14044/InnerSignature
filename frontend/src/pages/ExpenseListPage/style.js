@@ -314,6 +314,51 @@ export const FilterActions = styled.div`
   }
 `;
 
+export const ToggleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 12px;
+`;
+
+export const ToggleLabel = styled.label`
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dark-color);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+export const ToggleSwitch = styled.div`
+  position: relative;
+  width: 50px;
+  height: 26px;
+  background-color: ${props => props.active ? 'var(--primary-color)' : '#ccc'};
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: white;
+    top: 2px;
+    left: ${props => props.active ? '26px' : '2px'};
+    transition: left 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  &:hover {
+    background-color: ${props => props.active ? 'var(--primary-hover)' : '#bbb'};
+  }
+`;
+
 export const FilterButton = styled.button`
   padding: 10px 20px;
   border: none;

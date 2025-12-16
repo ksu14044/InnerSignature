@@ -2,3 +2,33 @@ build.yml
 docker-compose.yml
 update.sh
 .env
+.env.local
+.env.*.local
+
+# Backend
+backend/target/
+backend/logs/
+backend/uploads/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Logs
+*.log
+*.log.*
+logs/
+
+# OS
+Thumbs.db
+.DS_Store

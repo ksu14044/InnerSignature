@@ -32,7 +32,7 @@ const ExpenseCreatePage = () => {
 
   // 3. 결재자 관련 상태
   const [adminUsers, setAdminUsers] = useState([]);
-  const [selectedApprovers, setSelectedApprovers] = useState(new Set()); // 선택된 결재자 ID들
+  const [selectedApprovers, setSelectedApprovers] = useState([]); // 선택된 결재자 ID들 (순서 보장)
 
   // 총 금액 자동 계산
   const totalAmount = details.reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -96,15 +96,16 @@ const ExpenseCreatePage = () => {
     setDetails(newDetails);
   };
 
-  // 결재자 선택 핸들러
+  // 결재자 선택 핸들러 (순서 보장)
   const handleApproverToggle = (userId) => {
-    const newSelected = new Set(selectedApprovers);
-    if (newSelected.has(userId)) {
-      newSelected.delete(userId);
+    const index = selectedApprovers.indexOf(userId);
+    if (index > -1) {
+      // 이미 선택된 경우 제거
+      setSelectedApprovers(selectedApprovers.filter(id => id !== userId));
     } else {
-      newSelected.add(userId);
+      // 선택되지 않은 경우 추가 (순서대로)
+      setSelectedApprovers([...selectedApprovers, userId]);
     }
-    setSelectedApprovers(newSelected);
   };
 
   const handleSubmit = async () => {
@@ -144,8 +145,8 @@ const ExpenseCreatePage = () => {
         if (expenseId) {
           // 비밀글이거나 급여가 아닌 경우에만 결재 라인 설정
           if (!isSecretOrSalary) {
-            // 선택된 결재자들을 approvalLines로 변환
-            const approvalLines = Array.from(selectedApprovers).map(userId => {
+            // 선택된 결재자들을 approvalLines로 변환 (순서 보장)
+            const approvalLines = selectedApprovers.map(userId => {
               const adminUser = adminUsers.find(user => user.userId === userId);
               return {
                 approverId: userId,
@@ -246,23 +247,61 @@ const ExpenseCreatePage = () => {
       {!isSecretOrSalary && (
         <S.Section>
           <S.SectionTitle>결재자 선택</S.SectionTitle>
+          {selectedApprovers.length > 0 && (
+            <div style={{ 
+              marginBottom: '15px', 
+              padding: '10px', 
+              backgroundColor: '#f0f7ff', 
+              borderRadius: '5px',
+              fontSize: '14px'
+            }}>
+              <strong>결재 순서:</strong> {selectedApprovers.map((userId, index) => {
+                const adminUser = adminUsers.find(user => user.userId === userId);
+                return (
+                  <span key={userId} style={{ marginLeft: '8px' }}>
+                    {index + 1}. {adminUser?.koreanName || '알 수 없음'}
+                    {index < selectedApprovers.length - 1 && ', '}
+                  </span>
+                );
+              })}
+              <div style={{ marginTop: '5px', fontSize: '12px', color: '#666' }}>
+                * 결재담당자(ACCOUNTANT)는 자동으로 맨 앞에 배치됩니다.
+              </div>
+            </div>
+          )}
           <S.ApproverGrid>
-            {adminUsers.map((adminUser) => (
-              <S.ApproverCheckbox key={adminUser.userId}>
-                <input
-                  type="checkbox"
-                  id={`approver-${adminUser.userId}`}
-                  checked={selectedApprovers.has(adminUser.userId)}
-                  onChange={() => handleApproverToggle(adminUser.userId)}
-                />
-                <label htmlFor={`approver-${adminUser.userId}`}>
-                  <S.ApproverInfo>
-                    <S.ApproverName>{adminUser.koreanName}</S.ApproverName>
-                    <S.ApproverPosition>{adminUser.position || '관리자'}</S.ApproverPosition>
-                  </S.ApproverInfo>
-                </label>
-              </S.ApproverCheckbox>
-            ))}
+            {adminUsers.map((adminUser) => {
+              const orderIndex = selectedApprovers.indexOf(adminUser.userId);
+              const isSelected = orderIndex > -1;
+              return (
+                <S.ApproverCheckbox key={adminUser.userId}>
+                  <input
+                    type="checkbox"
+                    id={`approver-${adminUser.userId}`}
+                    checked={isSelected}
+                    onChange={() => handleApproverToggle(adminUser.userId)}
+                  />
+                  <label htmlFor={`approver-${adminUser.userId}`}>
+                    <S.ApproverInfo>
+                      <S.ApproverName>
+                        {adminUser.koreanName}
+                        {isSelected && (
+                          <span style={{ 
+                            marginLeft: '5px', 
+                            color: '#007bff', 
+                            fontWeight: 'bold',
+                            fontSize: '12px'
+                          }}>
+                            ({orderIndex + 1}순위)
+                          </span>
+                        )}
+                      </S.ApproverName>
+                      <S.ApproverPosition>{adminUser.position || '관리자'}</S.ApproverPosition>
+                    </S.ApproverInfo>
+                  </label>
+                </S.ApproverCheckbox>
+              );
+            })}
           </S.ApproverGrid>
           {adminUsers.length === 0 && (
             <S.LoadingMessage>결재 가능한 관리자를 불러오는 중...</S.LoadingMessage>

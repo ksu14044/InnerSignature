@@ -23,5 +23,12 @@ COPY --from=build /app/target/*.jar app.jar
 # 포트 8080 노출
 EXPOSE 8080
 
-# JAR 파일 실행
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# JAR 파일 실행 (JVM 최적화 옵션 포함)
+ENTRYPOINT ["java", \
+  "-Xmx512m", \
+  "-Xms256m", \
+  "-XX:+UseG1GC", \
+  "-XX:MaxGCPauseMillis=200", \
+  "-XX:+HeapDumpOnOutOfMemoryError", \
+  "-XX:HeapDumpPath=/app/heapdump.hprof", \
+  "-jar", "app.jar"]

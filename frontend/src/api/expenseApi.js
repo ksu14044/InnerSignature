@@ -73,6 +73,11 @@ export const fetchExpenseList = async (page = 1, size = 10, filters = {}) => {
       params.isSecret = filters.isSecret;
     }
 
+    // 작성자(기안자) 이름 필터
+    if (filters.drafterName && filters.drafterName.trim() !== '') {
+      params.drafterName = filters.drafterName.trim();
+    }
+
     const response = await axios.get(BASE_URL, { params });
     return response.data; // 백엔드가 준 { success, message, data } 반환
   } catch (error) {

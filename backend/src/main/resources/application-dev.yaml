@@ -21,6 +21,7 @@ spring:
       idle-timeout: 600000  # 유휴 연결 타임아웃 (10분)
       max-lifetime: 1800000  # 연결 최대 수명 (30분)
       leak-detection-threshold: 60000  # 연결 누수 감지 임계값 (60초)
+      connection-test-query: SELECT 1  # 연결 테스트 쿼리
   servlet:
     multipart:
       enabled: true
@@ -31,7 +32,7 @@ spring:
     host: ${MAIL_HOST:smtp.naver.com}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:mhm1404}
-    password: ${MAIL_PASSWORD:78V1YGX87PN9}
+    password: ${MAIL_PASSWORD:}  # 환경변수로 설정 권장 (기본값 제거)
     from: ${MAIL_FROM:mhm1404@naver.com}
     properties:
       mail:

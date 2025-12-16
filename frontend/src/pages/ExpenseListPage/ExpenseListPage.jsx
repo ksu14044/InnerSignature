@@ -27,7 +27,8 @@ const ExpenseListPage = () => {
     status: [],
     category: '',
     taxProcessed: null, // null: 전체, true: 완료, false: 미완료
-    isSecret: null // null: 전체, true: 비밀글만, false: 일반글만
+    isSecret: null, // null: 전체, true: 비밀글만, false: 일반글만
+    drafterName: '' // 작성자(기안자) 이름
   });
 
   const pageSize = 10;
@@ -125,12 +126,26 @@ const ExpenseListPage = () => {
       status: [],
       category: '',
       taxProcessed: null,
-      isSecret: null
+      isSecret: null,
+      drafterName: ''
     };
     setFilters(emptyFilters);
     setCurrentPage(1);
     loadExpenseList(1, emptyFilters);
     setIsFilterOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 내가 쓴 글만 보기 토글 핸들러
+  const handleMyPostsToggle = () => {
+    const isMyPostsMode = filters.drafterName === user?.koreanName;
+    const newFilters = {
+      ...filters,
+      drafterName: isMyPostsMode ? '' : (user?.koreanName || '')
+    };
+    setFilters(newFilters);
+    setCurrentPage(1);
+    loadExpenseList(1, newFilters);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -258,13 +273,24 @@ const ExpenseListPage = () => {
           <FaPlus />
           <span>새 결의서 작성</span>
         </S.CreateButton>
-        <S.FilterButton 
-          variant="secondary" 
-          onClick={() => setIsFilterOpen(!isFilterOpen)}
-        >
-          <FaFilter />
-          <span>필터</span>
-        </S.FilterButton>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <S.ToggleContainer>
+            <S.ToggleLabel>
+              <S.ToggleSwitch
+                active={filters.drafterName === user?.koreanName}
+                onClick={handleMyPostsToggle}
+              />
+              <span>내가 쓴 글만 보기</span>
+            </S.ToggleLabel>
+          </S.ToggleContainer>
+          <S.FilterButton 
+            variant="secondary" 
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+          >
+            <FaFilter />
+            <span>필터</span>
+          </S.FilterButton>
+        </div>
       </S.ActionBar>
 
       {/* 필터 UI */}
@@ -342,6 +368,15 @@ const ExpenseListPage = () => {
                 </S.FilterSelect>
               </S.FilterGroup>
             )}
+            {/* 작성자(기안자) 필터 (모든 사용자 사용 가능) */}
+            <S.FilterGroup>
+              <S.FilterLabel>작성자(기안자)</S.FilterLabel>
+              <S.FilterInput
+                type="text"
+                value={filters.drafterName}
+                onChange={(e) => handleFilterChange('drafterName', e.target.value)}
+              />
+            </S.FilterGroup>
             {/* 비밀글 필터 (USER 역할이 아닌 경우에만 표시) */}
             {user && user.role !== 'USER' && (
               <S.FilterGroup>

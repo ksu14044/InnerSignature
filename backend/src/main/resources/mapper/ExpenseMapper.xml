@@ -67,6 +67,9 @@
             <if test="isSecret != null">
                 AND r.is_secret = #{isSecret}
             </if>
+            <if test="drafterName != null and drafterName != ''">
+                AND u.korean_name LIKE CONCAT('%', #{drafterName}, '%')
+            </if>
         </where>
         ORDER BY r.expense_report_id DESC
         LIMIT #{limit} OFFSET #{offset}
@@ -107,6 +110,9 @@
             </if>
             <if test="isSecret != null">
                 AND r.is_secret = #{isSecret}
+            </if>
+            <if test="drafterName != null and drafterName != ''">
+                AND u.korean_name LIKE CONCAT('%', #{drafterName}, '%')
             </if>
         </where>
     </select>

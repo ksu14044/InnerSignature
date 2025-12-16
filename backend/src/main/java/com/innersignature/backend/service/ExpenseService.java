@@ -117,7 +117,7 @@ public class ExpenseService {
      * @param userId 현재 사용자 ID (권한 필터링용)
      */
     public PagedResponse<ExpenseReportDto> getExpenseList(
-            int page, 
+            int page,
             int size,
             LocalDate startDate,
             LocalDate endDate,
@@ -127,6 +127,7 @@ public class ExpenseService {
             String category,
             Boolean taxProcessed,
             Boolean isSecret,
+            String drafterName,
             Long userId) {
         
         // statuses가 null이거나 비어있으면 null로 설정 (필터링 안 함)
@@ -136,14 +137,20 @@ public class ExpenseService {
         
         // 필터링 조건 + 권한 필터링 후 실제 조회 가능한 전체 개수 계산
         long totalElements = calculateFilteredTotalElements(
-                startDate, endDate, minAmount, maxAmount, statuses, category, taxProcessed, isSecret, userId);
+                startDate, endDate, minAmount, maxAmount,
+                statuses, category, taxProcessed, isSecret,
+                drafterName, userId);
         
         // 전체 페이지 수 계산
         int totalPages = (int) Math.ceil((double) totalElements / size);
         
         // 필터링된 전체 데이터 조회 (페이지네이션 없이)
         List<ExpenseReportDto> allContent = expenseMapper.selectExpenseListWithFilters(
-                0, Integer.MAX_VALUE, startDate, endDate, minAmount, maxAmount, statuses, category, taxProcessed, isSecret);
+                0, Integer.MAX_VALUE,
+                startDate, endDate,
+                minAmount, maxAmount,
+                statuses, category, taxProcessed, isSecret,
+                drafterName);
         
         // 급여 문서 권한 필터링
         filterSalaryExpenses(allContent, userId);
@@ -384,19 +391,19 @@ public class ExpenseService {
 
         // (3) 결재 라인(누가 승인해야 하는지) 저장
         // 급여이거나 비밀글이 아닌 경우에만 결재 라인 생성
+        // ※ 현재 플로우에서는 프론트에서 별도 API(setApprovalLines)를 통해 결재 라인을 설정하므로,
+        //    여기서는 request에 결재 라인이 있는 경우에만 처리합니다.
         List<ApprovalLineDto> lines = request.getApprovalLines();
         boolean isSecretOrSalary = hasSalary || (isSecret != null && isSecret);
 
-        if (!isSecretOrSalary) {
+        if (!isSecretOrSalary && lines != null && !lines.isEmpty()) {
             // 결제담당자(ACCOUNTANT) 반드시 포함 확인 및 추가
             boolean hasAccountant = false;
-            if (lines != null) {
-                for (ApprovalLineDto line : lines) {
-                    UserDto user = userService.selectUserById(line.getApproverId());
-                    if (user != null && "ACCOUNTANT".equals(user.getRole())) {
-                        hasAccountant = true;
-                        break;
-                    }
+            for (ApprovalLineDto line : lines) {
+                UserDto user = userService.selectUserById(line.getApproverId());
+                if (user != null && "ACCOUNTANT".equals(user.getRole())) {
+                    hasAccountant = true;
+                    break;
                 }
             }
 
@@ -406,24 +413,19 @@ public class ExpenseService {
                 if (!accountants.isEmpty()) {
                     ApprovalLineDto accountantLine = new ApprovalLineDto();
                     accountantLine.setApproverId(accountants.get(0).getUserId());
-                    accountantLine.setStepOrder(lines != null ? lines.size() + 1 : 1);
+                    accountantLine.setStepOrder(lines.size() + 1);
                     accountantLine.setStatus("WAIT");
-                    if (lines == null) {
-                        lines = new ArrayList<>();
-                    }
                     lines.add(accountantLine);
                 }
             }
 
-            if (lines != null) {
-                logger.debug("결재 라인 저장 시작 - 라인 수: {}", lines.size());
-                for (ApprovalLineDto line : lines) {
-                    line.setExpenseReportId(newId); // "이 결재 라인도 그 문서(newId) 꺼야"라고 연결
-                    expenseMapper.insertApprovalLine(line);
-                }
-                logger.debug("결재 라인 저장 완료");
+            logger.debug("결재 라인 저장 시작 - 라인 수: {}", lines.size());
+            for (ApprovalLineDto line : lines) {
+                line.setExpenseReportId(newId); // "이 결재 라인도 그 문서(newId) 꺼야"라고 연결
+                expenseMapper.insertApprovalLine(line);
             }
-        } else {
+            logger.debug("결재 라인 저장 완료");
+        } else if (isSecretOrSalary) {
             logger.debug("급여 또는 비밀글 문서는 결재 라인이 생성되지 않습니다.");
         }
 
@@ -435,15 +437,61 @@ public class ExpenseService {
     /**
      * 4. 결재 라인 설정 (별도 설정용)
      * 설명: 이미 생성된 지출결의서에 결재 라인을 추가합니다.
+     * ACCOUNTANT는 항상 맨 앞(stepOrder=1)에 배치됩니다.
      */
     @Transactional
     public void setApprovalLines(Long expenseReportId, List<ApprovalLineDto> approvalLines) {
-        if (approvalLines != null && !approvalLines.isEmpty()) {
+        if (approvalLines == null) {
+            approvalLines = new ArrayList<>();
+        }
+        
+        // ACCOUNTANT 포함 여부 확인
+        boolean hasAccountant = false;
+        for (ApprovalLineDto line : approvalLines) {
+            UserDto user = userService.selectUserById(line.getApproverId());
+            if (user != null && "ACCOUNTANT".equals(user.getRole())) {
+                hasAccountant = true;
+                break;
+            }
+        }
+        
+        // ACCOUNTANT가 없으면 추가
+        if (!hasAccountant) {
+            List<UserDto> accountants = userService.selectUsersByRole("ACCOUNTANT");
+            if (!accountants.isEmpty()) {
+                ApprovalLineDto accountantLine = new ApprovalLineDto();
+                accountantLine.setApproverId(accountants.get(0).getUserId());
+                accountantLine.setStatus("WAIT");
+                approvalLines.add(0, accountantLine); // 맨 앞에 추가
+            }
+        }
+        
+        // ACCOUNTANT를 맨 앞에 배치하고 나머지는 원래 순서 유지
+        List<ApprovalLineDto> sortedLines = new ArrayList<>();
+        ApprovalLineDto accountantLine = null;
+        
+        // ACCOUNTANT 분리
+        for (ApprovalLineDto line : approvalLines) {
+            UserDto user = userService.selectUserById(line.getApproverId());
+            if (user != null && "ACCOUNTANT".equals(user.getRole())) {
+                accountantLine = line;
+            } else {
+                sortedLines.add(line);
+            }
+        }
+        
+        // ACCOUNTANT를 맨 앞에 배치
+        if (accountantLine != null) {
+            sortedLines.add(0, accountantLine);
+        }
+        
+        // stepOrder 설정 및 저장
+        if (!sortedLines.isEmpty()) {
             int stepOrder = 1;
-            for (ApprovalLineDto line : approvalLines) {
+            for (ApprovalLineDto line : sortedLines) {
                 line.setExpenseReportId(expenseReportId);
                 line.setStepOrder(stepOrder++);
-                line.setStatus("WAIT"); // 상태가 설정되지 않은 경우 기본값 설정
+                line.setStatus("WAIT");
                 expenseMapper.insertApprovalLine(line);
             }
         }
@@ -922,20 +970,27 @@ public class ExpenseService {
             String category,
             Boolean taxProcessed,
             Boolean isSecret,
+            String drafterName,
             Long userId) {
-        
+
         if (userId == null) {
             return expenseMapper.countExpenseListWithFilters(
-                    startDate, endDate, minAmount, maxAmount, statuses, category, taxProcessed, isSecret);
+                    startDate, endDate, minAmount, maxAmount,
+                    statuses, category, taxProcessed, isSecret,
+                    drafterName);
         }
-        
+
         // 필터링된 전체 목록 조회 (페이지네이션 없이, 큰 수로 설정)
         List<ExpenseReportDto> allReports = expenseMapper.selectExpenseListWithFilters(
-                0, Integer.MAX_VALUE, startDate, endDate, minAmount, maxAmount, statuses, category, taxProcessed, isSecret);
-        
+                0, Integer.MAX_VALUE,
+                startDate, endDate,
+                minAmount, maxAmount,
+                statuses, category, taxProcessed, isSecret,
+                drafterName);
+
         // 권한 필터링 적용
         filterSalaryExpenses(allReports, userId);
-        
+
         return allReports.size();
     }
 

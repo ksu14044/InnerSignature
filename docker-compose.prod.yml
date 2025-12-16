@@ -10,7 +10,7 @@ services:
     image: mysql:8.0
     container_name: innersignature-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: 1q2w3e4r!
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  # 환경변수 필수
       MYSQL_DATABASE: signature
     ports:
       - "3306:3306"
@@ -20,7 +20,7 @@ services:
     networks:
       - innersignature-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p1q2w3e4r!"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,14 +31,14 @@ services:
     image: ${DOCKER_USERNAME:-ksu14044}/innersignature-backend:latest
     container_name: innersignature-backend
     environment:
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: prod  # 프로덕션 프로필 사용
       DB_HOST: mysql
       DB_PORT: 3306
       DB_NAME: signature
-      DB_USERNAME: root
-      DB_PASSWORD: 1q2w3e4r!
-      JWT_SECRET: c206e4d5a5fb9c12c6e4615f6ffc9128185b3e35085b212acd2c53dd9c531702
-      FRONTEND_URL: http://localhost:5173
+      DB_USERNAME: ${DB_USERNAME}  # 환경변수 필수
+      DB_PASSWORD: ${DB_PASSWORD}  # 환경변수 필수
+      JWT_SECRET: ${JWT_SECRET}  # 환경변수 필수
+      FRONTEND_URL: ${FRONTEND_URL}  # 환경변수 필수
     ports:
       - "8080:8080"
     volumes:
