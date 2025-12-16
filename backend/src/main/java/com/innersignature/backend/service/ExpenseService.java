@@ -35,8 +35,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service // 스프링이 "이건 비즈니스 로직 담당이야"라고 인식
 @RequiredArgsConstructor // final이 붙은 변수의 생성자를 자동으로 만들어줌 (의존성 주입)
@@ -824,6 +827,7 @@ public class ExpenseService {
     /**
      * 급여 카테고리 또는 비밀글 포함 문서에 대한 권한 체크
      * TAX_ACCOUNTANT 또는 작성자만 조회 가능
+     * 최적화: N+1 쿼리 문제 해결을 위해 배치 조회 사용
      */
     private void filterSalaryExpenses(List<ExpenseReportDto> reports, Long userId) {
         if (userId == null || reports == null || reports.isEmpty()) {
@@ -840,14 +844,29 @@ public class ExpenseService {
             return;
         }
         
+        // 배치 조회: 모든 expense_report_id의 상세 항목을 한 번에 조회 (N+1 문제 해결)
+        List<Long> expenseReportIds = reports.stream()
+                .map(ExpenseReportDto::getExpenseReportId)
+                .collect(Collectors.toList());
+        
+        // expense_report_id별로 그룹화하여 빠른 조회를 위한 Map 생성
+        Map<Long, List<ExpenseDetailDto>> detailsMap;
+        if (expenseReportIds.isEmpty()) {
+            detailsMap = Collections.emptyMap();
+        } else {
+            List<ExpenseDetailDto> allDetails = expenseMapper.selectExpenseDetailsBatch(expenseReportIds);
+            detailsMap = allDetails.stream()
+                    .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
+        }
+        
         // 그 외의 경우, 본인이 작성한 급여/비밀글 문서만 조회 가능
         reports.removeIf(report -> {
             // 비밀글인지 확인
             Boolean isSecret = report.getIsSecret();
             boolean isSecretReport = isSecret != null && isSecret;
             
-            // 급여 카테고리가 포함된 문서인지 확인
-            List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetails(report.getExpenseReportId());
+            // 급여 카테고리가 포함된 문서인지 확인 (메모리에서 조회 - 빠름)
+            List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
             boolean hasSalary = hasSalaryCategory(details);
             
             // 급여인 경우 isSecret을 true로 설정

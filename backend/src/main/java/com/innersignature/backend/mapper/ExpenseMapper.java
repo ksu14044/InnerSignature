@@ -70,6 +70,9 @@ public interface ExpenseMapper {
     // 3. 상세 조회 (지출 내역): 문서에 딸린 지출 항목들을 가져옵니다.
     List<ExpenseDetailDto> selectExpenseDetails(Long expenseReportId);
 
+    // 3-1. 상세 조회 (지출 내역) - 배치 조회: 여러 문서의 지출 항목들을 한 번에 가져옵니다.
+    List<ExpenseDetailDto> selectExpenseDetailsBatch(@Param("expenseReportIds") List<Long> expenseReportIds);
+
     // 4. 상세 조회 (결재 라인): 문서에 딸린 결재/서명 정보를 가져옵니다.
     List<ApprovalLineDto> selectApprovalLines(Long expenseReportId);
 

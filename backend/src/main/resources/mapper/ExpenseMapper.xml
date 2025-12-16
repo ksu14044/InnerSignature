@@ -158,6 +158,16 @@
         WHERE expense_report_id = #{expenseReportId}
     </select>
 
+    <!-- 배치 조회: 여러 expense_report_id의 상세 항목을 한 번에 조회 -->
+    <select id="selectExpenseDetailsBatch" resultType="com.innersignature.backend.dto.ExpenseDetailDto">
+        SELECT * FROM expense_detail_tb
+        WHERE expense_report_id IN
+        <foreach collection="expenseReportIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY expense_report_id, expense_detail_id
+    </select>
+
     <select id="selectApprovalLines" resultType="com.innersignature.backend.dto.ApprovalLineDto">
         SELECT 
             al.*,
