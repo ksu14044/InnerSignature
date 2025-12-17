@@ -1,17 +1,18 @@
 // API 설정 파일
-// 도커 환경에서는 /api로 요청하면 nginx가 백엔드로 프록시합니다
+// 도커/운영 환경에서는 /api 로 요청하면 nginx가 백엔드로 프록시합니다
 
 const getApiBaseUrl = () => {
-  // 브라우저에서 실행될 때는 상대 경로 사용 (nginx가 프록시)
-  // 개발 환경에서는 환경 변수나 기본값 사용
-  if (import.meta.env.VITE_API_BASE_URL) {
+  const isProd = import.meta.env.MODE === 'production';
+
+  // 개발 환경에서만 VITE_API_BASE_URL 사용 허용
+  if (!isProd && import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
-  
-  // 도커 환경에서는 /api (nginx가 backend:8080으로 프록시)
+
+  // 운영(도커) 환경에서는 무조건 /api 사용
   // 로컬 개발 환경에서는 http://localhost:8080/api
-  return import.meta.env.MODE === 'production' 
-    ? '/api' 
+  return isProd
+    ? '/api'
     : 'http://localhost:8080/api';
 };
 
