@@ -26,4 +26,6 @@ public class ApprovalLineDto {
     // --- DB 테이블에는 없지만 화면에 보여줄 때 필요한 필드 (JOIN용) ---
     private String approverName;  // 결재자 이름 (예: 박대표)
     private String approverPosition; // 결재자 직급
+    
+    private Long companyId; // 회사 ID
 }

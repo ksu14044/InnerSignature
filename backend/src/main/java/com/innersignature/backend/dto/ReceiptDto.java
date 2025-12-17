@@ -15,5 +15,7 @@ public class ReceiptDto {
     
     // 화면 표시용
     private String uploadedByName; // 업로드한 사용자 이름
+    
+    private Long companyId; // 회사 ID
 }
 

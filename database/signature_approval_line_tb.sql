@@ -31,11 +31,15 @@ CREATE TABLE `approval_line_tb` (
   `approval_date` datetime DEFAULT NULL COMMENT '결재한 시간',
   `signature_data` mediumtext COMMENT '서명 데이터 (Base64)',
   `rejection_reason` varchar(255) DEFAULT NULL COMMENT '반려 사유',
+  `company_id` bigint NOT NULL COMMENT '회사 ID (company_tb FK)',
   PRIMARY KEY (`approval_line_id`),
   KEY `expense_report_id` (`expense_report_id`),
   KEY `approver_id` (`approver_id`),
+  KEY `idx_company_id` (`company_id`),
+  KEY `idx_company_expense_report` (`company_id`, `expense_report_id`),
   CONSTRAINT `approval_line_tb_ibfk_1` FOREIGN KEY (`expense_report_id`) REFERENCES `expense_report_tb` (`expense_report_id`) ON DELETE CASCADE,
-  CONSTRAINT `approval_line_tb_ibfk_2` FOREIGN KEY (`approver_id`) REFERENCES `user_tb` (`user_id`)
+  CONSTRAINT `approval_line_tb_ibfk_2` FOREIGN KEY (`approver_id`) REFERENCES `user_tb` (`user_id`),
+  CONSTRAINT `approval_line_tb_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `company_tb` (`company_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=94 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='결재 진행 및 서명 정보';
 /*!40101 SET character_set_client = @saved_cs_client */;
 

@@ -25,4 +25,6 @@ public class ExpenseDetailDto {
     
     @Size(max = 1000, message = "비고는 1000자 이하여야 합니다.")
     private String note;          // 비고
+    
+    private Long companyId;       // 회사 ID
 }

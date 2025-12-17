@@ -184,3 +184,26 @@ export const Empty = styled.div`
   color: var(--secondary-color);
 `;
 
+export const CompanyRegisterButton = styled.button`
+  margin-left: 16px;
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  
+  &:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+  }
+  
+  @media (max-width: 768px) {
+    margin-left: 0;
+    margin-top: 12px;
+  }
+`;
+

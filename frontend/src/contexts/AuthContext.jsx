@@ -1,16 +1,42 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { useCookies } from 'react-cookie';
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
+import { getMyCompanies, switchCompany } from '../api/companyApi';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // 'user', 'token', 'refreshToken' 쿠키를 관리합니다.
-  const [cookies, setCookie, removeCookie] = useCookies(['user', 'token', 'refreshToken']);
+  // 'user', 'token', 'refreshToken', 'companies' 쿠키를 관리합니다.
+  const [cookies, setCookie, removeCookie] = useCookies(['user', 'token', 'refreshToken', 'companies']);
+  const [companies, setCompanies] = useState(cookies.companies || []);
 
   // 쿠키에 저장된 user 정보를 가져옵니다. (없으면 undefined)
   const user = cookies.user;
+
+  // CEO 또는 ADMIN인 경우 회사 목록 로드
+  useEffect(() => {
+    const loadCompanies = async () => {
+      if ((user?.role === 'CEO' || user?.role === 'ADMIN') && cookies.token) {
+        try {
+          const response = await getMyCompanies();
+          if (response.success && response.data) {
+            setCompanies(response.data);
+            setCookie('companies', response.data, { path: '/', maxAge: 3600 });
+          }
+        } catch (error) {
+          console.error('회사 목록 로드 실패:', error);
+        }
+      } else {
+        setCompanies([]);
+      }
+    };
+    
+    if (user) {
+      loadCompanies();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role, cookies.token]); // setCookie 제거, user 대신 user?.role 사용
 
   // 로그인 함수
   const login = (userData, token, refreshToken) => {
@@ -20,6 +46,36 @@ export const AuthProvider = ({ children }) => {
     setCookie('token', token, { path: '/', maxAge: 3600 }); // JWT 토큰 저장
     if (refreshToken) {
       setCookie('refreshToken', refreshToken, { path: '/', maxAge: 1209600 }); // 리프레시 토큰 (14일)
+    }
+    
+    // CEO 또는 ADMIN인 경우 회사 목록은 별도로 로드됨 (useEffect에서 처리)
+  };
+  
+  // 회사 전환 함수
+  const switchCompanyContext = async (companyId) => {
+    try {
+      const currentToken = cookies.token;
+      if (!currentToken) {
+        throw new Error('토큰이 없습니다.');
+      }
+      
+      const response = await switchCompany(companyId, currentToken);
+      if (response.success && response.data) {
+        const { user: updatedUser, token: newToken, refreshToken: newRefreshToken } = response.data;
+        
+        // 쿠키 업데이트
+        setCookie('user', updatedUser, { path: '/', maxAge: 3600 });
+        setCookie('token', newToken, { path: '/', maxAge: 3600 });
+        if (newRefreshToken) {
+          setCookie('refreshToken', newRefreshToken, { path: '/', maxAge: 1209600 });
+        }
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('회사 전환 실패:', error);
+      throw error;
     }
   };
 
@@ -56,7 +112,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, companies, switchCompany: switchCompanyContext }}>
       {children}
     </AuthContext.Provider>
   );

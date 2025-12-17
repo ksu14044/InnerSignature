@@ -15,6 +15,7 @@ import com.innersignature.backend.dto.UserDto;
 import com.innersignature.backend.mapper.ExpenseMapper;
 import com.innersignature.backend.util.PermissionUtil;
 import com.innersignature.backend.util.SecurityLogger;
+import com.innersignature.backend.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -36,10 +38,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 @Service // 스프링이 "이건 비즈니스 로직 담당이야"라고 인식
 @RequiredArgsConstructor // final이 붙은 변수의 생성자를 자동으로 만들어줌 (의존성 주입)
@@ -63,7 +69,8 @@ public class ExpenseService {
      * - 급여 문서 권한 필터링
      */
     public List<ExpenseReportDto> getExpenseList(Long userId) {
-        List<ExpenseReportDto> list = expenseMapper.selectExpenseList();
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        List<ExpenseReportDto> list = expenseMapper.selectExpenseList(companyId);
         filterSalaryExpenses(list, userId);
         filterTaxProcessingInfo(list, userId);
         return list;
@@ -83,7 +90,8 @@ public class ExpenseService {
         int totalPages = (int) Math.ceil((double) totalElements / size);
         
         // 전체 목록 조회 후 필터링 (페이지네이션 전에 필터링 필요)
-        List<ExpenseReportDto> allContent = expenseMapper.selectExpenseList();
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        List<ExpenseReportDto> allContent = expenseMapper.selectExpenseList(companyId);
         
         // 급여 문서 권한 필터링
         filterSalaryExpenses(allContent, userId);
@@ -145,12 +153,13 @@ public class ExpenseService {
         int totalPages = (int) Math.ceil((double) totalElements / size);
         
         // 필터링된 전체 데이터 조회 (페이지네이션 없이)
+        Long companyId = SecurityUtil.getCurrentCompanyId();
         List<ExpenseReportDto> allContent = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 minAmount, maxAmount,
                 statuses, category, taxProcessed, isSecret,
-                drafterName);
+                drafterName, companyId);
         
         // 급여 문서 권한 필터링
         filterSalaryExpenses(allContent, userId);
@@ -174,9 +183,10 @@ public class ExpenseService {
      * - 권한에 따라 세무처리 정보 필터링
      */
     public ExpenseReportDto getExpenseDetail(Long expenseReportId, Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
         
         // (1) 메인 문서 정보 가져오기
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId);
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
         
         // 만약 문서가 없으면 null 리턴 (혹은 에러 처리)
         if (report == null) {
@@ -184,7 +194,7 @@ public class ExpenseService {
         }
 
         // (2) 상세 항목들(식대, 간식...) 가져오기
-        List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetails(expenseReportId);
+        List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetails(expenseReportId, companyId);
         
         // (2-1) 급여 카테고리 또는 비밀글 권한 체크
         if (userId != null) {
@@ -195,19 +205,28 @@ public class ExpenseService {
             if (isSecretOrSalary) {
                 UserDto user = userService.selectUserById(userId);
                 boolean isTaxAccountant = user != null && "TAX_ACCOUNTANT".equals(user.getRole());
+                boolean isCEO = user != null && "CEO".equals(user.getRole());
                 boolean isOwner = report.getDrafterId().equals(userId);
                 
-                if (!isTaxAccountant && !isOwner) {
+                // CEO는 같은 회사의 모든 비밀글 조회 가능
+                if (isCEO) {
+                    Long userCompanyId = user.getCompanyId();
+                    if (userCompanyId != null && userCompanyId.equals(companyId)) {
+                        // CEO는 같은 회사 비밀글 조회 가능
+                    } else {
+                        throw new com.innersignature.backend.exception.BusinessException("비밀 문서에 대한 조회 권한이 없습니다.");
+                    }
+                } else if (!isTaxAccountant && !isOwner) {
                     throw new com.innersignature.backend.exception.BusinessException("비밀 문서에 대한 조회 권한이 없습니다.");
                 }
             }
         }
         
         // (3) 결재 라인(담당->전무->대표) 가져오기
-        List<ApprovalLineDto> lines = expenseMapper.selectApprovalLines(expenseReportId);
+        List<ApprovalLineDto> lines = expenseMapper.selectApprovalLines(expenseReportId, companyId);
 
         // (4) 영수증 목록 가져오기
-        List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseReportId(expenseReportId);
+        List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseReportId(expenseReportId, companyId);
 
         // (5) 가져온 부품들을 메인 DTO에 조립하기
         report.setDetails(details);
@@ -236,8 +255,10 @@ public class ExpenseService {
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void approveExpense(Long expenseId, Long approverId, String signatureData) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
         // 1. 해당 문서의 모든 결재 라인 조회
-        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(expenseId);
+        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(expenseId, companyId);
 
         // 2. 현재 결재자의 순서 찾기
         ApprovalLineDto currentApproverLine = null;
@@ -258,10 +279,10 @@ public class ExpenseService {
         lineDto.setExpenseReportId(expenseId);
         lineDto.setApproverId(approverId);
         lineDto.setSignatureData(signatureData);
-        expenseMapper.updateApprovalLine(lineDto);
+        expenseMapper.updateApprovalLine(lineDto, companyId);
 
         // 5. 승인 처리 후 최신 결재 라인 상태 조회
-        List<ApprovalLineDto> updatedApprovalLines = expenseMapper.selectApprovalLines(expenseId);
+        List<ApprovalLineDto> updatedApprovalLines = expenseMapper.selectApprovalLines(expenseId, companyId);
 
         // 6. 모든 결재자가 승인되었는지 확인
         boolean allApproved = true;
@@ -274,7 +295,7 @@ public class ExpenseService {
 
         // 7. 모든 결재자가 승인되었으면 문서 상태를 APPROVED로 변경
         if (allApproved) {
-            expenseMapper.updateExpenseReportStatus(expenseId, "APPROVED");
+            expenseMapper.updateExpenseReportStatus(expenseId, "APPROVED", companyId);
         }
     }
 
@@ -283,8 +304,10 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void rejectExpense(Long expenseId, Long approverId, String rejectionReason) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
         // 1. 해당 문서의 모든 결재 라인 조회
-        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(expenseId);
+        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(expenseId, companyId);
 
         // 2. 현재 결재자의 순서 찾기
         ApprovalLineDto currentApproverLine = null;
@@ -305,10 +328,10 @@ public class ExpenseService {
         lineDto.setExpenseReportId(expenseId);
         lineDto.setApproverId(approverId);
         lineDto.setRejectionReason(rejectionReason);
-        expenseMapper.rejectApprovalLine(lineDto);
+        expenseMapper.rejectApprovalLine(lineDto, companyId);
 
         // 4. 문서 상태를 REJECTED로 변경
-        expenseMapper.updateExpenseReportStatus(expenseId, "REJECTED");
+        expenseMapper.updateExpenseReportStatus(expenseId, "REJECTED", companyId);
     }
     /**
      * 3. 기안서 생성 (저장) 로직
@@ -349,9 +372,9 @@ public class ExpenseService {
         }
         request.setTotalAmount(totalAmount);
 
-        // (0-4) 급여 카테고리는 ADMIN 또는 ACCOUNTANT만 사용 가능
-        if (hasSalary && !permissionUtil.isAdmin(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
-            throw new com.innersignature.backend.exception.BusinessException("급여 카테고리는 ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
+        // (0-4) 급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT만 사용 가능
+        if (hasSalary && !permissionUtil.isAdminOrCEO(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
         }
 
         // (0-4-1) 급여 카테고리인 경우 자동으로 비밀글 설정
@@ -361,9 +384,9 @@ public class ExpenseService {
             isSecret = true;
         }
 
-        // (0-4-2) 비밀글은 ADMIN 또는 ACCOUNTANT만 사용 가능
-        if (isSecret != null && isSecret && !permissionUtil.isAdmin(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
-            throw new com.innersignature.backend.exception.BusinessException("비밀글은 ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
+        // (0-4-2) 비밀글은 CEO, ADMIN 또는 ACCOUNTANT만 사용 가능
+        if (isSecret != null && isSecret && !permissionUtil.isAdminOrCEO(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("비밀글은 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
         }
 
         // (0-5) 급여이거나 비밀글인 경우 상태를 바로 PAID로 설정 (결재 없이 바로 지급완료)
@@ -373,6 +396,8 @@ public class ExpenseService {
 
         // (1) 메인 문서(제목, 작성자 등) 먼저 저장
         // 이 과정이 끝나야 문서 번호(ID)가 생성됩니다.
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        request.setCompanyId(companyId);
         expenseMapper.insertExpenseReport(request);
 
         // 방금 DB에 들어가면서 생성된 문서 번호(PK)를 꺼내옵니다.
@@ -384,6 +409,7 @@ public class ExpenseService {
             logger.debug("상세 항목 저장 시작 - 항목 수: {}", details.size());
             for (ExpenseDetailDto detail : details) {
                 detail.setExpenseReportId(newId); // "이 항목은 방금 만든 그 문서(newId) 꺼야"라고 연결
+                detail.setCompanyId(companyId);
                 expenseMapper.insertExpenseDetail(detail);
             }
             logger.debug("상세 항목 저장 완료");
@@ -409,7 +435,7 @@ public class ExpenseService {
 
             // 결제담당자가 없으면 ACCOUNTANT 역할의 첫 번째 사용자 추가
             if (!hasAccountant) {
-                List<UserDto> accountants = userService.selectUsersByRole("ACCOUNTANT");
+                List<UserDto> accountants = userService.selectUsersByRole("ACCOUNTANT", companyId);
                 if (!accountants.isEmpty()) {
                     ApprovalLineDto accountantLine = new ApprovalLineDto();
                     accountantLine.setApproverId(accountants.get(0).getUserId());
@@ -422,6 +448,7 @@ public class ExpenseService {
             logger.debug("결재 라인 저장 시작 - 라인 수: {}", lines.size());
             for (ApprovalLineDto line : lines) {
                 line.setExpenseReportId(newId); // "이 결재 라인도 그 문서(newId) 꺼야"라고 연결
+                line.setCompanyId(companyId);
                 expenseMapper.insertApprovalLine(line);
             }
             logger.debug("결재 라인 저장 완료");
@@ -441,6 +468,8 @@ public class ExpenseService {
      */
     @Transactional
     public void setApprovalLines(Long expenseReportId, List<ApprovalLineDto> approvalLines) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
         if (approvalLines == null) {
             approvalLines = new ArrayList<>();
         }
@@ -457,7 +486,7 @@ public class ExpenseService {
         
         // ACCOUNTANT가 없으면 추가
         if (!hasAccountant) {
-            List<UserDto> accountants = userService.selectUsersByRole("ACCOUNTANT");
+            List<UserDto> accountants = userService.selectUsersByRole("ACCOUNTANT", companyId);
             if (!accountants.isEmpty()) {
                 ApprovalLineDto accountantLine = new ApprovalLineDto();
                 accountantLine.setApproverId(accountants.get(0).getUserId());
@@ -492,6 +521,7 @@ public class ExpenseService {
                 line.setExpenseReportId(expenseReportId);
                 line.setStepOrder(stepOrder++);
                 line.setStatus("WAIT");
+                line.setCompanyId(companyId);
                 expenseMapper.insertApprovalLine(line);
             }
         }
@@ -503,8 +533,10 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateExpenseStatus(Long expenseReportId, Long userId, String status) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
         // 1. 변경할 문서 정보 조회
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId);
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
         if (report == null) {
             throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
         }
@@ -523,7 +555,7 @@ public class ExpenseService {
         }
 
         // 6. 상태 변경
-        expenseMapper.updateExpenseReportStatus(expenseReportId, status);
+        expenseMapper.updateExpenseReportStatus(expenseReportId, status, companyId);
     }
 
     /**
@@ -532,8 +564,10 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void deleteExpense(Long expenseReportId, Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
         // 1. 삭제할 문서 정보 조회
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId);
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
         if (report == null) {
             throw new com.innersignature.backend.exception.BusinessException("해당 문서를 찾을 수 없습니다.");
         }
@@ -542,7 +576,7 @@ public class ExpenseService {
         permissionUtil.checkDeletePermission(report, userId);
 
         // 3. 문서 삭제 (CASCADE DELETE로 관련 데이터도 함께 삭제됨)
-        expenseMapper.deleteExpenseReport(expenseReportId);
+        expenseMapper.deleteExpenseReport(expenseReportId, companyId);
     }
 
     /**
@@ -552,7 +586,8 @@ public class ExpenseService {
      * 급여 문서 권한 필터링
      */
     public List<ExpenseReportDto> getPendingApprovals(Long userId) {
-        List<ExpenseReportDto> list = expenseMapper.selectPendingApprovalsByUserId(userId);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        List<ExpenseReportDto> list = expenseMapper.selectPendingApprovalsByUserId(userId, companyId);
         filterSalaryExpenses(list, userId);
         filterTaxProcessingInfo(list, userId);
         return list;
@@ -564,8 +599,10 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void uploadReceipt(Long expenseReportId, Long userId, MultipartFile file) throws IOException {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
         // 1. 문서 정보 조회
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId);
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
         if (report == null) {
             throw new com.innersignature.backend.exception.BusinessException("해당 문서를 찾을 수 없습니다.");
         }
@@ -648,6 +685,7 @@ public class ExpenseService {
         receiptDto.setFileSize(file.getSize());
         receiptDto.setUploadedBy(userId);
         receiptDto.setUploadedAt(LocalDateTime.now());
+        receiptDto.setCompanyId(companyId);
         expenseMapper.insertReceipt(receiptDto);
 
         SecurityLogger.fileAccess("UPLOAD", userId, expenseReportId, sanitizedFilename);
@@ -693,34 +731,37 @@ public class ExpenseService {
      * 영수증 목록 조회
      */
     public List<ReceiptDto> getReceipts(Long expenseReportId, Long userId) {
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
         if (report == null) {
             throw new com.innersignature.backend.exception.BusinessException("해당 문서를 찾을 수 없습니다.");
         }
 
-        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(expenseReportId);
+        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(expenseReportId, companyId);
         if (!hasReceiptViewAccess(report, approvalLines, userId)) {
             throw new com.innersignature.backend.exception.BusinessException("영수증 조회 권한이 없습니다.");
         }
 
-        return expenseMapper.selectReceiptsByExpenseReportId(expenseReportId);
+        return expenseMapper.selectReceiptsByExpenseReportId(expenseReportId, companyId);
     }
 
     /**
      * 영수증 단건 조회
      */
     public ReceiptDto getReceiptById(Long receiptId, Long userId) {
-        ReceiptDto receipt = expenseMapper.selectReceiptById(receiptId);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        ReceiptDto receipt = expenseMapper.selectReceiptById(receiptId, companyId);
         if (receipt == null) {
             throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 영수증을 찾을 수 없습니다.");
         }
 
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(receipt.getExpenseReportId());
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(receipt.getExpenseReportId(), companyId);
         if (report == null) {
             throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
         }
 
-        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(report.getExpenseReportId());
+        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(report.getExpenseReportId(), companyId);
         if (!hasReceiptViewAccess(report, approvalLines, userId)) {
             throw new com.innersignature.backend.exception.BusinessException("영수증 조회 권한이 없습니다.");
         }
@@ -734,17 +775,19 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void deleteReceipt(Long receiptId, Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
         // 1. 영수증 정보 및 권한 검증
         ReceiptDto receipt = getReceiptById(receiptId, userId);
 
         // 2. 문서 정보 조회
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(receipt.getExpenseReportId());
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(receipt.getExpenseReportId(), companyId);
         if (report == null) {
             throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
         }
 
         // 3. 권한 체크: 작성자, ACCOUNTANT, ADMIN, 결재 라인 포함자
-        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(report.getExpenseReportId());
+        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(report.getExpenseReportId(), companyId);
         if (!hasReceiptAccess(report, approvalLines, userId)) {
             throw new com.innersignature.backend.exception.BusinessException("영수증 삭제 권한이 없습니다.");
         }
@@ -753,7 +796,7 @@ public class ExpenseService {
         String filePath = receipt.getFilePath();
         
         // 5-2. DB 레코드 삭제
-        expenseMapper.deleteReceipt(receiptId);
+        expenseMapper.deleteReceipt(receiptId, companyId);
         
         // 5-3. 물리적 파일 삭제
         if (filePath != null && !filePath.isEmpty()) {
@@ -784,7 +827,7 @@ public class ExpenseService {
         if (report.getDrafterId().equals(userId)) {
             return true;
         }
-        if (permissionUtil.isAccountant(userId) || permissionUtil.isAdmin(userId)) {
+        if (permissionUtil.isAccountant(userId) || permissionUtil.isAdminOrCEO(userId)) {
             return true;
         }
         if (approvalLines != null) {
@@ -822,7 +865,8 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("TAX_ACCOUNTANT 역할만 접근 가능합니다.");
         }
         
-        return expenseMapper.selectCategorySummary(startDate, endDate, statuses, taxProcessed, isSecret);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        return expenseMapper.selectCategorySummary(startDate, endDate, statuses, taxProcessed, isSecret, companyId);
     }
 
     /**
@@ -831,8 +875,10 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void completeTaxProcessing(Long expenseReportId, Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
         // 1. 변경할 문서 정보 조회
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId);
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
         if (report == null) {
             throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
         }
@@ -851,7 +897,7 @@ public class ExpenseService {
         }
 
         // 5. 세무처리 완료 처리
-        expenseMapper.updateTaxProcessed(expenseReportId, true, LocalDateTime.now());
+        expenseMapper.updateTaxProcessed(expenseReportId, true, LocalDateTime.now(), companyId);
     }
 
     /**
@@ -874,7 +920,9 @@ public class ExpenseService {
 
     /**
      * 급여 카테고리 또는 비밀글 포함 문서에 대한 권한 체크
-     * TAX_ACCOUNTANT 또는 작성자만 조회 가능
+     * TAX_ACCOUNTANT는 모든 문서 조회 가능
+     * CEO는 같은 회사의 모든 비밀글 조회 가능
+     * ADMIN은 본인이 작성한 비밀글만 조회 가능
      * 최적화: N+1 쿼리 문제 해결을 위해 배치 조회 사용
      */
     private void filterSalaryExpenses(List<ExpenseReportDto> reports, Long userId) {
@@ -892,6 +940,10 @@ public class ExpenseService {
             return;
         }
         
+        // CEO는 같은 회사의 모든 문서 조회 가능 (필터링 없음)
+        boolean isCEO = "CEO".equals(user.getRole());
+        Long userCompanyId = user.getCompanyId();
+        
         // 배치 조회: 모든 expense_report_id의 상세 항목을 한 번에 조회 (N+1 문제 해결)
         List<Long> expenseReportIds = reports.stream()
                 .map(ExpenseReportDto::getExpenseReportId)
@@ -902,29 +954,42 @@ public class ExpenseService {
         if (expenseReportIds.isEmpty()) {
             detailsMap = Collections.emptyMap();
         } else {
-            List<ExpenseDetailDto> allDetails = expenseMapper.selectExpenseDetailsBatch(expenseReportIds);
+            Long companyId = SecurityUtil.getCurrentCompanyId();
+            List<ExpenseDetailDto> allDetails = expenseMapper.selectExpenseDetailsBatch(expenseReportIds, companyId);
             detailsMap = allDetails.stream()
                     .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
         }
         
-        // 그 외의 경우, 본인이 작성한 급여/비밀글 문서만 조회 가능
-        reports.removeIf(report -> {
-            // 비밀글인지 확인
-            Boolean isSecret = report.getIsSecret();
-            boolean isSecretReport = isSecret != null && isSecret;
-            
-            // 급여 카테고리가 포함된 문서인지 확인 (메모리에서 조회 - 빠름)
-            List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
-            boolean hasSalary = hasSalaryCategory(details);
-            
-            // 급여인 경우 isSecret을 true로 설정
-            if (hasSalary) {
-                report.setIsSecret(true);
+        if (isCEO) {
+            // CEO는 같은 회사의 모든 문서 조회 가능 (필터링 없음)
+            // 급여 문서에 isSecret 표시만 추가
+            for (ExpenseReportDto report : reports) {
+                List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
+                boolean hasSalary = hasSalaryCategory(details);
+                if (hasSalary) {
+                    report.setIsSecret(true);
+                }
             }
-            
-            // 비밀글이거나 급여 문서이고, 작성자가 아니면 제거
-            return (isSecretReport || hasSalary) && !report.getDrafterId().equals(userId);
-        });
+        } else {
+            // 그 외의 경우 (ADMIN, USER), 본인이 작성한 급여/비밀글 문서만 조회 가능
+            reports.removeIf(report -> {
+                // 비밀글인지 확인
+                Boolean isSecret = report.getIsSecret();
+                boolean isSecretReport = isSecret != null && isSecret;
+                
+                // 급여 카테고리가 포함된 문서인지 확인 (메모리에서 조회 - 빠름)
+                List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
+                boolean hasSalary = hasSalaryCategory(details);
+                
+                // 급여인 경우 isSecret을 true로 설정
+                if (hasSalary) {
+                    report.setIsSecret(true);
+                }
+                
+                // 비밀글이거나 급여 문서이고, 작성자가 아니면 제거
+                return (isSecretReport || hasSalary) && !report.getDrafterId().equals(userId);
+            });
+        }
     }
 
     private void filterTaxProcessingInfo(List<ExpenseReportDto> reports, Long userId) {
@@ -945,12 +1010,13 @@ public class ExpenseService {
      * 권한 필터링 후 실제 조회 가능한 전체 개수 계산
      */
     private long calculateFilteredTotalElements(Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
         if (userId == null) {
-            return expenseMapper.countExpenseList();
+            return expenseMapper.countExpenseList(companyId);
         }
         
         // 전체 목록 조회 (페이지네이션 없이)
-        List<ExpenseReportDto> allReports = expenseMapper.selectExpenseList();
+        List<ExpenseReportDto> allReports = expenseMapper.selectExpenseList(companyId);
         
         // 권한 필터링 적용
         filterSalaryExpenses(allReports, userId);
@@ -973,11 +1039,12 @@ public class ExpenseService {
             String drafterName,
             Long userId) {
 
+        Long companyId = SecurityUtil.getCurrentCompanyId();
         if (userId == null) {
             return expenseMapper.countExpenseListWithFilters(
                     startDate, endDate, minAmount, maxAmount,
                     statuses, category, taxProcessed, isSecret,
-                    drafterName);
+                    drafterName, companyId);
         }
 
         // 필터링된 전체 목록 조회 (페이지네이션 없이, 큰 수로 설정)
@@ -986,7 +1053,7 @@ public class ExpenseService {
                 startDate, endDate,
                 minAmount, maxAmount,
                 statuses, category, taxProcessed, isSecret,
-                drafterName);
+                drafterName, companyId);
 
         // 권한 필터링 적용
         filterSalaryExpenses(allReports, userId);
@@ -998,28 +1065,32 @@ public class ExpenseService {
      * 대시보드 전체 요약 통계 조회
      */
     public DashboardStatsDto getDashboardStats(LocalDate startDate, LocalDate endDate) {
-        return expenseMapper.selectDashboardStats(startDate, endDate);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        return expenseMapper.selectDashboardStats(startDate, endDate, companyId);
     }
 
     /**
      * 월별 지출 추이 조회
      */
     public List<MonthlyTrendDto> getMonthlyTrend(LocalDate startDate, LocalDate endDate) {
-        return expenseMapper.selectMonthlyTrend(startDate, endDate);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        return expenseMapper.selectMonthlyTrend(startDate, endDate, companyId);
     }
 
     /**
      * 상태별 통계 조회
      */
     public List<StatusStatsDto> getStatusStats(LocalDate startDate, LocalDate endDate) {
-        return expenseMapper.selectStatusStats(startDate, endDate);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        return expenseMapper.selectStatusStats(startDate, endDate, companyId);
     }
 
     /**
      * 카테고리별 비율 조회 (비율 계산 포함)
      */
     public List<CategoryRatioDto> getCategoryRatio(LocalDate startDate, LocalDate endDate) {
-        List<CategoryRatioDto> ratios = expenseMapper.selectCategoryRatio(startDate, endDate);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        List<CategoryRatioDto> ratios = expenseMapper.selectCategoryRatio(startDate, endDate, companyId);
         
         // 전체 금액 계산
         long totalAmount = ratios.stream()
@@ -1041,21 +1112,24 @@ public class ExpenseService {
      * 세무처리 대기 건 조회 (PAID 상태이지만 taxProcessed=false)
      */
     public List<ExpenseReportDto> getTaxPendingReports(LocalDate startDate, LocalDate endDate) {
-        return expenseMapper.selectTaxPendingReports(startDate, endDate);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        return expenseMapper.selectTaxPendingReports(startDate, endDate, companyId);
     }
 
     /**
      * 세무처리 현황 통계 조회
      */
     public TaxStatusDto getTaxStatus(LocalDate startDate, LocalDate endDate) {
-        return expenseMapper.selectTaxStatus(startDate, endDate);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        return expenseMapper.selectTaxStatus(startDate, endDate, companyId);
     }
 
     /**
      * 월별 세무처리 집계 조회
      */
     public List<MonthlyTaxSummaryDto> getMonthlyTaxSummary(LocalDate startDate, LocalDate endDate) {
-        return expenseMapper.selectMonthlyTaxSummary(startDate, endDate);
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        return expenseMapper.selectMonthlyTaxSummary(startDate, endDate, companyId);
     }
 
     /**
@@ -1063,11 +1137,13 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void batchCompleteTaxProcessing(List<Long> expenseReportIds, Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
         // 권한 체크: TAX_ACCOUNTANT 권한자만 처리 가능
         permissionUtil.checkTaxAccountantPermission(userId);
 
         for (Long expenseReportId : expenseReportIds) {
-            ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId);
+            ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
             if (report == null) {
                 logger.warn("세무처리 일괄 완료: 문서를 찾을 수 없음 - expenseId: {}", expenseReportId);
                 continue;
@@ -1076,9 +1152,181 @@ public class ExpenseService {
             // PAID 상태이고 아직 세무처리 완료되지 않은 경우만 처리
             if ("PAID".equals(report.getStatus()) && 
                 (report.getTaxProcessed() == null || !report.getTaxProcessed())) {
-                expenseMapper.updateTaxProcessed(expenseReportId, true, LocalDateTime.now());
+                expenseMapper.updateTaxProcessed(expenseReportId, true, LocalDateTime.now(), companyId);
                 logger.info("세무처리 일괄 완료 처리 - expenseId: {}, userId: {}", expenseReportId, userId);
             }
         }
+    }
+
+    /**
+     * 기간별 지출 데이터를 엑셀 파일로 생성
+     * @param startDate 시작일 (optional)
+     * @param endDate 종료일 (optional)
+     * @param userId 현재 사용자 ID (권한 필터링용)
+     * @return 생성된 엑셀 파일
+     * @throws IOException 파일 생성 실패 시
+     */
+    public File exportExpensesToExcel(LocalDate startDate, LocalDate endDate, Long userId) throws IOException {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        // 기간별 지출결의서 목록 조회 (페이지네이션 없이 전체)
+        List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
+                0, Integer.MAX_VALUE,
+                startDate, endDate,
+                null, null, null, null, null, null, null,
+                companyId);
+        
+        // 권한 필터링 적용
+        filterSalaryExpenses(expenseReports, userId);
+        
+        // 각 지출결의서의 상세 내역 조회
+        List<Long> expenseReportIds = expenseReports.stream()
+                .map(ExpenseReportDto::getExpenseReportId)
+                .collect(Collectors.toList());
+        
+        Map<Long, List<ExpenseDetailDto>> detailsMap = new HashMap<>();
+        if (!expenseReportIds.isEmpty()) {
+            List<ExpenseDetailDto> allDetails = expenseMapper.selectExpenseDetailsBatch(expenseReportIds, companyId);
+            detailsMap = allDetails.stream()
+                    .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
+        }
+        
+        // 엑셀 파일 생성
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("지출내역");
+        
+        // 헤더 스타일
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setFontHeightInPoints((short) 12);
+        headerStyle.setFont(headerFont);
+        headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        headerStyle.setBorderBottom(BorderStyle.THIN);
+        headerStyle.setBorderTop(BorderStyle.THIN);
+        headerStyle.setBorderLeft(BorderStyle.THIN);
+        headerStyle.setBorderRight(BorderStyle.THIN);
+        
+        // 데이터 스타일
+        CellStyle dataStyle = workbook.createCellStyle();
+        dataStyle.setBorderBottom(BorderStyle.THIN);
+        dataStyle.setBorderTop(BorderStyle.THIN);
+        dataStyle.setBorderLeft(BorderStyle.THIN);
+        dataStyle.setBorderRight(BorderStyle.THIN);
+        
+        // 헤더 행 생성
+        Row headerRow = sheet.createRow(0);
+        String[] headers = {"문서번호", "작성일", "제목", "작성자", "상태", "총액", "항목", "적요", "금액", "비고"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+        
+        // 데이터 행 생성
+        int rowNum = 1;
+        for (ExpenseReportDto report : expenseReports) {
+            List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
+            
+            if (details.isEmpty()) {
+                // 상세 내역이 없는 경우
+                Row row = sheet.createRow(rowNum++);
+                createDataRow(row, report, null, 0, dataStyle);
+            } else {
+                // 상세 내역이 있는 경우
+                for (int i = 0; i < details.size(); i++) {
+                    Row row = sheet.createRow(rowNum++);
+                    createDataRow(row, report, details.get(i), i, dataStyle);
+                }
+            }
+        }
+        
+        // 열 너비 자동 조정
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+        }
+        
+        // 임시 파일로 저장
+        File tempFile = File.createTempFile("expense_export_", ".xlsx");
+        try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
+            workbook.write(outputStream);
+        }
+        workbook.close();
+        
+        logger.info("엑셀 파일 생성 완료 - 파일명: {}, 건수: {}", tempFile.getName(), expenseReports.size());
+        
+        return tempFile;
+    }
+
+    /**
+     * 엑셀 데이터 행 생성 헬퍼 메서드
+     */
+    private void createDataRow(Row row, ExpenseReportDto report, ExpenseDetailDto detail, int detailIndex, CellStyle dataStyle) {
+        int colNum = 0;
+        
+        // 문서번호
+        if (detailIndex == 0) {
+            Cell cell1 = row.createCell(colNum++);
+            cell1.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
+            cell1.setCellStyle(dataStyle);
+            
+            // 작성일
+            Cell cell2 = row.createCell(colNum++);
+            if (report.getReportDate() != null) {
+                cell2.setCellValue(report.getReportDate().toString());
+            } else {
+                cell2.setCellValue("");
+            }
+            cell2.setCellStyle(dataStyle);
+            
+            // 제목
+            Cell cell3 = row.createCell(colNum++);
+            cell3.setCellValue(report.getTitle() != null ? report.getTitle() : "");
+            cell3.setCellStyle(dataStyle);
+            
+            // 작성자
+            Cell cell4 = row.createCell(colNum++);
+            cell4.setCellValue(report.getDrafterName() != null ? report.getDrafterName() : "");
+            cell4.setCellStyle(dataStyle);
+            
+            // 상태
+            Cell cell5 = row.createCell(colNum++);
+            cell5.setCellValue(report.getStatus() != null ? report.getStatus() : "");
+            cell5.setCellStyle(dataStyle);
+            
+            // 총액
+            Cell cell6 = row.createCell(colNum++);
+            cell6.setCellValue(report.getTotalAmount() != null ? report.getTotalAmount() : 0);
+            cell6.setCellStyle(dataStyle);
+        } else {
+            // 병합된 셀은 비워둠
+            for (int i = 0; i < 6; i++) {
+                Cell cell = row.createCell(colNum++);
+                cell.setCellValue("");
+                cell.setCellStyle(dataStyle);
+            }
+        }
+        
+        // 항목
+        Cell cell7 = row.createCell(colNum++);
+        cell7.setCellValue(detail != null && detail.getCategory() != null ? detail.getCategory() : "");
+        cell7.setCellStyle(dataStyle);
+        
+        // 적요
+        Cell cell8 = row.createCell(colNum++);
+        cell8.setCellValue(detail != null && detail.getDescription() != null ? detail.getDescription() : "");
+        cell8.setCellStyle(dataStyle);
+        
+        // 금액
+        Cell cell9 = row.createCell(colNum++);
+        cell9.setCellValue(detail != null && detail.getAmount() != null ? detail.getAmount() : 0);
+        cell9.setCellStyle(dataStyle);
+        
+        // 비고
+        Cell cell10 = row.createCell(colNum++);
+        cell10.setCellValue(detail != null && detail.getNote() != null ? detail.getNote() : "");
+        cell10.setCellStyle(dataStyle);
     }
 }

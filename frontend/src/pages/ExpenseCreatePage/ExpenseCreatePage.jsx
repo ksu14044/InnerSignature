@@ -222,8 +222,8 @@ const ExpenseCreatePage = () => {
             <S.Value>{user?.koreanName || '로딩중...'}</S.Value>
           </S.InputGroup>
 
-          {/* ADMIN 또는 ACCOUNTANT만 비밀글 설정 가능 */}
-          {(user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT') && (
+          {/* CEO, ADMIN 또는 ACCOUNTANT만 비밀글 설정 가능 */}
+          {(user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT') && (
             <S.InputGroup>
               <S.Label>
                 <input

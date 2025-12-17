@@ -113,7 +113,7 @@ export const Input = styled.input`
   }
 `;
 
-export const SubmitButton = styled.button`
+export const SubmitButtonBase = styled.button`
   width: 100%;
   display: flex;
   align-items: center;
@@ -292,5 +292,138 @@ export const CancelButton = styled.button`
 
   @media (max-width: 480px) {
     padding: 16px 20px;
+  }
+`;
+
+export const RadioGroup = styled.div`
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 12px;
+  }
+`;
+
+export const RadioLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  
+  input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  
+  span {
+    font-size: 14px;
+    color: var(--dark-color);
+  }
+`;
+
+export const SearchButton = styled.button`
+  padding: 12px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background-color: var(--primary-hover);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+export const CompanyList = styled.div`
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-top: 8px;
+`;
+
+export const CompanyItem = styled.div`
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+  border-bottom: 1px solid var(--border-color);
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:hover {
+    background-color: var(--light-color);
+  }
+  
+  ${props => props.selected && `
+    background-color: rgba(0, 123, 255, 0.1);
+    border-left: 3px solid var(--primary-color);
+  `}
+`;
+
+export const CompanyMessage = styled.div`
+  padding: 12px;
+  color: #666;
+  font-size: 14px;
+  text-align: center;
+  margin-top: 8px;
+`;
+
+export const SelectedCompany = styled.div`
+  padding: 12px;
+  background-color: rgba(0, 123, 255, 0.1);
+  border-radius: 8px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--dark-color);
+`;
+
+export const CompanySearchButton = styled.button`
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  
+  &:hover {
+    border-color: #007bff;
+    background-color: #f8f9ff;
+  }
+  
+  span {
+    flex: 1;
+    text-align: left;
+    color: ${props => props.hasValue ? '#333' : '#999'};
+  }
+`;
+
+export const SubmitButton = styled(CancelButton)`
+  background-color: var(--primary-color);
+  
+  &:hover {
+    background-color: var(--primary-hover);
   }
 `;

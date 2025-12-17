@@ -10,5 +10,6 @@ public class PasswordResetTokenDto {
     private String token;
     private LocalDateTime expiresAt;
     private LocalDateTime createdAt;
+    private Long companyId; // 회사 ID (nullable)
 }
 

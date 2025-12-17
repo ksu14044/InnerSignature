@@ -264,3 +264,22 @@ export const ConfirmButtons = styled.div`
   gap: 12px;
 `;
 
+export const RoleSelect = styled.select`
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover:not(:disabled) {
+    border-color: var(--primary-color);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+

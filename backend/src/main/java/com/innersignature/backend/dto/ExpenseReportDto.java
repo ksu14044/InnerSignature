@@ -29,6 +29,7 @@ public class ExpenseReportDto {
     private Boolean taxProcessed;      // 세무처리 완료 여부
     private LocalDateTime taxProcessedAt; // 세무처리 완료 일시
     private Boolean isSecret;           // 비밀글 여부
+    private Long companyId;            // 회사 ID
 
     // --- 화면 보여주기용 추가 필드 ---
     private String drafterName;   // 작성자 이름 (김신입)

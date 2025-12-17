@@ -10,6 +10,7 @@
             u.korean_name AS drafterName 
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
+        WHERE r.company_id = #{companyId}
         ORDER BY r.expense_report_id DESC
     </select>
 
@@ -19,6 +20,7 @@
             u.korean_name AS drafterName 
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
+        WHERE r.company_id = #{companyId}
         ORDER BY r.expense_report_id DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
@@ -27,6 +29,7 @@
         SELECT COUNT(*)
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
+        WHERE r.company_id = #{companyId}
     </select>
 
     <select id="selectExpenseListWithFilters" resultType="com.innersignature.backend.dto.ExpenseReportDto">
@@ -36,6 +39,7 @@
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         <where>
+            r.company_id = #{companyId}
             <if test="startDate != null">
                 AND r.report_date &gt;= #{startDate}
             </if>
@@ -80,6 +84,7 @@
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         <where>
+            r.company_id = #{companyId}
             <if test="startDate != null">
                 AND r.report_date &gt;= #{startDate}
             </if>
@@ -127,6 +132,7 @@
         FROM expense_detail_tb d
         JOIN expense_report_tb r ON d.expense_report_id = r.expense_report_id
         <where>
+            r.company_id = #{companyId}
             <if test="startDate != null">
                 AND r.report_date &gt;= #{startDate}
             </if>
@@ -157,17 +163,20 @@
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         WHERE r.expense_report_id = #{expenseReportId}
+        AND r.company_id = #{companyId}
     </select>
 
     <select id="selectExpenseDetails" resultType="com.innersignature.backend.dto.ExpenseDetailDto">
         SELECT * FROM expense_detail_tb
         WHERE expense_report_id = #{expenseReportId}
+        AND company_id = #{companyId}
     </select>
 
     <!-- 배치 조회: 여러 expense_report_id의 상세 항목을 한 번에 조회 -->
     <select id="selectExpenseDetailsBatch" resultType="com.innersignature.backend.dto.ExpenseDetailDto">
         SELECT * FROM expense_detail_tb
-        WHERE expense_report_id IN
+        WHERE company_id = #{companyId}
+        AND expense_report_id IN
         <foreach collection="expenseReportIds" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -182,6 +191,7 @@
         FROM approval_line_tb al
         JOIN user_tb u ON al.approver_id = u.user_id
         WHERE al.expense_report_id = #{expenseReportId}
+        AND al.company_id = #{companyId}
         ORDER BY al.step_order ASC
     </select>
 
@@ -189,28 +199,31 @@
         UPDATE approval_line_tb
         SET
             status = 'APPROVED',
-            signature_data = #{signatureData},
+            signature_data = #{approvalLineDto.signatureData},
             approval_date = NOW()
         WHERE
-            expense_report_id = #{expenseReportId}
-            AND approver_id = #{approverId}
+            expense_report_id = #{approvalLineDto.expenseReportId}
+            AND approver_id = #{approvalLineDto.approverId}
+            AND company_id = #{companyId}
     </update>
 
     <update id="rejectApprovalLine">
         UPDATE approval_line_tb
         SET
             status = 'REJECTED',
-            rejection_reason = #{rejectionReason},
+            rejection_reason = #{approvalLineDto.rejectionReason},
             approval_date = NOW()
         WHERE
-            expense_report_id = #{expenseReportId}
-            AND approver_id = #{approverId}
+            expense_report_id = #{approvalLineDto.expenseReportId}
+            AND approver_id = #{approvalLineDto.approverId}
+            AND company_id = #{companyId}
     </update>
 
     <update id="updateExpenseReportStatus">
         UPDATE expense_report_tb
         SET status = #{status}
         WHERE expense_report_id = #{expenseReportId}
+        AND company_id = #{companyId}
     </update>
 
     <insert id="insertExpenseReport" useGeneratedKeys="true" keyProperty="expenseReportId">
@@ -221,7 +234,8 @@
             total_amount,
             status,
             payment_req_date,
-            is_secret
+            is_secret,
+            company_id
         ) VALUES (
             #{drafterId},
             #{reportDate},
@@ -229,7 +243,8 @@
             #{totalAmount},
             #{status, jdbcType=VARCHAR},
             #{paymentReqDate},
-            #{isSecret, jdbcType=TINYINT}
+            #{isSecret, jdbcType=TINYINT},
+            #{companyId}
         )
     </insert>
 
@@ -239,13 +254,15 @@
             category,
             description,
             amount,
-            note
+            note,
+            company_id
         ) VALUES (
             #{expenseReportId},
             #{category},
             #{description},
             #{amount},
-            #{note}
+            #{note},
+            #{companyId}
         )
     </insert>
 
@@ -257,7 +274,8 @@
             status,
             approval_date,
             signature_data,
-            rejection_reason
+            rejection_reason,
+            company_id
         ) VALUES (
             #{expenseReportId},
             #{approverId},
@@ -265,13 +283,15 @@
             #{status, jdbcType=VARCHAR},
             #{approvalDate},
             #{signatureData},
-            #{rejectionReason}
+            #{rejectionReason},
+            #{companyId}
         )
     </insert>
 
     <delete id="deleteExpenseReport">
         DELETE FROM expense_report_tb
         WHERE expense_report_id = #{expenseReportId}
+        AND company_id = #{companyId}
     </delete>
 
     <select id="selectPendingApprovalsByUserId" resultType="com.innersignature.backend.dto.ExpenseReportDto">
@@ -284,6 +304,7 @@
         WHERE al.approver_id = #{userId}
           AND al.status = 'WAIT'
           AND r.status != 'REJECTED'
+          AND r.company_id = #{companyId}
         ORDER BY r.expense_report_id DESC
     </select>
 
@@ -295,6 +316,7 @@
         FROM receipt_tb r
         JOIN user_tb u ON r.uploaded_by = u.user_id
         WHERE r.expense_report_id = #{expenseReportId}
+        AND r.company_id = #{companyId}
         ORDER BY r.uploaded_at DESC
     </select>
 
@@ -306,14 +328,16 @@
             original_filename,
             file_size,
             uploaded_by,
-            uploaded_at
+            uploaded_at,
+            company_id
         ) VALUES (
             #{expenseReportId},
             #{filePath},
             #{originalFilename},
             #{fileSize},
             #{uploadedBy},
-            #{uploadedAt}
+            #{uploadedAt},
+            #{companyId}
         )
     </insert>
 
@@ -321,6 +345,7 @@
     <delete id="deleteReceipt">
         DELETE FROM receipt_tb
         WHERE receipt_id = #{receiptId}
+        AND company_id = #{companyId}
     </delete>
 
     <!-- 영수증 조회 (단건) -->
@@ -331,6 +356,7 @@
         FROM receipt_tb r
         JOIN user_tb u ON r.uploaded_by = u.user_id
         WHERE r.receipt_id = #{receiptId}
+        AND r.company_id = #{companyId}
     </select>
 
     <!-- 세무처리 완료 업데이트 -->
@@ -339,6 +365,7 @@
         SET tax_processed = #{taxProcessed},
             tax_processed_at = #{taxProcessedAt}
         WHERE expense_report_id = #{expenseReportId}
+        AND company_id = #{companyId}
     </update>
 
     <!-- 대시보드 전체 요약 통계 조회 -->
@@ -352,6 +379,7 @@
             SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) AS pendingCount
         FROM expense_report_tb
         <where>
+            company_id = #{companyId}
             <if test="startDate != null">
                 AND report_date &gt;= #{startDate}
             </if>
@@ -369,6 +397,7 @@
             COUNT(*) AS count
         FROM expense_report_tb
         <where>
+            company_id = #{companyId}
             <if test="startDate != null">
                 AND report_date &gt;= #{startDate}
             </if>
@@ -388,6 +417,7 @@
             COALESCE(SUM(total_amount), 0) AS totalAmount
         FROM expense_report_tb
         <where>
+            company_id = #{companyId}
             <if test="startDate != null">
                 AND report_date &gt;= #{startDate}
             </if>
@@ -408,6 +438,7 @@
         FROM expense_detail_tb d
         JOIN expense_report_tb r ON d.expense_report_id = r.expense_report_id
         <where>
+            r.company_id = #{companyId}
             <if test="startDate != null">
                 AND r.report_date &gt;= #{startDate}
             </if>
@@ -428,6 +459,7 @@
         JOIN user_tb u ON r.drafter_id = u.user_id
         WHERE r.status = 'PAID' 
           AND (r.tax_processed = 0 OR r.tax_processed IS NULL)
+          AND r.company_id = #{companyId}
         <if test="startDate != null">
             AND r.report_date &gt;= #{startDate}
         </if>
@@ -453,6 +485,7 @@
             COALESCE(SUM(CASE WHEN tax_processed = 1 THEN total_amount ELSE 0 END), 0) AS completedAmount
         FROM expense_report_tb
         WHERE status = 'PAID'
+        AND company_id = #{companyId}
         <if test="startDate != null">
             AND report_date &gt;= #{startDate}
         </if>
@@ -470,6 +503,7 @@
             COALESCE(SUM(CASE WHEN tax_processed = 1 THEN total_amount ELSE 0 END), 0) AS completedAmount
         FROM expense_report_tb
         WHERE status = 'PAID'
+        AND company_id = #{companyId}
         <if test="startDate != null">
             AND report_date &gt;= #{startDate}
         </if>

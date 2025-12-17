@@ -43,9 +43,14 @@ public class UserService {
      * @return 등록 성공 시 1, 실패 시 0
      */
     public int register(UserDto userDto) {
-        // 이메일 중복 체크 (이메일이 제공된 경우)
+        // 빈 문자열 이메일을 NULL로 변환 (UNIQUE 제약 조건 문제 방지)
+        if (userDto.getEmail() != null && userDto.getEmail().trim().isEmpty()) {
+            userDto.setEmail(null);
+        }
+        
+        // 이메일 중복 체크 (이메일이 제공된 경우, companyId 고려)
         if (userDto.getEmail() != null && !userDto.getEmail().isEmpty()) {
-            if (userMapper.isEmailExists(userDto.getEmail())) {
+            if (userMapper.isEmailExists(userDto.getEmail(), userDto.getCompanyId())) {
                 throw new BusinessException("이미 사용 중인 이메일입니다.");
             }
         }
@@ -58,21 +63,21 @@ public class UserService {
     }
 
     /**
-     * 사용자명 존재 여부 확인
+     * 사용자명 존재 여부 확인 (전역 검색)
      * @param username 사용자명
      * @return 존재하면 true, 없으면 false
      */
     public boolean isUsernameExists(String username) {
-        UserDto user = userMapper.findByUsername(username);
-        return user != null;
+        return userMapper.isUsernameExists(username, null);
     }
 
     /**
-     * ADMIN 권한을 가진 사용자 목록 조회
-     * @return ADMIN 사용자 목록
+     * ADMIN 권한을 가진 사용자 목록 조회 (특정 회사의 ADMIN만 조회)
+     * @param companyId 회사 ID
+     * @return 해당 회사의 ADMIN 사용자 목록
      */
-    public List<UserDto> findAdminUsers() {
-        return userMapper.findAdminUsers();
+    public List<UserDto> findAdminUsers(Long companyId) {
+        return userMapper.findAdminUsers(companyId);
     }
 
     /**
@@ -85,12 +90,13 @@ public class UserService {
     }
 
     /**
-     * 역할별 사용자 목록 조회
+     * 역할별 사용자 목록 조회 (특정 회사의 사용자만 조회)
      * @param role 사용자 역할
-     * @return 해당 역할의 사용자 목록
+     * @param companyId 회사 ID
+     * @return 해당 회사의 해당 역할의 사용자 목록
      */
-    public List<UserDto> selectUsersByRole(String role) {
-        return userMapper.selectUsersByRole(role);
+    public List<UserDto> selectUsersByRole(String role, Long companyId) {
+        return userMapper.selectUsersByRole(role, companyId);
     }
 
     /**
@@ -102,12 +108,25 @@ public class UserService {
     }
 
     /**
+     * 회사별 사용자 목록 조회
+     * @param companyId 회사 ID
+     * @return 해당 회사의 사용자 목록
+     */
+    public List<UserDto> getUsersByCompanyId(Long companyId) {
+        return userMapper.selectUsersByCompanyId(companyId);
+    }
+
+    /**
      * 사용자 정보 수정
      * @param userDto 수정할 사용자 정보
      * @param operatorId 작업 수행자 ID
      * @return 수정 성공 시 1, 실패 시 0
      */
     public int updateUser(UserDto userDto, Long operatorId) {
+        // 빈 문자열 이메일을 NULL로 변환 (UNIQUE 제약 조건 문제 방지)
+        if (userDto.getEmail() != null && userDto.getEmail().trim().isEmpty()) {
+            userDto.setEmail(null);
+        }
         // 사용자 존재 확인
         UserDto existingUser = userMapper.selectUserById(userDto.getUserId());
         if (existingUser == null) {
@@ -186,9 +205,9 @@ public class UserService {
             throw new BusinessException("이미 존재하는 사용자명입니다.");
         }
 
-        // 이메일 중복 체크 (이메일이 제공된 경우)
+        // 이메일 중복 체크 (이메일이 제공된 경우, companyId 고려)
         if (userDto.getEmail() != null && !userDto.getEmail().isEmpty()) {
-            if (userMapper.isEmailExists(userDto.getEmail())) {
+            if (userMapper.isEmailExists(userDto.getEmail(), userDto.getCompanyId())) {
                 throw new BusinessException("이미 사용 중인 이메일입니다.");
             }
         }
@@ -253,15 +272,16 @@ public class UserService {
     }
 
     /**
-     * 이메일 존재 여부 확인
+     * 이메일 존재 여부 확인 (companyId 고려)
      * @param email 이메일 주소
+     * @param companyId 회사 ID (null이면 전역 검색)
      * @return 존재하면 true, 없으면 false
      */
-    public boolean isEmailExists(String email) {
+    public boolean isEmailExists(String email, Long companyId) {
         if (email == null || email.isEmpty()) {
             return false;
         }
-        return userMapper.isEmailExists(email);
+        return userMapper.isEmailExists(email, companyId);
     }
 
     /**
@@ -287,5 +307,119 @@ public class UserService {
             return null;
         }
         return userMapper.findByEmail(email);
+    }
+    
+    /**
+     * 사용자를 회사에 할당
+     * @param userId 사용자 ID
+     * @param companyId 회사 ID
+     * @return 할당 성공 시 1, 실패 시 0
+     */
+    public int assignToCompany(Long userId, Long companyId) {
+        UserDto user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new BusinessException("사용자를 찾을 수 없습니다.");
+        }
+        
+        user.setCompanyId(companyId);
+        return userMapper.updateUser(user);
+    }
+    
+    /**
+     * 사용자 role 변경 (CEO, ADMIN 전용)
+     * @param userId 변경할 사용자 ID
+     * @param newRole 새로운 role
+     * @param operatorId 작업 수행자 ID (CEO 또는 ADMIN)
+     * @return 변경 성공 시 1, 실패 시 0
+     */
+    public int updateUserRole(Long userId, String newRole, Long operatorId) {
+        // 사용자 존재 확인
+        UserDto user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new BusinessException("사용자를 찾을 수 없습니다.");
+        }
+        
+        // 작업 수행자가 CEO 또는 ADMIN인지 확인
+        UserDto operator = userMapper.selectUserById(operatorId);
+        if (operator == null || (!"CEO".equals(operator.getRole()) && !"ADMIN".equals(operator.getRole()))) {
+            throw new BusinessException("CEO 또는 ADMIN 권한이 필요합니다.");
+        }
+        
+        // 같은 회사의 사용자인지 확인
+        if (user.getCompanyId() == null || !user.getCompanyId().equals(operator.getCompanyId())) {
+            throw new BusinessException("같은 회사의 사용자만 role을 변경할 수 있습니다.");
+        }
+        
+        // role 검증 (USER, ADMIN, ACCOUNTANT, TAX_ACCOUNTANT만 변경 가능, CEO는 변경 불가)
+        if (!"USER".equals(newRole) && !"ADMIN".equals(newRole) && !"ACCOUNTANT".equals(newRole) && !"TAX_ACCOUNTANT".equals(newRole)) {
+            throw new BusinessException("올바른 role을 선택해주세요. (USER, ADMIN, ACCOUNTANT, TAX_ACCOUNTANT)");
+        }
+        
+        // 자기 자신의 role 변경 방지
+        if (userId.equals(operatorId)) {
+            throw new BusinessException("자기 자신의 role을 변경할 수 없습니다.");
+        }
+        
+        user.setRole(newRole);
+        return userMapper.updateUser(user);
+    }
+    
+    /**
+     * 승인 대기 사용자 목록 조회
+     * @param companyId 회사 ID
+     * @return 승인 대기 사용자 목록
+     */
+    public List<UserDto> findPendingUsers(Long companyId) {
+        return userMapper.findPendingUsers(companyId);
+    }
+    
+    /**
+     * 사용자 승인
+     * @param userId 승인할 사용자 ID
+     * @param operatorId 작업 수행자 ID (CEO 또는 ADMIN)
+     */
+    public void approveUser(Long userId, Long operatorId) {
+        UserDto user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new BusinessException("사용자를 찾을 수 없습니다.");
+        }
+        
+        UserDto operator = userMapper.selectUserById(operatorId);
+        if (operator == null || (!"CEO".equals(operator.getRole()) && !"ADMIN".equals(operator.getRole()))) {
+            throw new BusinessException("승인 권한이 없습니다.");
+        }
+        
+        if (user.getCompanyId() == null || !user.getCompanyId().equals(operator.getCompanyId())) {
+            throw new BusinessException("같은 회사의 사용자만 승인할 수 있습니다.");
+        }
+        
+        user.setApprovalStatus("APPROVED");
+        user.setIsActive(true);
+        userMapper.updateUser(user);
+    }
+    
+    /**
+     * 사용자 거부
+     * @param userId 거부할 사용자 ID
+     * @param operatorId 작업 수행자 ID (CEO 또는 ADMIN)
+     */
+    public void rejectUser(Long userId, Long operatorId) {
+        UserDto user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new BusinessException("사용자를 찾을 수 없습니다.");
+        }
+        
+        UserDto operator = userMapper.selectUserById(operatorId);
+        if (operator == null || (!"CEO".equals(operator.getRole()) && !"ADMIN".equals(operator.getRole()))) {
+            throw new BusinessException("거부 권한이 없습니다.");
+        }
+        
+        if (user.getCompanyId() == null || !user.getCompanyId().equals(operator.getCompanyId())) {
+            throw new BusinessException("같은 회사의 사용자만 거부할 수 있습니다.");
+        }
+        
+        user.setApprovalStatus("REJECTED");
+        user.setIsActive(false);
+        userMapper.updateUser(user);
     }
 }

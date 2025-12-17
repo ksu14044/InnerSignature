@@ -31,8 +31,13 @@ CREATE TABLE `user_tb` (
   `position` varchar(50) DEFAULT NULL COMMENT '직급 (사원, 대리, 전무, 대표)',
   `role` varchar(20) NOT NULL COMMENT '권한 (USER, ADMIN, ACCOUNTANT)',
   `is_active` tinyint(1) DEFAULT '1' COMMENT '활성화 상태',
+  `company_id` bigint DEFAULT NULL COMMENT '회사 ID (company_tb FK)',
   PRIMARY KEY (`user_id`),
-  UNIQUE KEY `idx_email` (`email`)
+  UNIQUE KEY `idx_email` (`email`),
+  UNIQUE KEY `idx_company_username` (`company_id`, `username`),
+  UNIQUE KEY `idx_company_email` (`company_id`, `email`),
+  KEY `idx_company_id` (`company_id`),
+  CONSTRAINT `user_tb_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `company_tb` (`company_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='사원 정보 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 

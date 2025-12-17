@@ -16,38 +16,27 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `password_reset_token_tb`
+-- Table structure for table `company_tb`
 --
 
-DROP TABLE IF EXISTS `password_reset_token_tb`;
+DROP TABLE IF EXISTS `company_tb`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `password_reset_token_tb` (
-  `token_id` bigint NOT NULL AUTO_INCREMENT COMMENT '토큰 고유 ID',
-  `user_id` bigint NOT NULL COMMENT '사용자 ID (user_tb FK)',
-  `token` varchar(255) NOT NULL COMMENT '재설정 토큰 (UUID)',
-  `expires_at` datetime NOT NULL COMMENT '만료 시간',
+CREATE TABLE `company_tb` (
+  `company_id` bigint NOT NULL AUTO_INCREMENT COMMENT '회사 고유 ID',
+  `company_code` varchar(10) NOT NULL COMMENT '회사 코드 (6자리 영숫자, 자동 생성)',
+  `company_name` varchar(100) NOT NULL COMMENT '회사명',
+  `created_by` bigint DEFAULT NULL COMMENT '회사를 등록한 ADMIN의 user_id',
+  `is_active` tinyint(1) DEFAULT '1' COMMENT '활성화 상태',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
-  `company_id` bigint DEFAULT NULL COMMENT '회사 ID (company_tb FK)',
-  PRIMARY KEY (`token_id`),
-  UNIQUE KEY `idx_token` (`token`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_expires_at` (`expires_at`),
-  KEY `idx_company_id` (`company_id`),
-  KEY `idx_company_token` (`company_id`, `token`),
-  CONSTRAINT `password_reset_token_tb_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user_tb` (`user_id`) ON DELETE CASCADE,
-  CONSTRAINT `password_reset_token_tb_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `company_tb` (`company_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='비밀번호 재설정 토큰 테이블';
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
+  PRIMARY KEY (`company_id`),
+  UNIQUE KEY `idx_company_code` (`company_code`),
+  KEY `idx_created_by` (`created_by`),
+  CONSTRAINT `company_tb_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `user_tb` (`user_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='회사 정보 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `password_reset_token_tb`
---
-
-LOCK TABLES `password_reset_token_tb` WRITE;
-/*!40000 ALTER TABLE `password_reset_token_tb` DISABLE KEYS */;
-/*!40000 ALTER TABLE `password_reset_token_tb` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -58,4 +47,3 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-12-12 11:50:05

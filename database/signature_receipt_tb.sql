@@ -30,11 +30,15 @@ CREATE TABLE `receipt_tb` (
   `file_size` bigint DEFAULT NULL COMMENT '파일 크기 (bytes)',
   `uploaded_by` bigint NOT NULL COMMENT '업로드한 사용자 ID (user_tb FK)',
   `uploaded_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '업로드 시간',
+  `company_id` bigint NOT NULL COMMENT '회사 ID (company_tb FK)',
   PRIMARY KEY (`receipt_id`),
   KEY `expense_report_id` (`expense_report_id`),
   KEY `uploaded_by` (`uploaded_by`),
+  KEY `idx_company_id` (`company_id`),
+  KEY `idx_company_expense_report` (`company_id`, `expense_report_id`),
   CONSTRAINT `receipt_tb_ibfk_1` FOREIGN KEY (`expense_report_id`) REFERENCES `expense_report_tb` (`expense_report_id`) ON DELETE CASCADE,
-  CONSTRAINT `receipt_tb_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `user_tb` (`user_id`)
+  CONSTRAINT `receipt_tb_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `user_tb` (`user_id`),
+  CONSTRAINT `receipt_tb_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `company_tb` (`company_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='영수증 파일 정보';
 /*!40101 SET character_set_client = @saved_cs_client */;
 

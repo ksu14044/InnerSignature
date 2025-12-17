@@ -79,6 +79,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/register", "/api/login").permitAll()
                 .requestMatchers("/api/refresh-token", "/api/logout").permitAll()
                 .requestMatchers("/api/find-username", "/api/request-password-reset", "/api/reset-password").permitAll()
+                .requestMatchers("/api/companies/search").permitAll()  // 회사 검색 공개 API
+                .requestMatchers("/api/users/check-username", "/api/users/check-email").permitAll()  // username, email 중복체크 공개 API
                 // 인증 필요 API
                 .requestMatchers("/api/expenses/**").authenticated()
                 .requestMatchers("/api/users/admins").authenticated()

@@ -8,6 +8,7 @@ import {
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { STATUS_KOREAN } from '../../constants/status';
+import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import { 
   LineChart, 
   Line, 
@@ -29,7 +30,7 @@ import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
 const DashboardPage = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, companies } = useAuth();
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState({
@@ -42,9 +43,12 @@ const DashboardPage = () => {
   const [statusStats, setStatusStats] = useState([]);
   const [categoryRatio, setCategoryRatio] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const debounceTimer = useRef(null);
 
-  const isAuthorized = user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT';
+  const isAuthorized = user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT';
+  const isAdminOrCEO = user?.role === 'CEO' || user?.role === 'ADMIN';
+  const hasCompany = user?.companyId != null;
 
   const loadDashboardData = async () => {
     if (!isAuthorized) return;
@@ -119,7 +123,7 @@ const DashboardPage = () => {
   if (!isAuthorized) {
     return (
       <S.Container>
-        <S.Alert>접근 권한이 없습니다. (ADMIN 또는 ACCOUNTANT 권한 필요)</S.Alert>
+        <S.Alert>접근 권한이 없습니다. (CEO, ADMIN 또는 ACCOUNTANT 권한 필요)</S.Alert>
         <S.Button onClick={() => navigate('/expenses')}>목록으로 이동</S.Button>
       </S.Container>
     );
@@ -139,11 +143,21 @@ const DashboardPage = () => {
     ratio: (item.ratio * 100).toFixed(1)
   }));
 
+  const handleCompanyRegistrationSuccess = () => {
+    // 회사 등록 성공 후 페이지 새로고침하여 회사 목록 업데이트
+    window.location.reload();
+  };
+
   return (
     <S.Container>
       <S.Header>
         <div>
           <S.Title>대시보드</S.Title>
+          {isAdminOrCEO && !hasCompany && (
+            <S.CompanyRegisterButton onClick={() => setIsCompanyModalOpen(true)}>
+              회사 등록
+            </S.CompanyRegisterButton>
+          )}
         </div>
         <S.Button variant="secondary" onClick={() => navigate('/expenses')}>
           목록으로
@@ -296,6 +310,12 @@ const DashboardPage = () => {
           </S.ChartsGrid>
         </>
       )}
+      
+      <CompanyRegistrationModal
+        isOpen={isCompanyModalOpen}
+        onClose={() => setIsCompanyModalOpen(false)}
+        onSuccess={handleCompanyRegistrationSuccess}
+      />
     </S.Container>
   );
 };

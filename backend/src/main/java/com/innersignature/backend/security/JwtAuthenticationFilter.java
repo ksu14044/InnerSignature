@@ -50,6 +50,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 var claims = jwtUtil.parseToken(token);
                 Long userId = Long.parseLong(claims.getSubject());
                 String role = claims.get("role", String.class);
+                Long companyId = jwtUtil.getCompanyIdFromToken(token);
+                
+                // details에 companyId 저장
+                java.util.Map<String, Object> detailsMap = new java.util.HashMap<>();
+                detailsMap.put("companyId", companyId);
+                detailsMap.put("webAuthenticationDetails", new WebAuthenticationDetailsSource().buildDetails(request));
                 
                 UsernamePasswordAuthenticationToken authentication = 
                     new UsernamePasswordAuthenticationToken(
@@ -57,10 +63,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         null,
                         Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
                     );
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                authentication.setDetails(detailsMap);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 
-                logger.debug("JWT 인증 성공 - userId: {}, role: {}, uri: {}", userId, role, request.getRequestURI());
+                logger.debug("JWT 인증 성공 - userId: {}, role: {}, companyId: {}, uri: {}", userId, role, companyId, request.getRequestURI());
             } catch (NumberFormatException e) {
                 logger.warn("JWT 토큰 파싱 실패 - 잘못된 사용자 ID 형식: {}", e.getMessage());
                 // 인증 실패지만 요청은 계속 진행 (인증되지 않은 상태로)

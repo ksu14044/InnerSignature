@@ -31,32 +31,68 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
     
-    public String generateToken(Long userId, String username, String role) {
+    public String generateToken(Long userId, String username, String role, Long companyId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
         
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("username", username)
                 .claim("role", role)
                 .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(getSigningKey())
+                .expiration(expiryDate);
+        
+        // companyId가 null이 아닌 경우에만 claim에 추가
+        if (companyId != null) {
+            builder.claim("companyId", companyId);
+        }
+        
+        return builder.signWith(getSigningKey())
                 .compact();
     }
 
-    public String generateRefreshToken(Long userId, String username, String role) {
+    public String generateRefreshToken(Long userId, String username, String role, Long companyId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshExpiration);
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("username", username)
                 .claim("role", role)
                 .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(getSigningKey())
+                .expiration(expiryDate);
+        
+        // companyId가 null이 아닌 경우에만 claim에 추가
+        if (companyId != null) {
+            builder.claim("companyId", companyId);
+        }
+        
+        return builder.signWith(getSigningKey())
                 .compact();
+    }
+    
+    public String switchCompanyToken(String currentToken, Long newCompanyId) {
+        Claims claims = parseToken(currentToken);
+        Long userId = Long.parseLong(claims.getSubject());
+        String username = claims.get("username", String.class);
+        String role = claims.get("role", String.class);
+        
+        return generateToken(userId, username, role, newCompanyId);
+    }
+    
+    public Long getCompanyIdFromToken(String token) {
+        Claims claims = parseToken(token);
+        Object companyIdObj = claims.get("companyId");
+        if (companyIdObj == null) {
+            return null;
+        }
+        if (companyIdObj instanceof Number) {
+            return ((Number) companyIdObj).longValue();
+        }
+        if (companyIdObj instanceof String) {
+            return Long.parseLong((String) companyIdObj);
+        }
+        return null;
     }
     
     public Claims parseToken(String token) {

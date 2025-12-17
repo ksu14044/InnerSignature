@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { fetchExpenseList, deleteExpense, fetchPendingApprovals } from '../../api/expenseApi';
+import { fetchExpenseList, deleteExpense, fetchPendingApprovals, downloadExpensesExcel } from '../../api/expenseApi';
+import { getPendingUsers, approveUser } from '../../api/userApi';
 import * as S from './style';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaUser } from 'react-icons/fa';
+import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaUser, FaBuilding, FaChevronDown, FaCheck, FaTimesCircle, FaFileExcel } from 'react-icons/fa';
 import { STATUS_KOREAN, EXPENSE_STATUS } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 
@@ -11,7 +12,9 @@ const ExpenseListPage = () => {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
@@ -33,19 +36,23 @@ const ExpenseListPage = () => {
 
   const pageSize = 10;
   const navigate = useNavigate(); // 페이지 이동 훅
-  const { logout, user } = useAuth();
+  const { logout, user, companies, switchCompany } = useAuth();
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
 
   const handleLogout = async () => {
     navigate('/');  // 먼저 로그인 페이지로 이동
     await logout();  // 그 다음 로그아웃 처리
   };
 
-  // 삭제 권한 체크 함수 (작성자 본인, ADMIN, 또는 ACCOUNTANT만 삭제 가능)
+  // 삭제 권한 체크 함수 (작성자 본인, CEO, ADMIN, 또는 ACCOUNTANT만 삭제 가능)
   const canDeleteExpense = (expense) => {
     if (!user) return false;
 
     // 작성자 본인인 경우
     if (expense.drafterId === user.userId) return true;
+
+    // CEO 권한인 경우
+    if (user.role === 'CEO') return true;
 
     // ADMIN 권한인 경우
     if (user.role === 'ADMIN') return true;
@@ -200,6 +207,25 @@ const ExpenseListPage = () => {
     }
   };
 
+  // 엑셀 다운로드 핸들러
+  const handleExportExcel = async () => {
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'ACCOUNTANT' && user.role !== 'CEO')) {
+      alert('엑셀 다운로드는 ADMIN, ACCOUNTANT, CEO 권한만 가능합니다.');
+      return;
+    }
+
+    try {
+      // 현재 필터 조건의 기간을 사용
+      const startDate = filters.startDate || null;
+      const endDate = filters.endDate || null;
+      
+      await downloadExpensesExcel(startDate, endDate);
+      alert('엑셀 파일 다운로드가 시작되었습니다.');
+    } catch (error) {
+      alert(error.userMessage || '엑셀 다운로드 중 오류가 발생했습니다.');
+    }
+  };
+
   useEffect(() => {
     loadExpenseList(1);
 
@@ -215,7 +241,26 @@ const ExpenseListPage = () => {
           console.error('미서명 건 조회 실패:', error);
         });
     }
-  }, [user]);
+
+    // 승인 대기 사용자 조회 (CEO, ADMIN만)
+    if (user && (user.role === 'CEO' || user.role === 'ADMIN')) {
+      getPendingUsers()
+        .then((response) => {
+          if (response.success) {
+            setPendingUsers(response.data || []);
+          } else {
+            console.error('승인 대기 사용자 조회 실패:', response.message);
+            setPendingUsers([]);
+          }
+        })
+        .catch((error) => {
+          console.error('승인 대기 사용자 조회 실패:', error);
+          // 에러가 발생해도 빈 배열로 설정하여 배지가 표시되지 않도록 함
+          setPendingUsers([]);
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]); // user 전체 대신 user?.userId만 사용
 
   if (loading) return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
 
@@ -236,7 +281,18 @@ const ExpenseListPage = () => {
               <S.NotificationCount>{pendingApprovals.length}</S.NotificationCount>
             </S.NotificationBadge>
           )}
-          {(user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT') && (
+          {/* 승인 대기 배지 (CEO, ADMIN만 표시) */}
+          {(user?.role === 'CEO' || user?.role === 'ADMIN') && pendingUsers.length > 0 && (
+            <S.NotificationBadge 
+              onClick={() => setIsApprovalModalOpen(true)}
+              title={`승인 대기: ${pendingUsers.length}건`}
+              style={{ backgroundColor: '#4caf50', marginRight: '12px' }}
+            >
+              <FaUser />
+              <S.NotificationCount>{pendingUsers.length}</S.NotificationCount>
+            </S.NotificationBadge>
+          )}
+          {(user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT') && (
             <S.FilterButton 
               variant="primary" 
               onClick={() => navigate('/dashboard')}
@@ -252,11 +308,43 @@ const ExpenseListPage = () => {
               <span>세무사 요약</span>
             </S.FilterButton>
           )}
+          {(user?.role === 'CEO' || user?.role === 'ADMIN') && companies && companies.length > 1 && (
+            <S.CompanySelector>
+              <S.CompanySelectorButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>
+                <FaBuilding />
+                <span>
+                  {companies.find(c => c.companyId === user.companyId)?.companyName || '회사 선택'}
+                </span>
+                <FaChevronDown />
+              </S.CompanySelectorButton>
+              {isCompanyDropdownOpen && (
+                <S.CompanyDropdown>
+                  {companies.map((company) => (
+                    <S.CompanyDropdownItem
+                      key={company.companyId}
+                      selected={company.companyId === user.companyId}
+                      onClick={async () => {
+                        try {
+                          await switchCompany(company.companyId);
+                          setIsCompanyDropdownOpen(false);
+                          window.location.reload(); // 페이지 새로고침하여 데이터 업데이트
+                        } catch (error) {
+                          alert('회사 전환에 실패했습니다.');
+                        }
+                      }}
+                    >
+                      {company.companyName}
+                    </S.CompanyDropdownItem>
+                  ))}
+                </S.CompanyDropdown>
+              )}
+            </S.CompanySelector>
+          )}
           <S.ProfileButton onClick={() => navigate('/profile')}>
             <FaUser />
             <span>내 정보</span>
           </S.ProfileButton>
-          {user?.role === 'SUPERADMIN' && (
+          {(user?.role === 'SUPERADMIN' || user?.role === 'CEO' || user?.role === 'ADMIN') && (
             <S.AdminButton onClick={() => navigate('/users')}>
               사용자 관리
             </S.AdminButton>
@@ -290,6 +378,12 @@ const ExpenseListPage = () => {
             <FaFilter />
             <span>필터</span>
           </S.FilterButton>
+          {user && (user.role === 'ADMIN' || user.role === 'ACCOUNTANT' || user.role === 'CEO') && (
+            <S.ExportButton onClick={handleExportExcel}>
+              <FaFileExcel />
+              <span>엑셀 다운로드</span>
+            </S.ExportButton>
+          )}
         </div>
       </S.ActionBar>
 
@@ -632,6 +726,107 @@ const ExpenseListPage = () => {
                         <span>작성일: {item.reportDate}</span>
                         <span>금액: {item.totalAmount.toLocaleString()}원</span>
                       </S.NotificationItemInfo>
+                    </S.NotificationItem>
+                  ))}
+                </S.NotificationList>
+              )}
+            </S.NotificationModalBody>
+          </S.NotificationModalContent>
+        </S.NotificationModal>
+      )}
+
+      {/* 승인 대기 모달 */}
+      {isApprovalModalOpen && (
+        <S.NotificationModal onClick={() => setIsApprovalModalOpen(false)}>
+          <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
+            <S.NotificationModalHeader>
+              <h3>승인 대기 사용자 ({pendingUsers.length}건)</h3>
+              <button onClick={() => setIsApprovalModalOpen(false)}>×</button>
+            </S.NotificationModalHeader>
+            <S.NotificationModalBody>
+              {pendingUsers.length === 0 ? (
+                <p>승인 대기 중인 사용자가 없습니다.</p>
+              ) : (
+                <S.NotificationList>
+                  {pendingUsers.map((pendingUser) => (
+                    <S.NotificationItem key={pendingUser.userId}>
+                      <S.NotificationItemTitle>{pendingUser.koreanName} ({pendingUser.username})</S.NotificationItemTitle>
+                      <S.NotificationItemInfo>
+                        <span>역할: {pendingUser.role}</span>
+                        <span>직급: {pendingUser.position || '-'}</span>
+                        <span>이메일: {pendingUser.email || '-'}</span>
+                      </S.NotificationItemInfo>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await approveUser(pendingUser.userId, 'APPROVE');
+                              if (response.success) {
+                                // 목록에서 제거
+                                setPendingUsers(pendingUsers.filter(u => u.userId !== pendingUser.userId));
+                                // 목록 새로고침
+                                const refreshResponse = await getPendingUsers();
+                                if (refreshResponse.success) {
+                                  setPendingUsers(refreshResponse.data || []);
+                                }
+                                alert('사용자가 승인되었습니다.');
+                              }
+                            } catch (error) {
+                              console.error('승인 실패:', error);
+                              alert(error?.response?.data?.message || '승인에 실패했습니다.');
+                            }
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#4caf50',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <FaCheck /> 승인
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm(`${pendingUser.koreanName}(${pendingUser.username}) 사용자를 거부하시겠습니까?`)) {
+                              return;
+                            }
+                            try {
+                              const response = await approveUser(pendingUser.userId, 'REJECT');
+                              if (response.success) {
+                                // 목록에서 제거
+                                setPendingUsers(pendingUsers.filter(u => u.userId !== pendingUser.userId));
+                                // 목록 새로고침
+                                const refreshResponse = await getPendingUsers();
+                                if (refreshResponse.success) {
+                                  setPendingUsers(refreshResponse.data || []);
+                                }
+                                alert('사용자가 거부되었습니다.');
+                              }
+                            } catch (error) {
+                              console.error('거부 실패:', error);
+                              alert(error?.response?.data?.message || '거부에 실패했습니다.');
+                            }
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#f44336',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <FaTimesCircle /> 거부
+                        </button>
+                      </div>
                     </S.NotificationItem>
                   ))}
                 </S.NotificationList>

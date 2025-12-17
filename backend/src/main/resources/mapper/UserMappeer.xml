@@ -11,13 +11,15 @@
     <select id="findAdminUsers" resultType="com.innersignature.backend.dto.UserDto">
         SELECT user_id, username, korean_name, email, position, role
         FROM user_tb
-        WHERE role = 'ADMIN'
+        WHERE role IN ('ADMIN', 'CEO')
+        AND company_id = #{companyId}
         ORDER BY user_id
     </select>
 
     <insert id="register" parameterType="com.innersignature.backend.dto.UserDto">
-        INSERT INTO user_tb (username, password, korean_name, email, position, role)
-        VALUES (#{username}, #{password}, #{koreanName}, #{email}, #{position}, #{role})
+        INSERT INTO user_tb (username, password, korean_name, email, position, role, company_id, is_active, approval_status)
+        VALUES (#{username}, #{password}, #{koreanName}, #{email}, #{position}, #{role}, #{companyId}, 
+                COALESCE(#{isActive}, 1), COALESCE(#{approvalStatus}, 'APPROVED'))
     </insert>
 
     <select id="findByUsername" resultType="com.innersignature.backend.dto.UserDto">
@@ -33,6 +35,7 @@
     <select id="selectUsersByRole" resultType="com.innersignature.backend.dto.UserDto">
         SELECT * FROM user_tb
         WHERE role = #{role}
+        AND company_id = #{companyId}
         ORDER BY user_id
     </select>
 
@@ -48,7 +51,9 @@
             email = #{email},
             position = #{position},
             role = #{role},
-            is_active = #{isActive}
+            is_active = #{isActive},
+            company_id = #{companyId},
+            approval_status = #{approvalStatus}
         WHERE user_id = #{userId}
     </update>
 
@@ -87,5 +92,30 @@
         SELECT COUNT(*) > 0
         FROM user_tb
         WHERE email = #{email}
+        <if test="companyId != null">
+            AND company_id = #{companyId}
+        </if>
+    </select>
+    
+    <select id="isUsernameExists" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM user_tb
+        WHERE username = #{username}
+    </select>
+    
+    <select id="findPendingUsers" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT user_id, username, korean_name, email, position, role, 
+               is_active, company_id, approval_status
+        FROM user_tb
+        WHERE company_id = #{companyId}
+          AND approval_status = 'PENDING'
+        ORDER BY user_id DESC
+    </select>
+    
+    <select id="selectUsersByCompanyId" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT user_id, username, korean_name, email, position, role, is_active, company_id, approval_status
+        FROM user_tb
+        WHERE company_id = #{companyId}
+        ORDER BY user_id
     </select>
 </mapper>

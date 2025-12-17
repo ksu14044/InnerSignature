@@ -39,6 +39,30 @@ public class PermissionUtil {
     }
     
     /**
+     * 사용자가 CEO 역할인지 확인
+     * 
+     * @param userId 확인할 사용자 ID
+     * @return CEO이면 true, 아니면 false
+     */
+    public boolean isCEO(Long userId) {
+        UserDto user = getUserOrThrow(userId);
+        return "CEO".equals(user.getRole());
+    }
+    
+    /**
+     * 사용자가 ADMIN 또는 CEO 역할인지 확인
+     * CEO는 ADMIN의 모든 권한을 가지고 있음
+     * 
+     * @param userId 확인할 사용자 ID
+     * @return ADMIN 또는 CEO이면 true, 아니면 false
+     */
+    public boolean isAdminOrCEO(Long userId) {
+        UserDto user = getUserOrThrow(userId);
+        String role = user.getRole();
+        return "ADMIN".equals(role) || "CEO".equals(role);
+    }
+    
+    /**
      * 사용자가 ACCOUNTANT 역할인지 확인
      * 
      * @param userId 확인할 사용자 ID
@@ -73,7 +97,7 @@ public class PermissionUtil {
     
     /**
      * 문서 삭제 권한 확인
-     * 작성자 본인, ADMIN, 또는 ACCOUNTANT만 삭제 가능
+     * 작성자 본인, ADMIN, CEO, 또는 ACCOUNTANT만 삭제 가능
      * 
      * @param report 문서 정보
      * @param userId 확인할 사용자 ID
@@ -81,11 +105,11 @@ public class PermissionUtil {
      */
     public void checkDeletePermission(ExpenseReportDto report, Long userId) {
         boolean isOwner = isOwner(report, userId);
-        boolean isAdmin = isAdmin(userId);
+        boolean isAdminOrCEO = isAdminOrCEO(userId);
         boolean isAccountant = isAccountant(userId);
         
-        if (!isOwner && !isAdmin && !isAccountant) {
-            throw new BusinessException("삭제 권한이 없습니다. 작성자 본인, ADMIN 또는 ACCOUNTANT만 삭제할 수 있습니다.");
+        if (!isOwner && !isAdminOrCEO && !isAccountant) {
+            throw new BusinessException("삭제 권한이 없습니다. 작성자 본인, ADMIN, CEO 또는 ACCOUNTANT만 삭제할 수 있습니다.");
         }
     }
     

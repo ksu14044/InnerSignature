@@ -29,9 +29,13 @@ CREATE TABLE `expense_detail_tb` (
   `description` varchar(200) DEFAULT NULL COMMENT '적요',
   `amount` decimal(15,0) NOT NULL COMMENT '개별 금액',
   `note` varchar(200) DEFAULT NULL COMMENT '비고',
+  `company_id` bigint NOT NULL COMMENT '회사 ID (company_tb FK)',
   PRIMARY KEY (`expense_detail_id`),
   KEY `expense_report_id` (`expense_report_id`),
-  CONSTRAINT `expense_detail_tb_ibfk_1` FOREIGN KEY (`expense_report_id`) REFERENCES `expense_report_tb` (`expense_report_id`) ON DELETE CASCADE
+  KEY `idx_company_id` (`company_id`),
+  KEY `idx_company_expense_report` (`company_id`, `expense_report_id`),
+  CONSTRAINT `expense_detail_tb_ibfk_1` FOREIGN KEY (`expense_report_id`) REFERENCES `expense_report_tb` (`expense_report_id`) ON DELETE CASCADE,
+  CONSTRAINT `expense_detail_tb_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `company_tb` (`company_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='지출결의서 상세 항목들';
 /*!40101 SET character_set_client = @saved_cs_client */;
 

@@ -35,9 +35,14 @@ CREATE TABLE `expense_report_tb` (
   `tax_processed_at` datetime DEFAULT NULL,
   `is_secret` tinyint(1) DEFAULT '0' COMMENT '비밀글 여부 (0: 일반, 1: 비밀글)',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
+  `company_id` bigint NOT NULL COMMENT '회사 ID (company_tb FK)',
   PRIMARY KEY (`expense_report_id`),
   KEY `drafter_id` (`drafter_id`),
-  CONSTRAINT `expense_report_tb_ibfk_1` FOREIGN KEY (`drafter_id`) REFERENCES `user_tb` (`user_id`)
+  KEY `idx_company_id` (`company_id`),
+  KEY `idx_company_expense_report` (`company_id`, `expense_report_id`),
+  KEY `idx_company_drafter` (`company_id`, `drafter_id`),
+  CONSTRAINT `expense_report_tb_ibfk_1` FOREIGN KEY (`drafter_id`) REFERENCES `user_tb` (`user_id`),
+  CONSTRAINT `expense_report_tb_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `company_tb` (`company_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=60 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='지출결의서 메인 정보';
 /*!40101 SET character_set_client = @saved_cs_client */;
 

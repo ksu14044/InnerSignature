@@ -44,9 +44,22 @@ public class UserController {
         UserDto user = userService.authenticate(request.getUsername(), request.getPassword());
 
         if (user != null) {
-            // JWT 토큰 생성
-            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername(), user.getRole());
-            String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getUsername(), user.getRole());
+            // 승인 상태 체크
+            if (!"APPROVED".equals(user.getApprovalStatus())) {
+                logger.warn("로그인 실패 - 승인 대기 중 - username: {}", request.getUsername());
+                SecurityLogger.loginFailure(request.getUsername());
+                return new ApiResponse<>(false, "관리자 승인 대기 중입니다.", null);
+            }
+            
+            if (user.getIsActive() == null || !user.getIsActive()) {
+                logger.warn("로그인 실패 - 비활성화된 계정 - username: {}", request.getUsername());
+                SecurityLogger.loginFailure(request.getUsername());
+                return new ApiResponse<>(false, "비활성화된 계정입니다.", null);
+            }
+            
+            // JWT 토큰 생성 (companyId 포함)
+            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername(), user.getRole(), user.getCompanyId());
+            String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getUsername(), user.getRole(), user.getCompanyId());
             
             // 비밀번호는 보안상 프론트로 보내지 않는 게 좋습니다.
             user.setPassword(null);
@@ -57,7 +70,7 @@ public class UserController {
             responseData.put("token", token);
             responseData.put("refreshToken", refreshToken);
             
-            logger.info("로그인 성공 - userId: {}, role: {}", user.getUserId(), user.getRole());
+            logger.info("로그인 성공 - userId: {}, role: {}, companyId: {}", user.getUserId(), user.getRole(), user.getCompanyId());
             SecurityLogger.loginSuccess(user.getUserId(), user.getUsername(), user.getRole());
             return new ApiResponse<>(true, "로그인 성공", responseData);
         } else {
@@ -70,9 +83,25 @@ public class UserController {
     @Operation(summary = "회원가입", description = "신규 사용자를 등록합니다.")
     @PostMapping("/register")
     public ApiResponse<String> register(@Valid @RequestBody RegisterRequest request) {
-        logger.info("회원가입 시도 - username: {}, koreanName: {}", request.getUsername(), request.getKoreanName());
+        logger.info("회원가입 시도 - username: {}, koreanName: {}, role: {}", request.getUsername(), request.getKoreanName(), request.getRole());
         
-        // 중복 사용자명 체크
+        // role 검증 (ADMIN 제거, CEO만 허용)
+        if (request.getRole() == null || (!request.getRole().equals("USER") && 
+            !request.getRole().equals("TAX_ACCOUNTANT") &&
+            !request.getRole().equals("CEO"))) {
+            logger.warn("회원가입 실패 - 잘못된 역할: {}", request.getRole());
+            return new ApiResponse<>(false, "올바른 역할을 선택해주세요. (USER, TAX_ACCOUNTANT, CEO)", null);
+        }
+        
+        // USER, TAX_ACCOUNTANT는 companyId 필수
+        if ((request.getRole().equals("USER") || request.getRole().equals("TAX_ACCOUNTANT")) && request.getCompanyId() == null) {
+            logger.warn("회원가입 실패 - USER/TAX_ACCOUNTANT는 companyId 필수: {}", request.getUsername());
+            return new ApiResponse<>(false, "회사를 선택해주세요.", null);
+        }
+        
+        // CEO는 companyId NULL 허용 (나중에 회사 등록 시 할당)
+        
+        // 중복 사용자명 체크 (전역)
         if (userService.isUsernameExists(request.getUsername())) {
             logger.warn("회원가입 실패 - 중복된 사용자명: {}", request.getUsername());
             return new ApiResponse<>(false, "이미 존재하는 사용자명입니다.", null);
@@ -84,12 +113,26 @@ public class UserController {
         newUser.setKoreanName(request.getKoreanName());
         newUser.setEmail(request.getEmail());
         newUser.setPosition(request.getPosition());
-        newUser.setRole("USER"); // 기본 역할은 USER
+        newUser.setRole(request.getRole());
+        newUser.setCompanyId(request.getCompanyId()); // CEO일 때는 NULL
+        
+        // USER, TAX_ACCOUNTANT는 승인 대기 상태로 생성
+        if (request.getRole().equals("USER") || request.getRole().equals("TAX_ACCOUNTANT")) {
+            newUser.setApprovalStatus("PENDING");
+            newUser.setIsActive(false); // 승인 전까지 비활성화
+        } else {
+            // CEO는 즉시 승인
+            newUser.setApprovalStatus("APPROVED");
+            newUser.setIsActive(true);
+        }
 
         int result = userService.register(newUser);
         if (result > 0) {
-            logger.info("회원가입 완료 - username: {}", request.getUsername());
-            return new ApiResponse<>(true, "회원가입이 완료되었습니다.", null);
+            String message = (request.getRole().equals("USER") || request.getRole().equals("TAX_ACCOUNTANT")) 
+                ? "회원가입 신청이 완료되었습니다. 관리자 승인 후 사용 가능합니다." 
+                : "회원가입이 완료되었습니다.";
+            logger.info("회원가입 완료 - username: {}, role: {}", request.getUsername(), request.getRole());
+            return new ApiResponse<>(true, message, null);
         } else {
             logger.error("회원가입 실패 - username: {}", request.getUsername());
             return new ApiResponse<>(false, "회원가입에 실패했습니다.", null);
@@ -97,18 +140,60 @@ public class UserController {
     }
 
     /**
-     * ADMIN 사용자 목록 조회 API
+     * 결재자 목록 조회 API (ADMIN, CEO)
      * 주소: GET /api/users/admins
      */
-    @Operation(summary = "ADMIN 사용자 목록 조회", description = "ADMIN 역할 사용자 목록을 조회합니다.")
+    @Operation(summary = "결재자 목록 조회", description = "현재 회사의 ADMIN 및 CEO 역할 사용자 목록을 조회합니다.")
     @GetMapping("/users/admins")
     public ApiResponse<List<UserDto>> getAdminUsers() {
         try {
-            List<UserDto> adminUsers = userService.findAdminUsers();
-            return new ApiResponse<>(true, "ADMIN 사용자 목록 조회 성공", adminUsers);
+            Long companyId = SecurityUtil.getCurrentCompanyId();
+            if (companyId == null) {
+                return new ApiResponse<>(false, "회사 정보가 없습니다.", null);
+            }
+            List<UserDto> adminUsers = userService.findAdminUsers(companyId);
+            return new ApiResponse<>(true, "결재자 목록 조회 성공", adminUsers);
         } catch (Exception e) {
             // printStackTrace 대신 예외를 던져서 전역 예외 핸들러에서 처리
-            throw new RuntimeException("ADMIN 사용자 조회 중 오류 발생: " + e.getMessage(), e);
+            throw new RuntimeException("결재자 조회 중 오류 발생: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * username 중복 체크 API
+     * 주소: GET /api/users/check-username
+     */
+    @Operation(summary = "username 중복 체크", description = "username이 이미 사용 중인지 확인합니다.")
+    @GetMapping("/users/check-username")
+    public ApiResponse<Map<String, Object>> checkUsername(@RequestParam String username) {
+        try {
+            boolean exists = userService.isUsernameExists(username);
+            Map<String, Object> result = new HashMap<>();
+            result.put("exists", exists);
+            result.put("available", !exists);
+            return new ApiResponse<>(true, exists ? "이미 사용 중인 username입니다." : "사용 가능한 username입니다.", result);
+        } catch (Exception e) {
+            logger.error("username 중복 체크 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    /**
+     * email 중복 체크 API
+     * 주소: GET /api/users/check-email
+     */
+    @Operation(summary = "email 중복 체크", description = "email이 이미 사용 중인지 확인합니다.")
+    @GetMapping("/users/check-email")
+    public ApiResponse<Map<String, Object>> checkEmail(@RequestParam String email) {
+        try {
+            boolean exists = userService.isEmailExists(email, null); // 전역 체크
+            Map<String, Object> result = new HashMap<>();
+            result.put("exists", exists);
+            result.put("available", !exists);
+            return new ApiResponse<>(true, exists ? "이미 사용 중인 이메일입니다." : "사용 가능한 이메일입니다.", result);
+        } catch (Exception e) {
+            logger.error("email 중복 체크 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
         }
     }
 
@@ -270,6 +355,8 @@ public class UserController {
         userDto.setPosition(request.getPosition());
         userDto.setRole(existingUser.getRole()); // 기존 role 유지
         userDto.setIsActive(existingUser.getIsActive()); // 기존 isActive 유지
+        userDto.setCompanyId(existingUser.getCompanyId()); // 기존 companyId 유지
+        userDto.setApprovalStatus(existingUser.getApprovalStatus()); // 기존 approvalStatus 유지
         // role과 isActive는 수정 불가 (보안상 이유)
 
         int result = userService.updateUser(userDto, currentUserId);
@@ -332,12 +419,13 @@ public class UserController {
         Long userId = Long.parseLong(claims.getSubject());
         String username = claims.get("username", String.class);
         String role = claims.get("role", String.class);
+        Long companyId = claims.get("companyId", Long.class);
 
         // 리프레시 토큰 회전: 기존 토큰 블랙리스트 처리
         jwtBlacklistService.blacklist(refreshToken);
 
-        String newAccessToken = jwtUtil.generateToken(userId, username, role);
-        String newRefreshToken = jwtUtil.generateRefreshToken(userId, username, role);
+        String newAccessToken = jwtUtil.generateToken(userId, username, role, companyId);
+        String newRefreshToken = jwtUtil.generateRefreshToken(userId, username, role, companyId);
 
         Map<String, Object> responseData = new HashMap<>();
         responseData.put("token", newAccessToken);
@@ -495,6 +583,11 @@ public class UserController {
         
         @jakarta.validation.constraints.Size(max = 50, message = "직급은 50자 이하여야 합니다.")
         private String position;
+        
+        @jakarta.validation.constraints.NotBlank(message = "역할은 필수입니다.")
+        private String role; // USER, ADMIN, TAX_ACCOUNTANT
+        
+        private Long companyId; // USER, TAX_ACCOUNTANT일 때 필수, ADMIN일 때는 NULL 허용
     }
 
     @Data
@@ -587,5 +680,186 @@ public class UserController {
         @jakarta.validation.constraints.NotBlank(message = "새 비밀번호는 필수입니다.")
         @jakarta.validation.constraints.Size(min = 1, message = "새 비밀번호를 입력해주세요.")
         private String newPassword;
+    }
+    
+    @Operation(summary = "사용자 role 변경", description = "CEO 또는 ADMIN이 직원의 role을 변경합니다.")
+    @PutMapping("/users/{userId}/role")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ApiResponse<String> updateUserRole(
+            @PathVariable Long userId,
+            @RequestBody UpdateRoleRequest request) {
+        try {
+            Long operatorId = SecurityUtil.getCurrentUserId();
+            logger.info("사용자 role 변경 시도 - userId: {}, newRole: {}, operatorId: {}", 
+                userId, request.getRole(), operatorId);
+            
+            int result = userService.updateUserRole(userId, request.getRole(), operatorId);
+            if (result > 0) {
+                logger.info("사용자 role 변경 완료 - userId: {}, newRole: {}", userId, request.getRole());
+                return new ApiResponse<>(true, "role이 변경되었습니다.", null);
+            } else {
+                logger.error("사용자 role 변경 실패 - userId: {}", userId);
+                return new ApiResponse<>(false, "role 변경에 실패했습니다.", null);
+            }
+        } catch (Exception e) {
+            logger.error("사용자 role 변경 중 오류 발생 - userId: {}", userId, e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "사용자 승인/거부", description = "CEO 또는 ADMIN이 회원가입 신청을 승인/거부합니다.")
+    @PostMapping("/users/{userId}/approval")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ApiResponse<String> approveUser(
+            @PathVariable Long userId,
+            @RequestBody ApprovalRequest request) {
+        try {
+            Long operatorId = SecurityUtil.getCurrentUserId();
+            logger.info("사용자 승인/거부 시도 - userId: {}, action: {}, operatorId: {}", 
+                userId, request.getAction(), operatorId);
+            
+            if ("APPROVE".equals(request.getAction())) {
+                userService.approveUser(userId, operatorId);
+                logger.info("사용자 승인 완료 - userId: {}", userId);
+                return new ApiResponse<>(true, "사용자가 승인되었습니다.", null);
+            } else if ("REJECT".equals(request.getAction())) {
+                userService.rejectUser(userId, operatorId);
+                logger.info("사용자 거부 완료 - userId: {}", userId);
+                return new ApiResponse<>(true, "사용자가 거부되었습니다.", null);
+            } else {
+                return new ApiResponse<>(false, "올바른 액션을 선택해주세요. (APPROVE, REJECT)", null);
+            }
+        } catch (Exception e) {
+            logger.error("사용자 승인/거부 중 오류 발생 - userId: {}", userId, e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "승인 대기 사용자 목록", description = "CEO 또는 ADMIN이 승인 대기 중인 사용자 목록을 조회합니다.")
+    @GetMapping("/users/pending")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ApiResponse<List<UserDto>> getPendingUsers() {
+        try {
+            Long companyId = SecurityUtil.getCurrentCompanyId();
+            if (companyId == null) {
+                // ADMIN이 회사를 선택하지 않은 경우, 사용자 정보에서 companyId 가져오기
+                Long userId = SecurityUtil.getCurrentUserId();
+                UserDto currentUser = userService.selectUserById(userId);
+                if (currentUser != null && currentUser.getCompanyId() != null) {
+                    companyId = currentUser.getCompanyId();
+                } else {
+                    // companyId가 없으면 빈 리스트 반환 (에러가 아닌 빈 결과로 처리)
+                    return new ApiResponse<>(true, "조회 성공", new java.util.ArrayList<>());
+                }
+            }
+            List<UserDto> pendingUsers = userService.findPendingUsers(companyId);
+            // 비밀번호 제거
+            pendingUsers.forEach(user -> user.setPassword(null));
+            return new ApiResponse<>(true, "조회 성공", pendingUsers);
+        } catch (Exception e) {
+            logger.error("승인 대기 사용자 목록 조회 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    /**
+     * 회사별 사용자 목록 조회 API (CEO, ADMIN 전용)
+     * 주소: GET /api/users/company
+     */
+    @Operation(summary = "회사별 사용자 목록 조회", description = "CEO 또는 ADMIN이 자기 회사의 직원 목록을 조회합니다.")
+    @GetMapping("/users/company")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ApiResponse<List<UserDto>> getCompanyUsers() {
+        try {
+            Long companyId = SecurityUtil.getCurrentCompanyId();
+            if (companyId == null) {
+                // ADMIN이 회사를 선택하지 않은 경우, 사용자 정보에서 companyId 가져오기
+                Long userId = SecurityUtil.getCurrentUserId();
+                UserDto currentUser = userService.selectUserById(userId);
+                if (currentUser != null && currentUser.getCompanyId() != null) {
+                    companyId = currentUser.getCompanyId();
+                } else {
+                    return new ApiResponse<>(false, "회사 정보가 없습니다.", null);
+                }
+            }
+            List<UserDto> users = userService.getUsersByCompanyId(companyId);
+            // 비밀번호 제거
+            users.forEach(user -> user.setPassword(null));
+            logger.info("회사별 사용자 목록 조회 완료 - companyId: {}, count: {}", companyId, users.size());
+            return new ApiResponse<>(true, "회사별 사용자 목록 조회 성공", users);
+        } catch (Exception e) {
+            logger.error("회사별 사용자 목록 조회 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "회사 전환", description = "CEO 또는 ADMIN이 다른 회사로 전환합니다. (JWT 토큰 재발급)")
+    @PostMapping("/users/switch-company")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ApiResponse<Map<String, Object>> switchCompany(@RequestBody CompanySwitchRequest request) {
+        try {
+            Long userId = SecurityUtil.getCurrentUserId();
+            logger.info("회사 전환 시도 - userId: {}, companyId: {}", userId, request.getCompanyId());
+            
+            // 회사 정보 조회 및 권한 확인은 CompanyController에서 처리
+            // 여기서는 JWT 토큰 재발급만 처리
+            
+            // 사용자 정보 조회
+            UserDto user = userService.selectUserById(userId);
+            if (user == null) {
+                return new ApiResponse<>(false, "사용자를 찾을 수 없습니다.", null);
+            }
+            
+            // 회사 전환 (사용자의 company_id 업데이트)
+            userService.assignToCompany(userId, request.getCompanyId());
+            
+            // JWT 토큰 재발급
+            String token = jwtUtil.switchCompanyToken(
+                request.getCurrentToken(), 
+                request.getCompanyId()
+            );
+            String refreshToken = jwtUtil.generateRefreshToken(
+                user.getUserId(), 
+                user.getUsername(), 
+                user.getRole(), 
+                request.getCompanyId()
+            );
+            
+            // 업데이트된 사용자 정보 조회
+            user = userService.selectUserById(userId);
+            user.setPassword(null);
+            
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("user", user);
+            responseData.put("token", token);
+            responseData.put("refreshToken", refreshToken);
+            
+            logger.info("회사 전환 완료 - userId: {}, companyId: {}", userId, request.getCompanyId());
+            return new ApiResponse<>(true, "회사 전환이 완료되었습니다.", responseData);
+        } catch (Exception e) {
+            logger.error("회사 전환 중 오류 발생", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Data
+    static class UpdateRoleRequest {
+        @jakarta.validation.constraints.NotBlank(message = "role은 필수입니다.")
+        private String role;
+    }
+    
+    @Data
+    static class ApprovalRequest {
+        @jakarta.validation.constraints.NotBlank(message = "action은 필수입니다.")
+        private String action; // APPROVE or REJECT
+    }
+    
+    @Data
+    static class CompanySwitchRequest {
+        @jakarta.validation.constraints.NotNull(message = "companyId는 필수입니다.")
+        private Long companyId;
+        
+        @jakarta.validation.constraints.NotBlank(message = "현재 토큰은 필수입니다.")
+        private String currentToken;
     }
 }

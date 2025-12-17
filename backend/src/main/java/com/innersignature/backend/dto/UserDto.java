@@ -26,6 +26,8 @@ public class UserDto {
     @Size(max = 50, message = "직급은 50자 이하여야 합니다.")
     private String position;    // 직급
     
-    private String role;        // 권한 (USER, ADMIN)
+    private String role;        // 권한 (USER, ADMIN, CEO, TAX_ACCOUNTANT)
     private Boolean isActive;   // 활성화 상태
+    private String approvalStatus; // 승인 상태 (PENDING, APPROVED, REJECTED)
+    private Long companyId;     // 회사 ID (nullable - ADMIN은 회사 등록 전 NULL 가능)
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllUsers, createUser, updateUser, deleteUser } from '../../api/userApi';
+import { getAllUsers, createUser, updateUser, deleteUser, updateUserRole, getCompanyUsers } from '../../api/userApi';
 import { USER_ROLES } from '../../constants/status';
 import { FaPlus, FaSignOutAlt, FaEdit, FaTrash, FaTimes } from 'react-icons/fa';
 import * as S from './style';
@@ -31,16 +31,16 @@ const UserManagementPage = () => {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
 
-  // SUPERADMIN 권한 체크
+  // SUPERADMIN, CEO 또는 ADMIN 권한 체크
   useEffect(() => {
-    if (!user || user.role !== 'SUPERADMIN') {
-      alert('SUPERADMIN 권한이 필요합니다.');
+    if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'CEO' && user.role !== 'ADMIN')) {
+      alert('ADMIN 권한이 필요합니다.');
       navigate('/expenses');
     }
   }, [user, navigate]);
 
   useEffect(() => {
-    if (user?.role === 'SUPERADMIN') {
+    if (user?.role === 'SUPERADMIN' || user?.role === 'CEO' || user?.role === 'ADMIN') {
       loadUsers();
     }
   }, [user]);
@@ -48,7 +48,18 @@ const UserManagementPage = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await getAllUsers();
+      let response;
+      if (user?.role === 'SUPERADMIN') {
+        // SUPERADMIN: 전체 사용자 조회
+        response = await getAllUsers();
+      } else if (user?.role === 'CEO' || user?.role === 'ADMIN') {
+        // CEO, ADMIN: 자기 회사 직원만 조회
+        response = await getCompanyUsers();
+      } else {
+        setLoading(false);
+        return;
+      }
+      
       if (response.success) {
         setUsers(response.data || []);
       }
@@ -163,6 +174,28 @@ const UserManagementPage = () => {
     }
   };
 
+  const handleRoleChange = async (userId, newRole) => {
+    if (!window.confirm(`이 사용자의 권한을 "${getRoleLabel(newRole)}"로 변경하시겠습니까?`)) {
+      return;
+    }
+    
+    try {
+      setIsUpdating(true);
+      const response = await updateUserRole(userId, newRole);
+      if (response.success) {
+        alert('권한이 변경되었습니다.');
+        loadUsers();
+      } else {
+        alert(response.message || '권한 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('권한 변경 실패:', error);
+      alert(error?.response?.data?.message || '권한 변경 중 오류가 발생했습니다.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const getRoleLabel = (role) => {
     const roleMap = {
       'USER': '일반 사용자',
@@ -174,9 +207,13 @@ const UserManagementPage = () => {
     return roleMap[role] || role;
   };
 
-  if (!user || user.role !== 'SUPERADMIN') {
+  if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'CEO' && user.role !== 'ADMIN')) {
     return null;
   }
+  
+  const isAdmin = user.role === 'ADMIN';
+  const isCEO = user.role === 'CEO';
+  const isSuperAdmin = user.role === 'SUPERADMIN';
 
   return (
     <S.Container>
@@ -218,32 +255,48 @@ const UserManagementPage = () => {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
-              <tr key={user.userId}>
-                <td>{user.userId}</td>
-                <td>{user.username}</td>
-                <td>{user.koreanName}</td>
-                <td>{user.email || '-'}</td>
-                <td>{user.position || '-'}</td>
-                <td>{getRoleLabel(user.role)}</td>
+            {users.map((targetUser) => (
+              <tr key={targetUser.userId}>
+                <td>{targetUser.userId}</td>
+                <td>{targetUser.username}</td>
+                <td>{targetUser.koreanName}</td>
+                <td>{targetUser.email || '-'}</td>
+                <td>{targetUser.position || '-'}</td>
+                <td>{getRoleLabel(targetUser.role)}</td>
                 <td>
-                  <S.StatusBadge active={user.isActive}>
-                    {user.isActive ? '활성' : '비활성'}
+                  <S.StatusBadge active={targetUser.isActive}>
+                    {targetUser.isActive ? '활성' : '비활성'}
                   </S.StatusBadge>
                 </td>
                 <td>
                   <S.ActionButtons>
-                    <S.IconButton onClick={() => handleEdit(user)}>
-                      <FaEdit />
-                    </S.IconButton>
-                    <S.IconButton 
-                      danger 
-                      onClick={() => setDeleteConfirm(user.userId)}
-                      disabled={user.userId === user?.userId || deletingUserId === user.userId || deletingUserId !== null || isCreating || isUpdating} // 자기 자신 삭제 방지 및 처리 중 방지
-                      title={deletingUserId === user.userId ? '삭제 중...' : '삭제'}
-                    >
-                      <FaTrash />
-                    </S.IconButton>
+                    {(isAdmin || isCEO) && (
+                      <S.RoleSelect
+                        value={targetUser.role}
+                        onChange={(e) => handleRoleChange(targetUser.userId, e.target.value)}
+                        disabled={targetUser.userId === user?.userId || isCreating || isUpdating}
+                      >
+                        <option value="USER">일반 사용자</option>
+                        <option value="ADMIN">관리자</option>
+                        <option value="ACCOUNTANT">결재 담당자</option>
+                        <option value="TAX_ACCOUNTANT">세무사</option>
+                      </S.RoleSelect>
+                    )}
+                    {isSuperAdmin && (
+                      <>
+                        <S.IconButton onClick={() => handleEdit(targetUser)}>
+                          <FaEdit />
+                        </S.IconButton>
+                        <S.IconButton 
+                          danger 
+                          onClick={() => setDeleteConfirm(targetUser.userId)}
+                          disabled={targetUser.userId === user?.userId || deletingUserId === targetUser.userId || deletingUserId !== null || isCreating || isUpdating}
+                          title={deletingUserId === targetUser.userId ? '삭제 중...' : '삭제'}
+                        >
+                          <FaTrash />
+                        </S.IconButton>
+                      </>
+                    )}
                   </S.ActionButtons>
                 </td>
               </tr>

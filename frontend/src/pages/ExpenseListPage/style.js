@@ -409,6 +409,37 @@ export const FilterButton = styled.button`
   }
 `;
 
+export const ExportButton = styled.button`
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  &:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 12px 20px;
+  }
+`;
+
 export const CreateButton = styled.button`
   display: flex;
   align-items: center;
@@ -886,5 +917,69 @@ export const PaginationButton = styled.button`
     height: 36px;
     padding: 6px 10px;
     font-size: 13px;
+  }
+`;
+
+export const CompanySelector = styled.div`
+  position: relative;
+  margin-right: 12px;
+`;
+
+export const CompanySelectorButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  
+  &:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+  }
+  
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+  }
+`;
+
+export const CompanyDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  overflow: hidden;
+`;
+
+export const CompanyDropdownItem = styled.div`
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  color: var(--dark-color);
+  
+  &:hover {
+    background-color: var(--light-color);
+  }
+  
+  ${props => props.selected && `
+    background-color: rgba(0, 123, 255, 0.1);
+    font-weight: 600;
+    color: var(--primary-color);
+  `}
+  
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
   }
 `;

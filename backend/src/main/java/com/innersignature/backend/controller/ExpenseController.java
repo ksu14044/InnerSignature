@@ -434,10 +434,10 @@ public class ExpenseController {
     /**
      * 15. 대시보드 전체 요약 통계 API
      * GET /api/expenses/dashboard/stats?startDate=2024-01-01&endDate=2024-12-31
-     * 설명: ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
+     * 설명: CEO, ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
      */
-    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
-    @Operation(summary = "대시보드 통계", description = "기간별 지출 통계를 조회합니다. (ADMIN/ACCOUNTANT)")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN', 'ACCOUNTANT')")
+    @Operation(summary = "대시보드 통계", description = "기간별 지출 통계를 조회합니다. (CEO/ADMIN/ACCOUNTANT)")
     @GetMapping("/dashboard/stats")
     public ApiResponse<DashboardStatsDto> getDashboardStats(
             @RequestParam(required = false) String startDate,
@@ -465,10 +465,10 @@ public class ExpenseController {
     /**
      * 16. 월별 지출 추이 API
      * GET /api/expenses/dashboard/monthly-trend?startDate=2024-01-01&endDate=2024-12-31
-     * 설명: ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
+     * 설명: CEO, ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
      */
-    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
-    @Operation(summary = "월별 지출 추이", description = "기간별 월간 지출 추이를 조회합니다. (ADMIN/ACCOUNTANT)")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN', 'ACCOUNTANT')")
+    @Operation(summary = "월별 지출 추이", description = "기간별 월간 지출 추이를 조회합니다. (CEO/ADMIN/ACCOUNTANT)")
     @GetMapping("/dashboard/monthly-trend")
     public ApiResponse<List<MonthlyTrendDto>> getMonthlyTrend(
             @RequestParam(required = false) String startDate,
@@ -496,10 +496,10 @@ public class ExpenseController {
     /**
      * 17. 상태별 통계 API
      * GET /api/expenses/dashboard/status-stats?startDate=2024-01-01&endDate=2024-12-31
-     * 설명: ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
+     * 설명: CEO, ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
      */
-    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
-    @Operation(summary = "상태별 통계", description = "기간별 상태별 지출결의 건수를 조회합니다. (ADMIN/ACCOUNTANT)")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN', 'ACCOUNTANT')")
+    @Operation(summary = "상태별 통계", description = "기간별 상태별 지출결의 건수를 조회합니다. (CEO/ADMIN/ACCOUNTANT)")
     @GetMapping("/dashboard/status-stats")
     public ApiResponse<List<StatusStatsDto>> getStatusStats(
             @RequestParam(required = false) String startDate,
@@ -527,10 +527,10 @@ public class ExpenseController {
     /**
      * 18. 카테고리별 비율 API
      * GET /api/expenses/dashboard/category-ratio?startDate=2024-01-01&endDate=2024-12-31
-     * 설명: ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
+     * 설명: CEO, ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
      */
-    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
-    @Operation(summary = "카테고리별 비율", description = "기간별 카테고리 지출 비율을 조회합니다. (ADMIN/ACCOUNTANT)")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN', 'ACCOUNTANT')")
+    @Operation(summary = "카테고리별 비율", description = "기간별 카테고리 지출 비율을 조회합니다. (CEO/ADMIN/ACCOUNTANT)")
     @GetMapping("/dashboard/category-ratio")
     public ApiResponse<List<CategoryRatioDto>> getCategoryRatio(
             @RequestParam(required = false) String startDate,
@@ -672,6 +672,61 @@ public class ExpenseController {
     @Data
     static class BatchCompleteRequest {
         private List<Long> expenseReportIds;
+    }
+
+    /**
+     * 23. 지출 엑셀 다운로드 API
+     * GET /api/expenses/export/excel?startDate=2024-01-01&endDate=2024-12-31
+     * 설명: ADMIN, ACCOUNTANT, CEO 권한 사용자만 접근 가능
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'CEO')")
+    @Operation(summary = "지출 엑셀 다운로드", description = "기간별 지출 데이터를 엑셀 파일로 다운로드합니다. (ADMIN/ACCOUNTANT/CEO)")
+    @GetMapping("/export/excel")
+    public ResponseEntity<?> exportExpensesToExcel(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        
+        LocalDate startDateParsed = null;
+        LocalDate endDateParsed = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                startDateParsed = LocalDate.parse(startDate, formatter);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                endDateParsed = LocalDate.parse(endDate, formatter);
+            }
+        } catch (Exception e) {
+            logger.error("날짜 파싱 실패", e);
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "날짜 형식이 올바르지 않습니다. (형식: YYYY-MM-DD)", null));
+        }
+        
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        
+        try {
+            File excelFile = expenseService.exportExpensesToExcel(startDateParsed, endDateParsed, currentUserId);
+            Resource resource = new FileSystemResource(excelFile);
+            
+            String filename = String.format("지출내역_%s_%s.xlsx",
+                    startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                    endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            
+            logger.info("엑셀 다운로드 요청 - userId: {}, startDate: {}, endDate: {}", 
+                    currentUserId, startDateParsed, endDateParsed);
+            
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            logger.error("엑셀 다운로드 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "엑셀 파일 생성 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
     }
 
 }

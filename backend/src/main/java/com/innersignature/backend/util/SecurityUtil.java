@@ -47,5 +47,37 @@ public class SecurityUtil {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null && authentication.isAuthenticated();
     }
+    
+    /**
+     * 현재 인증된 사용자의 companyId를 반환합니다.
+     * JWT 필터에서 설정한 Authentication의 details에 저장된 companyId를 반환합니다.
+     * 
+     * @return 현재 인증된 사용자의 companyId (nullable, SUPERADMIN인 경우 null)
+     */
+    public static Long getCurrentCompanyId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        
+        Object details = authentication.getDetails();
+        if (details instanceof java.util.Map) {
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> detailsMap = (java.util.Map<String, Object>) details;
+            Object companyIdObj = detailsMap.get("companyId");
+            if (companyIdObj == null) {
+                return null;
+            }
+            if (companyIdObj instanceof Number) {
+                return ((Number) companyIdObj).longValue();
+            }
+            if (companyIdObj instanceof String) {
+                return Long.parseLong((String) companyIdObj);
+            }
+        }
+        
+        return null;
+    }
 }
 
