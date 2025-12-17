@@ -3,7 +3,7 @@
 services:
   # MySQL 데이터베이스
   mysql:
-    image: mysql:8.0  # MySQL 8.0 이미지 사용
+    image: mysql:5.7  # MySQL 5.7 이미지 사용 (구형 CPU 호환)
     container_name: innersignature-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-1q2w3e4r!}  # 환경변수 또는 기본값 (개발용)

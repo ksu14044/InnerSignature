@@ -7,7 +7,7 @@
 services:
   # MySQL 데이터베이스
   mysql:
-    image: mysql:8.0
+    image: mysql:5.7
     container_name: innersignature-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  # 환경변수 필수
