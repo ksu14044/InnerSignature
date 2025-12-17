@@ -156,7 +156,8 @@ docker-compose -f docker-compose.prod.yml logs nginx
 # 로그 확인
 docker-compose -f docker-compose.prod.yml logs
 
-# 특정 컨테이너 로그 확인
+# 특정 컨테이너 로그 확인 #
+
 docker-compose -f docker-compose.prod.yml logs backend
 ```
 
