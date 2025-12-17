@@ -5,8 +5,8 @@ server:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    # 프로덕션 DB 정보로 변경 필요
-    url: jdbc:mysql://prod-db-server:3306/signature_prod?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=true
+    # docker-compose의 mysql 서비스 사용
+    url: jdbc:mysql://${DB_HOST:mysql}:${DB_PORT:3306}/${DB_NAME:signature}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     hikari:
@@ -23,6 +23,7 @@ spring:
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
+    from: ${MAIL_FROM}
     properties:
       mail:
         smtp:

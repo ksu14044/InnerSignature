@@ -39,6 +39,13 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}  # 환경변수 필수
       JWT_SECRET: ${JWT_SECRET}  # 환경변수 필수
       FRONTEND_URL: ${FRONTEND_URL}  # 환경변수 필수
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
+      FILE_UPLOAD_BASE_DIR: ${FILE_UPLOAD_BASE_DIR:-uploads}
+      FILE_UPLOAD_RECEIPTS_DIR: ${FILE_UPLOAD_RECEIPTS_DIR:-receipts}
     ports:
       - "8080:8080"
     volumes:
@@ -57,6 +64,21 @@ services:
     ports:
       - "5173:80"
     depends_on:
+      - backend
+    networks:
+      - innersignature-network
+    restart: unless-stopped
+
+  # 리버스 프록시 (Nginx) - 외부에서 80번 포트로 접속하면 여기로 옴
+  nginx:
+    image: nginx:alpine
+    container_name: innersignature-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
       - backend
     networks:
       - innersignature-network

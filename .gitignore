@@ -4,6 +4,10 @@ update.sh
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
+.env.*
+*.env
 
 # Backend
 backend/target/
