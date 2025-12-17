@@ -37,7 +37,7 @@ CREATE TABLE `approval_line_tb` (
   KEY `approver_id` (`approver_id`),
   CONSTRAINT `approval_line_tb_ibfk_1` FOREIGN KEY (`expense_report_id`) REFERENCES `expense_report_tb` (`expense_report_id`) ON DELETE CASCADE,
   CONSTRAINT `approval_line_tb_ibfk_2` FOREIGN KEY (`approver_id`) REFERENCES `user_tb` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=125 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='결재 진행 및 서명 정보';
+) ENGINE=InnoDB AUTO_INCREMENT=125 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='결재 진행 및 서명 정보';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

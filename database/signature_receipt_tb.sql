@@ -36,7 +36,7 @@ CREATE TABLE `receipt_tb` (
   KEY `uploaded_by` (`uploaded_by`),
   CONSTRAINT `receipt_tb_ibfk_1` FOREIGN KEY (`expense_report_id`) REFERENCES `expense_report_tb` (`expense_report_id`) ON DELETE CASCADE,
   CONSTRAINT `receipt_tb_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `user_tb` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='영수증 파일 정보';
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='영수증 파일 정보';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

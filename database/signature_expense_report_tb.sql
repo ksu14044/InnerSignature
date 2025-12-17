@@ -39,7 +39,7 @@ CREATE TABLE `expense_report_tb` (
   PRIMARY KEY (`expense_report_id`),
   KEY `drafter_id` (`drafter_id`),
   CONSTRAINT `expense_report_tb_ibfk_1` FOREIGN KEY (`drafter_id`) REFERENCES `user_tb` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='지출결의서 메인 정보';
+) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='지출결의서 메인 정보';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
