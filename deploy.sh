@@ -18,11 +18,11 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-# 2. Docker Compose 설치 확인
-if ! command -v docker-compose &> /dev/null; then
-    echo "Docker Compose가 설치되어 있지 않습니다. 설치를 진행합니다..."
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
+# 2. Docker Compose 플러그인(docker compose) 확인
+if ! docker compose version &> /dev/null; then
+    echo "docker compose 플러그인을 찾을 수 없습니다."
+    echo "Docker Desktop 이나 Docker Engine + compose plugin 이 설치되어 있어야 합니다."
+    exit 1
 fi
 
 # 3. .env 파일 확인
@@ -45,25 +45,25 @@ mkdir -p nginx
 
 # 5. Docker 이미지 Pull
 echo "Docker 이미지를 가져오는 중..."
-docker-compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml pull
 
 # 6. 기존 컨테이너 중지 및 제거
 echo "기존 컨테이너를 중지하는 중..."
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 # 7. 새 컨테이너 시작
 echo "새 컨테이너를 시작하는 중..."
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # 8. 컨테이너 상태 확인
 echo "컨테이너 상태 확인 중..."
 sleep 5
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 echo ""
 echo "=== 배포 완료 ==="
 echo "서비스가 http://innersign.co.kr 에서 실행 중입니다."
 echo ""
-echo "컨테이너 로그 확인: docker-compose -f docker-compose.prod.yml logs -f"
-echo "컨테이너 상태 확인: docker-compose -f docker-compose.prod.yml ps"
+echo "컨테이너 로그 확인: docker compose -f docker-compose.prod.yml logs -f"
+echo "컨테이너 상태 확인: docker compose -f docker-compose.prod.yml ps"
 
