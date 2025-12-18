@@ -104,19 +104,39 @@
     </select>
     
     <select id="findPendingUsers" resultType="com.innersignature.backend.dto.UserDto">
-        SELECT user_id, username, korean_name, email, position, role, 
-               is_active, company_id, approval_status
-        FROM user_tb
-        WHERE company_id = #{companyId}
-          AND approval_status = 'PENDING'
-        ORDER BY user_id DESC
+        SELECT 
+            u.user_id, 
+            u.username, 
+            u.korean_name, 
+            u.email, 
+            uc.position, 
+            uc.role, 
+            uc.is_active, 
+            u.company_id, 
+            uc.approval_status
+        FROM user_tb u
+        INNER JOIN user_company_tb uc ON u.user_id = uc.user_id
+        WHERE uc.company_id = #{companyId}
+          AND uc.approval_status = 'PENDING'
+        ORDER BY u.user_id DESC
     </select>
     
     <select id="selectUsersByCompanyId" resultType="com.innersignature.backend.dto.UserDto">
-        SELECT user_id, username, korean_name, email, position, role, is_active, company_id, approval_status
-        FROM user_tb
-        WHERE company_id = #{companyId}
-        ORDER BY user_id
+        SELECT 
+            u.user_id, 
+            u.username, 
+            u.korean_name, 
+            u.email, 
+            uc.position, 
+            uc.role, 
+            uc.is_active, 
+            u.company_id, 
+            uc.approval_status
+        FROM user_tb u
+        INNER JOIN user_company_tb uc ON u.user_id = uc.user_id
+        WHERE uc.company_id = #{companyId}
+          AND uc.approval_status = 'APPROVED'
+        ORDER BY u.user_id
     </select>
     
     <!-- 사용자-회사 관계 관련 쿼리 -->
