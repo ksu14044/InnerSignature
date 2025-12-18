@@ -968,15 +968,18 @@ export const CompanyDropdownItem = styled.div`
   transition: all 0.2s;
   font-size: 14px;
   color: var(--dark-color);
+  display: flex;
+  align-items: center;
   
   &:hover {
     background-color: var(--light-color);
   }
   
   ${props => props.selected && `
-    background-color: rgba(0, 123, 255, 0.1);
+    background-color: rgba(0, 123, 255, 0.15);
     font-weight: 600;
     color: var(--primary-color);
+    border-left: 3px solid var(--primary-color);
   `}
   
   &:not(:last-child) {

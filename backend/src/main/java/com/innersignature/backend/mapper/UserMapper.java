@@ -1,6 +1,7 @@
 package com.innersignature.backend.mapper;
 
 import com.innersignature.backend.dto.UserDto;
+import com.innersignature.backend.dto.UserCompanyDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -58,4 +59,38 @@ public interface UserMapper {
     
     // 회사별 사용자 목록 조회
     List<UserDto> selectUsersByCompanyId(@Param("companyId") Long companyId);
+    
+    // 사용자-회사 관계 관련 메서드
+    // 사용자가 소속된 회사 목록 조회 (APPROVED만)
+    List<UserCompanyDto> findUserCompanies(@Param("userId") Long userId);
+    
+    // 승인 상태별 회사 목록 조회
+    List<UserCompanyDto> findUserCompaniesByStatus(@Param("userId") Long userId, @Param("status") String status);
+    
+    // 회사에 지원 요청 (PENDING 상태)
+    int applyToCompany(UserCompanyDto userCompanyDto);
+    
+    // 사용자를 회사에 추가 (APPROVED 상태)
+    int addUserToCompany(UserCompanyDto userCompanyDto);
+    
+    // 사용자를 회사에서 제거
+    int removeUserFromCompany(@Param("userId") Long userId, @Param("companyId") Long companyId);
+    
+    // 회사별 역할 변경
+    int updateUserCompanyRole(UserCompanyDto userCompanyDto);
+    
+    // 기본 회사 설정
+    int setPrimaryCompany(@Param("userId") Long userId, @Param("companyId") Long companyId);
+    
+    // 회사의 승인 대기 사용자 목록 조회
+    List<UserCompanyDto> findPendingCompanyApplications(@Param("companyId") Long companyId);
+    
+    // 회사 소속 승인
+    int approveUserCompany(@Param("userId") Long userId, @Param("companyId") Long companyId);
+    
+    // 회사 소속 거부
+    int rejectUserCompany(@Param("userId") Long userId, @Param("companyId") Long companyId);
+    
+    // 사용자가 소속된 회사 목록 조회 (CompanyDto 반환)
+    List<com.innersignature.backend.dto.CompanyDto> findCompaniesByUserId(@Param("userId") Long userId);
 }

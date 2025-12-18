@@ -118,4 +118,162 @@
         WHERE company_id = #{companyId}
         ORDER BY user_id
     </select>
+    
+    <!-- 사용자-회사 관계 관련 쿼리 -->
+    <select id="findUserCompanies" resultType="com.innersignature.backend.dto.UserCompanyDto">
+        SELECT 
+            uc.user_company_id AS userCompanyId,
+            uc.user_id AS userId,
+            uc.company_id AS companyId,
+            uc.role,
+            uc.position,
+            uc.is_active AS isActive,
+            uc.is_primary AS isPrimary,
+            uc.approval_status AS approvalStatus,
+            uc.created_at AS createdAt,
+            uc.updated_at AS updatedAt,
+            u.korean_name AS koreanName,
+            u.username,
+            u.email,
+            c.company_name AS companyName,
+            c.company_code AS companyCode
+        FROM user_company_tb uc
+        INNER JOIN user_tb u ON uc.user_id = u.user_id
+        INNER JOIN company_tb c ON uc.company_id = c.company_id
+        WHERE uc.user_id = #{userId}
+          AND uc.approval_status = 'APPROVED'
+        ORDER BY uc.is_primary DESC, uc.created_at DESC
+    </select>
+    
+    <select id="findUserCompaniesByStatus" resultType="com.innersignature.backend.dto.UserCompanyDto">
+        SELECT 
+            uc.user_company_id AS userCompanyId,
+            uc.user_id AS userId,
+            uc.company_id AS companyId,
+            uc.role,
+            uc.position,
+            uc.is_active AS isActive,
+            uc.is_primary AS isPrimary,
+            uc.approval_status AS approvalStatus,
+            uc.created_at AS createdAt,
+            uc.updated_at AS updatedAt,
+            u.korean_name AS koreanName,
+            u.username,
+            u.email,
+            c.company_name AS companyName,
+            c.company_code AS companyCode
+        FROM user_company_tb uc
+        INNER JOIN user_tb u ON uc.user_id = u.user_id
+        INNER JOIN company_tb c ON uc.company_id = c.company_id
+        WHERE uc.user_id = #{userId}
+          <if test="status != null">
+          AND uc.approval_status = #{status}
+          </if>
+        ORDER BY uc.is_primary DESC, uc.created_at DESC
+    </select>
+    
+    <insert id="applyToCompany" parameterType="com.innersignature.backend.dto.UserCompanyDto">
+        INSERT INTO user_company_tb (user_id, company_id, role, position, is_active, is_primary, approval_status, created_at, updated_at)
+        VALUES (#{userId}, #{companyId}, #{role}, #{position}, 
+                COALESCE(#{isActive}, 1), 
+                COALESCE(#{isPrimary}, 0),
+                'PENDING',
+                NOW(), NOW())
+    </insert>
+    
+    <insert id="addUserToCompany" parameterType="com.innersignature.backend.dto.UserCompanyDto">
+        INSERT INTO user_company_tb (user_id, company_id, role, position, is_active, is_primary, approval_status, created_at, updated_at)
+        VALUES (#{userId}, #{companyId}, #{role}, #{position}, 
+                COALESCE(#{isActive}, 1), 
+                COALESCE(#{isPrimary}, 0),
+                'APPROVED',
+                NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+            role = VALUES(role),
+            position = VALUES(position),
+            is_active = VALUES(is_active),
+            approval_status = 'APPROVED',
+            updated_at = NOW()
+    </insert>
+    
+    <delete id="removeUserFromCompany">
+        DELETE FROM user_company_tb
+        WHERE user_id = #{userId} AND company_id = #{companyId}
+    </delete>
+    
+    <update id="updateUserCompanyRole" parameterType="com.innersignature.backend.dto.UserCompanyDto">
+        UPDATE user_company_tb
+        SET role = #{role},
+            position = #{position},
+            updated_at = NOW()
+        WHERE user_id = #{userId} AND company_id = #{companyId}
+    </update>
+    
+    <update id="setPrimaryCompany">
+        UPDATE user_company_tb
+        SET is_primary = CASE 
+            WHEN user_id = #{userId} AND company_id = #{companyId} THEN 1
+            ELSE 0
+        END,
+        updated_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
+    
+    <select id="findPendingCompanyApplications" resultType="com.innersignature.backend.dto.UserCompanyDto">
+        SELECT 
+            uc.user_company_id AS userCompanyId,
+            uc.user_id AS userId,
+            uc.company_id AS companyId,
+            uc.role,
+            uc.position,
+            uc.is_active AS isActive,
+            uc.is_primary AS isPrimary,
+            uc.approval_status AS approvalStatus,
+            uc.created_at AS createdAt,
+            uc.updated_at AS updatedAt,
+            u.korean_name AS koreanName,
+            u.username,
+            u.email,
+            c.company_name AS companyName,
+            c.company_code AS companyCode
+        FROM user_company_tb uc
+        INNER JOIN user_tb u ON uc.user_id = u.user_id
+        INNER JOIN company_tb c ON uc.company_id = c.company_id
+        WHERE uc.company_id = #{companyId}
+          AND uc.approval_status = 'PENDING'
+        ORDER BY uc.created_at DESC
+    </select>
+    
+    <update id="approveUserCompany">
+        UPDATE user_company_tb
+        SET approval_status = 'APPROVED',
+            is_active = 1,
+            updated_at = NOW()
+        WHERE user_id = #{userId} AND company_id = #{companyId}
+    </update>
+    
+    <update id="rejectUserCompany">
+        UPDATE user_company_tb
+        SET approval_status = 'REJECTED',
+            is_active = 0,
+            updated_at = NOW()
+        WHERE user_id = #{userId} AND company_id = #{companyId}
+    </update>
+    
+    <select id="findCompaniesByUserId" resultType="com.innersignature.backend.dto.CompanyDto">
+        SELECT 
+            c.company_id AS companyId,
+            c.company_code AS companyCode,
+            c.company_name AS companyName,
+            c.created_by AS createdBy,
+            c.is_active AS isActive,
+            c.created_at AS createdAt,
+            c.updated_at AS updatedAt
+        FROM company_tb c
+        INNER JOIN user_company_tb uc ON c.company_id = uc.company_id
+        WHERE uc.user_id = #{userId}
+          AND uc.approval_status = 'APPROVED'
+          AND c.is_active = 1
+        ORDER BY uc.is_primary DESC, c.created_at DESC
+    </select>
 </mapper>

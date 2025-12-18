@@ -174,3 +174,95 @@ export const approveUser = async (userId, action) => {
   }
 };
 
+// 사용자가 소속된 회사 목록 조회 (APPROVED만)
+export const getUserCompanies = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/companies`);
+    return response.data;
+  } catch (error) {
+    console.error("소속 회사 목록 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 승인 대기 회사 목록 조회
+export const getPendingCompanies = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/companies/pending`);
+    return response.data;
+  } catch (error) {
+    console.error("승인 대기 회사 목록 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 회사에 지원 요청
+export const applyToCompany = async (companyId, role, position) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/companies/apply`, {
+      companyId,
+      role,
+      position
+    });
+    return response.data;
+  } catch (error) {
+    console.error("회사 지원 요청 실패:", error);
+    throw error;
+  }
+};
+
+// 회사에서 탈퇴
+export const removeUserFromCompany = async (companyId) => {
+  try {
+    const response = await axios.delete(`${BASE_URL}/companies/${companyId}`);
+    return response.data;
+  } catch (error) {
+    console.error("회사 탈퇴 실패:", error);
+    throw error;
+  }
+};
+
+// 기본 회사 설정
+export const setPrimaryCompany = async (companyId) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/companies/${companyId}/primary`);
+    return response.data;
+  } catch (error) {
+    console.error("기본 회사 설정 실패:", error);
+    throw error;
+  }
+};
+
+// 회사의 승인 대기 사용자 목록 조회 (ADMIN/CEO용)
+export const getCompanyApplications = async (companyId) => {
+  try {
+    const response = await axios.get(`${API_CONFIG.BASE_URL}/companies/${companyId}/applications`);
+    return response.data;
+  } catch (error) {
+    console.error("회사 승인 대기 사용자 목록 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 회사 소속 승인 (ADMIN/CEO용)
+export const approveUserCompany = async (userId, companyId) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/${userId}/companies/${companyId}/approve`);
+    return response.data;
+  } catch (error) {
+    console.error("회사 소속 승인 실패:", error);
+    throw error;
+  }
+};
+
+// 회사 소속 거부 (ADMIN/CEO용)
+export const rejectUserCompany = async (userId, companyId) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/${userId}/companies/${companyId}/reject`);
+    return response.data;
+  } catch (error) {
+    console.error("회사 소속 거부 실패:", error);
+    throw error;
+  }
+};
+

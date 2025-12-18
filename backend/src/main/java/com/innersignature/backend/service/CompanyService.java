@@ -4,6 +4,7 @@ import com.innersignature.backend.dto.CompanyDto;
 import com.innersignature.backend.dto.CompanySearchResultDto;
 import com.innersignature.backend.exception.BusinessException;
 import com.innersignature.backend.mapper.CompanyMapper;
+import com.innersignature.backend.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ public class CompanyService {
     
     private static final Logger logger = LoggerFactory.getLogger(CompanyService.class);
     private final CompanyMapper companyMapper;
+    private final UserMapper userMapper;
     private final Random random = new Random();
     
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -35,6 +37,15 @@ public class CompanyService {
     
     public List<CompanyDto> findByCreatedBy(Long adminUserId) {
         return companyMapper.findByCreatedBy(adminUserId);
+    }
+    
+    /**
+     * 사용자가 소속된 회사 목록 조회
+     * @param userId 사용자 ID
+     * @return 소속된 회사 목록
+     */
+    public List<CompanyDto> findByUserId(Long userId) {
+        return userMapper.findCompaniesByUserId(userId);
     }
     
     public List<CompanySearchResultDto> searchByName(String companyName) {

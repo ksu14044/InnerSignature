@@ -3,6 +3,8 @@ package com.innersignature.backend.controller;
 import com.innersignature.backend.dto.ApiResponse;
 import com.innersignature.backend.dto.CompanyDto;
 import com.innersignature.backend.dto.CompanySearchResultDto;
+import com.innersignature.backend.dto.UserCompanyDto;
+import com.innersignature.backend.dto.UserDto;
 import com.innersignature.backend.service.CompanyService;
 import com.innersignature.backend.service.UserService;
 import com.innersignature.backend.util.SecurityUtil;
@@ -39,8 +41,12 @@ public class CompanyController {
             
             CompanyDto company = companyService.createCompany(request.getCompanyName(), userId);
             
-            // 회사 생성 후 사용자의 company_id 할당
-            userService.assignToCompany(userId, company.getCompanyId());
+            // 회사 생성 후 사용자를 회사에 추가 (user_company_tb에 추가, 기본 회사로 설정)
+            UserDto user = userService.selectUserById(userId);
+            if (user != null) {
+                userService.addUserToCompany(userId, company.getCompanyId(), user.getRole(), user.getPosition());
+                userService.switchPrimaryCompany(userId, company.getCompanyId());
+            }
             
             logger.info("회사 생성 완료 - companyId: {}, companyName: {}, userId: {}", 
                 company.getCompanyId(), company.getCompanyName(), userId);
@@ -52,13 +58,12 @@ public class CompanyController {
         }
     }
     
-    @Operation(summary = "회사 목록 조회", description = "현재 CEO 또는 ADMIN이 등록한 회사 목록을 조회합니다.")
+    @Operation(summary = "회사 목록 조회", description = "현재 사용자가 소속된 회사 목록을 조회합니다.")
     @GetMapping
-    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<CompanyDto>>> getMyCompanies() {
         try {
             Long userId = SecurityUtil.getCurrentUserId();
-            List<CompanyDto> companies = companyService.findByCreatedBy(userId);
+            List<CompanyDto> companies = companyService.findByUserId(userId);
             return ResponseEntity.ok(new ApiResponse<>(true, "조회 성공", companies));
         } catch (Exception e) {
             logger.error("회사 목록 조회 실패", e);
@@ -98,21 +103,20 @@ public class CompanyController {
         }
     }
     
-    @Operation(summary = "회사 전환", description = "CEO 또는 ADMIN이 다른 회사로 전환합니다. (JWT 토큰 재발급)")
+    @Operation(summary = "회사 전환", description = "사용자가 소속된 다른 회사로 전환합니다. (JWT 토큰 재발급은 UserController에서 처리)")
     @PostMapping("/switch")
-    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> switchCompany(@RequestBody CompanySwitchRequest request) {
         try {
             Long userId = SecurityUtil.getCurrentUserId();
             
-            // 사용자가 등록한 회사인지 확인
-            List<CompanyDto> myCompanies = companyService.findByCreatedBy(userId);
+            // 사용자가 소속된 회사인지 확인
+            List<CompanyDto> myCompanies = companyService.findByUserId(userId);
             boolean isMyCompany = myCompanies.stream()
                 .anyMatch(c -> c.getCompanyId().equals(request.getCompanyId()));
             
             if (!isMyCompany) {
                 return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "해당 회사에 대한 권한이 없습니다.", null));
+                    .body(new ApiResponse<>(false, "해당 회사에 소속되어 있지 않습니다.", null));
             }
             
             // 회사 정보 조회
@@ -135,6 +139,32 @@ public class CompanyController {
             return ResponseEntity.ok(new ApiResponse<>(true, "회사 전환이 완료되었습니다.", responseData));
         } catch (Exception e) {
             logger.error("회사 전환 실패", e);
+            return ResponseEntity.badRequest()
+                .body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+    
+    @Operation(summary = "회사 승인 대기 사용자 목록", description = "회사의 승인 대기 사용자 목록을 조회합니다. (ADMIN/CEO만)")
+    @GetMapping("/{companyId}/applications")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserCompanyDto>>> getCompanyApplications(@PathVariable Long companyId) {
+        try {
+            Long userId = SecurityUtil.getCurrentUserId();
+            
+            // 작업 수행자가 해당 회사에 소속되어 있는지 확인
+            List<CompanyDto> myCompanies = companyService.findByUserId(userId);
+            boolean hasAccess = myCompanies.stream()
+                .anyMatch(c -> c.getCompanyId().equals(companyId));
+            
+            if (!hasAccess) {
+                return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>(false, "해당 회사에 대한 권한이 없습니다.", null));
+            }
+            
+            List<UserCompanyDto> applications = userService.findPendingCompanyApplications(companyId);
+            return ResponseEntity.ok(new ApiResponse<>(true, "조회 성공", applications));
+        } catch (Exception e) {
+            logger.error("회사 승인 대기 사용자 목록 조회 실패", e);
             return ResponseEntity.badRequest()
                 .body(new ApiResponse<>(false, e.getMessage(), null));
         }

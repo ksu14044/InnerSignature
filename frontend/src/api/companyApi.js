@@ -38,7 +38,7 @@ export const createCompany = async (companyName) => {
   }
 };
 
-// ADMIN이 등록한 회사 목록 조회
+// 사용자가 소속된 회사 목록 조회 (모든 사용자)
 export const getMyCompanies = async () => {
   try {
     const response = await axios.get(BASE_URL);

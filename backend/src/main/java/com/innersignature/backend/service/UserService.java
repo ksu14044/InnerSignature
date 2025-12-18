@@ -1,11 +1,13 @@
 package com.innersignature.backend.service;
 
 import com.innersignature.backend.dto.UserDto;
+import com.innersignature.backend.dto.UserCompanyDto;
 import com.innersignature.backend.exception.BusinessException;
 import com.innersignature.backend.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -60,6 +62,15 @@ public class UserService {
         userDto.setPassword(encodedPassword);
 
         return userMapper.register(userDto);
+    }
+
+    /**
+     * 사용자명으로 사용자 조회
+     * @param username 사용자명
+     * @return 사용자 정보 (없으면 null)
+     */
+    public UserDto findByUsername(String username) {
+        return userMapper.findByUsername(username);
     }
 
     /**
@@ -421,5 +432,185 @@ public class UserService {
         user.setApprovalStatus("REJECTED");
         user.setIsActive(false);
         userMapper.updateUser(user);
+    }
+    
+    /**
+     * 사용자가 소속된 회사 목록 조회 (APPROVED만)
+     * @param userId 사용자 ID
+     * @return 소속된 회사 목록
+     */
+    public List<UserCompanyDto> getUserCompanies(Long userId) {
+        return userMapper.findUserCompanies(userId);
+    }
+    
+    /**
+     * 승인 상태별 회사 목록 조회
+     * @param userId 사용자 ID
+     * @param status 승인 상태 (PENDING, APPROVED, REJECTED)
+     * @return 승인 상태별 회사 목록
+     */
+    public List<UserCompanyDto> getUserCompaniesByStatus(Long userId, String status) {
+        return userMapper.findUserCompaniesByStatus(userId, status);
+    }
+    
+    /**
+     * 회사에 지원 요청 (PENDING 상태)
+     * @param userId 사용자 ID
+     * @param companyId 회사 ID
+     * @param role 역할
+     * @param position 직급
+     * @return 추가 성공 시 1, 실패 시 0
+     */
+    @Transactional
+    public int applyToCompany(Long userId, Long companyId, String role, String position) {
+        // 사용자 존재 확인
+        UserDto user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new BusinessException("사용자를 찾을 수 없습니다.");
+        }
+        
+        // 이미 소속된 회사인지 확인
+        List<UserCompanyDto> existing = userMapper.findUserCompaniesByStatus(userId, null);
+        boolean alreadyExists = existing.stream()
+            .anyMatch(uc -> uc.getCompanyId().equals(companyId));
+        
+        if (alreadyExists) {
+            throw new BusinessException("이미 해당 회사에 소속되어 있거나 지원 요청이 있습니다.");
+        }
+        
+        UserCompanyDto userCompanyDto = new UserCompanyDto();
+        userCompanyDto.setUserId(userId);
+        userCompanyDto.setCompanyId(companyId);
+        userCompanyDto.setRole(role != null ? role : "USER");
+        userCompanyDto.setPosition(position);
+        userCompanyDto.setIsActive(true);
+        userCompanyDto.setIsPrimary(false);
+        
+        return userMapper.applyToCompany(userCompanyDto);
+    }
+    
+    /**
+     * 사용자를 회사에 추가 (APPROVED 상태, ADMIN/CEO만 사용)
+     * @param userId 사용자 ID
+     * @param companyId 회사 ID
+     * @param role 역할
+     * @param position 직급
+     * @return 추가 성공 시 1, 실패 시 0
+     */
+    @Transactional
+    public int addUserToCompany(Long userId, Long companyId, String role, String position) {
+        // 사용자 존재 확인
+        UserDto user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new BusinessException("사용자를 찾을 수 없습니다.");
+        }
+        
+        UserCompanyDto userCompanyDto = new UserCompanyDto();
+        userCompanyDto.setUserId(userId);
+        userCompanyDto.setCompanyId(companyId);
+        userCompanyDto.setRole(role != null ? role : "USER");
+        userCompanyDto.setPosition(position);
+        userCompanyDto.setIsActive(true);
+        userCompanyDto.setIsPrimary(false);
+        
+        return userMapper.addUserToCompany(userCompanyDto);
+    }
+    
+    /**
+     * 사용자를 회사에서 제거
+     * @param userId 사용자 ID
+     * @param companyId 회사 ID
+     * @return 제거 성공 시 1, 실패 시 0
+     */
+    @Transactional
+    public int removeUserFromCompany(Long userId, Long companyId) {
+        return userMapper.removeUserFromCompany(userId, companyId);
+    }
+    
+    /**
+     * 기본 회사 전환
+     * @param userId 사용자 ID
+     * @param companyId 회사 ID
+     * @return 전환 성공 시 1, 실패 시 0
+     */
+    @Transactional
+    public int switchPrimaryCompany(Long userId, Long companyId) {
+        // 사용자가 해당 회사에 소속되어 있는지 확인
+        List<UserCompanyDto> companies = userMapper.findUserCompanies(userId);
+        boolean isMember = companies.stream()
+            .anyMatch(uc -> uc.getCompanyId().equals(companyId) && "APPROVED".equals(uc.getApprovalStatus()));
+        
+        if (!isMember) {
+            throw new BusinessException("해당 회사에 소속되어 있지 않습니다.");
+        }
+        
+        return userMapper.setPrimaryCompany(userId, companyId);
+    }
+    
+    /**
+     * 회사의 승인 대기 사용자 목록 조회
+     * @param companyId 회사 ID
+     * @return 승인 대기 사용자 목록
+     */
+    public List<UserCompanyDto> findPendingCompanyApplications(Long companyId) {
+        return userMapper.findPendingCompanyApplications(companyId);
+    }
+    
+    /**
+     * 회사 소속 승인
+     * @param userId 사용자 ID
+     * @param companyId 회사 ID
+     * @param operatorId 작업 수행자 ID (ADMIN/CEO)
+     */
+    @Transactional
+    public void approveUserCompany(Long userId, Long companyId, Long operatorId) {
+        // 작업 수행자 권한 확인
+        UserDto operator = userMapper.selectUserById(operatorId);
+        if (operator == null || (!"CEO".equals(operator.getRole()) && !"ADMIN".equals(operator.getRole()))) {
+            throw new BusinessException("승인 권한이 없습니다.");
+        }
+        
+        // 작업 수행자가 해당 회사에 소속되어 있는지 확인
+        List<UserCompanyDto> operatorCompanies = userMapper.findUserCompanies(operatorId);
+        boolean hasAccess = operatorCompanies.stream()
+            .anyMatch(uc -> uc.getCompanyId().equals(companyId));
+        
+        if (!hasAccess) {
+            throw new BusinessException("해당 회사에 대한 권한이 없습니다.");
+        }
+        
+        int result = userMapper.approveUserCompany(userId, companyId);
+        if (result == 0) {
+            throw new BusinessException("승인 처리에 실패했습니다.");
+        }
+    }
+    
+    /**
+     * 회사 소속 거부
+     * @param userId 사용자 ID
+     * @param companyId 회사 ID
+     * @param operatorId 작업 수행자 ID (ADMIN/CEO)
+     */
+    @Transactional
+    public void rejectUserCompany(Long userId, Long companyId, Long operatorId) {
+        // 작업 수행자 권한 확인
+        UserDto operator = userMapper.selectUserById(operatorId);
+        if (operator == null || (!"CEO".equals(operator.getRole()) && !"ADMIN".equals(operator.getRole()))) {
+            throw new BusinessException("거부 권한이 없습니다.");
+        }
+        
+        // 작업 수행자가 해당 회사에 소속되어 있는지 확인
+        List<UserCompanyDto> operatorCompanies = userMapper.findUserCompanies(operatorId);
+        boolean hasAccess = operatorCompanies.stream()
+            .anyMatch(uc -> uc.getCompanyId().equals(companyId));
+        
+        if (!hasAccess) {
+            throw new BusinessException("해당 회사에 대한 권한이 없습니다.");
+        }
+        
+        int result = userMapper.rejectUserCompany(userId, companyId);
+        if (result == 0) {
+            throw new BusinessException("거부 처리에 실패했습니다.");
+        }
     }
 }

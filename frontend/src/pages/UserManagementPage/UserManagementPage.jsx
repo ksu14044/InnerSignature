@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllUsers, createUser, updateUser, deleteUser, updateUserRole, getCompanyUsers } from '../../api/userApi';
+import { getAllUsers, createUser, updateUser, deleteUser, updateUserRole, getCompanyUsers, getCompanyApplications, approveUserCompany, rejectUserCompany } from '../../api/userApi';
+import { getUserCompanies } from '../../api/userApi';
 import { USER_ROLES } from '../../constants/status';
-import { FaPlus, FaSignOutAlt, FaEdit, FaTrash, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaSignOutAlt, FaEdit, FaTrash, FaTimes, FaCheck, FaBan } from 'react-icons/fa';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 
@@ -17,6 +18,10 @@ const UserManagementPage = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState(null);
+  const [userCompanies, setUserCompanies] = useState([]);
+  const [companyApplications, setCompanyApplications] = useState({});
+  const [selectedCompanyId, setSelectedCompanyId] = useState(null);
+  const [loadingApplications, setLoadingApplications] = useState(false);
   
   const [formData, setFormData] = useState({
     username: '',
@@ -42,8 +47,82 @@ const UserManagementPage = () => {
   useEffect(() => {
     if (user?.role === 'SUPERADMIN' || user?.role === 'CEO' || user?.role === 'ADMIN') {
       loadUsers();
+      if (user?.role === 'CEO' || user?.role === 'ADMIN') {
+        loadUserCompanies();
+      }
     }
   }, [user]);
+
+  const loadUserCompanies = async () => {
+    try {
+      const response = await getUserCompanies();
+      if (response.success && response.data) {
+        setUserCompanies(response.data || []);
+        if (response.data.length > 0) {
+          setSelectedCompanyId(response.data[0].companyId);
+          loadCompanyApplications(response.data[0].companyId);
+        }
+      }
+    } catch (error) {
+      console.error('소속 회사 목록 조회 실패:', error);
+    }
+  };
+
+  const loadCompanyApplications = async (companyId) => {
+    if (!companyId) return;
+    try {
+      setLoadingApplications(true);
+      const response = await getCompanyApplications(companyId);
+      if (response.success && response.data) {
+        setCompanyApplications(prev => ({
+          ...prev,
+          [companyId]: response.data || []
+        }));
+      }
+    } catch (error) {
+      console.error('회사 승인 대기 사용자 목록 조회 실패:', error);
+      alert(error?.response?.data?.message || '승인 대기 사용자 목록 조회 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingApplications(false);
+    }
+  };
+
+  const handleApproveUserCompany = async (userId, companyId) => {
+    if (!window.confirm('이 사용자의 회사 소속을 승인하시겠습니까?')) {
+      return;
+    }
+    try {
+      const response = await approveUserCompany(userId, companyId);
+      if (response.success) {
+        alert('회사 소속이 승인되었습니다.');
+        loadCompanyApplications(companyId);
+        loadUsers();
+      } else {
+        alert(response.message || '승인에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('회사 소속 승인 실패:', error);
+      alert(error?.response?.data?.message || '승인 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleRejectUserCompany = async (userId, companyId) => {
+    if (!window.confirm('이 사용자의 회사 소속 요청을 거부하시겠습니까?')) {
+      return;
+    }
+    try {
+      const response = await rejectUserCompany(userId, companyId);
+      if (response.success) {
+        alert('회사 소속이 거부되었습니다.');
+        loadCompanyApplications(companyId);
+      } else {
+        alert(response.message || '거부에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('회사 소속 거부 실패:', error);
+      alert(error?.response?.data?.message || '거부 중 오류가 발생했습니다.');
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -237,6 +316,94 @@ const UserManagementPage = () => {
           <FaPlus /> 사용자 생성
         </S.Button>
       </S.Toolbar>
+
+      {/* 회사별 승인 대기 사용자 (CEO/ADMIN만) */}
+      {(isAdmin || isCEO) && userCompanies.length > 0 && (
+        <S.ProfileCard style={{ marginBottom: '20px' }}>
+          <S.CardTitle>회사별 승인 대기 사용자</S.CardTitle>
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>회사 선택</label>
+            <S.Select
+              value={selectedCompanyId || ''}
+              onChange={(e) => {
+                const companyId = e.target.value ? Number(e.target.value) : null;
+                setSelectedCompanyId(companyId);
+                if (companyId) {
+                  loadCompanyApplications(companyId);
+                }
+              }}
+              style={{ width: '300px' }}
+            >
+              <option value="">회사를 선택하세요</option>
+              {userCompanies.map((company) => (
+                <option key={company.companyId} value={company.companyId}>
+                  {company.companyName}
+                </option>
+              ))}
+            </S.Select>
+          </div>
+
+          {selectedCompanyId && (
+            <div>
+              {loadingApplications ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>로딩 중...</div>
+              ) : (
+                <>
+                  {companyApplications[selectedCompanyId]?.length > 0 ? (
+                    <S.Table>
+                      <thead>
+                        <tr>
+                          <th>이름</th>
+                          <th>아이디</th>
+                          <th>이메일</th>
+                          <th>요청 역할</th>
+                          <th>요청 직급</th>
+                          <th>요청일</th>
+                          <th>작업</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {companyApplications[selectedCompanyId].map((application) => (
+                          <tr key={application.userCompanyId}>
+                            <td>{application.koreanName}</td>
+                            <td>{application.username}</td>
+                            <td>{application.email || '-'}</td>
+                            <td>{getRoleLabel(application.role)}</td>
+                            <td>{application.position || '-'}</td>
+                            <td>{new Date(application.createdAt).toLocaleDateString()}</td>
+                            <td>
+                              <S.ActionButtons>
+                                <S.IconButton
+                                  onClick={() => handleApproveUserCompany(application.userId, application.companyId)}
+                                  style={{ color: '#28a745', marginRight: '10px' }}
+                                  title="승인"
+                                >
+                                  <FaCheck />
+                                </S.IconButton>
+                                <S.IconButton
+                                  onClick={() => handleRejectUserCompany(application.userId, application.companyId)}
+                                  danger
+                                  title="거부"
+                                >
+                                  <FaBan />
+                                </S.IconButton>
+                              </S.ActionButtons>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </S.Table>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                      승인 대기 사용자가 없습니다.
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </S.ProfileCard>
+      )}
 
       {loading ? (
         <LoadingOverlay fullScreen={false} message="로딩 중..." />

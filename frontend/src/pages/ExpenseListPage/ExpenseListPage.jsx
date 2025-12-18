@@ -308,12 +308,12 @@ const ExpenseListPage = () => {
               <span>세무사 요약</span>
             </S.FilterButton>
           )}
-          {(user?.role === 'CEO' || user?.role === 'ADMIN') && companies && companies.length > 1 && (
+          {companies && companies.length > 1 && (
             <S.CompanySelector>
               <S.CompanySelectorButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>
                 <FaBuilding />
                 <span>
-                  {companies.find(c => c.companyId === user.companyId)?.companyName || '회사 선택'}
+                  현재: {companies.find(c => c.companyId === user.companyId)?.companyName || '회사 선택'}
                 </span>
                 <FaChevronDown />
               </S.CompanySelectorButton>
@@ -333,6 +333,7 @@ const ExpenseListPage = () => {
                         }
                       }}
                     >
+                      {company.companyId === user.companyId && <FaCheck style={{ marginRight: '8px', color: '#007bff' }} />}
                       {company.companyName}
                     </S.CompanyDropdownItem>
                   ))}

@@ -2,6 +2,7 @@ package com.innersignature.backend.util;
 
 import com.innersignature.backend.dto.ExpenseReportDto;
 import com.innersignature.backend.dto.UserDto;
+import com.innersignature.backend.dto.UserCompanyDto;
 import com.innersignature.backend.exception.BusinessException;
 import com.innersignature.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -152,6 +153,56 @@ public class PermissionUtil {
         if (!isTaxAccountant(userId)) {
             throw new BusinessException("TAX_ACCOUNTANT 권한이 필요합니다.");
         }
+    }
+    
+    /**
+     * 사용자가 해당 회사에 소속되어 있는지 확인
+     * 
+     * @param userId 사용자 ID
+     * @param companyId 회사 ID
+     * @return 소속되어 있으면 true, 아니면 false
+     */
+    public boolean checkUserCompanyAccess(Long userId, Long companyId) {
+        if (userId == null || companyId == null) {
+            return false;
+        }
+        
+        java.util.List<UserCompanyDto> companies = userService.getUserCompanies(userId);
+        return companies.stream()
+            .anyMatch(uc -> uc.getCompanyId().equals(companyId) && "APPROVED".equals(uc.getApprovalStatus()));
+    }
+    
+    /**
+     * 사용자가 해당 회사에 소속되어 있는지 확인하고, 없으면 예외를 던짐
+     * 
+     * @param userId 사용자 ID
+     * @param companyId 회사 ID
+     * @throws BusinessException 소속되어 있지 않은 경우
+     */
+    public void checkUserCompanyAccessOrThrow(Long userId, Long companyId) {
+        if (!checkUserCompanyAccess(userId, companyId)) {
+            throw new BusinessException("해당 회사에 대한 접근 권한이 없습니다.");
+        }
+    }
+    
+    /**
+     * 사용자가 해당 회사에서 특정 역할을 가지고 있는지 확인
+     * 
+     * @param userId 사용자 ID
+     * @param companyId 회사 ID
+     * @param role 확인할 역할
+     * @return 해당 역할을 가지고 있으면 true, 아니면 false
+     */
+    public boolean hasRoleInCompany(Long userId, Long companyId, String role) {
+        if (userId == null || companyId == null || role == null) {
+            return false;
+        }
+        
+        java.util.List<UserCompanyDto> companies = userService.getUserCompanies(userId);
+        return companies.stream()
+            .anyMatch(uc -> uc.getCompanyId().equals(companyId) 
+                && "APPROVED".equals(uc.getApprovalStatus())
+                && role.equals(uc.getRole()));
     }
     
     /**

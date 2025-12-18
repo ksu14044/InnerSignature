@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useCookies } from 'react-cookie';
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
@@ -13,30 +13,39 @@ export const AuthProvider = ({ children }) => {
 
   // 쿠키에 저장된 user 정보를 가져옵니다. (없으면 undefined)
   const user = cookies.user;
+  const loadingCompaniesRef = useRef(false); // 중복 요청 방지용
 
-  // CEO 또는 ADMIN인 경우 회사 목록 로드
-  useEffect(() => {
-    const loadCompanies = async () => {
-      if ((user?.role === 'CEO' || user?.role === 'ADMIN') && cookies.token) {
-        try {
-          const response = await getMyCompanies();
-          if (response.success && response.data) {
-            setCompanies(response.data);
-            setCookie('companies', response.data, { path: '/', maxAge: 3600 });
-          }
-        } catch (error) {
-          console.error('회사 목록 로드 실패:', error);
-        }
-      } else {
-        setCompanies([]);
-      }
-    };
+  // 회사 목록 로드를 useCallback으로 감싸서 무한 루프 방지
+  const loadCompanies = useCallback(async () => {
+    if (loadingCompaniesRef.current) return; // 이미 로딩 중이면 중복 요청 방지
     
+    if (user && cookies.token) {
+      try {
+        loadingCompaniesRef.current = true;
+        const response = await getMyCompanies();
+        if (response.success && response.data) {
+          setCompanies(response.data);
+          setCookie('companies', response.data, { path: '/', maxAge: 3600 });
+        }
+      } catch (error) {
+        console.error('회사 목록 로드 실패:', error);
+        setCompanies([]);
+      } finally {
+        loadingCompaniesRef.current = false;
+      }
+    } else {
+      setCompanies([]);
+    }
+  }, [user?.userId, cookies.token, setCookie]); // user?.userId와 token만 체크
+
+  // 모든 사용자가 회사 목록 로드
+  useEffect(() => {
     if (user) {
       loadCompanies();
+    } else {
+      setCompanies([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.role, cookies.token]); // setCookie 제거, user 대신 user?.role 사용
+  }, [user?.userId, cookies.token, loadCompanies]); // user?.userId와 token만 체크
 
   // 로그인 함수
   const login = (userData, token, refreshToken) => {
@@ -48,7 +57,7 @@ export const AuthProvider = ({ children }) => {
       setCookie('refreshToken', refreshToken, { path: '/', maxAge: 1209600 }); // 리프레시 토큰 (14일)
     }
     
-    // CEO 또는 ADMIN인 경우 회사 목록은 별도로 로드됨 (useEffect에서 처리)
+    // 회사 목록은 별도로 로드됨 (useEffect에서 처리)
   };
   
   // 회사 전환 함수

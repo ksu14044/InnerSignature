@@ -2,6 +2,7 @@ package com.innersignature.backend.controller;
 
 import com.innersignature.backend.dto.ApiResponse;
 import com.innersignature.backend.dto.UserDto;
+import com.innersignature.backend.dto.UserCompanyDto;
 import com.innersignature.backend.exception.BusinessException;
 import com.innersignature.backend.security.JwtBlacklistService;
 import com.innersignature.backend.service.EmailService;
@@ -128,6 +129,40 @@ public class UserController {
 
         int result = userService.register(newUser);
         if (result > 0) {
+            // 회원가입 성공 후 user_company_tb에도 추가
+            if (request.getCompanyId() != null) {
+                try {
+                    // 생성된 사용자 정보 조회
+                    UserDto createdUser = userService.findByUsername(request.getUsername());
+                    
+                    if (createdUser != null) {
+                        // user_company_tb에 추가 (PENDING 상태로)
+                        userService.applyToCompany(
+                            createdUser.getUserId(), 
+                            request.getCompanyId(), 
+                            request.getRole(), 
+                            request.getPosition()
+                        );
+                        // CEO는 즉시 승인 처리 (addUserToCompany를 APPROVED 상태로 직접 호출)
+                        if ("CEO".equals(request.getRole())) {
+                            // applyToCompany로 추가된 것을 삭제하고 APPROVED 상태로 다시 추가
+                            userService.removeUserFromCompany(createdUser.getUserId(), request.getCompanyId());
+                            userService.addUserToCompany(
+                                createdUser.getUserId(), 
+                                request.getCompanyId(), 
+                                request.getRole(), 
+                                request.getPosition()
+                            );
+                            // 기본 회사로 설정
+                            userService.switchPrimaryCompany(createdUser.getUserId(), request.getCompanyId());
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warn("회원가입 후 user_company_tb 추가 실패 (무시됨): {}", e.getMessage());
+                    // user_company_tb 추가 실패해도 회원가입은 성공으로 처리
+                }
+            }
+            
             String message = (request.getRole().equals("USER") || request.getRole().equals("TAX_ACCOUNTANT")) 
                 ? "회원가입 신청이 완료되었습니다. 관리자 승인 후 사용 가능합니다." 
                 : "회원가입이 완료되었습니다.";
@@ -319,11 +354,14 @@ public class UserController {
     @GetMapping("/users/me")
     public ApiResponse<UserDto> getCurrentUser() {
         Long currentUserId = SecurityUtil.getCurrentUserId();
-        logger.info("현재 사용자 정보 조회 요청 - userId: {}", currentUserId);
+        Long currentCompanyId = SecurityUtil.getCurrentCompanyId(); // JWT 토큰에서 현재 활성 회사 ID 가져오기
+        logger.info("현재 사용자 정보 조회 요청 - userId: {}, companyId: {}", currentUserId, currentCompanyId);
         UserDto user = userService.selectUserById(currentUserId);
         if (user != null) {
             user.setPassword(null); // 비밀번호 제거
-            logger.info("현재 사용자 정보 조회 완료 - userId: {}", currentUserId);
+            // JWT 토큰의 companyId를 설정 (현재 활성 회사)
+            user.setCompanyId(currentCompanyId);
+            logger.info("현재 사용자 정보 조회 완료 - userId: {}, companyId: {}", currentUserId, currentCompanyId);
             return new ApiResponse<>(true, "현재 사용자 정보 조회 성공", user);
         } else {
             logger.error("현재 사용자 정보 조회 실패 - userId: {}", currentUserId);
@@ -793,25 +831,34 @@ public class UserController {
         }
     }
     
-    @Operation(summary = "회사 전환", description = "CEO 또는 ADMIN이 다른 회사로 전환합니다. (JWT 토큰 재발급)")
+    @Operation(summary = "회사 전환", description = "사용자가 소속된 다른 회사로 전환합니다. (JWT 토큰 재발급)")
     @PostMapping("/users/switch-company")
-    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
     public ApiResponse<Map<String, Object>> switchCompany(@RequestBody CompanySwitchRequest request) {
         try {
             Long userId = SecurityUtil.getCurrentUserId();
             logger.info("회사 전환 시도 - userId: {}, companyId: {}", userId, request.getCompanyId());
             
-            // 회사 정보 조회 및 권한 확인은 CompanyController에서 처리
-            // 여기서는 JWT 토큰 재발급만 처리
+            // 사용자가 해당 회사에 소속되어 있는지 확인
+            List<UserCompanyDto> companies = userService.getUserCompanies(userId);
+            boolean isMember = companies.stream()
+                .anyMatch(uc -> uc.getCompanyId().equals(request.getCompanyId()));
             
-            // 사용자 정보 조회
-            UserDto user = userService.selectUserById(userId);
-            if (user == null) {
-                return new ApiResponse<>(false, "사용자를 찾을 수 없습니다.", null);
+            if (!isMember) {
+                return new ApiResponse<>(false, "해당 회사에 소속되어 있지 않습니다.", null);
             }
             
-            // 회사 전환 (사용자의 company_id 업데이트)
-            userService.assignToCompany(userId, request.getCompanyId());
+            // 기본 회사 설정
+            userService.switchPrimaryCompany(userId, request.getCompanyId());
+            
+            // 사용자 정보 조회 (회사별 역할 가져오기)
+            UserCompanyDto userCompany = companies.stream()
+                .filter(uc -> uc.getCompanyId().equals(request.getCompanyId()))
+                .findFirst()
+                .orElse(null);
+            
+            if (userCompany == null) {
+                return new ApiResponse<>(false, "회사 정보를 찾을 수 없습니다.", null);
+            }
             
             // JWT 토큰 재발급
             String token = jwtUtil.switchCompanyToken(
@@ -819,15 +866,17 @@ public class UserController {
                 request.getCompanyId()
             );
             String refreshToken = jwtUtil.generateRefreshToken(
-                user.getUserId(), 
-                user.getUsername(), 
-                user.getRole(), 
+                userId, 
+                userCompany.getUsername(), 
+                userCompany.getRole(), 
                 request.getCompanyId()
             );
             
-            // 업데이트된 사용자 정보 조회
-            user = userService.selectUserById(userId);
+            // 사용자 정보 조회
+            UserDto user = userService.selectUserById(userId);
             user.setPassword(null);
+            // JWT 토큰의 companyId를 설정 (현재 활성 회사)
+            user.setCompanyId(request.getCompanyId());
             
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("user", user);
@@ -838,6 +887,153 @@ public class UserController {
             return new ApiResponse<>(true, "회사 전환이 완료되었습니다.", responseData);
         } catch (Exception e) {
             logger.error("회사 전환 중 오류 발생", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "회사 지원 요청", description = "현재 사용자가 회사에 지원 요청을 합니다.")
+    @PostMapping("/users/companies/apply")
+    public ApiResponse<String> applyToCompany(@Valid @RequestBody CompanyApplyRequest request) {
+        try {
+            Long userId = SecurityUtil.getCurrentUserId();
+            logger.info("회사 지원 요청 - userId: {}, companyId: {}, role: {}", userId, request.getCompanyId(), request.getRole());
+            
+            int result = userService.applyToCompany(userId, request.getCompanyId(), request.getRole(), request.getPosition());
+            if (result > 0) {
+                logger.info("회사 지원 요청 완료 - userId: {}, companyId: {}", userId, request.getCompanyId());
+                return new ApiResponse<>(true, "회사 지원 요청이 완료되었습니다. 관리자 승인을 기다려주세요.", null);
+            } else {
+                return new ApiResponse<>(false, "회사 지원 요청에 실패했습니다.", null);
+            }
+        } catch (Exception e) {
+            logger.error("회사 지원 요청 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "소속 회사 목록 조회", description = "현재 사용자가 소속된 회사 목록을 조회합니다. (APPROVED만)")
+    @GetMapping("/users/companies")
+    public ApiResponse<List<UserCompanyDto>> getUserCompanies() {
+        try {
+            Long userId = SecurityUtil.getCurrentUserId();
+            List<UserCompanyDto> companies = userService.getUserCompanies(userId);
+            return new ApiResponse<>(true, "조회 성공", companies);
+        } catch (Exception e) {
+            logger.error("소속 회사 목록 조회 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "승인 대기 회사 목록 조회", description = "현재 사용자의 승인 대기 회사 목록을 조회합니다.")
+    @GetMapping("/users/companies/pending")
+    public ApiResponse<List<UserCompanyDto>> getPendingCompanies() {
+        try {
+            Long userId = SecurityUtil.getCurrentUserId();
+            List<UserCompanyDto> companies = userService.getUserCompaniesByStatus(userId, "PENDING");
+            return new ApiResponse<>(true, "조회 성공", companies);
+        } catch (Exception e) {
+            logger.error("승인 대기 회사 목록 조회 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "기본 회사 설정", description = "현재 사용자의 기본 회사를 설정합니다.")
+    @PutMapping("/users/companies/{companyId}/primary")
+    public ApiResponse<String> setPrimaryCompany(@PathVariable Long companyId) {
+        try {
+            Long userId = SecurityUtil.getCurrentUserId();
+            logger.info("기본 회사 설정 - userId: {}, companyId: {}", userId, companyId);
+            
+            int result = userService.switchPrimaryCompany(userId, companyId);
+            if (result > 0) {
+                logger.info("기본 회사 설정 완료 - userId: {}, companyId: {}", userId, companyId);
+                return new ApiResponse<>(true, "기본 회사가 설정되었습니다.", null);
+            } else {
+                return new ApiResponse<>(false, "기본 회사 설정에 실패했습니다.", null);
+            }
+        } catch (Exception e) {
+            logger.error("기본 회사 설정 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "회사 탈퇴", description = "현재 사용자가 회사에서 탈퇴합니다.")
+    @DeleteMapping("/users/companies/{companyId}")
+    public ApiResponse<String> removeUserFromCompany(@PathVariable Long companyId) {
+        try {
+            Long userId = SecurityUtil.getCurrentUserId();
+            logger.info("회사 탈퇴 - userId: {}, companyId: {}", userId, companyId);
+            
+            int result = userService.removeUserFromCompany(userId, companyId);
+            if (result > 0) {
+                logger.info("회사 탈퇴 완료 - userId: {}, companyId: {}", userId, companyId);
+                return new ApiResponse<>(true, "회사에서 탈퇴했습니다.", null);
+            } else {
+                return new ApiResponse<>(false, "회사 탈퇴에 실패했습니다.", null);
+            }
+        } catch (Exception e) {
+            logger.error("회사 탈퇴 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "사용자를 회사에 추가", description = "ADMIN/CEO가 사용자를 회사에 직접 추가합니다.")
+    @PostMapping("/users/{userId}/companies")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ApiResponse<String> addUserToCompany(
+            @PathVariable Long userId,
+            @Valid @RequestBody AddUserToCompanyRequest request) {
+        try {
+            Long operatorId = SecurityUtil.getCurrentUserId();
+            logger.info("사용자 회사 추가 - operatorId: {}, userId: {}, companyId: {}", operatorId, userId, request.getCompanyId());
+            
+            int result = userService.addUserToCompany(userId, request.getCompanyId(), request.getRole(), request.getPosition());
+            if (result > 0) {
+                logger.info("사용자 회사 추가 완료 - userId: {}, companyId: {}", userId, request.getCompanyId());
+                return new ApiResponse<>(true, "사용자가 회사에 추가되었습니다.", null);
+            } else {
+                return new ApiResponse<>(false, "사용자 회사 추가에 실패했습니다.", null);
+            }
+        } catch (Exception e) {
+            logger.error("사용자 회사 추가 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "회사 지원 요청 승인", description = "ADMIN/CEO가 회사 지원 요청을 승인합니다.")
+    @PutMapping("/users/{userId}/companies/{companyId}/approve")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ApiResponse<String> approveUserCompany(
+            @PathVariable Long userId,
+            @PathVariable Long companyId) {
+        try {
+            Long operatorId = SecurityUtil.getCurrentUserId();
+            logger.info("회사 소속 승인 - operatorId: {}, userId: {}, companyId: {}", operatorId, userId, companyId);
+            
+            userService.approveUserCompany(userId, companyId, operatorId);
+            logger.info("회사 소속 승인 완료 - userId: {}, companyId: {}", userId, companyId);
+            return new ApiResponse<>(true, "회사 소속이 승인되었습니다.", null);
+        } catch (Exception e) {
+            logger.error("회사 소속 승인 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    @Operation(summary = "회사 지원 요청 거부", description = "ADMIN/CEO가 회사 지원 요청을 거부합니다.")
+    @PutMapping("/users/{userId}/companies/{companyId}/reject")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ApiResponse<String> rejectUserCompany(
+            @PathVariable Long userId,
+            @PathVariable Long companyId) {
+        try {
+            Long operatorId = SecurityUtil.getCurrentUserId();
+            logger.info("회사 소속 거부 - operatorId: {}, userId: {}, companyId: {}", operatorId, userId, companyId);
+            
+            userService.rejectUserCompany(userId, companyId, operatorId);
+            logger.info("회사 소속 거부 완료 - userId: {}, companyId: {}", userId, companyId);
+            return new ApiResponse<>(true, "회사 소속이 거부되었습니다.", null);
+        } catch (Exception e) {
+            logger.error("회사 소속 거부 실패", e);
             return new ApiResponse<>(false, e.getMessage(), null);
         }
     }
@@ -861,5 +1057,23 @@ public class UserController {
         
         @jakarta.validation.constraints.NotBlank(message = "현재 토큰은 필수입니다.")
         private String currentToken;
+    }
+    
+    @Data
+    static class CompanyApplyRequest {
+        @jakarta.validation.constraints.NotNull(message = "companyId는 필수입니다.")
+        private Long companyId;
+        
+        private String role;
+        private String position;
+    }
+    
+    @Data
+    static class AddUserToCompanyRequest {
+        @jakarta.validation.constraints.NotNull(message = "companyId는 필수입니다.")
+        private Long companyId;
+        
+        private String role;
+        private String position;
     }
 }
