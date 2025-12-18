@@ -298,6 +298,19 @@ const ExpenseDetailPage = () => {
     return isOwner || isAccountant;
   };
 
+  // 영수증 이미지 URL 생성 함수
+  const getReceiptImageUrl = (filePath) => {
+    const isProd = import.meta.env.MODE === 'production';
+    
+    if (isProd) {
+      // 프로덕션: /api를 통해 접근
+      return `/api/${filePath}`;
+    } else {
+      // 개발 환경: localhost 사용
+      return `http://localhost:8080/${filePath}`;
+    }
+  };
+
   console.log(detail);
   return (
     <S.Container>
@@ -457,15 +470,15 @@ const ExpenseDetailPage = () => {
              <S.ReceiptList>
                {receipts.map((receipt) => (
                  <S.ReceiptItem key={receipt.receiptId}>
-                   <S.ReceiptPreview>
-                     <S.ReceiptImage 
-                       src={`http://localhost:8080/${receipt.filePath}`} 
-                       alt={receipt.originalFilename}
-                       onError={(e) => {
-                         // 이미지가 아닌 경우 PDF 아이콘 표시
-                         e.target.style.display = 'none';
-                       }}
-                     />
+                  <S.ReceiptPreview>
+                    <S.ReceiptImage 
+                      src={getReceiptImageUrl(receipt.filePath)} 
+                      alt={receipt.originalFilename}
+                      onError={(e) => {
+                        // 이미지가 아닌 경우 PDF 아이콘 표시
+                        e.target.style.display = 'none';
+                      }}
+                    />
                    </S.ReceiptPreview>
                    <S.ReceiptInfo>
                      <div><strong>{receipt.originalFilename}</strong></div>
