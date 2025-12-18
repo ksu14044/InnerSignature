@@ -51,3 +51,29 @@ jobs:
           cache-from: type=registry,ref=ksu14044/innersignature-frontend:buildcache
           cache-to: type=registry,ref=ksu14044/innersignature-frontend:buildcache,mode=max
 
+  # 배포 Job 추가
+  deploy:
+    needs: build-and-push  # 빌드가 성공한 후에만 실행
+    runs-on: ubuntu-latest
+    # main 브랜치에만 배포 (PR에서는 배포하지 않음)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # SSH 키 설정
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      
+      # 서버에 SSH 접속하여 배포 스크립트 실행
+      - name: Deploy to server
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT || 22 }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            cd ~/InnerSignature
+            git pull origin main
+            ./deploy.sh
+          EOF
+
