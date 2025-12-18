@@ -445,33 +445,10 @@ const LoginPage = () => {
       if (res.data.success) {
         const { user, token, refreshToken } = res.data.data; // user, token, refreshToken 분리
         login(user, token, refreshToken); // 토큰과 리프레시 토큰도 함께 전달
-        
-        // CEO이고 회사가 하나도 없을 때 회사등록 모달 표시
-        if (user.role === 'CEO') {
-          try {
-            // 회사 목록 조회하여 회사가 하나도 없는지 확인
-            const companiesRes = await getUserCompanies();
-            const hasNoCompanies = !companiesRes.success || !companiesRes.data || companiesRes.data.length === 0;
-            
-            if (hasNoCompanies) {
-              // 약간의 지연을 두어 로그인 처리가 완료된 후 모달 표시
-              setTimeout(() => {
-                setIsCompanyModalOpen(true);
-              }, 500);
-            } else {
-              alert(`${user.koreanName}님 환영합니다!`);
-            }
-          } catch (error) {
-            // 회사 목록 조회 실패 시에도 모달 표시 (회사가 없을 가능성이 높음)
-            console.error('회사 목록 조회 실패:', error);
-            setTimeout(() => {
-              setIsCompanyModalOpen(true);
-            }, 500);
-          }
-        } else {
-          alert(`${user.koreanName}님 환영합니다!`);
-        }
-        
+
+        // 로그인 성공 후에는 지출결의서 목록 페이지에서
+        // CEO + 회사 없음 여부를 체크하고 회사 등록 모달을 띄웁니다.
+        alert(`${user.koreanName}님 환영합니다!`);
         navigate('/expenses'); // 지출결의서 목록으로 이동
       } else {
         alert("로그인 실패: " + res.data.message);

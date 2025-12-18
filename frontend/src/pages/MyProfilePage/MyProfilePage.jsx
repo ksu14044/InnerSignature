@@ -276,8 +276,10 @@ const MyProfilePage = () => {
     return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
   }
 
-  // CEO/ADMIN일 때 항상 회사등록 버튼 표시 (회사 유무와 무관)
-  const shouldShowCompanyRegisterButton = isAdminOrCEO;
+  // CEO/ADMIN이면 회사 등록 버튼은 항상 노출
+  const canRegisterCompany = isAdminOrCEO;
+  // 회사/대기 회사가 모두 없을 때만 "회사가 등록되지 않았습니다" 문구 노출
+  const showNoCompanyText = isAdminOrCEO && companies.length === 0 && pendingCompanies.length === 0;
 
   return (
     <S.Container>
@@ -409,16 +411,18 @@ const MyProfilePage = () => {
       <S.ProfileCard>
         <S.CardTitle>소속 회사</S.CardTitle>
         
-        {/* CEO/ADMIN이고 회사가 없을 때 회사등록 버튼 표시 */}
-        {shouldShowCompanyRegisterButton && (
+        {/* CEO/ADMIN이면 항상 회사 등록 버튼 표시, 회사가 없을 때만 안내 문구 노출 */}
+        {canRegisterCompany && (
           <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-            <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#495057' }}>
-              회사가 등록되지 않았습니다.
-            </div>
+            {showNoCompanyText && (
+              <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#495057' }}>
+                회사가 등록되지 않았습니다.
+              </div>
+            )}
             <S.Button 
               primary 
               onClick={() => setIsCompanyModalOpen(true)}
-              style={{ padding: '10px 20px', fontSize: '14px' }}
+              style={{ padding: '10px 20px', fontSize: '14px', fontWeight: 'bold' }}
             >
               회사 등록하기
             </S.Button>

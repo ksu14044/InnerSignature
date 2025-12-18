@@ -41,11 +41,24 @@ public class CompanyController {
             
             CompanyDto company = companyService.createCompany(request.getCompanyName(), userId);
             
-            // 회사 생성 후 사용자를 회사에 추가 (user_company_tb에 추가, 기본 회사로 설정)
+            // 회사 생성 후 사용자를 회사에 추가 (user_company_tb에 추가)
+            // 기본 회사 설정은 "기본 회사가 아직 없을 때만" 새 회사로 설정
             UserDto user = userService.selectUserById(userId);
             if (user != null) {
+                // 새 회사에 사용자 추가
                 userService.addUserToCompany(userId, company.getCompanyId(), user.getRole(), user.getPosition());
-                userService.switchPrimaryCompany(userId, company.getCompanyId());
+
+                // 현재 사용자의 소속 회사 목록 조회 (APPROVED만, isPrimary 포함)
+                List<UserCompanyDto> userCompanies = userService.getUserCompanies(userId);
+
+                // 이미 기본 회사가 있는지 확인
+                boolean hasPrimary = userCompanies.stream()
+                        .anyMatch(uc -> Boolean.TRUE.equals(uc.getIsPrimary()));
+
+                // 기본 회사가 없는 경우에만 새 회사로 기본 회사 설정
+                if (!hasPrimary) {
+                    userService.switchPrimaryCompany(userId, company.getCompanyId());
+                }
             }
             
             logger.info("회사 생성 완료 - companyId: {}, companyName: {}, userId: {}", 

@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { fetchExpenseList, deleteExpense, fetchPendingApprovals, downloadExpensesExcel } from '../../api/expenseApi';
-import { getPendingUsers, approveUser } from '../../api/userApi';
+import { getPendingUsers, approveUser, getUserCompanies } from '../../api/userApi';
 import * as S from './style';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaUser, FaBuilding, FaChevronDown, FaCheck, FaTimesCircle, FaFileExcel } from 'react-icons/fa';
 import { STATUS_KOREAN, EXPENSE_STATUS } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 
 const ExpenseListPage = () => {
   const [list, setList] = useState([]);
@@ -38,6 +39,8 @@ const ExpenseListPage = () => {
   const navigate = useNavigate(); // 페이지 이동 훅
   const { logout, user, companies, switchCompany } = useAuth();
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const checkedCompanyModalRef = useRef(false);
 
   const handleLogout = async () => {
     navigate('/');  // 먼저 로그인 페이지로 이동
@@ -258,6 +261,39 @@ const ExpenseListPage = () => {
           // 에러가 발생해도 빈 배열로 설정하여 배지가 표시되지 않도록 함
           setPendingUsers([]);
         });
+    }
+
+    // CEO이고 회사가 하나도 없으면 회사 등록 여부를 먼저 확인 후 모달 표시
+    if (user && user.role === 'CEO' && !checkedCompanyModalRef.current) {
+      // StrictMode에서 useEffect가 두 번 호출되어도 한 번만 실행되도록 즉시 플래그 설정
+      checkedCompanyModalRef.current = true;
+
+      (async () => {
+        try {
+          const companiesRes = await getUserCompanies();
+          const hasNoCompanies =
+            !companiesRes.success || !companiesRes.data || companiesRes.data.length === 0;
+
+          if (hasNoCompanies) {
+            const shouldOpen = window.confirm(
+              '등록된 회사가 없습니다.\n지금 회사를 등록하시겠습니까?'
+            );
+
+            if (shouldOpen) {
+              setIsCompanyModalOpen(true); // "예"일 때만 회사 등록 모달 표시
+            }
+          }
+        } catch (error) {
+          console.error('회사 목록 조회 실패:', error);
+          // 조회 실패 시에도 안내 후 회사 등록 여부를 확인
+          const shouldOpen = window.confirm(
+            '회사 정보를 불러오지 못했습니다.\n지금 새 회사를 등록하시겠습니까?'
+          );
+          if (shouldOpen) {
+            setIsCompanyModalOpen(true);
+          }
+        }
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userId]); // user 전체 대신 user?.userId만 사용
@@ -836,6 +872,16 @@ const ExpenseListPage = () => {
           </S.NotificationModalContent>
         </S.NotificationModal>
       )}
+
+      {/* CEO이면서 소속 회사가 없을 때 회사 등록 모달 */}
+      <CompanyRegistrationModal
+        isOpen={isCompanyModalOpen}
+        onClose={() => setIsCompanyModalOpen(false)}
+        onSuccess={() => {
+          // 모달 내부에서 성공 alert를 이미 보여주므로 여기서는 새로고침만 수행
+          window.location.reload(); // 회사 등록 후 회사/권한 정보 갱신
+        }}
+      />
     </S.Container>
   );
 };
