@@ -18,6 +18,11 @@ spring:
       max-lifetime: 1800000  # 연결 최대 수명 (30분)
       leak-detection-threshold: 60000  # 연결 누수 감지 임계값 (60초)
       connection-test-query: SELECT 1  # 연결 테스트 쿼리
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT:587}
