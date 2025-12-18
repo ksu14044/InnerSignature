@@ -1,10 +1,12 @@
 package com.innersignature.backend.controller;
 
 import com.innersignature.backend.dto.ApiResponse;
+import com.innersignature.backend.dto.CompanyDto;
 import com.innersignature.backend.dto.UserDto;
 import com.innersignature.backend.dto.UserCompanyDto;
 import com.innersignature.backend.exception.BusinessException;
 import com.innersignature.backend.security.JwtBlacklistService;
+import com.innersignature.backend.service.CompanyService;
 import com.innersignature.backend.service.EmailService;
 import com.innersignature.backend.service.PasswordResetService;
 import com.innersignature.backend.service.UserService;
@@ -33,6 +35,7 @@ public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     private final UserService userService;
+    private final CompanyService companyService;
     private final JwtUtil jwtUtil;
     private final JwtBlacklistService jwtBlacklistService;
     private final EmailService emailService;
@@ -822,6 +825,36 @@ public class UserController {
             }
             List<UserDto> users = userService.getUsersByCompanyId(companyId);
             // 비밀번호 제거
+            users.forEach(user -> user.setPassword(null));
+            logger.info("회사별 사용자 목록 조회 완료 - companyId: {}, count: {}", companyId, users.size());
+            return new ApiResponse<>(true, "회사별 사용자 목록 조회 성공", users);
+        } catch (Exception e) {
+            logger.error("회사별 사용자 목록 조회 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    /**
+     * 특정 회사별 사용자 목록 조회 API (CEO, ADMIN 전용)
+     * 주소: GET /api/users/company/{companyId}
+     */
+    @Operation(summary = "특정 회사별 사용자 목록 조회", description = "CEO 또는 ADMIN이 특정 회사의 직원 목록을 조회합니다.")
+    @GetMapping("/users/company/{companyId}")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ApiResponse<List<UserDto>> getCompanyUsersById(@PathVariable Long companyId) {
+        try {
+            Long userId = SecurityUtil.getCurrentUserId();
+            
+            // 작업 수행자가 해당 회사에 소속되어 있는지 확인
+            List<CompanyDto> myCompanies = companyService.findByUserId(userId);
+            boolean hasAccess = myCompanies.stream()
+                .anyMatch(c -> c.getCompanyId().equals(companyId));
+            
+            if (!hasAccess) {
+                return new ApiResponse<>(false, "해당 회사에 대한 권한이 없습니다.", null);
+            }
+            
+            List<UserDto> users = userService.getUsersByCompanyId(companyId);
             users.forEach(user -> user.setPassword(null));
             logger.info("회사별 사용자 목록 조회 완료 - companyId: {}, count: {}", companyId, users.size());
             return new ApiResponse<>(true, "회사별 사용자 목록 조회 성공", users);

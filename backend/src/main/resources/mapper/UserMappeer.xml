@@ -238,6 +238,12 @@
         updated_at = NOW()
         WHERE user_id = #{userId}
     </update>
+
+    <update id="updateUserCompanyId">
+        UPDATE user_tb
+        SET company_id = #{companyId}
+        WHERE user_id = #{userId}
+    </update>
     
     <select id="findPendingCompanyApplications" resultType="com.innersignature.backend.dto.UserCompanyDto">
         SELECT 

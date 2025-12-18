@@ -8,7 +8,6 @@ import {
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { STATUS_KOREAN } from '../../constants/status';
-import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import { 
   LineChart, 
   Line, 
@@ -43,12 +42,9 @@ const DashboardPage = () => {
   const [statusStats, setStatusStats] = useState([]);
   const [categoryRatio, setCategoryRatio] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const debounceTimer = useRef(null);
 
   const isAuthorized = user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT';
-  const isAdminOrCEO = user?.role === 'CEO' || user?.role === 'ADMIN';
-  const hasCompany = user?.companyId != null;
 
   const loadDashboardData = async () => {
     if (!isAuthorized) return;
@@ -143,21 +139,11 @@ const DashboardPage = () => {
     ratio: (item.ratio * 100).toFixed(1)
   }));
 
-  const handleCompanyRegistrationSuccess = () => {
-    // 회사 등록 성공 후 페이지 새로고침하여 회사 목록 업데이트
-    window.location.reload();
-  };
-
   return (
     <S.Container>
       <S.Header>
         <div>
           <S.Title>대시보드</S.Title>
-          {isAdminOrCEO && !hasCompany && (
-            <S.CompanyRegisterButton onClick={() => setIsCompanyModalOpen(true)}>
-              회사 등록
-            </S.CompanyRegisterButton>
-          )}
         </div>
         <S.Button variant="secondary" onClick={() => navigate('/expenses')}>
           목록으로
@@ -310,12 +296,6 @@ const DashboardPage = () => {
           </S.ChartsGrid>
         </>
       )}
-      
-      <CompanyRegistrationModal
-        isOpen={isCompanyModalOpen}
-        onClose={() => setIsCompanyModalOpen(false)}
-        onSuccess={handleCompanyRegistrationSuccess}
-      />
     </S.Container>
   );
 };

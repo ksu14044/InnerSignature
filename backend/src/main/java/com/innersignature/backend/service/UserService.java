@@ -544,7 +544,12 @@ public class UserService {
             throw new BusinessException("해당 회사에 소속되어 있지 않습니다.");
         }
         
-        return userMapper.setPrimaryCompany(userId, companyId);
+        // 1) user_company_tb의 기본 회사 설정
+        int result = userMapper.setPrimaryCompany(userId, companyId);
+        // 2) user_tb.company_id 동기화
+        userMapper.updateUserCompanyId(userId, companyId);
+        
+        return result;
     }
     
     /**

@@ -81,6 +81,9 @@ public interface UserMapper {
     
     // 기본 회사 설정
     int setPrimaryCompany(@Param("userId") Long userId, @Param("companyId") Long companyId);
+
+    // user_tb.company_id 업데이트
+    int updateUserCompanyId(@Param("userId") Long userId, @Param("companyId") Long companyId);
     
     // 회사의 승인 대기 사용자 목록 조회
     List<UserCompanyDto> findPendingCompanyApplications(@Param("companyId") Long companyId);

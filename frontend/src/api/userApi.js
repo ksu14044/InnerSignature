@@ -152,6 +152,17 @@ export const getCompanyUsers = async () => {
   }
 };
 
+// 특정 회사별 사용자 목록 조회 (CEO, ADMIN 전용)
+export const getCompanyUsersById = async (companyId) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/company/${companyId}`);
+    return response.data;
+  } catch (error) {
+    console.error("회사별 사용자 목록 조회 실패:", error);
+    throw error;
+  }
+};
+
 // 승인 대기 사용자 목록 조회 (CEO, ADMIN 전용)
 export const getPendingUsers = async () => {
   try {

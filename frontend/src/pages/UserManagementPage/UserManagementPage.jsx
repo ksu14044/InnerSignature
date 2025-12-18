@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllUsers, createUser, updateUser, deleteUser, updateUserRole, getCompanyUsers, getCompanyApplications, approveUserCompany, rejectUserCompany } from '../../api/userApi';
+import { getAllUsers, createUser, updateUser, deleteUser, updateUserRole, getCompanyUsers, getCompanyUsersById, getCompanyApplications, approveUserCompany, rejectUserCompany } from '../../api/userApi';
 import { getUserCompanies } from '../../api/userApi';
 import { USER_ROLES } from '../../constants/status';
 import { FaPlus, FaSignOutAlt, FaEdit, FaTrash, FaTimes, FaCheck, FaBan } from 'react-icons/fa';
@@ -46,9 +46,10 @@ const UserManagementPage = () => {
 
   useEffect(() => {
     if (user?.role === 'SUPERADMIN' || user?.role === 'CEO' || user?.role === 'ADMIN') {
-      loadUsers();
       if (user?.role === 'CEO' || user?.role === 'ADMIN') {
         loadUserCompanies();
+      } else {
+        loadUsers();
       }
     }
   }, [user]);
@@ -59,8 +60,10 @@ const UserManagementPage = () => {
       if (response.success && response.data) {
         setUserCompanies(response.data || []);
         if (response.data.length > 0) {
-          setSelectedCompanyId(response.data[0].companyId);
-          loadCompanyApplications(response.data[0].companyId);
+          const firstCompanyId = response.data[0].companyId;
+          setSelectedCompanyId(firstCompanyId);
+          loadCompanyApplications(firstCompanyId);
+          loadUsers(firstCompanyId); // 첫 번째 회사의 직원 목록도 함께 로드
         }
       }
     } catch (error) {
@@ -124,7 +127,7 @@ const UserManagementPage = () => {
     }
   };
 
-  const loadUsers = async () => {
+  const loadUsers = async (companyId = null) => {
     try {
       setLoading(true);
       let response;
@@ -132,8 +135,13 @@ const UserManagementPage = () => {
         // SUPERADMIN: 전체 사용자 조회
         response = await getAllUsers();
       } else if (user?.role === 'CEO' || user?.role === 'ADMIN') {
-        // CEO, ADMIN: 자기 회사 직원만 조회
-        response = await getCompanyUsers();
+        if (companyId) {
+          // 선택된 회사의 직원 조회
+          response = await getCompanyUsersById(companyId);
+        } else {
+          // 기본: 현재 회사 직원 조회
+          response = await getCompanyUsers();
+        }
       } else {
         setLoading(false);
         return;
@@ -317,90 +325,96 @@ const UserManagementPage = () => {
         </S.Button>
       </S.Toolbar>
 
-      {/* 회사별 승인 대기 사용자 (CEO/ADMIN만) */}
+      {/* 회사 선택 (CEO/ADMIN만) */}
       {(isAdmin || isCEO) && userCompanies.length > 0 && (
-        <S.ProfileCard style={{ marginBottom: '20px' }}>
-          <S.CardTitle>회사별 승인 대기 사용자</S.CardTitle>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>회사 선택</label>
-            <S.Select
-              value={selectedCompanyId || ''}
-              onChange={(e) => {
-                const companyId = e.target.value ? Number(e.target.value) : null;
-                setSelectedCompanyId(companyId);
-                if (companyId) {
-                  loadCompanyApplications(companyId);
-                }
-              }}
-              style={{ width: '300px' }}
-            >
-              <option value="">회사를 선택하세요</option>
-              {userCompanies.map((company) => (
-                <option key={company.companyId} value={company.companyId}>
-                  {company.companyName}
-                </option>
-              ))}
-            </S.Select>
-          </div>
+        <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px', color: '#495057' }}>
+            승인 대기 사용자 조회할 회사 선택
+          </label>
+          <S.Select
+            value={selectedCompanyId || ''}
+            onChange={(e) => {
+              const companyId = e.target.value ? Number(e.target.value) : null;
+              setSelectedCompanyId(companyId);
+              if (companyId) {
+                loadCompanyApplications(companyId);
+                loadUsers(companyId); // 선택된 회사의 직원 목록도 함께 로드
+              } else {
+                loadUsers(); // 회사 선택 해제 시 기본 회사 직원 조회
+              }
+            }}
+            style={{ width: '300px' }}
+          >
+            <option value="">회사를 선택하세요</option>
+            {userCompanies.map((company) => (
+              <option key={company.companyId} value={company.companyId}>
+                {company.companyName}
+              </option>
+            ))}
+          </S.Select>
+        </div>
+      )}
 
-          {selectedCompanyId && (
-            <div>
-              {loadingApplications ? (
-                <div style={{ textAlign: 'center', padding: '20px' }}>로딩 중...</div>
+      {/* 회사별 승인 대기 사용자 (CEO/ADMIN만) */}
+      {(isAdmin || isCEO) && selectedCompanyId && (
+        <S.ProfileCard style={{ marginBottom: '20px' }}>
+          <S.CardTitle>
+            {userCompanies.find(c => c.companyId === selectedCompanyId)?.companyName} - 승인 대기 사용자
+          </S.CardTitle>
+          {loadingApplications ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>로딩 중...</div>
+          ) : (
+            <>
+              {companyApplications[selectedCompanyId]?.length > 0 ? (
+                <S.Table>
+                  <thead>
+                    <tr>
+                      <th>이름</th>
+                      <th>아이디</th>
+                      <th>이메일</th>
+                      <th>요청 역할</th>
+                      <th>요청 직급</th>
+                      <th>요청일</th>
+                      <th>작업</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {companyApplications[selectedCompanyId].map((application) => (
+                      <tr key={application.userCompanyId}>
+                        <td>{application.koreanName}</td>
+                        <td>{application.username}</td>
+                        <td>{application.email || '-'}</td>
+                        <td>{getRoleLabel(application.role)}</td>
+                        <td>{application.position || '-'}</td>
+                        <td>{new Date(application.createdAt).toLocaleDateString()}</td>
+                        <td>
+                          <S.ActionButtons>
+                            <S.IconButton
+                              onClick={() => handleApproveUserCompany(application.userId, application.companyId)}
+                              style={{ color: '#28a745', marginRight: '10px' }}
+                              title="승인"
+                            >
+                              <FaCheck />
+                            </S.IconButton>
+                            <S.IconButton
+                              onClick={() => handleRejectUserCompany(application.userId, application.companyId)}
+                              danger
+                              title="거부"
+                            >
+                              <FaBan />
+                            </S.IconButton>
+                          </S.ActionButtons>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </S.Table>
               ) : (
-                <>
-                  {companyApplications[selectedCompanyId]?.length > 0 ? (
-                    <S.Table>
-                      <thead>
-                        <tr>
-                          <th>이름</th>
-                          <th>아이디</th>
-                          <th>이메일</th>
-                          <th>요청 역할</th>
-                          <th>요청 직급</th>
-                          <th>요청일</th>
-                          <th>작업</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {companyApplications[selectedCompanyId].map((application) => (
-                          <tr key={application.userCompanyId}>
-                            <td>{application.koreanName}</td>
-                            <td>{application.username}</td>
-                            <td>{application.email || '-'}</td>
-                            <td>{getRoleLabel(application.role)}</td>
-                            <td>{application.position || '-'}</td>
-                            <td>{new Date(application.createdAt).toLocaleDateString()}</td>
-                            <td>
-                              <S.ActionButtons>
-                                <S.IconButton
-                                  onClick={() => handleApproveUserCompany(application.userId, application.companyId)}
-                                  style={{ color: '#28a745', marginRight: '10px' }}
-                                  title="승인"
-                                >
-                                  <FaCheck />
-                                </S.IconButton>
-                                <S.IconButton
-                                  onClick={() => handleRejectUserCompany(application.userId, application.companyId)}
-                                  danger
-                                  title="거부"
-                                >
-                                  <FaBan />
-                                </S.IconButton>
-                              </S.ActionButtons>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </S.Table>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                      승인 대기 사용자가 없습니다.
-                    </div>
-                  )}
-                </>
+                <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                  승인 대기 사용자가 없습니다.
+                </div>
               )}
-            </div>
+            </>
           )}
         </S.ProfileCard>
       )}

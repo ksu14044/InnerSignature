@@ -3,8 +3,9 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext'; // 아까 만든 훅
 import { API_CONFIG } from '../../config/api';
-import { checkUsername, checkEmail } from '../../api/userApi';
+import { checkUsername, checkEmail, getUserCompanies } from '../../api/userApi';
 import CompanySearchModal from '../../components/CompanySearchModal/CompanySearchModal';
+import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import { FaUser, FaLock, FaSignInAlt, FaUserPlus, FaTimes, FaEnvelope, FaSearch, FaBuilding, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import * as S from './style';
@@ -410,7 +411,8 @@ const LoginPage = () => {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const { login } = useAuth(); // Context에서 로그인 함수 가져오기
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const { login, user } = useAuth(); // Context에서 로그인 함수와 사용자 정보 가져오기
   const navigate = useNavigate();
 
   const handleRegister = async (registerData) => {
@@ -443,7 +445,33 @@ const LoginPage = () => {
       if (res.data.success) {
         const { user, token, refreshToken } = res.data.data; // user, token, refreshToken 분리
         login(user, token, refreshToken); // 토큰과 리프레시 토큰도 함께 전달
-        alert(`${user.koreanName}님 환영합니다!`);
+        
+        // CEO이고 회사가 하나도 없을 때 회사등록 모달 표시
+        if (user.role === 'CEO') {
+          try {
+            // 회사 목록 조회하여 회사가 하나도 없는지 확인
+            const companiesRes = await getUserCompanies();
+            const hasNoCompanies = !companiesRes.success || !companiesRes.data || companiesRes.data.length === 0;
+            
+            if (hasNoCompanies) {
+              // 약간의 지연을 두어 로그인 처리가 완료된 후 모달 표시
+              setTimeout(() => {
+                setIsCompanyModalOpen(true);
+              }, 500);
+            } else {
+              alert(`${user.koreanName}님 환영합니다!`);
+            }
+          } catch (error) {
+            // 회사 목록 조회 실패 시에도 모달 표시 (회사가 없을 가능성이 높음)
+            console.error('회사 목록 조회 실패:', error);
+            setTimeout(() => {
+              setIsCompanyModalOpen(true);
+            }, 500);
+          }
+        } else {
+          alert(`${user.koreanName}님 환영합니다!`);
+        }
+        
         navigate('/expenses'); // 지출결의서 목록으로 이동
       } else {
         alert("로그인 실패: " + res.data.message);
@@ -454,6 +482,12 @@ const LoginPage = () => {
     } finally {
       setIsLoggingIn(false);
     }
+  };
+
+  const handleCompanyRegistrationSuccess = () => {
+    // 회사 등록 성공 후 페이지 새로고침하여 회사 목록 업데이트
+    alert('회사가 등록되었습니다.');
+    window.location.reload();
   };
 
   return (
@@ -516,6 +550,12 @@ const LoginPage = () => {
         onClose={() => setIsRegisterModalOpen(false)}
         onRegister={handleRegister}
         isRegistering={isRegistering}
+      />
+
+      <CompanyRegistrationModal
+        isOpen={isCompanyModalOpen}
+        onClose={() => setIsCompanyModalOpen(false)}
+        onSuccess={handleCompanyRegistrationSuccess}
       />
     </S.Container>
   );

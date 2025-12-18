@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getCurrentUser, updateCurrentUser, changePassword, getUserCompanies, getPendingCompanies, applyToCompany, removeUserFromCompany, setPrimaryCompany } from '../../api/userApi';
 import { searchCompanies } from '../../api/companyApi';
 import { FaSignOutAlt, FaArrowLeft, FaSearch, FaTimes, FaCheck, FaTrash } from 'react-icons/fa';
+import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 
@@ -34,10 +35,14 @@ const MyProfilePage = () => {
     role: 'USER',
     position: ''
   });
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
 
   const navigate = useNavigate();
   const { logout, user: authUser, companies: authCompanies, switchCompany } = useAuth();
   const loadingCompaniesRef = useRef(false); // 중복 요청 방지용
+
+  const isAdminOrCEO = authUser?.role === 'CEO' || authUser?.role === 'ADMIN';
+  const hasCompany = authUser?.companyId != null;
 
   // loadCompanies를 useCallback으로 감싸서 무한 루프 방지
   const loadCompanies = useCallback(async () => {
@@ -246,6 +251,11 @@ const MyProfilePage = () => {
     }
   };
 
+  const handleCompanyRegistrationSuccess = () => {
+    // 회사 등록 성공 후 페이지 새로고침하여 회사 목록 업데이트
+    window.location.reload();
+  };
+
   const getRoleLabel = (role) => {
     const roleMap = {
       'USER': '일반 사용자',
@@ -265,6 +275,9 @@ const MyProfilePage = () => {
   if (loading) {
     return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
   }
+
+  // CEO/ADMIN일 때 항상 회사등록 버튼 표시 (회사 유무와 무관)
+  const shouldShowCompanyRegisterButton = isAdminOrCEO;
 
   return (
     <S.Container>
@@ -395,6 +408,22 @@ const MyProfilePage = () => {
 
       <S.ProfileCard>
         <S.CardTitle>소속 회사</S.CardTitle>
+        
+        {/* CEO/ADMIN이고 회사가 없을 때 회사등록 버튼 표시 */}
+        {shouldShowCompanyRegisterButton && (
+          <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+            <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#495057' }}>
+              회사가 등록되지 않았습니다.
+            </div>
+            <S.Button 
+              primary 
+              onClick={() => setIsCompanyModalOpen(true)}
+              style={{ padding: '10px 20px', fontSize: '14px' }}
+            >
+              회사 등록하기
+            </S.Button>
+          </div>
+        )}
         
         {/* 승인된 회사 목록 */}
         {companies.length > 0 && (
@@ -615,6 +644,12 @@ const MyProfilePage = () => {
           )}
         </div>
       </S.ProfileCard>
+
+      <CompanyRegistrationModal
+        isOpen={isCompanyModalOpen}
+        onClose={() => setIsCompanyModalOpen(false)}
+        onSuccess={handleCompanyRegistrationSuccess}
+      />
     </S.Container>
   );
 };
