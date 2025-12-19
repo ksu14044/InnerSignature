@@ -10,10 +10,14 @@ import DashboardPage from './pages/DashboardPage/DashboardPage';
 import FindIdPage from './pages/FindIdPage/FindIdPage';
 import FindPasswordPage from './pages/FindPasswordPage/FindPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage';
+import MobileAppBar from './components/MobileAppBar/MobileAppBar';
+import MobileBottomNav from './components/MobileBottomNav/MobileBottomNav';
+import MobileFAB from './components/MobileFAB/MobileFAB';
 
 function App() {
   return (
     <BrowserRouter>
+      <MobileAppBar />
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/find-id" element={<FindIdPage />} />
@@ -27,6 +31,8 @@ function App() {
         <Route path="/profile" element={<MyProfilePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>
+      <MobileBottomNav />
+      <MobileFAB />
     </BrowserRouter>
   );
 }

@@ -10,6 +10,18 @@ export const Container = styled.div`
   @media (max-width: 768px) {
     padding: 15px;
   }
+
+  @media (max-width: 480px) {
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    min-height: calc(100vh - 56px - 64px);
+    background: #f5f5f5;
+    padding-top: 56px;
+    padding-bottom: 64px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 `;
 
 export const Header = styled.div`
@@ -26,6 +38,10 @@ export const Header = styled.div`
     gap: 16px;
     margin-bottom: 24px;
   }
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 export const HeaderLeft = styled.div`
@@ -39,9 +55,17 @@ export const Title = styled.h1`
   font-weight: 700;
   color: var(--dark-color);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 
   @media (max-width: 768px) {
     font-size: 24px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 20px;
   }
 `;
 
@@ -49,15 +73,32 @@ export const WelcomeText = styled.span`
   font-size: 16px;
   color: var(--secondary-color);
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 
   @media (max-width: 768px) {
     font-size: 14px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 12px;
   }
 `;
 
 export const HeaderRight = styled.div`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  @media (max-width: 480px) {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
 `;
 
 export const NotificationBadge = styled.div`
@@ -111,6 +152,7 @@ export const ProfileButton = styled.button`
   cursor: pointer;
   transition: all 0.2s;
   margin-right: 12px;
+  min-height: 48px;
 
   &:hover {
     background-color: #5a6268;
@@ -120,6 +162,16 @@ export const ProfileButton = styled.button`
   @media (max-width: 768px) {
     padding: 12px 16px;
     margin-right: 8px;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    margin-right: 0;
+    justify-content: center;
+    
+    span {
+      display: none;
+    }
   }
 `;
 
@@ -136,6 +188,7 @@ export const AdminButton = styled.button`
   cursor: pointer;
   transition: all 0.2s;
   margin-right: 12px;
+  min-height: 48px;
 
   &:hover {
     opacity: 0.9;
@@ -145,6 +198,13 @@ export const AdminButton = styled.button`
   @media (max-width: 768px) {
     padding: 12px 16px;
     margin-right: 8px;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    margin-right: 0;
+    justify-content: center;
+    font-size: 12px;
   }
 `;
 
@@ -160,6 +220,7 @@ export const LogoutButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 48px;
 
   &:hover {
     background-color: #c82333;
@@ -168,6 +229,15 @@ export const LogoutButton = styled.button`
 
   @media (max-width: 768px) {
     padding: 12px 16px;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: center;
+    
+    span {
+      display: none;
+    }
   }
 `;
 
@@ -182,6 +252,10 @@ export const ActionBar = styled.div`
     flex-direction: column;
     align-items: stretch;
   }
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 export const FilterContainer = styled.div`
@@ -194,6 +268,23 @@ export const FilterContainer = styled.div`
 
   @media (max-width: 768px) {
     padding: 16px;
+  }
+
+  @media (max-width: 480px) {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 64px;
+    background: white;
+    z-index: 999;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
   }
 `;
 
@@ -372,6 +463,7 @@ export const FilterButton = styled.button`
   justify-content: center;
   gap: 6px;
   margin-right: 12px;
+  min-height: 48px;
 
   ${props => {
     if (props.variant === 'primary') {
@@ -406,6 +498,16 @@ export const FilterButton = styled.button`
   @media (max-width: 768px) {
     width: 100%;
     padding: 12px 20px;
+    margin-right: 0;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+    font-size: 12px;
+    
+    span {
+      display: none;
+    }
   }
 `;
 
@@ -423,6 +525,7 @@ export const ExportButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: 48px;
 
   &:hover {
     background-color: #218838;
@@ -437,6 +540,15 @@ export const ExportButton = styled.button`
   @media (max-width: 768px) {
     width: 100%;
     padding: 12px 20px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+    font-size: 12px;
+    
+    span {
+      display: none;
+    }
   }
 `;
 
@@ -453,6 +565,7 @@ export const CreateButton = styled.button`
   font-size: 16px;
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 48px;
 
   &:hover {
     background-color: var(--primary-hover);
@@ -464,6 +577,15 @@ export const CreateButton = styled.button`
     width: 100%;
     justify-content: center;
     padding: 16px 20px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 14px 16px;
+    font-size: 14px;
+    
+    span {
+      display: none;
+    }
   }
 `;
 
@@ -626,10 +748,23 @@ export const ViewButton = styled(Link)`
   text-decoration: none;
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 40px;
+  min-width: 40px;
 
   &:hover {
     background-color: #5a6268;
     transform: translateY(-1px);
+  }
+
+  @media (max-width: 480px) {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 8px;
+    font-size: 11px;
+    
+    span {
+      display: none;
+    }
   }
 `;
 
@@ -647,10 +782,23 @@ export const DeleteButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 40px;
+  min-width: 40px;
 
   &:hover {
     background-color: #c82333;
     transform: translateY(-1px);
+  }
+
+  @media (max-width: 480px) {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 8px;
+    font-size: 11px;
+    
+    span {
+      display: none;
+    }
   }
 `;
 
@@ -665,6 +813,14 @@ export const MobileCardContainer = styled.div`
   > * + * {
     margin-top: 16px;
   }
+
+  @media (max-width: 480px) {
+    display: block;
+    padding: 8px;
+    > * + * {
+      margin-top: 8px;
+    }
+  }
 `;
 
 export const ExpenseCard = styled.div`
@@ -673,6 +829,19 @@ export const ExpenseCard = styled.div`
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
   overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  @media (max-width: 480px) {
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: none;
+    
+    &:active {
+      transform: scale(0.98);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
 `;
 
 export const CardHeader = styled.div`
@@ -682,6 +851,15 @@ export const CardHeader = styled.div`
   padding: 20px;
   border-bottom: 1px solid var(--border-color);
   background-color: var(--light-color);
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    border-bottom: none;
+  }
 `;
 
 export const CardTitle = styled.h3`
@@ -695,10 +873,24 @@ export const CardTitle = styled.h3`
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+
+  @media (max-width: 480px) {
+    font-size: 16px;
+    margin-right: 12px;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 `;
 
 export const CardContent = styled.div`
   padding: 20px;
+
+  @media (max-width: 480px) {
+    padding: 0 16px 16px 16px;
+  }
 `;
 
 export const CardRow = styled.div`
@@ -710,17 +902,48 @@ export const CardRow = styled.div`
   &:not(:last-child) {
     border-bottom: 1px solid var(--border-color);
   }
+
+  @media (max-width: 480px) {
+    padding: 8px 0;
+    flex-wrap: nowrap;
+    gap: 8px;
+    border-bottom: 1px solid #f0f0f0;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+  }
 `;
 
 export const CardLabel = styled.span`
   font-weight: 600;
   color: var(--secondary-color);
   font-size: 14px;
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+    flex-shrink: 0;
+    min-width: 70px;
+    color: #999;
+  }
 `;
 
 export const CardValue = styled.span`
   color: var(--dark-color);
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+  text-align: right;
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+    max-width: calc(100% - 70px);
+    flex: 1;
+    text-align: right;
+    font-weight: 500;
+  }
 `;
 
 export const CardActions = styled.div`
@@ -729,6 +952,14 @@ export const CardActions = styled.div`
   padding: 20px;
   border-top: 1px solid var(--border-color);
   background-color: var(--light-color);
+
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+    gap: 8px;
+    flex-wrap: nowrap;
+    border-top: 1px solid #f0f0f0;
+    background: white;
+  }
 `;
 
 // 알람 모달
@@ -834,6 +1065,15 @@ export const NotificationItemTitle = styled.div`
   font-weight: 600;
   color: #1f2937;
   margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
 `;
 
 export const NotificationItemInfo = styled.div`
@@ -846,11 +1086,20 @@ export const NotificationItemInfo = styled.div`
   span {
     display: flex;
     align-items: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
   }
 
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 4px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 11px;
+    gap: 2px;
   }
 `;
 
@@ -871,12 +1120,31 @@ export const PaginationContainer = styled.div`
     margin: 24px 0;
     padding: 20px;
   }
+
+  @media (max-width: 480px) {
+    margin: 16px 8px;
+    padding: 16px;
+    gap: 12px;
+    border-radius: 16px;
+    background: white;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 export const PaginationInfo = styled.div`
   font-size: 14px;
   color: var(--secondary-color);
   font-weight: 500;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+
+  @media (max-width: 480px) {
+    font-size: 11px;
+  }
 `;
 
 export const Pagination = styled.div`
@@ -918,6 +1186,13 @@ export const PaginationButton = styled.button`
     padding: 6px 10px;
     font-size: 13px;
   }
+
+  @media (max-width: 480px) {
+    min-width: 32px;
+    height: 32px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
 `;
 
 export const CompanySelector = styled.div`
@@ -938,6 +1213,7 @@ export const CompanySelectorButton = styled.button`
   cursor: pointer;
   transition: all 0.2s;
   font-size: 14px;
+  min-height: 48px;
   
   &:hover {
     background-color: #218838;
@@ -946,6 +1222,19 @@ export const CompanySelectorButton = styled.button`
   
   @media (max-width: 768px) {
     padding: 12px 16px;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 12px;
+    font-size: 12px;
+    
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: calc(100% - 40px);
+    }
   }
 `;
 

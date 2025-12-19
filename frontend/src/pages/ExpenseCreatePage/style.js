@@ -9,6 +9,18 @@ export const Container = styled.div`
   @media (max-width: 768px) {
     padding: 15px;
   }
+
+  @media (max-width: 480px) {
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    min-height: calc(100vh - 56px);
+    background: #f5f5f5;
+    padding-top: 56px;
+    padding-bottom: 80px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 `;
 
 export const Header = styled.div`
@@ -22,6 +34,10 @@ export const Header = styled.div`
   @media (max-width: 768px) {
     margin-bottom: 24px;
     padding-bottom: 12px;
+  }
+
+  @media (max-width: 480px) {
+    display: none;
   }
 `;
 
@@ -53,9 +69,17 @@ export const Title = styled.h1`
   font-weight: 700;
   color: var(--dark-color);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 
   @media (max-width: 768px) {
     font-size: 24px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 20px;
   }
 `;
 
@@ -71,6 +95,15 @@ export const Section = styled.div`
     padding: 20px;
     margin-bottom: 20px;
   }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    margin-bottom: 8px;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+  }
 `;
 
 export const SectionTitle = styled.h3`
@@ -78,10 +111,19 @@ export const SectionTitle = styled.h3`
   font-weight: 600;
   color: var(--dark-color);
   margin: 0 0 24px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 
   @media (max-width: 768px) {
     font-size: 18px;
     margin-bottom: 20px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 16px;
+    margin-bottom: 16px;
   }
 `;
 
@@ -107,6 +149,10 @@ export const FormGrid = styled.div`
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 20px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 16px;
   }
 `;
 
@@ -137,6 +183,7 @@ export const Input = styled.input`
   border-radius: 8px;
   font-size: 16px;
   transition: all 0.2s;
+  min-height: 48px;
 
   &:focus {
     outline: none;
@@ -146,6 +193,11 @@ export const Input = styled.input`
 
   &::placeholder {
     color: var(--secondary-color);
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    font-size: 14px;
   }
 `;
 
@@ -157,11 +209,17 @@ export const Select = styled.select`
   background-color: white;
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 48px;
 
   &:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    font-size: 14px;
   }
 `;
 
@@ -215,11 +273,27 @@ export const ApproverName = styled.span`
   font-weight: 600;
   font-size: 16px;
   color: var(--dark-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
 `;
 
 export const ApproverPosition = styled.span`
   font-size: 14px;
   color: var(--secondary-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
 `;
 
 export const LoadingMessage = styled.p`
@@ -252,6 +326,12 @@ export const TableContainer = styled.div`
   overflow-x: auto;
   border-radius: 8px;
   border: 1px solid var(--border-color);
+
+  @media (max-width: 480px) {
+    border: none;
+    border-radius: 0;
+    overflow-x: visible;
+  }
 `;
 
 export const Table = styled.table`
@@ -261,6 +341,13 @@ export const Table = styled.table`
 
   @media (max-width: 768px) {
     font-size: 14px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 `;
 
@@ -276,6 +363,12 @@ export const Th = styled.th`
   @media (max-width: 768px) {
     padding: 12px 8px;
   }
+
+  @media (max-width: 480px) {
+    padding: 10px 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
 `;
 
 export const Td = styled.td`
@@ -283,6 +376,18 @@ export const Td = styled.td`
   padding: 12px 8px;
   text-align: center;
   vertical-align: middle;
+
+  @media (max-width: 480px) {
+    padding: 10px 6px;
+    font-size: 11px;
+    
+    input, select {
+      width: 100%;
+      min-width: 0;
+      padding: 8px;
+      font-size: 11px;
+    }
+  }
 `;
 
 export const DeleteButton = styled.button`
@@ -297,15 +402,29 @@ export const DeleteButton = styled.button`
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
+  min-width: 40px;
+  min-height: 40px;
 
   &:hover {
     background-color: #c82333;
     transform: scale(1.05);
   }
+
+  @media (max-width: 480px) {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px;
+    font-size: 12px;
+  }
 `;
 
 export const TotalSection = styled.div`
   margin: 32px 0;
+
+  @media (max-width: 480px) {
+    margin: 16px 0;
+    padding: 0 16px;
+  }
 `;
 
 export const TotalCard = styled.div`
@@ -324,6 +443,11 @@ export const TotalCard = styled.div`
     text-align: center;
     padding: 20px;
   }
+
+  @media (max-width: 480px) {
+    border-radius: 16px;
+    padding: 20px;
+  }
 `;
 
 export const TotalLabel = styled.span`
@@ -338,9 +462,16 @@ export const TotalLabel = styled.span`
 export const TotalAmount = styled.span`
   font-size: 32px;
   font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   @media (max-width: 768px) {
     font-size: 28px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 24px;
   }
 `;
 
@@ -354,6 +485,20 @@ export const ButtonGroup = styled.div`
     flex-direction: column;
     gap: 12px;
     margin-top: 24px;
+  }
+
+  @media (max-width: 480px) {
+    position: fixed;
+    bottom: 64px;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 12px 16px;
+    margin: 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    flex-direction: column;
+    gap: 8px;
+    z-index: 998;
   }
 `;
 
@@ -379,6 +524,16 @@ export const CancelButton = styled.button`
 
   @media (max-width: 768px) {
     padding: 16px 24px;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 14px;
+    
+    span {
+      display: none;
+    }
   }
 `;
 
@@ -410,6 +565,16 @@ export const SubmitButton = styled.button`
   @media (max-width: 768px) {
     padding: 16px 24px;
   }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 14px;
+    
+    span {
+      font-size: 14px;
+    }
+  }
 `;
 
 export const InfoMessage = styled.div`
@@ -420,6 +585,13 @@ export const InfoMessage = styled.div`
   color: #856404;
   font-size: 14px;
   line-height: 1.6;
+  word-break: break-word;
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
 `;
 
 export const InfoText = styled.span`

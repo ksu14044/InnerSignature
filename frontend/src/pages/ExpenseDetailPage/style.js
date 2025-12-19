@@ -8,6 +8,20 @@ export const Container = styled.div`
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   background-color: white;
+
+  @media (max-width: 480px) {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    max-width: 100%;
+    min-height: calc(100vh - 56px);
+    background: #f5f5f5;
+    padding-top: 56px;
+    padding-bottom: 200px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 `;
 
 export const Header = styled.div`
@@ -17,6 +31,16 @@ export const Header = styled.div`
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 2px solid #333;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 0;
+    padding: 0;
+    border-bottom: none;
+    background: transparent;
+    margin-bottom: 0;
+  }
 `;
 
 export const TitleInfo = styled.div`
@@ -27,12 +51,52 @@ export const TitleInfo = styled.div`
     display: flex;
     align-items: center;
     gap: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
   }
   p {
     margin: 5px 0;
     color: #666;
     font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
     strong { color: #333; }
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    background: white;
+    padding: 16px;
+    border-radius: 0;
+    margin-bottom: 8px;
+    
+    h1 {
+      font-size: 20px;
+      margin-bottom: 16px;
+      white-space: normal;
+      word-break: break-word;
+      font-weight: 700;
+    }
+    
+    p {
+      font-size: 14px;
+      margin: 8px 0;
+      white-space: normal;
+      line-height: 1.6;
+      display: flex;
+      align-items: center;
+      
+      strong {
+        display: inline-block;
+        min-width: 80px;
+        color: #666;
+        font-weight: 600;
+      }
+    }
   }
 `;
 
@@ -51,6 +115,28 @@ export const SecretBadge = styled.span`
 export const StampArea = styled.div`
   display: flex;
   gap: 8px;
+  overflow-x: auto;
+
+  @media (max-width: 480px) {
+    flex-direction: row;
+    width: 100%;
+    gap: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
+    background: white;
+    margin-bottom: 8px;
+    border-radius: 0;
+    
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 2px;
+    }
+  }
 `;
 
 // 도장 박스 하나
@@ -59,6 +145,14 @@ export const StampBox = styled.div`
   width: 90px;
   text-align: center;
   background-color: white;
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    width: 80px;
+    min-width: 80px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+  }
 `;
 
 export const StampPosition = styled.div`
@@ -86,6 +180,22 @@ export const StampContent = styled.div`
     color: #bbb;
     font-size: 11px;
     line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
+  }
+
+  @media (max-width: 480px) {
+    height: auto;
+    min-height: 60px;
+    padding: 8px;
+    
+    span {
+      font-size: 10px;
+    }
   }
 `;
 
@@ -100,6 +210,13 @@ export const StampDate = styled.div`
 // 본문 영역
 export const ContentArea = styled.div`
   margin: 30px 0;
+
+  @media (max-width: 480px) {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    margin-bottom: 0;
+  }
 `;
 
 export const SectionTitle = styled.h2`
@@ -107,18 +224,63 @@ export const SectionTitle = styled.h2`
   margin-bottom: 10px;
   border-left: 4px solid #333;
   padding-left: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+
+  @media (max-width: 480px) {
+    font-size: 16px;
+    margin-bottom: 0;
+    padding: 16px;
+    padding-left: 12px;
+    border-left-width: 3px;
+    font-weight: 600;
+    white-space: normal;
+    word-break: break-word;
+    background: white;
+    border-left: none;
+    border-bottom: 2px solid var(--primary-color);
+    margin-bottom: 8px;
+  }
 `;
 
 export const TotalAmount = styled.div`
   text-align: right;
   font-size: 18px;
   margin-bottom: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   
   span {
     font-weight: bold;
     font-size: 24px;
     text-decoration: underline;
     margin-left: 10px;
+  }
+
+  @media (max-width: 480px) {
+    text-align: left;
+    font-size: 14px;
+    margin-bottom: 8px;
+    padding: 20px 16px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: white;
+    border-radius: 0;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    
+    span {
+      font-size: 32px;
+      margin-left: 0;
+      display: block;
+      margin-top: 0;
+      text-decoration: none;
+      font-weight: 700;
+    }
   }
 `;
 
@@ -137,22 +299,125 @@ export const DetailTable = styled.table`
     border: 1px solid #ddd;
     padding: 10px;
     font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 0;
+  }
+  
+  td:nth-child(2), td:nth-child(4) {
+    white-space: normal;
+    word-break: break-word;
+    max-width: none;
+  }
+
+  @media (max-width: 480px) {
+    display: block;
+    border: none;
+    
+    thead {
+      display: none;
+    }
+    
+    tbody {
+      display: block;
+    }
+    
+    tbody {
+      padding: 0 16px;
+    }
+    
+    tr {
+      display: block;
+      background: white;
+      border-radius: 0;
+      margin-bottom: 8px;
+      padding: 16px;
+      box-shadow: none;
+      border: none;
+      border-bottom: 1px solid #f0f0f0;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+    
+    td {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border: none;
+      padding: 8px 0;
+      font-size: 14px;
+      text-align: left;
+      white-space: normal;
+      max-width: 100%;
+      border-bottom: none;
+      
+      &:not(:last-child) {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f5f5f5;
+      }
+      
+      &:before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #999;
+        display: inline-block;
+        min-width: 60px;
+        font-size: 13px;
+        flex-shrink: 0;
+      }
+    }
+    
+    td[data-label="항목"] {
+      font-weight: 600;
+      color: var(--primary-color);
+      font-size: 16px;
+      
+      &:before {
+        color: var(--primary-color);
+      }
+    }
+    
+    td[data-label="금액"] {
+      font-weight: 700;
+      color: #333;
+      font-size: 18px;
+      
+      &:before {
+        color: #666;
+      }
+    }
+    
+    td[data-label="적요"],
+    td[data-label="비고"] {
+      color: #666;
+      font-size: 14px;
+    }
   }
 `;
 
 export const ButtonGroup = styled.div`
   text-align: center;
   margin-top: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
   
   button {
     padding: 12px 24px;
-    margin: 0 5px;
+    margin: 0;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
     font-weight: bold;
     transition: background 0.2s;
+    min-height: 48px;
+    min-width: 100px;
     
     &.back {
       background-color: #e5e7eb;
@@ -178,6 +443,29 @@ export const ButtonGroup = styled.div`
       &:hover { background-color: #7c3aed; }
     }
   }
+
+  @media (max-width: 480px) {
+    position: fixed;
+    bottom: 64px;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 12px 16px;
+    margin: 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    flex-direction: column;
+    gap: 8px;
+    z-index: 998;
+    
+    button {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      min-width: 0;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+  }
 `;
 
 // 반려 모달
@@ -200,6 +488,14 @@ export const RejectModalContent = styled.div`
   width: 90%;
   max-width: 500px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  @media (max-width: 480px) {
+    width: 95%;
+    max-width: 100%;
+    border-radius: 8px 8px 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
 `;
 
 export const RejectModalHeader = styled.div`
@@ -213,6 +509,10 @@ export const RejectModalHeader = styled.div`
     margin: 0;
     font-size: 18px;
     font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: calc(100% - 40px);
   }
 
   button {
@@ -227,9 +527,28 @@ export const RejectModalHeader = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    min-width: 30px;
+    min-height: 30px;
 
     &:hover {
       color: #374151;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    
+    h3 {
+      font-size: 16px;
+    }
+    
+    button {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      min-height: 32px;
+      font-size: 28px;
     }
   }
 `;
@@ -276,6 +595,8 @@ export const RejectModalFooter = styled.div`
     font-size: 14px;
     font-weight: 500;
     transition: background-color 0.2s;
+    min-height: 48px;
+    min-width: 80px;
 
     &:first-of-type {
       background-color: #f3f4f6;
@@ -295,6 +616,19 @@ export const RejectModalFooter = styled.div`
       }
     }
   }
+
+  @media (max-width: 480px) {
+    flex-direction: column-reverse;
+    padding: 16px;
+    gap: 8px;
+    
+    button {
+      width: 100%;
+      min-width: 0;
+      padding: 14px 16px;
+      font-size: 14px;
+    }
+  }
 `;
 
 // 영수증 섹션
@@ -304,6 +638,17 @@ export const ReceiptSection = styled.div`
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   background-color: #fafafa;
+
+  @media (max-width: 480px) {
+    margin-top: 8px;
+    padding: 16px;
+    border-radius: 0;
+    background: white;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 8px;
+    padding-bottom: 24px;
+  }
 `;
 
 export const ReceiptSectionHeader = styled.div`
@@ -311,6 +656,14 @@ export const ReceiptSectionHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 12px;
+  }
 `;
 
 export const ReceiptList = styled.div`
@@ -330,6 +683,18 @@ export const ReceiptItem = styled.div`
 
   @media (max-width: 768px) {
     flex-direction: column;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 `;
 
@@ -360,10 +725,29 @@ export const ReceiptInfo = styled.div`
   gap: 8px;
   font-size: 14px;
   color: #666;
+  min-width: 0;
 
   strong {
     color: #333;
     font-size: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    width: 100%;
+    
+    strong {
+      font-size: 14px;
+    }
   }
 `;
 
@@ -382,6 +766,7 @@ export const ReceiptActions = styled.div`
     font-size: 14px;
     transition: background-color 0.2s;
     white-space: nowrap;
+    min-height: 40px;
 
     &:hover {
       background-color: #f0f0f0;
@@ -400,6 +785,19 @@ export const ReceiptActions = styled.div`
   @media (max-width: 768px) {
     flex-direction: row;
     width: 100%;
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: row;
+    width: 100%;
+    gap: 8px;
+    
+    button {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 12px;
+      min-height: 44px;
+    }
   }
 `;
 
@@ -423,8 +821,16 @@ export const UploadButton = styled.div`
   cursor: pointer;
   font-weight: 600;
   transition: background-color 0.2s;
+  min-height: 48px;
+  text-align: center;
 
   &:hover {
     background-color: #7c3aed;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 12px;
   }
 `;

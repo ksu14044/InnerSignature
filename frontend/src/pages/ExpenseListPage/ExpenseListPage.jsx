@@ -665,15 +665,21 @@ const ExpenseListPage = () => {
       {/* 모바일용 카드 뷰 */}
       <S.MobileCardContainer>
         {list.map((item) => (
-          <S.ExpenseCard key={item.expenseReportId}>
+          <S.ExpenseCard 
+            key={item.expenseReportId}
+            onClick={(e) => {
+              // 버튼 클릭이 아닌 경우에만 상세 페이지로 이동
+              if (!e.target.closest('button') && !e.target.closest('a')) {
+                navigate(`/detail/${item.expenseReportId}`);
+              }
+            }}
+          >
             <S.CardHeader>
               <S.CardTitle>
-                <S.StyledLink to={`/detail/${item.expenseReportId}`}>
-                  {item.title}
-                  {item.isSecret && (
-                    <S.SecretBadge>비밀</S.SecretBadge>
-                  )}
-                </S.StyledLink>
+                {item.title}
+                {item.isSecret && (
+                  <S.SecretBadge>비밀</S.SecretBadge>
+                )}
               </S.CardTitle>
               <S.StatusBadge status={item.status}>
                 {STATUS_KOREAN[item.status] || item.status}
@@ -682,24 +688,26 @@ const ExpenseListPage = () => {
 
             <S.CardContent>
               <S.CardRow>
-                <S.CardLabel>번호:</S.CardLabel>
+                <S.CardLabel>번호</S.CardLabel>
                 <S.CardValue>{item.expenseReportId}</S.CardValue>
               </S.CardRow>
               <S.CardRow>
-                <S.CardLabel>작성자:</S.CardLabel>
+                <S.CardLabel>작성자</S.CardLabel>
                 <S.CardValue>{item.drafterName}</S.CardValue>
               </S.CardRow>
               <S.CardRow>
-                <S.CardLabel>작성일:</S.CardLabel>
+                <S.CardLabel>작성일</S.CardLabel>
                 <S.CardValue>{item.reportDate}</S.CardValue>
               </S.CardRow>
               <S.CardRow>
-                <S.CardLabel>금액:</S.CardLabel>
-                <S.CardValue>{item.totalAmount.toLocaleString()}원</S.CardValue>
+                <S.CardLabel>금액</S.CardLabel>
+                <S.CardValue style={{ fontWeight: '600', color: 'var(--primary-color)', fontSize: '16px' }}>
+                  {item.totalAmount.toLocaleString()}원
+                </S.CardValue>
               </S.CardRow>
               {user && user.role !== 'USER' && (
                 <S.CardRow>
-                  <S.CardLabel>세무처리:</S.CardLabel>
+                  <S.CardLabel>세무처리</S.CardLabel>
                   <S.CardValue>
                     {item.taxProcessed !== null && item.taxProcessed !== undefined ? (
                       item.taxProcessed ? (
@@ -716,18 +724,16 @@ const ExpenseListPage = () => {
             </S.CardContent>
 
             <S.CardActions>
-              <S.ViewButton to={`/detail/${item.expenseReportId}`}>
-                <FaEye />
-                <span>보기</span>
-              </S.ViewButton>
               {canDeleteExpense(item) && (
                 <S.DeleteButton 
-                  onClick={() => handleDeleteExpense(item.expenseReportId)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteExpense(item.expenseReportId);
+                  }}
                   disabled={deletingExpenseId === item.expenseReportId || deletingExpenseId !== null}
                   title={deletingExpenseId === item.expenseReportId ? '삭제 중...' : '삭제'}
                 >
                   <FaTrash />
-                  <span>{deletingExpenseId === item.expenseReportId ? '삭제 중...' : '삭제'}</span>
                 </S.DeleteButton>
               )}
             </S.CardActions>

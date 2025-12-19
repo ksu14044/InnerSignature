@@ -395,10 +395,10 @@ const ExpenseDetailPage = () => {
           <tbody>
             {detail.details.map((item) => (
               <tr key={item.expenseDetailId}>
-                <td style={{ textAlign: 'center' }}>{item.category}</td>
-                <td>{item.description}</td>
-                <td style={{ textAlign: 'right' }}>{item.amount.toLocaleString()}</td>
-                <td style={{ textAlign: 'center' }}>{item.note}</td>
+                <td style={{ textAlign: 'center' }} data-label="항목">{item.category}</td>
+                <td data-label="적요">{item.description}</td>
+                <td style={{ textAlign: 'right' }} data-label="금액">{item.amount.toLocaleString()}원</td>
+                <td style={{ textAlign: 'center' }} data-label="비고">{item.note || '-'}</td>
               </tr>
             ))}
           </tbody>

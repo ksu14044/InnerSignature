@@ -9,6 +9,18 @@ export const Container = styled.div`
   @media (max-width: 768px) {
     padding: 15px;
   }
+
+  @media (max-width: 480px) {
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    min-height: calc(100vh - 56px - 64px);
+    background: #f5f5f5;
+    padding-top: 56px;
+    padding-bottom: 64px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 `;
 
 export const Header = styled.div`
@@ -24,6 +36,10 @@ export const Header = styled.div`
     align-items: flex-start;
     gap: 16px;
   }
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 export const Title = styled.h1`
@@ -31,9 +47,17 @@ export const Title = styled.h1`
   font-weight: 700;
   color: var(--dark-color);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 
   @media (max-width: 768px) {
     font-size: 24px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 20px;
   }
 `;
 
@@ -53,10 +77,18 @@ export const Button = styled.button`
     return 'var(--primary-color)';
   }};
   transition: transform 0.15s ease, opacity 0.2s;
+  min-height: 48px;
 
   &:hover {
     transform: translateY(-1px);
     opacity: 0.95;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 12px;
+    justify-content: center;
   }
 `;
 
@@ -67,12 +99,26 @@ export const FilterCard = styled.div`
   padding: 16px;
   margin-bottom: 20px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    box-shadow: none;
+  }
 `;
 
 export const FilterGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 `;
 
 export const Label = styled.label`
@@ -90,10 +136,16 @@ export const Input = styled.input`
   border-radius: 6px;
   font-size: 14px;
   transition: border-color 0.2s;
+  min-height: 48px;
 
   &:focus {
     outline: none;
     border-color: var(--primary-color);
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    font-size: 14px;
   }
 `;
 
@@ -102,6 +154,13 @@ export const StatsGrid = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
   margin-bottom: 24px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 0 8px;
+  }
 `;
 
 export const StatCard = styled.div`
@@ -116,6 +175,13 @@ export const StatCard = styled.div`
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   }
+
+  @media (max-width: 480px) {
+    padding: 16px 12px;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: none;
+  }
 `;
 
 export const StatLabel = styled.div`
@@ -123,12 +189,27 @@ export const StatLabel = styled.div`
   color: var(--secondary-color);
   font-weight: 600;
   margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
 `;
 
 export const StatValue = styled.div`
   font-size: 28px;
   font-weight: 700;
   color: var(--dark-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    font-size: 20px;
+  }
 `;
 
 export const ChartsGrid = styled.div`
@@ -140,6 +221,12 @@ export const ChartsGrid = styled.div`
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
+
+  @media (max-width: 480px) {
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 0 8px;
+  }
 `;
 
 export const ChartCard = styled.div`
@@ -148,6 +235,14 @@ export const ChartCard = styled.div`
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: none;
+    margin-bottom: 8px;
+  }
 `;
 
 export const ChartTitle = styled.h3`
@@ -155,11 +250,25 @@ export const ChartTitle = styled.h3`
   font-weight: 600;
   color: var(--dark-color);
   margin: 0 0 16px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
 `;
 
 export const ChartContainer = styled.div`
   width: 100%;
   height: 300px;
+
+  @media (max-width: 480px) {
+    height: 280px;
+    min-height: 280px;
+  }
 `;
 
 export const Alert = styled.div`

@@ -431,41 +431,23 @@ const MyProfilePage = () => {
         
         {/* 승인된 회사 목록 */}
         {companies.length > 0 && (
-          <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>승인된 회사</h3>
+          <S.CompanySection>
+            <S.CompanySectionTitle>승인된 회사</S.CompanySectionTitle>
             {companies.map((company) => (
-              <div key={company.companyId} style={{ 
-                padding: '15px', 
-                marginBottom: '10px', 
-                border: company.companyId === authUser?.companyId ? '2px solid #28a745' : '1px solid #ddd', 
-                borderRadius: '5px',
-                backgroundColor: company.companyId === authUser?.companyId ? '#f0f9f4' : 'white',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ fontWeight: 'bold', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <S.CompanyCard key={company.companyId} isCurrent={company.companyId === authUser?.companyId}>
+                <S.CompanyInfo>
+                  <S.CompanyNameRow>
                     {company.companyId === authUser?.companyId && (
-                      <span style={{ 
-                        backgroundColor: '#28a745', 
-                        color: 'white', 
-                        padding: '2px 8px', 
-                        borderRadius: '12px', 
-                        fontSize: '11px',
-                        fontWeight: 'bold'
-                      }}>
-                        현재
-                      </span>
+                      <S.CurrentBadge>현재</S.CurrentBadge>
                     )}
-                    {company.companyName} 
-                    {company.isPrimary && <span style={{ color: '#007bff' }}>(기본)</span>}
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>
+                    {company.companyName}
+                    {company.isPrimary && <span style={{ color: '#007bff', fontSize: '12px', marginLeft: '4px' }}>(기본)</span>}
+                  </S.CompanyNameRow>
+                  <S.CompanyDetails>
                     역할: {getRoleLabel(company.role)} | 직급: {company.position || '-'}
-                  </div>
-                </div>
-                <div>
+                  </S.CompanyDetails>
+                </S.CompanyInfo>
+                <S.CompanyActions>
                   {company.companyId !== authUser?.companyId && (
                     <S.Button 
                       onClick={async () => {
@@ -477,74 +459,66 @@ const MyProfilePage = () => {
                           alert('회사 전환에 실패했습니다.');
                         }
                       }}
-                      style={{ marginRight: '10px', padding: '5px 10px', fontSize: '12px', backgroundColor: '#007bff' }}
+                      primary
                     >
                       전환
                     </S.Button>
                   )}
                   {company.companyId === authUser?.companyId && (
-                    <span style={{ marginRight: '10px', padding: '5px 10px', fontSize: '12px', color: '#28a745', fontWeight: 'bold' }}>
+                    <span style={{ color: '#28a745', fontWeight: 'bold', fontSize: '13px', padding: '8px' }}>
                       현재 회사
                     </span>
                   )}
                   {!company.isPrimary && (
                     <S.Button 
                       onClick={() => handleSetPrimaryCompany(company.companyId)}
-                      style={{ marginRight: '10px', padding: '5px 10px', fontSize: '12px' }}
                     >
                       기본 설정
                     </S.Button>
                   )}
                   <S.Button 
                     onClick={() => handleRemoveCompany(company.companyId)}
-                    style={{ padding: '5px 10px', fontSize: '12px', backgroundColor: '#dc3545' }}
+                    style={{ backgroundColor: '#dc3545', color: 'white' }}
                   >
                     <FaTrash /> 탈퇴
                   </S.Button>
-                </div>
-              </div>
+                </S.CompanyActions>
+              </S.CompanyCard>
             ))}
-          </div>
+          </S.CompanySection>
         )}
 
         {/* 승인 대기 회사 목록 */}
         {pendingCompanies.length > 0 && (
-          <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold', color: '#ff9800' }}>승인 대기</h3>
+          <S.CompanySection>
+            <S.CompanySectionTitle style={{ color: '#ff9800' }}>승인 대기</S.CompanySectionTitle>
             {pendingCompanies.map((company) => (
-              <div key={company.companyId} style={{ 
-                padding: '15px', 
-                marginBottom: '10px', 
-                border: '1px solid #ff9800', 
-                borderRadius: '5px',
-                backgroundColor: '#fff3cd'
-              }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>
+              <S.PendingCompanyCard key={company.companyId}>
+                <div style={{ fontWeight: 'bold', marginBottom: '5px', fontSize: '15px' }}>
                   {company.companyName}
                 </div>
-                <div style={{ fontSize: '14px', color: '#666' }}>
+                <S.CompanyDetails>
                   역할: {getRoleLabel(company.role)} | 직급: {company.position || '-'}
-                </div>
-                <div style={{ fontSize: '12px', color: '#ff9800', marginTop: '5px' }}>
+                </S.CompanyDetails>
+                <div style={{ fontSize: '12px', color: '#ff9800', marginTop: '8px', fontWeight: '500' }}>
                   관리자 승인 대기 중...
                 </div>
-              </div>
+              </S.PendingCompanyCard>
             ))}
-          </div>
+          </S.CompanySection>
         )}
 
         {/* 회사 검색 및 지원 */}
         <div>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-            <S.Input
+          <S.SearchContainer>
+            <S.SearchInput
               type="text"
               placeholder="회사명으로 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearchCompanies()}
-              style={{ flex: 1 }}
             />
-            <S.Button onClick={handleSearchCompanies}>
+            <S.Button onClick={handleSearchCompanies} primary>
               <FaSearch /> 검색
             </S.Button>
             {showSearch && (
@@ -556,39 +530,37 @@ const MyProfilePage = () => {
                 <FaTimes /> 닫기
               </S.Button>
             )}
-          </div>
+          </S.SearchContainer>
 
           {searchResults.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>검색 결과</h3>
+            <S.CompanySection>
+              <S.CompanySectionTitle>검색 결과</S.CompanySectionTitle>
               {searchResults.map((company) => (
-                <div key={company.companyId} style={{ 
-                  padding: '15px', 
-                  marginBottom: '10px', 
-                  border: '1px solid #ddd', 
-                  borderRadius: '5px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <div>
-                    <div style={{ fontWeight: 'bold' }}>{company.companyName}</div>
+                <S.CompanyCard key={company.companyId}>
+                  <S.CompanyInfo>
+                    <S.CompanyNameRow>
+                      {company.companyName}
+                    </S.CompanyNameRow>
                     {company.adminName && (
-                      <div style={{ fontSize: '12px', color: '#666' }}>관리자: {company.adminName}</div>
+                      <S.CompanyDetails style={{ fontSize: '12px' }}>
+                        관리자: {company.adminName}
+                      </S.CompanyDetails>
                     )}
-                  </div>
-                  <S.Button 
-                    onClick={() => {
-                      setApplyForm({ ...applyForm, companyId: company.companyId });
-                      setShowSearch(true);
-                    }}
-                    style={{ padding: '5px 15px' }}
-                  >
-                    지원하기
-                  </S.Button>
-                </div>
+                  </S.CompanyInfo>
+                  <S.CompanyActions>
+                    <S.Button 
+                      onClick={() => {
+                        setApplyForm({ ...applyForm, companyId: company.companyId });
+                        setShowSearch(true);
+                      }}
+                      primary
+                    >
+                      지원하기
+                    </S.Button>
+                  </S.CompanyActions>
+                </S.CompanyCard>
               ))}
-            </div>
+            </S.CompanySection>
           )}
 
           {showSearch && applyForm.companyId && (
