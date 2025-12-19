@@ -117,5 +117,35 @@ public class CompanyService {
         // 이 메서드는 UserService에서 사용할 수 있도록 제공
         // 실제 구현은 UserService에서 처리
     }
+    
+    /**
+     * 전체 회사 목록 조회 (SUPERADMIN 전용)
+     */
+    public List<CompanyDto> getAllCompanies() {
+        return companyMapper.findAll();
+    }
+    
+    /**
+     * 회사 활성화 상태 변경 (SUPERADMIN 전용)
+     */
+    @Transactional
+    public void updateCompanyStatus(Long companyId, Boolean isActive, Long operatorId) {
+        CompanyDto company = companyMapper.findById(companyId);
+        if (company == null) {
+            throw new BusinessException("회사를 찾을 수 없습니다.");
+        }
+        
+        int result = companyMapper.updateIsActive(companyId, isActive);
+        if (result > 0) {
+            logger.info("회사 상태 변경 완료 - companyId: {}, isActive: {}, operatorId: {}", companyId, isActive, operatorId);
+            // 감사 로그 기록
+            com.innersignature.backend.util.SecurityLogger.companyManagement(
+                "UPDATE_STATUS", operatorId, companyId, 
+                String.format("isActive=%s", isActive)
+            );
+        } else {
+            throw new BusinessException("회사 상태 변경에 실패했습니다.");
+        }
+    }
 }
 

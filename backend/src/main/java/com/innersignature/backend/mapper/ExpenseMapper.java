@@ -172,4 +172,34 @@ public interface ExpenseMapper {
             @Param("endDate") LocalDate endDate,
             @Param("companyId") Long companyId
     );
+    
+    // SUPERADMIN 전용: 회사별 지출결의서 목록 조회 (companyId가 null이면 전체 조회)
+    List<ExpenseReportDto> selectExpenseListForSuperAdmin(
+            @Param("offset") int offset,
+            @Param("limit") int limit,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("minAmount") Long minAmount,
+            @Param("maxAmount") Long maxAmount,
+            @Param("statuses") List<String> statuses,
+            @Param("category") String category,
+            @Param("taxProcessed") Boolean taxProcessed,
+            @Param("isSecret") Boolean isSecret,
+            @Param("drafterName") String drafterName,
+            @Param("companyId") Long companyId
+    );
+    
+    // SUPERADMIN 전용: 회사별 지출결의서 개수 조회 (companyId가 null이면 전체 조회)
+    long countExpenseListForSuperAdmin(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("minAmount") Long minAmount,
+            @Param("maxAmount") Long maxAmount,
+            @Param("statuses") List<String> statuses,
+            @Param("category") String category,
+            @Param("taxProcessed") Boolean taxProcessed,
+            @Param("isSecret") Boolean isSecret,
+            @Param("drafterName") String drafterName,
+            @Param("companyId") Long companyId
+    );
 }

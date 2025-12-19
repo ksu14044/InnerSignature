@@ -1259,6 +1259,53 @@ public class ExpenseService {
         
         return tempFile;
     }
+    
+    /**
+     * SUPERADMIN 전용: 회사별 지출결의서 목록 조회
+     * companyId가 null이면 전체 회사의 지출결의서 조회
+     */
+    public PagedResponse<ExpenseReportDto> getExpenseListForSuperAdmin(
+            int page,
+            int size,
+            LocalDate startDate,
+            LocalDate endDate,
+            Long minAmount,
+            Long maxAmount,
+            List<String> statuses,
+            String category,
+            Boolean taxProcessed,
+            Boolean isSecret,
+            String drafterName,
+            Long companyId) {
+        
+        // statuses가 null이거나 비어있으면 null로 설정
+        if (statuses != null && statuses.isEmpty()) {
+            statuses = null;
+        }
+        
+        // 전체 개수 조회
+        long totalElements = expenseMapper.countExpenseListForSuperAdmin(
+                startDate, endDate, minAmount, maxAmount,
+                statuses, category, taxProcessed, isSecret,
+                drafterName, companyId);
+        
+        // 전체 페이지 수 계산
+        int totalPages = (int) Math.ceil((double) totalElements / size);
+        
+        // 페이지네이션 계산
+        int offset = (page - 1) * size;
+        
+        // 데이터 조회
+        List<ExpenseReportDto> content = expenseMapper.selectExpenseListForSuperAdmin(
+                offset, size,
+                startDate, endDate,
+                minAmount, maxAmount,
+                statuses, category, taxProcessed, isSecret,
+                drafterName, companyId);
+        
+        // PagedResponse 객체 생성 및 반환
+        return new PagedResponse<>(content, page, size, totalElements, totalPages);
+    }
 
     /**
      * 엑셀 데이터 행 생성 헬퍼 메서드

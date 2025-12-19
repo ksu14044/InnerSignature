@@ -23,5 +23,8 @@ public interface PaymentMapper {
     // 결제 상태 업데이트
     int updateStatus(@Param("paymentId") Long paymentId, 
                      @Param("paymentStatus") String paymentStatus);
+    
+    // 전체 결제 내역 조회 (SUPERADMIN 전용)
+    List<PaymentDto> findAll();
 }
 

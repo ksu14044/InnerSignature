@@ -50,4 +50,9 @@
             updated_at = NOW()
         WHERE payment_id = #{paymentId}
     </update>
+    
+    <select id="findAll" resultMap="PaymentResultMap">
+        SELECT p.* FROM payment_tb p
+        ORDER BY p.payment_date DESC, p.created_at DESC
+    </select>
 </mapper>

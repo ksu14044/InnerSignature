@@ -37,5 +37,8 @@ public interface CompanyMapper {
     // 회사 활성화 상태 업데이트
     int updateIsActive(@Param("companyId") Long companyId, 
                        @Param("isActive") Boolean isActive);
+    
+    // 전체 회사 목록 조회 (SUPERADMIN 전용)
+    List<CompanyDto> findAll();
 }
 

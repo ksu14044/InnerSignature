@@ -58,4 +58,9 @@
         SET is_active = #{isActive}
         WHERE company_id = #{companyId}
     </update>
+    
+    <select id="findAll" resultType="com.innersignature.backend.dto.CompanyDto">
+        SELECT * FROM company_tb
+        ORDER BY created_at DESC
+    </select>
 </mapper>

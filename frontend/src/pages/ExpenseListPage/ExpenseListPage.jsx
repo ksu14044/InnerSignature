@@ -230,6 +230,12 @@ const ExpenseListPage = () => {
   };
 
   useEffect(() => {
+    // SUPERADMIN은 지출결의서 목록 페이지에 접근할 수 없도록 리다이렉트
+    if (user?.role === 'SUPERADMIN') {
+      navigate('/superadmin/dashboard');
+      return;
+    }
+
     loadExpenseList(1);
 
     // 미서명 건 조회 (알람)

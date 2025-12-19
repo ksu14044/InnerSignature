@@ -15,6 +15,7 @@ const MobileAppBar = ({ title, onMenuClick }) => {
 
   const getTitle = () => {
     if (title) return title;
+    if (location.pathname === '/superadmin/dashboard') return 'SUPERADMIN 대시보드';
     if (location.pathname === '/expenses') return '지출결의서';
     if (location.pathname.startsWith('/detail/')) return '상세보기';
     if (location.pathname === '/expenses/create') return '새 결의서 작성';

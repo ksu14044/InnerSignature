@@ -449,7 +449,13 @@ const LoginPage = () => {
         // 로그인 성공 후에는 지출결의서 목록 페이지에서
         // CEO + 회사 없음 여부를 체크하고 회사 등록 모달을 띄웁니다.
         alert(`${user.koreanName}님 환영합니다!`);
-        navigate('/expenses'); // 지출결의서 목록으로 이동
+        
+        // SUPERADMIN은 대시보드로, 그 외는 지출결의서 목록으로 이동
+        if (user.role === 'SUPERADMIN') {
+          navigate('/superadmin/dashboard');
+        } else {
+          navigate('/expenses'); // 지출결의서 목록으로 이동
+        }
       } else {
         alert("로그인 실패: " + res.data.message);
       }

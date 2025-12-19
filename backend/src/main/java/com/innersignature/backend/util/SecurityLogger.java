@@ -33,5 +33,15 @@ public class SecurityLogger {
         SECURITY_LOGGER.info("USER_MANAGEMENT action={} operatorId={} targetUserId={} detail={}", 
             action, operatorId, targetUserId, detail);
     }
+    
+    public static void companyManagement(String action, Long operatorId, Long companyId, String detail) {
+        SECURITY_LOGGER.info("COMPANY_MANAGEMENT action={} operatorId={} companyId={} detail={}", 
+            action, operatorId, companyId, detail);
+    }
+    
+    public static void superAdminAction(String action, Long operatorId, String targetType, Long targetId, String detail) {
+        SECURITY_LOGGER.info("SUPERADMIN_ACTION action={} operatorId={} targetType={} targetId={} detail={}", 
+            action, operatorId, targetType, targetId, detail);
+    }
 }
 

@@ -13,6 +13,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage';
 import SubscriptionManagementPage from './pages/SubscriptionManagementPage/SubscriptionManagementPage';
 import PlanSelectionPage from './pages/PlanSelectionPage/PlanSelectionPage';
 import PaymentHistoryPage from './pages/PaymentHistoryPage/PaymentHistoryPage';
+import SuperAdminDashboardPage from './pages/SuperAdminDashboardPage/SuperAdminDashboardPage';
 import MobileAppBar from './components/MobileAppBar/MobileAppBar';
 import MobileBottomNav from './components/MobileBottomNav/MobileBottomNav';
 import MobileFAB from './components/MobileFAB/MobileFAB';
@@ -36,6 +37,7 @@ function App() {
         <Route path="/subscriptions/manage" element={<SubscriptionManagementPage />} />
         <Route path="/subscriptions/plans" element={<PlanSelectionPage />} />
         <Route path="/subscriptions/payments" element={<PaymentHistoryPage />} />
+        <Route path="/superadmin/dashboard" element={<SuperAdminDashboardPage />} />
       </Routes>
       <MobileBottomNav />
       <MobileFAB />

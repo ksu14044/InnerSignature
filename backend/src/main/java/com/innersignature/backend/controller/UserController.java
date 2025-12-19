@@ -276,6 +276,8 @@ public class UserController {
         if (createdUserId != null) {
             SecurityLogger.userManagement("CREATE", currentUserId, createdUserId, 
                 String.format("username=%s, role=%s", request.getUsername(), newUser.getRole()));
+            SecurityLogger.superAdminAction("CREATE_USER", currentUserId, "USER", createdUserId, 
+                String.format("username=%s, role=%s", request.getUsername(), newUser.getRole()));
             logger.info("사용자 생성 완료 - userId: {}", createdUserId);
             return new ApiResponse<>(true, "사용자 생성 완료", createdUserId);
         } else {
@@ -319,6 +321,8 @@ public class UserController {
         if (result > 0) {
             SecurityLogger.userManagement("UPDATE", currentUserId, userId, 
                 String.format("role=%s, isActive=%s", request.getRole(), request.getIsActive()));
+            SecurityLogger.superAdminAction("UPDATE_USER", currentUserId, "USER", userId, 
+                String.format("role=%s, isActive=%s", request.getRole(), request.getIsActive()));
             logger.info("사용자 정보 수정 완료 - userId: {}", userId);
             return new ApiResponse<>(true, "사용자 정보 수정 완료", null);
         } else {
@@ -341,6 +345,7 @@ public class UserController {
         int result = userService.deleteUser(userId, currentUserId);
         if (result > 0) {
             SecurityLogger.userManagement("DELETE", currentUserId, userId, "soft delete");
+            SecurityLogger.superAdminAction("DELETE_USER", currentUserId, "USER", userId, "soft delete");
             logger.info("사용자 삭제 완료 - userId: {}", userId);
             return new ApiResponse<>(true, "사용자 삭제 완료", null);
         } else {

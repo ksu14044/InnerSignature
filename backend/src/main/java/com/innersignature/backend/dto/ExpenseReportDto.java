@@ -33,6 +33,7 @@ public class ExpenseReportDto {
 
     // --- 화면 보여주기용 추가 필드 ---
     private String drafterName;   // 작성자 이름 (김신입)
+    private String companyName;    // 회사명 (SUPERADMIN용)
     
     // --- 1:N 관계 데이터 (상세화면 조회 시 사용) ---
     private List<ExpenseDetailDto> details;      // 상세 내역 리스트 (식대, 간식...)

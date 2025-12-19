@@ -23,19 +23,24 @@ const MobileBottomNav = () => {
     return location.pathname === path;
   };
 
-  const navItems = [
-    { path: '/expenses', icon: FaHome, label: '목록' },
-    ...(user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT' 
-      ? [{ path: '/dashboard', icon: FaChartBar, label: '대시보드' }] 
-      : []),
-    ...(user?.role === 'TAX_ACCOUNTANT' 
-      ? [{ path: '/tax/summary', icon: FaChartBar, label: '세무요약' }] 
-      : []),
-    ...(user?.role === 'CEO' || user?.role === 'ADMIN'
-      ? [{ path: '/subscriptions/manage', icon: FaCreditCard, label: '구독' }]
-      : []),
-    { path: '/profile', icon: FaUser, label: '내정보' },
-  ];
+  const navItems = user?.role === 'SUPERADMIN'
+    ? [
+        { path: '/superadmin/dashboard', icon: FaHome, label: '대시보드' },
+        { path: '/profile', icon: FaUser, label: '내정보' },
+      ]
+    : [
+        { path: '/expenses', icon: FaHome, label: '목록' },
+        ...(user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT' 
+          ? [{ path: '/dashboard', icon: FaChartBar, label: '대시보드' }] 
+          : []),
+        ...(user?.role === 'TAX_ACCOUNTANT' 
+          ? [{ path: '/tax/summary', icon: FaChartBar, label: '세무요약' }] 
+          : []),
+        ...(user?.role === 'CEO' || user?.role === 'ADMIN'
+          ? [{ path: '/subscriptions/manage', icon: FaCreditCard, label: '구독' }]
+          : []),
+        { path: '/profile', icon: FaUser, label: '내정보' },
+      ];
 
   return (
     <S.BottomNav>

@@ -112,5 +112,12 @@ public class PaymentService {
         paymentMapper.updateStatus(paymentId, paymentStatus);
         logger.info("결제 상태 업데이트 완료 - paymentId: {}, status: {}", paymentId, paymentStatus);
     }
+    
+    /**
+     * 전체 결제 내역 조회 (SUPERADMIN 전용)
+     */
+    public List<PaymentDto> getAllPayments() {
+        return paymentMapper.findAll();
+    }
 }
 

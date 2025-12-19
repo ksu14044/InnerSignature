@@ -8,7 +8,6 @@ import com.innersignature.backend.exception.ResourceNotFoundException;
 import com.innersignature.backend.mapper.CompanyMapper;
 import com.innersignature.backend.mapper.SubscriptionMapper;
 import com.innersignature.backend.mapper.UserMapper;
-import com.innersignature.backend.service.PaymentService;
 import com.innersignature.backend.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -309,6 +308,13 @@ public class SubscriptionService {
      */
     private void updateCompanySubscriptionId(Long companyId, Long subscriptionId) {
         companyMapper.updateSubscriptionId(companyId, subscriptionId);
+    }
+    
+    /**
+     * 전체 구독 목록 조회 (SUPERADMIN 전용)
+     */
+    public List<SubscriptionDto> getAllSubscriptions() {
+        return subscriptionMapper.findAll();
     }
 }
 

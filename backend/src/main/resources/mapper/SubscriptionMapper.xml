@@ -114,4 +114,18 @@
         AND end_date IS NOT NULL
         AND end_date BETWEEN #{currentDate} AND DATE_ADD(#{currentDate}, INTERVAL #{days} DAY)
     </select>
+    
+    <select id="findAll" resultMap="SubscriptionWithPlanResultMap">
+        SELECT 
+            s.*,
+            p.plan_code,
+            p.plan_name,
+            p.price,
+            p.max_users,
+            p.features,
+            p.is_active AS plan_is_active
+        FROM subscription_tb s
+        INNER JOIN subscription_plan_tb p ON s.plan_id = p.plan_id
+        ORDER BY s.created_at DESC
+    </select>
 </mapper>

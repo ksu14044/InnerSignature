@@ -35,5 +35,8 @@ public interface SubscriptionMapper {
     // 만료 예정 구독 조회 (알림용)
     List<SubscriptionDto> findExpiringSoon(@Param("currentDate") LocalDate currentDate, 
                                           @Param("days") int days);
+    
+    // 전체 구독 목록 조회 (SUPERADMIN 전용)
+    List<SubscriptionDto> findAll();
 }
 
