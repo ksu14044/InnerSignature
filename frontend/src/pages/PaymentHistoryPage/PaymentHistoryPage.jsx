@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaUser } from 'react-icons/fa';
 import { getPayments } from '../../api/subscriptionApi';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
@@ -72,7 +73,14 @@ const PaymentHistoryPage = () => {
   return (
     <S.Container>
       <S.Header>
-        <S.Title>결제 내역</S.Title>
+        <S.HeaderLeft>
+          <S.Title>결제 내역</S.Title>
+        </S.HeaderLeft>
+        <S.HeaderRight>
+          <S.ProfileButton onClick={() => navigate('/profile')}>
+            <FaUser /> 내 정보
+          </S.ProfileButton>
+        </S.HeaderRight>
       </S.Header>
 
       {payments.length === 0 ? (

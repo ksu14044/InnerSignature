@@ -52,4 +52,10 @@
         SET subscription_id = #{subscriptionId}
         WHERE company_id = #{companyId}
     </update>
+    
+    <update id="updateIsActive">
+        UPDATE company_tb
+        SET is_active = #{isActive}
+        WHERE company_id = #{companyId}
+    </update>
 </mapper>

@@ -7,14 +7,47 @@ export const Container = styled.div`
 `;
 
 export const Header = styled.div`
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 40px;
+  position: relative;
+`;
+
+export const HeaderContent = styled.div`
+  flex: 1;
+  text-align: center;
+`;
+
+export const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
 `;
 
 export const Title = styled.h1`
   font-size: 32px;
   font-weight: bold;
   margin: 0 0 8px 0;
+`;
+
+export const ProfileButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #0056b3;
+  }
 `;
 
 export const Subtitle = styled.p`

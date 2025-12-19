@@ -33,5 +33,9 @@ public interface CompanyMapper {
     // 회사의 구독 ID 업데이트
     int updateSubscriptionId(@Param("companyId") Long companyId, 
                              @Param("subscriptionId") Long subscriptionId);
+    
+    // 회사 활성화 상태 업데이트
+    int updateIsActive(@Param("companyId") Long companyId, 
+                       @Param("isActive") Boolean isActive);
 }
 

@@ -845,10 +845,10 @@ public class UserController {
         try {
             Long userId = SecurityUtil.getCurrentUserId();
             
-            // 작업 수행자가 해당 회사에 소속되어 있는지 확인
-            List<CompanyDto> myCompanies = companyService.findByUserId(userId);
+            // 작업 수행자가 해당 회사에 소속되어 있는지 확인 (활성화 여부와 관계없이)
+            List<UserCompanyDto> myCompanies = userService.getUserCompanies(userId);
             boolean hasAccess = myCompanies.stream()
-                .anyMatch(c -> c.getCompanyId().equals(companyId));
+                .anyMatch(uc -> uc.getCompanyId().equals(companyId));
             
             if (!hasAccess) {
                 return new ApiResponse<>(false, "해당 회사에 대한 권한이 없습니다.", null);

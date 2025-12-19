@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaUser } from 'react-icons/fa';
 import { getCurrentSubscription, cancelSubscription, updateSubscription } from '../../api/subscriptionApi';
 import { getPlans } from '../../api/subscriptionApi';
 import { useAuth } from '../../contexts/AuthContext';
@@ -126,7 +127,14 @@ const SubscriptionManagementPage = () => {
   return (
     <S.Container>
       <S.Header>
-        <S.Title>구독 관리</S.Title>
+        <S.HeaderLeft>
+          <S.Title>구독 관리</S.Title>
+        </S.HeaderLeft>
+        <S.HeaderRight>
+          <S.ProfileButton onClick={() => navigate('/profile')}>
+            <FaUser /> 내 정보
+          </S.ProfileButton>
+        </S.HeaderRight>
       </S.Header>
 
       {error && <S.ErrorMessage>{error}</S.ErrorMessage>}

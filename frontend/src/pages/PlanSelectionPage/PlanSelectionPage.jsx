@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaUser } from 'react-icons/fa';
 import { getPlans, createSubscription, getCurrentSubscription } from '../../api/subscriptionApi';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
@@ -105,8 +106,15 @@ const PlanSelectionPage = () => {
   return (
     <S.Container>
       <S.Header>
-        <S.Title>플랜 선택</S.Title>
-        <S.Subtitle>회사에 맞는 플랜을 선택하세요</S.Subtitle>
+        <S.HeaderContent>
+          <S.Title>플랜 선택</S.Title>
+          <S.Subtitle>회사에 맞는 플랜을 선택하세요</S.Subtitle>
+        </S.HeaderContent>
+        <S.HeaderRight>
+          <S.ProfileButton onClick={() => navigate('/profile')}>
+            <FaUser /> 내 정보
+          </S.ProfileButton>
+        </S.HeaderRight>
       </S.Header>
 
       <S.PlansGrid>
