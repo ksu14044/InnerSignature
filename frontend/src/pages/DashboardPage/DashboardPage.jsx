@@ -6,6 +6,7 @@ import {
   fetchStatusStats, 
   fetchCategoryRatio 
 } from '../../api/expenseApi';
+import { getCurrentSubscription } from '../../api/subscriptionApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { STATUS_KOREAN } from '../../constants/status';
 import { 
@@ -41,6 +42,7 @@ const DashboardPage = () => {
   const [monthlyTrend, setMonthlyTrend] = useState([]);
   const [statusStats, setStatusStats] = useState([]);
   const [categoryRatio, setCategoryRatio] = useState([]);
+  const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(false);
   const debounceTimer = useRef(null);
 
@@ -103,9 +105,21 @@ const DashboardPage = () => {
   useEffect(() => {
     if (isAuthorized) {
       loadDashboardData();
+      loadSubscription();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isAuthorized]);
+
+  const loadSubscription = async () => {
+    try {
+      const res = await getCurrentSubscription().catch(() => ({ success: false, data: null }));
+      if (res.success && res.data) {
+        setSubscription(res.data);
+      }
+    } catch (err) {
+      console.error('구독 정보 로드 실패:', err);
+    }
+  };
 
   if (!user) {
     return (
@@ -149,6 +163,54 @@ const DashboardPage = () => {
           목록으로
         </S.Button>
       </S.Header>
+
+      {/* 구독 상태 카드 */}
+      {subscription && (() => {
+        const endDate = subscription.endDate ? new Date(subscription.endDate) : null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let daysLeft = null;
+        if (endDate) {
+          endDate.setHours(0, 0, 0, 0);
+          daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+        }
+        
+        return (
+          <S.SubscriptionCard 
+            warning={daysLeft !== null && daysLeft <= 7 && daysLeft >= 0}
+            danger={daysLeft !== null && daysLeft < 0}
+            onClick={() => navigate('/subscriptions/manage')}
+          >
+            <S.SubscriptionCardHeader>
+              <S.SubscriptionCardTitle>구독 상태</S.SubscriptionCardTitle>
+              {subscription.status === 'ACTIVE' && (
+                <S.SubscriptionStatusBadge status={subscription.status}>활성</S.SubscriptionStatusBadge>
+              )}
+            </S.SubscriptionCardHeader>
+            <S.SubscriptionPlanName>{subscription.plan?.planName || '알 수 없음'} 플랜</S.SubscriptionPlanName>
+            {subscription.endDate && (
+              <S.SubscriptionExpiry>
+                <S.SubscriptionExpiryLabel>만료일:</S.SubscriptionExpiryLabel>
+                <S.SubscriptionExpiryDate>{subscription.endDate}</S.SubscriptionExpiryDate>
+                {daysLeft !== null && (
+                  <>
+                    {daysLeft < 0 && (
+                      <S.SubscriptionExpiryWarning danger>⚠️ 만료됨</S.SubscriptionExpiryWarning>
+                    )}
+                    {daysLeft >= 0 && daysLeft <= 7 && (
+                      <S.SubscriptionExpiryWarning>⚠️ {daysLeft}일 남음</S.SubscriptionExpiryWarning>
+                    )}
+                    {daysLeft > 7 && daysLeft <= 30 && (
+                      <S.SubscriptionExpiryInfo>{daysLeft}일 남음</S.SubscriptionExpiryInfo>
+                    )}
+                  </>
+                )}
+              </S.SubscriptionExpiry>
+            )}
+            <S.SubscriptionCardFooter>구독 관리로 이동 →</S.SubscriptionCardFooter>
+          </S.SubscriptionCard>
+        );
+      })()}
 
       <S.FilterCard>
         <S.FilterGrid>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.SubscriptionMapper">
+    <resultMap id="SubscriptionResultMap" type="com.innersignature.backend.dto.SubscriptionDto">
+        <id property="subscriptionId" column="subscription_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="planId" column="plan_id"/>
+        <result property="status" column="status"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="autoRenew" column="auto_renew"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+    
+    <resultMap id="SubscriptionWithPlanResultMap" type="com.innersignature.backend.dto.SubscriptionDto">
+        <id property="subscriptionId" column="subscription_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="planId" column="plan_id"/>
+        <result property="status" column="status"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="autoRenew" column="auto_renew"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <association property="plan" javaType="com.innersignature.backend.dto.SubscriptionPlanDto">
+            <id property="planId" column="plan_id"/>
+            <result property="planCode" column="plan_code"/>
+            <result property="planName" column="plan_name"/>
+            <result property="price" column="price"/>
+            <result property="maxUsers" column="max_users"/>
+            <result property="featuresJson" column="features"/>
+            <result property="isActive" column="plan_is_active"/>
+        </association>
+    </resultMap>
+
+    <select id="findActiveByCompanyId" resultMap="SubscriptionWithPlanResultMap">
+        SELECT 
+            s.*,
+            p.plan_code,
+            p.plan_name,
+            p.price,
+            p.max_users,
+            p.features,
+            p.is_active AS plan_is_active
+        FROM subscription_tb s
+        INNER JOIN subscription_plan_tb p ON s.plan_id = p.plan_id
+        WHERE s.company_id = #{companyId}
+        AND s.status = 'ACTIVE'
+        ORDER BY s.created_at DESC
+        LIMIT 1
+    </select>
+
+    <select id="findById" resultMap="SubscriptionWithPlanResultMap">
+        SELECT 
+            s.*,
+            p.plan_code,
+            p.plan_name,
+            p.price,
+            p.max_users,
+            p.features,
+            p.is_active AS plan_is_active
+        FROM subscription_tb s
+        INNER JOIN subscription_plan_tb p ON s.plan_id = p.plan_id
+        WHERE s.subscription_id = #{subscriptionId}
+        LIMIT 1
+    </select>
+
+    <select id="findByCompanyId" resultMap="SubscriptionResultMap">
+        SELECT * FROM subscription_tb
+        WHERE company_id = #{companyId}
+        ORDER BY created_at DESC
+    </select>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.SubscriptionDto" 
+            useGeneratedKeys="true" keyProperty="subscriptionId">
+        INSERT INTO subscription_tb (company_id, plan_id, status, start_date, end_date, auto_renew, created_at, updated_at)
+        VALUES (#{companyId}, #{planId}, #{status}, #{startDate}, #{endDate}, 
+                COALESCE(#{autoRenew}, 1), #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.innersignature.backend.dto.SubscriptionDto">
+        UPDATE subscription_tb
+        SET plan_id = #{planId},
+            status = #{status},
+            start_date = #{startDate},
+            end_date = #{endDate},
+            auto_renew = #{autoRenew},
+            updated_at = #{updatedAt}
+        WHERE subscription_id = #{subscriptionId}
+        AND company_id = #{companyId}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE subscription_tb
+        SET status = #{status},
+            updated_at = NOW()
+        WHERE subscription_id = #{subscriptionId}
+        AND company_id = #{companyId}
+    </update>
+
+    <select id="findExpiredSubscriptions" resultMap="SubscriptionResultMap">
+        SELECT * FROM subscription_tb
+        WHERE status = 'ACTIVE'
+        AND end_date IS NOT NULL
+        AND end_date &lt; #{currentDate}
+    </select>
+
+    <select id="findExpiringSoon" resultMap="SubscriptionResultMap">
+        SELECT * FROM subscription_tb
+        WHERE status = 'ACTIVE'
+        AND end_date IS NOT NULL
+        AND end_date BETWEEN #{currentDate} AND DATE_ADD(#{currentDate}, INTERVAL #{days} DAY)
+    </select>
+</mapper>

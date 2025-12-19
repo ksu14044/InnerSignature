@@ -22,6 +22,9 @@ const MobileAppBar = ({ title, onMenuClick }) => {
     if (location.pathname === '/tax/summary') return '세무요약';
     if (location.pathname === '/users') return '사용자 관리';
     if (location.pathname === '/profile') return '내 정보';
+    if (location.pathname === '/subscriptions/manage') return '구독 관리';
+    if (location.pathname === '/subscriptions/plans') return '플랜 선택';
+    if (location.pathname === '/subscriptions/payments') return '결제 내역';
     return '지출결의서';
   };
 
@@ -43,7 +46,8 @@ const MobileAppBar = ({ title, onMenuClick }) => {
                          location.pathname === '/users' ||
                          location.pathname === '/profile' ||
                          location.pathname === '/dashboard' ||
-                         location.pathname === '/tax/summary';
+                         location.pathname === '/tax/summary' ||
+                         location.pathname.startsWith('/subscriptions');
 
   return (
     <S.AppBar>

@@ -302,4 +302,12 @@
           AND c.is_active = 1
         ORDER BY uc.is_primary DESC, c.created_at DESC
     </select>
+    
+    <select id="countUsersByCompanyId" resultType="int">
+        SELECT COUNT(DISTINCT uc.user_id)
+        FROM user_company_tb uc
+        WHERE uc.company_id = #{companyId}
+          AND uc.approval_status = 'APPROVED'
+          AND (uc.is_active IS NULL OR uc.is_active = 1)
+    </select>
 </mapper>

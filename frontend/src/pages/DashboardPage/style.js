@@ -316,3 +316,120 @@ export const CompanyRegisterButton = styled.button`
   }
 `;
 
+export const SubscriptionCard = styled.div`
+  background: ${props => 
+    props.danger ? '#fff5f5' :
+    props.warning ? '#fffbf0' : 
+    '#f0f8ff'};
+  border: 2px solid ${props => 
+    props.danger ? '#f8d7da' :
+    props.warning ? '#fff3cd' : 
+    '#d1ecf1'};
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: ${props => 
+      props.danger ? '#f5c6cb' :
+      props.warning ? '#ffeaa7' : 
+      '#bee5eb'};
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 16px;
+  }
+`;
+
+export const SubscriptionCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+`;
+
+export const SubscriptionCardTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dark-color);
+  margin: 0;
+`;
+
+export const SubscriptionStatusBadge = styled.span`
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: ${props => 
+    props.status === 'ACTIVE' ? '#d4edda' :
+    props.status === 'EXPIRED' ? '#f8d7da' :
+    props.status === 'CANCELLED' ? '#fff3cd' : '#e2e3e5'};
+  color: ${props => 
+    props.status === 'ACTIVE' ? '#155724' :
+    props.status === 'EXPIRED' ? '#721c24' :
+    props.status === 'CANCELLED' ? '#856404' : '#383d41'};
+`;
+
+export const SubscriptionPlanName = styled.div`
+  font-size: 20px;
+  font-weight: 600;
+  color: #007bff;
+  margin-bottom: 12px;
+`;
+
+export const SubscriptionExpiry = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+`;
+
+export const SubscriptionExpiryLabel = styled.span`
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+`;
+
+export const SubscriptionExpiryDate = styled.span`
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+`;
+
+export const SubscriptionExpiryWarning = styled.span`
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: ${props => props.danger ? '#f8d7da' : '#fff3cd'};
+  color: ${props => props.danger ? '#721c24' : '#856404'};
+`;
+
+export const SubscriptionExpiryInfo = styled.span`
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #d1ecf1;
+  color: #0c5460;
+`;
+
+export const SubscriptionCardFooter = styled.div`
+  font-size: 12px;
+  color: #007bff;
+  font-weight: 500;
+  margin-top: 8px;
+  text-align: right;
+`;
+

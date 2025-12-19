@@ -61,9 +61,14 @@ export const CloseButton = styled.button`
   border-radius: 6px;
   transition: all 0.2s;
   
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: #f0f0f0;
     color: #333;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
@@ -75,71 +80,79 @@ export const ModalBody = styled.div`
   }
 `;
 
-export const InputGroup = styled.div`
+export const PlanInfo = styled.div`
   margin-bottom: 24px;
-  
-  label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #333;
-    font-size: 14px;
-  }
 `;
 
-export const Input = styled.input`
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: all 0.2s;
-  
-  &:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-  }
+export const PlanName = styled.h2`
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 16px 0;
 `;
 
-export const PaymentSection = styled.div`
-  margin-bottom: 20px;
-  padding: 16px;
+export const PriceSection = styled.div`
   background-color: #f8f9fa;
+  padding: 16px;
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  margin-bottom: 20px;
 `;
 
-export const PaymentTitle = styled.div`
+export const PriceLabel = styled.div`
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+`;
+
+export const PriceAmount = styled.div`
+  font-size: 28px;
+  font-weight: bold;
+  color: #007bff;
+`;
+
+export const FeaturesList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+export const FeatureItem = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  font-weight: 600;
   color: #333;
+  font-size: 14px;
+  
+  svg {
+    color: #28a745;
+    font-size: 16px;
+  }
+`;
+
+export const NoticeBox = styled.div`
+  background-color: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+`;
+
+export const NoticeTitle = styled.div`
+  font-weight: 600;
+  color: #004085;
+  margin-bottom: 8px;
   font-size: 14px;
 `;
 
-export const PaymentButton = styled.button`
-  width: 100%;
-  padding: 10px 16px;
-  background-color: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    background-color: #5a6268;
-  }
+export const NoticeText = styled.div`
+  font-size: 13px;
+  color: #004085;
+  line-height: 1.6;
 `;
 
 export const ButtonGroup = styled.div`
   display: flex;
   gap: 12px;
-  margin-top: 24px;
   
   @media (max-width: 480px) {
     flex-direction: column;
@@ -169,7 +182,7 @@ export const CancelButton = styled.button`
   }
 `;
 
-export const SubmitButton = styled(CancelButton)`
+export const ConfirmButton = styled(CancelButton)`
   background-color: #007bff;
   display: flex;
   align-items: center;
@@ -179,16 +192,5 @@ export const SubmitButton = styled(CancelButton)`
   &:hover:not(:disabled) {
     background-color: #0056b3;
   }
-`;
-
-export const InfoText = styled.div`
-  padding: 12px;
-  background-color: #e7f3ff;
-  border: 1px solid #b3d9ff;
-  border-radius: 6px;
-  color: #004085;
-  font-size: 14px;
-  line-height: 1.5;
-  margin-bottom: 20px;
 `;
 

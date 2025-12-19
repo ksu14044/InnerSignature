@@ -621,6 +621,34 @@ const MyProfilePage = () => {
         </div>
       </S.ProfileCard>
 
+      {/* 구독 관리 섹션 (CEO/ADMIN만) */}
+      {isAdminOrCEO && (
+        <S.ProfileCard>
+          <S.CardTitle>구독 관리</S.CardTitle>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <S.Button 
+              primary 
+              onClick={() => navigate('/subscriptions/manage')}
+              style={{ width: '100%', padding: '12px', fontSize: '15px' }}
+            >
+              구독 관리
+            </S.Button>
+            <S.Button 
+              onClick={() => navigate('/subscriptions/plans')}
+              style={{ width: '100%', padding: '12px', fontSize: '15px' }}
+            >
+              플랜 선택
+            </S.Button>
+            <S.Button 
+              onClick={() => navigate('/subscriptions/payments')}
+              style={{ width: '100%', padding: '12px', fontSize: '15px' }}
+            >
+              결제 내역
+            </S.Button>
+          </div>
+        </S.ProfileCard>
+      )}
+
       <CompanyRegistrationModal
         isOpen={isCompanyModalOpen}
         onClose={() => setIsCompanyModalOpen(false)}

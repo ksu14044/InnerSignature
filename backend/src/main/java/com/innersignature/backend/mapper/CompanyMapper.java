@@ -29,5 +29,9 @@ public interface CompanyMapper {
     
     // 회사 코드 중복 확인
     boolean existsByCode(@Param("companyCode") String companyCode);
+    
+    // 회사의 구독 ID 업데이트
+    int updateSubscriptionId(@Param("companyId") Long companyId, 
+                             @Param("subscriptionId") Long subscriptionId);
 }
 

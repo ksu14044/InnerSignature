@@ -22,6 +22,8 @@ public class CompanyService {
     private static final Logger logger = LoggerFactory.getLogger(CompanyService.class);
     private final CompanyMapper companyMapper;
     private final UserMapper userMapper;
+    private final com.innersignature.backend.service.SubscriptionService subscriptionService;
+    private final com.innersignature.backend.service.SubscriptionPlanService subscriptionPlanService;
     private final Random random = new Random();
     
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -74,6 +76,19 @@ public class CompanyService {
         
         int result = companyMapper.insert(company);
         if (result > 0) {
+            // 회사 생성 후 기본 FREE 플랜 할당
+            try {
+                com.innersignature.backend.dto.SubscriptionPlanDto freePlan = 
+                    subscriptionPlanService.findByCode("FREE");
+                subscriptionService.createSubscription(
+                    company.getCompanyId(), freePlan.getPlanId(), false);
+                logger.info("기본 FREE 플랜 할당 완료 - companyId: {}", company.getCompanyId());
+            } catch (Exception e) {
+                logger.warn("기본 FREE 플랜 할당 실패 - companyId: {}, error: {}", 
+                    company.getCompanyId(), e.getMessage());
+                // 플랜 할당 실패해도 회사 생성은 성공으로 처리
+            }
+            
             logger.info("회사 생성 완료 - companyId: {}, companyName: {}, createdBy: {}", 
                 company.getCompanyId(), company.getCompanyName(), adminUserId);
             return company;

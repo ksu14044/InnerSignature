@@ -96,4 +96,7 @@ public interface UserMapper {
     
     // 사용자가 소속된 회사 목록 조회 (CompanyDto 반환)
     List<com.innersignature.backend.dto.CompanyDto> findCompaniesByUserId(@Param("userId") Long userId);
+    
+    // 회사별 사용자 수 조회
+    int countUsersByCompanyId(@Param("companyId") Long companyId);
 }

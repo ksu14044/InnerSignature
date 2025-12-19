@@ -17,6 +17,7 @@ public class UserService {
 
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final com.innersignature.backend.util.SubscriptionUtil subscriptionUtil;
 
     /**
      * 사용자 인증 (로그인)
@@ -505,6 +506,10 @@ public class UserService {
             throw new BusinessException("사용자를 찾을 수 없습니다.");
         }
         
+        // 구독 사용자 수 제한 체크
+        int currentUserCount = subscriptionUtil.getCurrentUserCount(companyId);
+        subscriptionUtil.checkUserLimit(companyId, currentUserCount);
+        
         UserCompanyDto userCompanyDto = new UserCompanyDto();
         userCompanyDto.setUserId(userId);
         userCompanyDto.setCompanyId(companyId);
@@ -583,6 +588,10 @@ public class UserService {
         if (!hasAccess) {
             throw new BusinessException("해당 회사에 대한 권한이 없습니다.");
         }
+        
+        // 구독 사용자 수 제한 체크
+        int currentUserCount = subscriptionUtil.getCurrentUserCount(companyId);
+        subscriptionUtil.checkUserLimit(companyId, currentUserCount);
         
         int result = userMapper.approveUserCompany(userId, companyId);
         if (result == 0) {

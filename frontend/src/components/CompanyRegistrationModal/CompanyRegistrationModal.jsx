@@ -15,7 +15,7 @@ const CompanyRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
       setIsCreating(true);
       const response = await createCompany(companyName.trim());
       if (response.success) {
-        alert('회사가 등록되었습니다.');
+        alert('회사가 등록되었습니다. 기본 무료 플랜이 자동으로 할당되었습니다.');
         setCompanyName('');
         onClose();
         if (onSuccess) {
@@ -66,25 +66,10 @@ const CompanyRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
               />
             </S.InputGroup>
 
-            <S.PaymentSection>
-              <S.PaymentTitle>
-                <FaCreditCard />
-                <span>결제</span>
-              </S.PaymentTitle>
-              <S.PaymentButton type="button" onClick={handlePayment}>
-                결제하기
-              </S.PaymentButton>
-            </S.PaymentSection>
-
-            <S.PaymentSection>
-              <S.PaymentTitle>
-                <FaTicketAlt />
-                <span>쿠폰 사용</span>
-              </S.PaymentTitle>
-              <S.PaymentButton type="button" onClick={handleCoupon}>
-                쿠폰 사용하기
-              </S.PaymentButton>
-            </S.PaymentSection>
+            <S.InfoText>
+              회사 등록 시 기본 무료 플랜(최대 3명)이 자동으로 할당됩니다.
+              플랜 변경은 구독 관리 페이지에서 가능합니다.
+            </S.InfoText>
 
             <S.ButtonGroup>
               <S.CancelButton type="button" onClick={onClose} disabled={isCreating}>

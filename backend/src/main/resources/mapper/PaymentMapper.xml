@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.PaymentMapper">
+    <resultMap id="PaymentResultMap" type="com.innersignature.backend.dto.PaymentDto">
+        <id property="paymentId" column="payment_id"/>
+        <result property="subscriptionId" column="subscription_id"/>
+        <result property="amount" column="amount"/>
+        <result property="paymentMethod" column="payment_method"/>
+        <result property="paymentStatus" column="payment_status"/>
+        <result property="paymentDate" column="payment_date"/>
+        <result property="externalPaymentId" column="external_payment_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <association property="subscription" column="subscription_id" 
+                     select="com.innersignature.backend.mapper.SubscriptionMapper.findById"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.PaymentDto" 
+            useGeneratedKeys="true" keyProperty="paymentId">
+        INSERT INTO payment_tb (subscription_id, amount, payment_method, payment_status, 
+                               payment_date, external_payment_id, created_at, updated_at)
+        VALUES (#{subscriptionId}, #{amount}, #{paymentMethod}, #{paymentStatus}, 
+                #{paymentDate}, #{externalPaymentId}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="findById" resultMap="PaymentResultMap">
+        SELECT * FROM payment_tb
+        WHERE payment_id = #{paymentId}
+        LIMIT 1
+    </select>
+
+    <select id="findBySubscriptionId" resultMap="PaymentResultMap">
+        SELECT * FROM payment_tb
+        WHERE subscription_id = #{subscriptionId}
+        ORDER BY payment_date DESC, created_at DESC
+    </select>
+
+    <select id="findByCompanyId" resultMap="PaymentResultMap">
+        SELECT p.* FROM payment_tb p
+        INNER JOIN subscription_tb s ON p.subscription_id = s.subscription_id
+        WHERE s.company_id = #{companyId}
+        ORDER BY p.payment_date DESC, p.created_at DESC
+    </select>
+
+    <update id="updateStatus">
+        UPDATE payment_tb
+        SET payment_status = #{paymentStatus},
+            updated_at = NOW()
+        WHERE payment_id = #{paymentId}
+    </update>
+</mapper>

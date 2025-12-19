@@ -46,4 +46,10 @@
         FROM company_tb
         WHERE company_code = #{companyCode}
     </select>
+    
+    <update id="updateSubscriptionId">
+        UPDATE company_tb
+        SET subscription_id = #{subscriptionId}
+        WHERE company_id = #{companyId}
+    </update>
 </mapper>

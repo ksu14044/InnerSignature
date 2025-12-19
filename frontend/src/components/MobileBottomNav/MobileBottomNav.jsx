@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaHome, FaChartBar, FaUser, FaList } from 'react-icons/fa';
+import { FaHome, FaChartBar, FaUser, FaList, FaCreditCard } from 'react-icons/fa';
 import * as S from './style';
 
 const MobileBottomNav = () => {
@@ -17,6 +17,9 @@ const MobileBottomNav = () => {
     if (path === '/expenses') {
       return location.pathname === '/expenses' || location.pathname.startsWith('/detail/') || location.pathname.startsWith('/expenses/create');
     }
+    if (path === '/subscriptions/manage') {
+      return location.pathname.startsWith('/subscriptions');
+    }
     return location.pathname === path;
   };
 
@@ -27,6 +30,9 @@ const MobileBottomNav = () => {
       : []),
     ...(user?.role === 'TAX_ACCOUNTANT' 
       ? [{ path: '/tax/summary', icon: FaChartBar, label: '세무요약' }] 
+      : []),
+    ...(user?.role === 'CEO' || user?.role === 'ADMIN'
+      ? [{ path: '/subscriptions/manage', icon: FaCreditCard, label: '구독' }]
       : []),
     { path: '/profile', icon: FaUser, label: '내정보' },
   ];
