@@ -8,6 +8,7 @@ import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronR
 import { STATUS_KOREAN, EXPENSE_STATUS } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
+import TourButton from '../../components/TourButton/TourButton';
 
 const ExpenseListPage = () => {
   const [list, setList] = useState([]);
@@ -308,14 +309,16 @@ const ExpenseListPage = () => {
 
   return (
     <S.Container>
-      <S.Header>
+      <S.Header data-tourid="tour-header">
         <S.HeaderLeft>
           <S.Title>지출결의서 목록</S.Title>
           <S.WelcomeText>환영합니다, {user?.koreanName}님</S.WelcomeText>
         </S.HeaderLeft>
         <S.HeaderRight>
+          <TourButton />
           {pendingApprovals.length > 0 && (
             <S.NotificationBadge 
+              data-tourid="tour-notification-badge"
               onClick={() => setIsNotificationModalOpen(true)}
               title={`서명 대기: ${pendingApprovals.length}건`}
             >
@@ -400,12 +403,12 @@ const ExpenseListPage = () => {
       </S.Header>
 
       <S.ActionBar>
-        <S.CreateButton onClick={() => navigate('/expenses/create')}>
+        <S.CreateButton data-tourid="tour-create-button" onClick={() => navigate('/expenses/create')}>
           <FaPlus />
           <span>새 결의서 작성</span>
         </S.CreateButton>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <S.ToggleContainer>
+          <S.ToggleContainer data-tourid="tour-my-posts-toggle">
             <S.ToggleLabel>
               <S.ToggleSwitch
                 active={filters.drafterName === user?.koreanName}
@@ -415,6 +418,7 @@ const ExpenseListPage = () => {
             </S.ToggleLabel>
           </S.ToggleContainer>
           <S.FilterButton 
+            data-tourid="tour-filter-button"
             variant="secondary" 
             onClick={() => setIsFilterOpen(!isFilterOpen)}
           >
@@ -563,7 +567,7 @@ const ExpenseListPage = () => {
         </S.FilterContainer>
       )}
 
-      <S.TableContainer>
+      <S.TableContainer data-tourid="tour-expense-list">
         <S.Table>
           <S.Thead>
             <tr>

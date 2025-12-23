@@ -10,6 +10,7 @@ import {
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
 import * as S from './style';
+import TourButton from '../../components/TourButton/TourButton';
 
 const TaxSummaryPage = () => {
   const { user, logout } = useAuth();
@@ -208,12 +209,13 @@ const TaxSummaryPage = () => {
 
   return (
     <S.Container>
-      <S.Header>
+      <S.Header data-tourid="tour-tax-header">
         <div>
           <S.Title>세무사 전용 요약</S.Title>
           <S.SubTitle>세무처리 현황 및 집계 데이터</S.SubTitle>
         </div>
         <S.ButtonRow>
+          <TourButton />
           <S.Button onClick={() => navigate('/expenses')}>목록으로</S.Button>
           <S.Button variant="danger" onClick={async () => { await logout(); navigate('/'); }}>
             로그아웃
@@ -221,7 +223,7 @@ const TaxSummaryPage = () => {
         </S.ButtonRow>
       </S.Header>
 
-      <S.FilterCard>
+      <S.FilterCard data-tourid="tour-tax-filter">
         <S.FilterGrid>
           <div>
             <S.Label>시작일</S.Label>
@@ -267,7 +269,7 @@ const TaxSummaryPage = () => {
 
       {/* 세무처리 현황 통계 카드 */}
       {!loading && taxStatus && (
-        <S.StatCard>
+        <S.StatCard data-tourid="tour-tax-status">
           <S.StatItem>
             <S.StatLabel>총 처리 대상 건수</S.StatLabel>
             <S.StatValue>{taxStatus.totalCount?.toLocaleString()}건</S.StatValue>
@@ -297,7 +299,7 @@ const TaxSummaryPage = () => {
 
       {/* 세무처리 대기 건 목록 */}
       <S.Card>
-        <S.CardTitle>
+        <S.CardTitle data-tourid="tour-tax-pending">
           세무처리 대기 건 ({pendingReports.length}건)
           {pendingReports.length > 0 && (
             <S.Button 
@@ -373,7 +375,7 @@ const TaxSummaryPage = () => {
 
       {/* 카테고리별 집계 */}
       <S.Card>
-        <S.CardTitle>카테고리별 집계</S.CardTitle>
+        <S.CardTitle data-tourid="tour-tax-summary">카테고리별 집계</S.CardTitle>
         {loading ? (
           <S.Empty>불러오는 중...</S.Empty>
         ) : sortedSummary.length === 0 ? (

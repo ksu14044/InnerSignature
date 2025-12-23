@@ -26,6 +26,7 @@ import {
 } from 'recharts';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import TourButton from '../../components/TourButton/TourButton';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
@@ -155,13 +156,16 @@ const DashboardPage = () => {
 
   return (
     <S.Container>
-      <S.Header>
+      <S.Header data-tourid="tour-dashboard-header">
         <div>
           <S.Title>대시보드</S.Title>
         </div>
-        <S.Button variant="secondary" onClick={() => navigate('/expenses')}>
-          목록으로
-        </S.Button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <TourButton />
+          <S.Button variant="secondary" onClick={() => navigate('/expenses')}>
+            목록으로
+          </S.Button>
+        </div>
       </S.Header>
 
       {/* 구독 상태 카드 */}
@@ -177,6 +181,7 @@ const DashboardPage = () => {
         
         return (
           <S.SubscriptionCard 
+            data-tourid="tour-subscription-card"
             warning={daysLeft !== null && daysLeft <= 7 && daysLeft >= 0}
             danger={daysLeft !== null && daysLeft < 0}
             onClick={() => navigate('/subscriptions/manage')}
@@ -212,7 +217,7 @@ const DashboardPage = () => {
         );
       })()}
 
-      <S.FilterCard>
+      <S.FilterCard data-tourid="tour-date-filter">
         <S.FilterGrid>
           <div>
             <S.Label>시작일</S.Label>
@@ -240,7 +245,7 @@ const DashboardPage = () => {
         <>
           {/* 요약 카드 */}
           {dashboardStats && (
-            <S.StatsGrid>
+            <S.StatsGrid data-tourid="tour-stats-grid">
               <S.StatCard>
                 <S.StatLabel>총 금액</S.StatLabel>
                 <S.StatValue>{dashboardStats.totalAmount?.toLocaleString()}원</S.StatValue>
@@ -261,7 +266,7 @@ const DashboardPage = () => {
           )}
 
           {/* 차트 그리드 */}
-          <S.ChartsGrid>
+          <S.ChartsGrid data-tourid="tour-charts">
             {/* 월별 지출 추이 */}
             <S.ChartCard>
               <S.ChartTitle>월별 지출 추이</S.ChartTitle>

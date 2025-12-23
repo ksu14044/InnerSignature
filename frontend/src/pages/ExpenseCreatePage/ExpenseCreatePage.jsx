@@ -11,6 +11,7 @@ import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole } from '../../constants/categories';
 import { DEFAULT_VALUES } from '../../constants/defaults';
+import TourButton from '../../components/TourButton/TourButton';
 
 const ExpenseCreatePage = () => {
   const navigate = useNavigate();
@@ -190,10 +191,13 @@ const ExpenseCreatePage = () => {
           <FaArrowLeft />
         </S.BackButton>
         <S.Title>지출결의서 작성</S.Title>
+        <div style={{ marginLeft: 'auto' }}>
+          <TourButton />
+        </div>
       </S.Header>
 
       {/* 1. 기본 정보 입력 섹션 */}
-      <S.Section>
+      <S.Section data-tourid="tour-basic-info">
         <S.SectionTitle>기본 정보</S.SectionTitle>
         <S.FormGrid>
           <S.InputGroup>
@@ -245,7 +249,7 @@ const ExpenseCreatePage = () => {
 
       {/* 2. 결재자 선택 섹션 - 비밀글이거나 급여가 아닌 경우에만 표시 */}
       {!isSecretOrSalary && (
-        <S.Section>
+        <S.Section data-tourid="tour-approver-selection">
           <S.SectionTitle>결재자 선택</S.SectionTitle>
           {selectedApprovers.length > 0 && (
             <div style={{ 
@@ -322,7 +326,7 @@ const ExpenseCreatePage = () => {
       )}
 
       {/* 3. 상세 내역 입력 섹션 */}
-      <S.Section>
+      <S.Section data-tourid="tour-expense-details">
         <S.SectionHeader>
           <S.SectionTitle>지출 상세 내역</S.SectionTitle>
           <S.AddButton onClick={addDetailRow}>
@@ -391,7 +395,7 @@ const ExpenseCreatePage = () => {
       </S.Section>
 
       {/* 4. 하단 총계 및 버튼 */}
-      <S.TotalSection>
+      <S.TotalSection data-tourid="tour-total-amount">
         <S.TotalCard>
           <S.TotalLabel>총 합계</S.TotalLabel>
           <S.TotalAmount>{totalAmount.toLocaleString()} 원</S.TotalAmount>
@@ -403,7 +407,7 @@ const ExpenseCreatePage = () => {
           <FaArrowLeft />
           <span>취소</span>
         </S.CancelButton>
-        <S.SubmitButton onClick={handleSubmit} disabled={isSubmitting}>
+        <S.SubmitButton data-tourid="tour-submit-button" onClick={handleSubmit} disabled={isSubmitting}>
           <FaSave />
           <span>{isSubmitting ? '처리 중...' : '결재 요청 (저장)'}</span>
         </S.SubmitButton>

@@ -5,6 +5,7 @@ import { getCurrentUser, updateCurrentUser, changePassword, getUserCompanies, ge
 import { searchCompanies } from '../../api/companyApi';
 import { FaSignOutAlt, FaArrowLeft, FaSearch, FaTimes, FaCheck, FaTrash } from 'react-icons/fa';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
+import TourButton from '../../components/TourButton/TourButton';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 
@@ -285,10 +286,11 @@ const MyProfilePage = () => {
     <S.Container>
       <S.Header>
         <S.HeaderLeft>
-          <S.Title>내 정보 수정</S.Title>
+          <S.Title data-tourid="tour-profile-header">내 정보 수정</S.Title>
           <S.WelcomeText>{authUser.koreanName}님 환영합니다</S.WelcomeText>
         </S.HeaderLeft>
         <S.HeaderRight>
+          <TourButton />
           <S.Button onClick={() => navigate('/expenses')}>
             <FaArrowLeft /> 지출결의서 목록
           </S.Button>
@@ -298,7 +300,7 @@ const MyProfilePage = () => {
         </S.HeaderRight>
       </S.Header>
 
-      <S.ProfileCard>
+      <S.ProfileCard data-tourid="tour-basic-info">
         <S.CardTitle>기본 정보</S.CardTitle>
         <form onSubmit={handleSubmit}>
           <S.FormGroup>
@@ -354,14 +356,14 @@ const MyProfilePage = () => {
             <S.Button type="button" onClick={() => navigate('/expenses')}>
               취소
             </S.Button>
-            <S.Button type="submit" primary disabled={saving || changingPassword}>
+            <S.Button type="submit" primary disabled={saving || changingPassword} data-tourid="tour-save-button">
               {saving ? '저장 중...' : '저장'}
             </S.Button>
           </S.ButtonGroup>
         </form>
       </S.ProfileCard>
 
-      <S.ProfileCard>
+      <S.ProfileCard data-tourid="tour-password-change">
         <S.CardTitle>비밀번호 변경</S.CardTitle>
         <form onSubmit={handlePasswordChange}>
           <S.FormGroup>
@@ -401,14 +403,14 @@ const MyProfilePage = () => {
             <S.Button type="button" onClick={() => setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })}>
               초기화
             </S.Button>
-            <S.Button type="submit" primary disabled={saving || changingPassword}>
+            <S.Button type="submit" primary disabled={saving || changingPassword} data-tourid="tour-password-submit-button">
               {changingPassword ? '변경 중...' : '비밀번호 변경'}
             </S.Button>
           </S.ButtonGroup>
         </form>
       </S.ProfileCard>
 
-      <S.ProfileCard>
+      <S.ProfileCard data-tourid="tour-company-section">
         <S.CardTitle>소속 회사</S.CardTitle>
         
         {/* CEO/ADMIN이면 항상 회사 등록 버튼 표시, 회사가 없을 때만 안내 문구 노출 */}
@@ -423,6 +425,7 @@ const MyProfilePage = () => {
               primary 
               onClick={() => setIsCompanyModalOpen(true)}
               style={{ padding: '10px 20px', fontSize: '14px', fontWeight: 'bold' }}
+              data-tourid="tour-register-company-button"
             >
               회사 등록하기
             </S.Button>
@@ -510,7 +513,7 @@ const MyProfilePage = () => {
 
         {/* 회사 검색 및 지원 */}
         <div>
-          <S.SearchContainer>
+          <S.SearchContainer data-tourid="tour-company-search">
             <S.SearchInput
               type="text"
               placeholder="회사명으로 검색..."
@@ -623,13 +626,14 @@ const MyProfilePage = () => {
 
       {/* 구독 관리 섹션 (CEO/ADMIN만) */}
       {isAdminOrCEO && (
-        <S.ProfileCard>
+        <S.ProfileCard data-tourid="tour-subscription-section">
           <S.CardTitle>구독 관리</S.CardTitle>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <S.Button 
               primary 
               onClick={() => navigate('/subscriptions/manage')}
               style={{ width: '100%', padding: '12px', fontSize: '15px' }}
+              data-tourid="tour-subscription-manage-button"
             >
               구독 관리
             </S.Button>
