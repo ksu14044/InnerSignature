@@ -78,12 +78,10 @@ public class AdminReportService {
     
     /**
      * 사용자 가입 추이 조회
-     * 주의: user_tb에 created_at 컬럼이 없어서 현재는 빈 리스트 반환
-     * TODO: DB에 created_at 컬럼 추가 후 구현
+     * user_tb의 created_at을 기준으로 날짜별 집계
      */
     public List<UserSignupTrendDto> getUserSignupTrend(LocalDate fromDate, LocalDate toDate) {
-        // TODO: DB에 created_at 컬럼 추가 후 날짜별 집계 쿼리 구현
-        return List.of();
+        return userMapper.selectUserSignupTrend(fromDate, toDate);
     }
     
     /**

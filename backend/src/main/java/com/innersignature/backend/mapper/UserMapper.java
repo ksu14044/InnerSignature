@@ -99,4 +99,10 @@ public interface UserMapper {
     
     // 회사별 사용자 수 조회
     int countUsersByCompanyId(@Param("companyId") Long companyId);
+    
+    // 사용자 가입 추이 조회 (날짜별 집계)
+    List<com.innersignature.backend.service.AdminReportService.UserSignupTrendDto> selectUserSignupTrend(
+        @Param("fromDate") java.time.LocalDate fromDate, 
+        @Param("toDate") java.time.LocalDate toDate
+    );
 }

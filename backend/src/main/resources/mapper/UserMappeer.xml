@@ -40,7 +40,7 @@
     </select>
 
     <select id="selectAllUsers" resultType="com.innersignature.backend.dto.UserDto">
-        SELECT user_id, username, korean_name, email, position, role, is_active
+        SELECT user_id, username, korean_name, email, position, role, is_active, company_id, approval_status, created_at, updated_at
         FROM user_tb
         ORDER BY user_id
     </select>
@@ -311,5 +311,16 @@
         WHERE uc.company_id = #{companyId}
           AND uc.approval_status = 'APPROVED'
           AND (uc.is_active IS NULL OR uc.is_active = 1)
+    </select>
+    
+    <!-- 사용자 가입 추이 조회 (날짜별 집계) -->
+    <select id="selectUserSignupTrend" resultType="com.innersignature.backend.service.AdminReportService$UserSignupTrendDto">
+        SELECT 
+            DATE(created_at) AS date,
+            COUNT(*) AS count
+        FROM user_tb
+        WHERE DATE(created_at) BETWEEN #{fromDate} AND #{toDate}
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
     </select>
 </mapper>

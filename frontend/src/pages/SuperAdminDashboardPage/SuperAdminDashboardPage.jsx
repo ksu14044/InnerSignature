@@ -12,9 +12,23 @@ import {
   getExpenseDetailForSuperAdmin,
   downloadExpensesExcelForSuperAdmin
 } from '../../api/superAdminApi';
-import { FaSignOutAlt, FaUsers, FaBuilding, FaCreditCard, FaChartLine, FaFileInvoice, FaFileExcel } from 'react-icons/fa';
+import { updateUser, deleteUser } from '../../api/userApi';
+import { FaSignOutAlt, FaUsers, FaBuilding, FaCreditCard, FaChartLine, FaFileInvoice, FaFileExcel, FaEdit, FaChartBar } from 'react-icons/fa';
 import { STATUS_KOREAN } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import { 
+  LineChart, 
+  Line, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from 'recharts';
+import { getUserSignupTrend, getRevenueTrend } from '../../api/superAdminApi';
 import * as S from './style';
 
 const SuperAdminDashboardPage = () => {
@@ -46,6 +60,21 @@ const SuperAdminDashboardPage = () => {
     status: '',
     planName: '',
   });
+  const [userFilters, setUserFilters] = useState({
+    search: '',
+    role: '',
+    isActive: '',
+  });
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editingUserRole, setEditingUserRole] = useState('');
+  const [updatingUserId, setUpdatingUserId] = useState(null);
+  const [userSignupTrend, setUserSignupTrend] = useState([]);
+  const [revenueTrend, setRevenueTrend] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [reportDateRange, setReportDateRange] = useState({
+    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    to: new Date().toISOString().split('T')[0]
+  });
 
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -62,8 +91,10 @@ const SuperAdminDashboardPage = () => {
   useEffect(() => {
     if (activeTab === 'expenses') {
       loadExpenses();
+    } else if (activeTab === 'reports') {
+      loadReports();
     }
-  }, [activeTab, expensePage, selectedCompanyId, expenseFilters]);
+  }, [activeTab, expensePage, selectedCompanyId, expenseFilters, reportDateRange]);
 
   const loadDashboardData = async () => {
     try {
@@ -238,6 +269,136 @@ const SuperAdminDashboardPage = () => {
     return `${company.companyName} (${company.companyCode || '코드 없음'})`;
   };
 
+  const handleUserStatusToggle = async (userId, currentStatus) => {
+    if (!window.confirm(`사용자 상태를 ${currentStatus ? '비활성화' : '활성화'}하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      setUpdatingUserId(userId);
+      const currentUser = users.find(u => u.userId === userId);
+      if (!currentUser) return;
+      
+      const response = await updateUser(userId, {
+        isActive: !currentStatus,
+        role: currentUser.role,
+        position: currentUser.position
+      });
+      if (response.success) {
+        alert('사용자 상태가 변경되었습니다.');
+        loadDashboardData();
+      } else {
+        alert(response.message || '상태 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('사용자 상태 변경 실패:', error);
+      alert(error?.response?.data?.message || '상태 변경 중 오류가 발생했습니다.');
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
+  const handleUserRoleChange = async (userId, newRole) => {
+    const currentUser = users.find(u => u.userId === userId);
+    if (!currentUser) return;
+
+    if (!window.confirm(`사용자의 권한을 "${newRole}"로 변경하시겠습니까?`)) {
+      setEditingUserId(null);
+      setEditingUserRole('');
+      return;
+    }
+
+    try {
+      setUpdatingUserId(userId);
+      const response = await updateUser(userId, {
+        role: newRole,
+        isActive: currentUser.isActive,
+        position: currentUser.position
+      });
+      if (response.success) {
+        alert('사용자 권한이 변경되었습니다.');
+        loadDashboardData();
+      } else {
+        alert(response.message || '권한 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('사용자 권한 변경 실패:', error);
+      alert(error?.response?.data?.message || '권한 변경 중 오류가 발생했습니다.');
+    } finally {
+      setUpdatingUserId(null);
+      setEditingUserId(null);
+      setEditingUserRole('');
+    }
+  };
+
+  const loadReports = async () => {
+    try {
+      setLoadingReports(true);
+      const [signupRes, revenueRes] = await Promise.allSettled([
+        getUserSignupTrend(reportDateRange.from, reportDateRange.to),
+        getRevenueTrend(reportDateRange.from, reportDateRange.to)
+      ]);
+
+      if (signupRes.status === 'fulfilled' && signupRes.value.success) {
+        setUserSignupTrend(signupRes.value.data || []);
+      }
+      if (revenueRes.status === 'fulfilled' && revenueRes.value.success) {
+        setRevenueTrend(revenueRes.value.data || []);
+      }
+    } catch (error) {
+      console.error('리포트 로드 실패:', error);
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  const handleUsersExcelDownload = () => {
+    // CSV 형식으로 다운로드
+    const csvContent = [
+      ['ID', '아이디', '이름', '이메일', '권한', '상태', '직급'].join(','),
+      ...filteredUsers.map(u => [
+        u.userId,
+        u.username || '',
+        u.koreanName || '',
+        u.email || '',
+        u.role === 'USER' ? '일반 사용자' :
+        u.role === 'ADMIN' ? '관리자' :
+        u.role === 'ACCOUNTANT' ? '결제 담당자' :
+        u.role === 'TAX_ACCOUNTANT' ? '세무사' :
+        u.role === 'CEO' ? '대표' :
+        u.role === 'SUPERADMIN' ? '최고 관리자' : u.role,
+        u.isActive ? '활성' : '비활성',
+        u.position || ''
+      ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `사용자목록_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    alert('사용자 목록 다운로드가 시작됩니다.');
+  };
+
+  // 사용자 필터링
+  const filteredUsers = users.filter((u) => {
+    if (userFilters.search) {
+      const searchLower = userFilters.search.toLowerCase();
+      const matchesSearch = 
+        u.username?.toLowerCase().includes(searchLower) ||
+        u.koreanName?.toLowerCase().includes(searchLower) ||
+        u.email?.toLowerCase().includes(searchLower);
+      if (!matchesSearch) return false;
+    }
+    if (userFilters.role && u.role !== userFilters.role) return false;
+    if (userFilters.isActive !== '' && u.isActive !== (userFilters.isActive === 'true')) return false;
+    return true;
+  });
+
   const filteredSubscriptions = subscriptions.filter((s) => {
     if (subscriptionFilters.companyId && s.companyId !== Number(subscriptionFilters.companyId)) {
       return false;
@@ -300,6 +461,9 @@ const SuperAdminDashboardPage = () => {
         <S.Tab active={activeTab === 'expenses'} onClick={() => setActiveTab('expenses')}>
           <FaFileInvoice /> 지출결의서 ({expenseTotalElements})
         </S.Tab>
+        <S.Tab active={activeTab === 'reports'} onClick={() => setActiveTab('reports')}>
+          <FaChartBar /> 리포트
+        </S.Tab>
       </S.TabContainer>
 
       {activeTab === 'dashboard' && summary && (
@@ -349,34 +513,146 @@ const SuperAdminDashboardPage = () => {
       )}
 
       {activeTab === 'users' && (
-        <S.Table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>아이디</th>
-              <th>이름</th>
-              <th>이메일</th>
-              <th>권한</th>
-              <th>상태</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.userId}>
-                <td>{u.userId}</td>
-                <td>{u.username}</td>
-                <td>{u.koreanName}</td>
-                <td>{u.email || '-'}</td>
-                <td>{u.role}</td>
-                <td>
-                  <S.StatusBadge active={u.isActive}>
-                    {u.isActive ? '활성' : '비활성'}
-                  </S.StatusBadge>
-                </td>
+        <>
+          <S.FilterSection>
+            <S.FilterRow>
+              <S.FilterGroup>
+                <label>검색</label>
+                <S.Input
+                  type="text"
+                  placeholder="아이디, 이름, 이메일 검색"
+                  value={userFilters.search}
+                  onChange={(e) => setUserFilters(prev => ({ ...prev, search: e.target.value }))}
+                />
+              </S.FilterGroup>
+              <S.FilterGroup>
+                <label>권한</label>
+                <S.Select
+                  value={userFilters.role}
+                  onChange={(e) => setUserFilters(prev => ({ ...prev, role: e.target.value }))}
+                >
+                  <option value="">전체</option>
+                  <option value="USER">일반 사용자</option>
+                  <option value="ADMIN">관리자</option>
+                  <option value="ACCOUNTANT">결제 담당자</option>
+                  <option value="TAX_ACCOUNTANT">세무사</option>
+                  <option value="CEO">대표</option>
+                </S.Select>
+              </S.FilterGroup>
+              <S.FilterGroup>
+                <label>상태</label>
+                <S.Select
+                  value={userFilters.isActive}
+                  onChange={(e) => setUserFilters(prev => ({ ...prev, isActive: e.target.value }))}
+                >
+                  <option value="">전체</option>
+                  <option value="true">활성</option>
+                  <option value="false">비활성</option>
+                </S.Select>
+              </S.FilterGroup>
+              <S.FilterGroup>
+                <S.Button onClick={handleUsersExcelDownload}>
+                  <FaFileExcel /> 엑셀 다운로드
+                </S.Button>
+              </S.FilterGroup>
+            </S.FilterRow>
+          </S.FilterSection>
+
+          <S.Table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>아이디</th>
+                <th>이름</th>
+                <th>이메일</th>
+                <th>권한</th>
+                <th>상태</th>
+                <th>작업</th>
               </tr>
-            ))}
-          </tbody>
-        </S.Table>
+            </thead>
+            <tbody>
+              {filteredUsers.map((u) => (
+                <tr key={u.userId}>
+                  <td>{u.userId}</td>
+                  <td>{u.username}</td>
+                  <td>{u.koreanName}</td>
+                  <td>{u.email || '-'}</td>
+                  <td>
+                    {editingUserId === u.userId ? (
+                      <S.Select
+                        value={editingUserRole || u.role}
+                        onChange={(e) => setEditingUserRole(e.target.value)}
+                        onBlur={() => {
+                          if (editingUserRole && editingUserRole !== u.role) {
+                            handleUserRoleChange(u.userId, editingUserRole);
+                          } else {
+                            setEditingUserId(null);
+                            setEditingUserRole('');
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            if (editingUserRole && editingUserRole !== u.role) {
+                              handleUserRoleChange(u.userId, editingUserRole);
+                            } else {
+                              setEditingUserId(null);
+                              setEditingUserRole('');
+                            }
+                          } else if (e.key === 'Escape') {
+                            setEditingUserId(null);
+                            setEditingUserRole('');
+                          }
+                        }}
+                        autoFocus
+                      >
+                        <option value="USER">일반 사용자</option>
+                        <option value="ADMIN">관리자</option>
+                        <option value="ACCOUNTANT">결제 담당자</option>
+                        <option value="TAX_ACCOUNTANT">세무사</option>
+                        <option value="CEO">대표</option>
+                      </S.Select>
+                    ) : (
+                      <span 
+                        style={{ cursor: 'pointer', color: 'var(--primary-color)' }}
+                        onClick={() => {
+                          setEditingUserId(u.userId);
+                          setEditingUserRole(u.role);
+                        }}
+                        title="클릭하여 권한 변경"
+                      >
+                        {u.role === 'USER' ? '일반 사용자' :
+                         u.role === 'ADMIN' ? '관리자' :
+                         u.role === 'ACCOUNTANT' ? '결제 담당자' :
+                         u.role === 'TAX_ACCOUNTANT' ? '세무사' :
+                         u.role === 'CEO' ? '대표' :
+                         u.role === 'SUPERADMIN' ? '최고 관리자' : u.role}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    <S.StatusBadge active={u.isActive}>
+                      {u.isActive ? '활성' : '비활성'}
+                    </S.StatusBadge>
+                  </td>
+                  <td>
+                    <S.Button
+                      onClick={() => handleUserStatusToggle(u.userId, u.isActive)}
+                      disabled={updatingUserId === u.userId}
+                      style={{ marginRight: '8px' }}
+                    >
+                      {u.isActive ? '비활성화' : '활성화'}
+                    </S.Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </S.Table>
+          {filteredUsers.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+              검색 결과가 없습니다.
+            </div>
+          )}
+        </>
       )}
 
       {activeTab === 'companies' && (
@@ -698,6 +974,85 @@ const SuperAdminDashboardPage = () => {
                 </S.Pagination>
               )}
             </>
+          )}
+        </>
+      )}
+
+      {activeTab === 'reports' && (
+        <>
+          <S.FilterSection>
+            <S.FilterRow>
+              <S.FilterGroup>
+                <label>시작일</label>
+                <S.Input
+                  type="date"
+                  value={reportDateRange.from}
+                  onChange={(e) => setReportDateRange(prev => ({ ...prev, from: e.target.value }))}
+                />
+              </S.FilterGroup>
+              <S.FilterGroup>
+                <label>종료일</label>
+                <S.Input
+                  type="date"
+                  value={reportDateRange.to}
+                  onChange={(e) => setReportDateRange(prev => ({ ...prev, to: e.target.value }))}
+                />
+              </S.FilterGroup>
+            </S.FilterRow>
+          </S.FilterSection>
+
+          {loadingReports ? (
+            <LoadingOverlay fullScreen={false} message="리포트 로딩 중..." />
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
+              {/* 사용자 가입 추이 */}
+              <div style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '20px' }}>사용자 가입 추이</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  {userSignupTrend.length > 0 ? (
+                    <LineChart data={userSignupTrend.map(item => ({
+                      ...item,
+                      date: item.date ? new Date(item.date).toLocaleDateString('ko-KR') : item.date
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="count" stroke="#8884d8" name="가입자 수" strokeWidth={2} />
+                    </LineChart>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      데이터가 없습니다.
+                    </div>
+                  )}
+                </ResponsiveContainer>
+              </div>
+
+              {/* 매출 추이 */}
+              <div style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '20px' }}>매출 추이</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  {revenueTrend.length > 0 ? (
+                    <BarChart data={revenueTrend.map(item => ({
+                      ...item,
+                      date: item.date ? new Date(item.date).toLocaleDateString('ko-KR') : item.date
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => formatCurrency(value)} />
+                      <Legend />
+                      <Bar dataKey="amount" fill="#82ca9d" name="매출" />
+                    </BarChart>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      데이터가 없습니다.
+                    </div>
+                  )}
+                </ResponsiveContainer>
+              </div>
+            </div>
           )}
         </>
       )}

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import java.time.LocalDateTime;
 
 @Data // Getter, Setter, ToString 등을 자동으로 만들어주는 롬복 어노테이션
 public class UserDto {
@@ -30,4 +31,6 @@ public class UserDto {
     private Boolean isActive;   // 활성화 상태
     private String approvalStatus; // 승인 상태 (PENDING, APPROVED, REJECTED)
     private Long companyId;     // 회사 ID (nullable - ADMIN은 회사 등록 전 NULL 가능)
+    private LocalDateTime createdAt;  // 생성 시간
+    private LocalDateTime updatedAt;  // 수정 시간
 }
