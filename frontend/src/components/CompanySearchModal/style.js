@@ -163,12 +163,19 @@ export const CompanyName = styled.div`
   font-weight: 600;
   font-size: 16px;
   color: #333;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 `;
 
-export const AdminName = styled.div`
-  font-size: 14px;
+export const CompanyDetails = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+export const DetailItem = styled.div`
+  font-size: 13px;
   color: #666;
+  line-height: 1.4;
 `;
 
 export const EmptyMessage = styled.div`

@@ -26,12 +26,15 @@ CREATE TABLE `company_tb` (
   `company_id` bigint NOT NULL AUTO_INCREMENT COMMENT '회사 고유 ID',
   `company_code` varchar(10) NOT NULL COMMENT '회사 코드 (6자리 영숫자, 자동 생성)',
   `company_name` varchar(100) NOT NULL COMMENT '회사명',
+  `business_reg_no` varchar(20) NOT NULL COMMENT '사업자등록번호',
+  `representative_name` varchar(50) NOT NULL COMMENT '대표자 이름',
   `created_by` bigint DEFAULT NULL COMMENT '회사를 등록한 ADMIN의 user_id',
   `is_active` tinyint(1) DEFAULT '1' COMMENT '활성화 상태',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
   PRIMARY KEY (`company_id`),
   UNIQUE KEY `idx_company_code` (`company_code`),
+  UNIQUE KEY `uk_business_reg_no` (`business_reg_no`),
   KEY `idx_created_by` (`created_by`),
   CONSTRAINT `company_tb_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `user_tb` (`user_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='회사 정보 테이블';

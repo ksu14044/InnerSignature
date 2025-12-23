@@ -192,3 +192,49 @@ export const InfoText = styled.div`
   margin-bottom: 20px;
 `;
 
+export const InputWithButton = styled.div`
+  display: flex;
+  gap: 8px;
+  
+  ${Input} {
+    flex: 1;
+  }
+`;
+
+export const CheckButton = styled.button`
+  padding: 12px 20px;
+  background-color: ${props => {
+    if (props.status === 'available') return '#28a745';
+    if (props.status === 'duplicate') return '#dc3545';
+    return '#6c757d';
+  }};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+export const StatusMessage = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: ${props => props.status === 'success' ? '#28a745' : '#dc3545'};
+  font-weight: 500;
+`;
+

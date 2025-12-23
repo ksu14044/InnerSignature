@@ -57,10 +57,31 @@ public class CompanyService {
         return companyMapper.searchByName(companyName.trim());
     }
     
+    public boolean existsByBusinessRegNo(String businessRegNo) {
+        if (businessRegNo == null || businessRegNo.trim().isEmpty()) {
+            return false;
+        }
+        return companyMapper.existsByBusinessRegNo(businessRegNo.trim());
+    }
+    
     @Transactional
-    public CompanyDto createCompany(String companyName, Long adminUserId) {
+    public CompanyDto createCompany(String companyName, String businessRegNo, String representativeName, Long adminUserId) {
         if (companyName == null || companyName.trim().isEmpty()) {
             throw new BusinessException("회사명은 필수입니다.");
+        }
+        
+        if (businessRegNo == null || businessRegNo.trim().isEmpty()) {
+            throw new BusinessException("사업자등록번호는 필수입니다.");
+        }
+        
+        if (representativeName == null || representativeName.trim().isEmpty()) {
+            throw new BusinessException("대표자 이름은 필수입니다.");
+        }
+        
+        // 사업자등록번호 중복 체크
+        String trimmedBusinessRegNo = businessRegNo.trim();
+        if (companyMapper.existsByBusinessRegNo(trimmedBusinessRegNo)) {
+            throw new BusinessException("이미 등록된 사업자등록번호입니다.");
         }
         
         // 회사 코드 생성 (중복 체크)
@@ -69,6 +90,8 @@ public class CompanyService {
         CompanyDto company = new CompanyDto();
         company.setCompanyCode(companyCode);
         company.setCompanyName(companyName.trim());
+        company.setBusinessRegNo(trimmedBusinessRegNo);
+        company.setRepresentativeName(representativeName.trim());
         company.setCreatedBy(adminUserId);
         company.setIsActive(true);
         company.setCreatedAt(LocalDateTime.now());

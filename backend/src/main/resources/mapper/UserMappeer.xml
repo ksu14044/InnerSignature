@@ -291,6 +291,8 @@
             c.company_id AS companyId,
             c.company_code AS companyCode,
             c.company_name AS companyName,
+            c.business_reg_no AS businessRegNo,
+            c.representative_name AS representativeName,
             c.created_by AS createdBy,
             c.is_active AS isActive,
             c.created_at AS createdAt,

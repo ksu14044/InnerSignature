@@ -30,6 +30,9 @@ public interface CompanyMapper {
     // 회사 코드 중복 확인
     boolean existsByCode(@Param("companyCode") String companyCode);
     
+    // 사업자등록번호 중복 확인
+    boolean existsByBusinessRegNo(@Param("businessRegNo") String businessRegNo);
+    
     // 회사의 구독 ID 업데이트
     int updateSubscriptionId(@Param("companyId") Long companyId, 
                              @Param("subscriptionId") Long subscriptionId);

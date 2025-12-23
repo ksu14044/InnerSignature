@@ -28,12 +28,29 @@ axios.interceptors.request.use(
 );
 
 // 회사 생성 (ADMIN 전용)
-export const createCompany = async (companyName) => {
+export const createCompany = async (companyName, businessRegNo, representativeName) => {
   try {
-    const response = await axios.post(BASE_URL, { companyName });
+    const response = await axios.post(BASE_URL, { 
+      companyName, 
+      businessRegNo, 
+      representativeName 
+    });
     return response.data;
   } catch (error) {
     console.error("회사 생성 실패:", error);
+    throw error;
+  }
+};
+
+// 사업자등록번호 중복 확인
+export const checkBusinessRegNoDuplicate = async (businessRegNo) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/check-business-reg-no`, {
+      params: { businessRegNo }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("사업자등록번호 중복 확인 실패:", error);
     throw error;
   }
 };

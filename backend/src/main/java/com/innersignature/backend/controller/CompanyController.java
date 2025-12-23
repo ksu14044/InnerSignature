@@ -37,9 +37,14 @@ public class CompanyController {
     public ResponseEntity<ApiResponse<CompanyDto>> createCompany(@RequestBody CompanyCreateRequest request) {
         try {
             Long userId = SecurityUtil.getCurrentUserId();
-            logger.info("회사 생성 시도 - companyName: {}, userId: {}", request.getCompanyName(), userId);
+            logger.info("회사 생성 시도 - companyName: {}, businessRegNo: {}, userId: {}", 
+                request.getCompanyName(), request.getBusinessRegNo(), userId);
             
-            CompanyDto company = companyService.createCompany(request.getCompanyName(), userId);
+            CompanyDto company = companyService.createCompany(
+                request.getCompanyName(), 
+                request.getBusinessRegNo(), 
+                request.getRepresentativeName(), 
+                userId);
             
             // 회사 생성 후 사용자를 회사에 추가 (user_company_tb에 추가)
             // 기본 회사 설정은 "기본 회사가 아직 없을 때만" 새 회사로 설정
@@ -94,6 +99,21 @@ public class CompanyController {
             return ResponseEntity.ok(new ApiResponse<>(true, "검색 완료", results));
         } catch (Exception e) {
             logger.error("회사 검색 실패", e);
+            return ResponseEntity.badRequest()
+                .body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+    
+    @Operation(summary = "사업자등록번호 중복 확인", description = "사업자등록번호 중복 여부를 확인합니다. (공개 API)")
+    @GetMapping("/check-business-reg-no")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> checkBusinessRegNoDuplicate(
+            @RequestParam("businessRegNo") String businessRegNo) {
+        try {
+            boolean isDuplicate = companyService.existsByBusinessRegNo(businessRegNo);
+            Map<String, Boolean> result = Map.of("isDuplicate", isDuplicate);
+            return ResponseEntity.ok(new ApiResponse<>(true, "중복 확인 완료", result));
+        } catch (Exception e) {
+            logger.error("사업자등록번호 중복 확인 실패", e);
             return ResponseEntity.badRequest()
                 .body(new ApiResponse<>(false, e.getMessage(), null));
         }
@@ -186,6 +206,8 @@ public class CompanyController {
     @Data
     static class CompanyCreateRequest {
         private String companyName;
+        private String businessRegNo;
+        private String representativeName;
     }
     
     @Data

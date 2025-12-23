@@ -8,6 +8,8 @@ public class CompanyDto {
     private Long companyId;
     private String companyCode;
     private String companyName;
+    private String businessRegNo;  // 사업자등록번호
+    private String representativeName;  // 대표자 이름
     private Long createdBy;  // 회사를 등록한 ADMIN의 user_id
     private Boolean isActive;
     private Long subscriptionId;  // 현재 활성 구독 ID

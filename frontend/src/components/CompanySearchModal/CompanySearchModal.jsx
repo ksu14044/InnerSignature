@@ -58,7 +58,7 @@ const CompanySearchModal = ({ isOpen, onClose, onSelect }) => {
             <S.SearchInputGroup>
               <S.SearchInput
                 type="text"
-                placeholder="회사명을 입력하세요"
+                placeholder="회사명 또는 사업자등록번호를 입력하세요"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => {
@@ -87,9 +87,17 @@ const CompanySearchModal = ({ isOpen, onClose, onSelect }) => {
                     <FaBuilding style={{ marginRight: '12px', color: '#007bff' }} />
                     <S.CompanyInfo>
                       <S.CompanyName>{company.companyName}</S.CompanyName>
-                      {company.adminName && (
-                        <S.AdminName>대표: {company.adminName}</S.AdminName>
-                      )}
+                      <S.CompanyDetails>
+                        {company.businessRegNo && (
+                          <S.DetailItem>사업자등록번호: {company.businessRegNo}</S.DetailItem>
+                        )}
+                        {company.representativeName && (
+                          <S.DetailItem>대표자: {company.representativeName}</S.DetailItem>
+                        )}
+                        {company.adminName && (
+                          <S.DetailItem>관리자: {company.adminName}</S.DetailItem>
+                        )}
+                      </S.CompanyDetails>
                     </S.CompanyInfo>
                   </S.CompanyItem>
                 ))}
