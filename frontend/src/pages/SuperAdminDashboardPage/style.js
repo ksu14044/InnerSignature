@@ -200,7 +200,7 @@ export const FilterRow = styled.div`
 
 export const FilterGroup = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
   min-width: 150px;
 
