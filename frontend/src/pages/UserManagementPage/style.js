@@ -5,6 +5,18 @@ export const Container = styled.div`
   margin: 0 auto;
   padding: 20px;
   min-height: 100vh;
+
+  @media (max-width: 480px) {
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    min-height: calc(100vh - 56px - 64px);
+    background: #f5f5f5;
+    padding-top: 56px;
+    padding-bottom: 64px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 `;
 
 export const Header = styled.div`

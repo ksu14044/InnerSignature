@@ -677,10 +677,10 @@ public class ExpenseController {
     /**
      * 23. 지출 엑셀 다운로드 API
      * GET /api/expenses/export/excel?startDate=2024-01-01&endDate=2024-12-31
-     * 설명: ADMIN, ACCOUNTANT, CEO 권한 사용자만 접근 가능
+     * 설명: ADMIN, ACCOUNTANT, CEO, TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
-    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'CEO')")
-    @Operation(summary = "지출 엑셀 다운로드", description = "기간별 지출 데이터를 엑셀 파일로 다운로드합니다. (ADMIN/ACCOUNTANT/CEO)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'CEO', 'TAX_ACCOUNTANT')")
+    @Operation(summary = "지출 엑셀 다운로드", description = "기간별 지출 데이터를 엑셀 파일로 다운로드합니다. (ADMIN/ACCOUNTANT/CEO/TAX_ACCOUNTANT)")
     @GetMapping("/export/excel")
     public ResponseEntity<?> exportExpensesToExcel(
             @RequestParam(required = false) String startDate,

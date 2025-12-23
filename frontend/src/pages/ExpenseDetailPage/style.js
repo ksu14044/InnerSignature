@@ -15,10 +15,10 @@ export const Container = styled.div`
     border-radius: 0;
     box-shadow: none;
     max-width: 100%;
-    min-height: calc(100vh - 56px);
+    min-height: calc(100vh - 56px - 64px);
     background: #f5f5f5;
     padding-top: 56px;
-    padding-bottom: 200px;
+    padding-bottom: 64px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }

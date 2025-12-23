@@ -573,11 +573,11 @@ const SuperAdminDashboardPage = () => {
             <tbody>
               {filteredUsers.map((u) => (
                 <tr key={u.userId}>
-                  <td>{u.userId}</td>
-                  <td>{u.username}</td>
-                  <td>{u.koreanName}</td>
-                  <td>{u.email || '-'}</td>
-                  <td>
+                  <td data-label="ID">{u.userId}</td>
+                  <td data-label="아이디">{u.username}</td>
+                  <td data-label="이름">{u.koreanName}</td>
+                  <td data-label="이메일">{u.email || '-'}</td>
+                  <td data-label="권한">
                     {editingUserId === u.userId ? (
                       <S.Select
                         value={editingUserRole || u.role}
@@ -629,12 +629,12 @@ const SuperAdminDashboardPage = () => {
                       </span>
                     )}
                   </td>
-                  <td>
+                  <td data-label="상태">
                     <S.StatusBadge active={u.isActive}>
                       {u.isActive ? '활성' : '비활성'}
                     </S.StatusBadge>
                   </td>
-                  <td>
+                  <td data-label="작업">
                     <S.Button
                       onClick={() => handleUserStatusToggle(u.userId, u.isActive)}
                       disabled={updatingUserId === u.userId}
@@ -669,15 +669,15 @@ const SuperAdminDashboardPage = () => {
           <tbody>
             {companies.map((c) => (
               <tr key={c.companyId}>
-                <td>{c.companyId}</td>
-                <td>{c.companyName}</td>
-                <td>{c.companyCode}</td>
-                <td>
+                <td data-label="ID">{c.companyId}</td>
+                <td data-label="회사명">{c.companyName}</td>
+                <td data-label="회사 코드">{c.companyCode}</td>
+                <td data-label="상태">
                   <S.StatusBadge active={c.isActive}>
                     {c.isActive ? '활성' : '비활성'}
                   </S.StatusBadge>
                 </td>
-                <td>
+                <td data-label="작업">
                   <S.Button
                     onClick={() => handleCompanyStatusToggle(c.companyId, c.isActive)}
                     disabled={updatingCompanyId === c.companyId}
@@ -784,16 +784,16 @@ const SuperAdminDashboardPage = () => {
             <tbody>
               {filteredSubscriptions.map((s) => (
                 <tr key={s.subscriptionId}>
-                  <td>{s.subscriptionId}</td>
-                  <td>{getCompanyDisplay(s.companyId)}</td>
-                  <td>{s.plan?.planName || '-'}</td>
-                  <td>
+                  <td data-label="ID">{s.subscriptionId}</td>
+                  <td data-label="회사">{getCompanyDisplay(s.companyId)}</td>
+                  <td data-label="플랜">{s.plan?.planName || '-'}</td>
+                  <td data-label="상태">
                     <S.StatusBadge active={s.status === 'ACTIVE'}>
                       {s.status}
                     </S.StatusBadge>
                   </td>
-                  <td>{s.startDate ? new Date(s.startDate).toLocaleDateString() : '-'}</td>
-                  <td>{s.endDate ? new Date(s.endDate).toLocaleDateString() : '-'}</td>
+                  <td data-label="시작일">{s.startDate ? new Date(s.startDate).toLocaleDateString() : '-'}</td>
+                  <td data-label="종료일">{s.endDate ? new Date(s.endDate).toLocaleDateString() : '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -816,16 +816,16 @@ const SuperAdminDashboardPage = () => {
           <tbody>
             {payments.map((p) => (
               <tr key={p.paymentId}>
-                <td>{p.paymentId}</td>
-                <td>{p.subscriptionId}</td>
-                <td>{formatCurrency(p.amount)}</td>
-                <td>{p.paymentMethod || '-'}</td>
-                <td>
+                <td data-label="ID">{p.paymentId}</td>
+                <td data-label="구독 ID">{p.subscriptionId}</td>
+                <td data-label="금액">{formatCurrency(p.amount)}</td>
+                <td data-label="결제 방법">{p.paymentMethod || '-'}</td>
+                <td data-label="상태">
                   <S.StatusBadge active={p.paymentStatus === 'COMPLETED'}>
                     {p.paymentStatus}
                   </S.StatusBadge>
                 </td>
-                <td>{p.paymentDate ? new Date(p.paymentDate).toLocaleString() : '-'}</td>
+                <td data-label="결제일">{p.paymentDate ? new Date(p.paymentDate).toLocaleString() : '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -930,23 +930,23 @@ const SuperAdminDashboardPage = () => {
                 <tbody>
                   {expenses.map((expense) => (
                     <tr key={expense.expenseReportId}>
-                      <td>{expense.expenseReportId}</td>
-                      <td>{expense.companyName || '-'}</td>
-                      <td>
+                      <td data-label="ID">{expense.expenseReportId}</td>
+                      <td data-label="회사명">{expense.companyName || '-'}</td>
+                      <td data-label="제목">
                         {expense.title}
                         {expense.isSecret && (
                           <S.SecretBadge>비밀</S.SecretBadge>
                         )}
                       </td>
-                      <td>{expense.drafterName || '-'}</td>
-                      <td>{expense.reportDate ? new Date(expense.reportDate).toLocaleDateString() : '-'}</td>
-                      <td>{formatCurrency(expense.totalAmount)}</td>
-                      <td>
+                      <td data-label="작성자">{expense.drafterName || '-'}</td>
+                      <td data-label="작성일">{expense.reportDate ? new Date(expense.reportDate).toLocaleDateString() : '-'}</td>
+                      <td data-label="총액">{formatCurrency(expense.totalAmount)}</td>
+                      <td data-label="상태">
                         <S.StatusBadge active={expense.status === 'PAID' || expense.status === 'APPROVED'}>
                           {STATUS_KOREAN[expense.status] || expense.status}
                         </S.StatusBadge>
                       </td>
-                      <td>
+                      <td data-label="작업">
                         <S.Button onClick={() => handleExpenseDetailClick(expense.expenseReportId)}>
                           상세보기
                         </S.Button>
@@ -1004,7 +1004,7 @@ const SuperAdminDashboardPage = () => {
           {loadingReports ? (
             <LoadingOverlay fullScreen={false} message="리포트 로딩 중..." />
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
+            <S.ReportsGrid>
               {/* 사용자 가입 추이 */}
               <div style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                 <h3 style={{ marginTop: 0, marginBottom: '20px' }}>사용자 가입 추이</h3>
@@ -1052,7 +1052,7 @@ const SuperAdminDashboardPage = () => {
                   )}
                 </ResponsiveContainer>
               </div>
-            </div>
+            </S.ReportsGrid>
           )}
         </>
       )}

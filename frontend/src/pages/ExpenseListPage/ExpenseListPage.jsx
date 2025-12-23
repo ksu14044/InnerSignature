@@ -212,8 +212,8 @@ const ExpenseListPage = () => {
 
   // 엑셀 다운로드 핸들러
   const handleExportExcel = async () => {
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'ACCOUNTANT' && user.role !== 'CEO')) {
-      alert('엑셀 다운로드는 ADMIN, ACCOUNTANT, CEO 권한만 가능합니다.');
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'ACCOUNTANT' && user.role !== 'CEO' && user.role !== 'TAX_ACCOUNTANT')) {
+      alert('엑셀 다운로드는 ADMIN, ACCOUNTANT, CEO, TAX_ACCOUNTANT 권한만 가능합니다.');
       return;
     }
 
@@ -421,7 +421,7 @@ const ExpenseListPage = () => {
             <FaFilter />
             <span>필터</span>
           </S.FilterButton>
-          {user && (user.role === 'ADMIN' || user.role === 'ACCOUNTANT' || user.role === 'CEO') && (
+          {user && (user.role === 'ADMIN' || user.role === 'ACCOUNTANT' || user.role === 'CEO' || user.role === 'TAX_ACCOUNTANT') && (
             <S.ExportButton onClick={handleExportExcel}>
               <FaFileExcel />
               <span>엑셀 다운로드</span>

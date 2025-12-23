@@ -5,6 +5,18 @@ export const Container = styled.div`
   margin: 0 auto;
   padding: 20px;
   min-height: 100vh;
+
+  @media (max-width: 480px) {
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    min-height: calc(100vh - 56px - 64px);
+    background: #f5f5f5;
+    padding-top: 56px;
+    padding-bottom: 64px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 `;
 
 export const Header = styled.div`
@@ -14,6 +26,10 @@ export const Header = styled.div`
   margin-bottom: 32px;
   padding-bottom: 16px;
   border-bottom: 2px solid var(--primary-color);
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 export const HeaderLeft = styled.div`
@@ -62,6 +78,17 @@ export const Button = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
+
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+    font-size: 13px;
+    min-height: 44px;
+    justify-content: center;
+    
+    svg {
+      font-size: 16px;
+    }
+  }
 `;
 
 export const TabContainer = styled.div`
@@ -69,6 +96,22 @@ export const TabContainer = styled.div`
   gap: 8px;
   margin-bottom: 24px;
   border-bottom: 2px solid #e9ecef;
+
+  @media (max-width: 480px) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 2px;
+    }
+  }
 `;
 
 export const Tab = styled.button`
@@ -84,9 +127,21 @@ export const Tab = styled.button`
   align-items: center;
   gap: 8px;
   transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   &:hover {
     color: var(--primary-color);
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 16px;
+    font-size: 12px;
+    gap: 4px;
+    
+    svg {
+      font-size: 14px;
+    }
   }
 `;
 
@@ -95,6 +150,13 @@ export const DashboardGrid = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
   margin-bottom: 32px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 8px;
+    margin-bottom: 16px;
+  }
 `;
 
 export const StatCard = styled.div`
@@ -105,6 +167,11 @@ export const StatCard = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    gap: 12px;
+  }
 `;
 
 export const StatIcon = styled.div`
@@ -117,6 +184,12 @@ export const StatIcon = styled.div`
   justify-content: center;
   color: white;
   font-size: 24px;
+
+  @media (max-width: 480px) {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
 `;
 
 export const StatContent = styled.div`
@@ -134,6 +207,10 @@ export const StatValue = styled.div`
   font-weight: 700;
   color: var(--dark-color);
   margin-bottom: 4px;
+
+  @media (max-width: 480px) {
+    font-size: 20px;
+  }
 `;
 
 export const StatSubtext = styled.div`
@@ -158,6 +235,7 @@ export const Table = styled.table`
     padding: 16px;
     text-align: left;
     font-weight: 600;
+    white-space: nowrap;
   }
 
   tbody tr {
@@ -171,6 +249,56 @@ export const Table = styled.table`
 
   td {
     padding: 16px;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 480px) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    thead {
+      display: block;
+    }
+    
+    tbody {
+      display: block;
+    }
+    
+    tr {
+      display: block;
+      margin-bottom: 8px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    th {
+      display: none;
+    }
+    
+    td {
+      display: block;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+      white-space: normal;
+      word-break: break-word;
+      
+      &:before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #666;
+        display: block;
+        margin-bottom: 4px;
+        font-size: 12px;
+      }
+      
+      &:last-child {
+        border-bottom: none;
+      }
+    }
   }
 `;
 
@@ -189,6 +317,13 @@ export const FilterSection = styled.div`
   padding: 20px;
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 0;
+    box-shadow: none;
+  }
 `;
 
 export const FilterRow = styled.div`
@@ -196,6 +331,12 @@ export const FilterRow = styled.div`
   gap: 16px;
   flex-wrap: wrap;
   align-items: flex-end;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
 `;
 
 export const FilterGroup = styled.div`
@@ -209,6 +350,16 @@ export const FilterGroup = styled.div`
     font-weight: 600;
     color: var(--dark-color);
   }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 6px;
+    min-width: 100%;
+    
+    label {
+      font-size: 12px;
+    }
+  }
 `;
 
 export const Input = styled.input`
@@ -220,6 +371,12 @@ export const Input = styled.input`
   &:focus {
     outline: none;
     border-color: var(--primary-color);
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 44px;
   }
 `;
 
@@ -234,6 +391,12 @@ export const Select = styled.select`
   &:focus {
     outline: none;
     border-color: var(--primary-color);
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 44px;
   }
 `;
 
@@ -252,6 +415,18 @@ export const Pagination = styled.div`
     font-size: 14px;
     color: var(--secondary-color);
   }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    margin-top: 16px;
+    
+    span {
+      font-size: 12px;
+      text-align: center;
+    }
+  }
 `;
 
 export const SecretBadge = styled.span`
@@ -264,5 +439,18 @@ export const SecretBadge = styled.span`
   font-size: 11px;
   font-weight: 600;
   vertical-align: middle;
+`;
+
+export const ReportsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 8px;
+  }
 `;
 

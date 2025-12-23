@@ -396,7 +396,7 @@ export const batchCompleteTaxProcessing = async (expenseReportIds) => {
   }
 };
 
-// 23. 지출 엑셀 다운로드 (ADMIN/ACCOUNTANT/CEO 전용)
+// 23. 지출 엑셀 다운로드 (ADMIN/ACCOUNTANT/CEO/TAX_ACCOUNTANT 전용)
 export const downloadExpensesExcel = async (startDate = null, endDate = null) => {
   try {
     const params = {};
