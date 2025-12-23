@@ -1308,6 +1308,213 @@ public class ExpenseService {
     }
 
     /**
+     * SUPERADMIN 전용: 지출결의서 상세 조회
+     * companyId 제약 없이 모든 회사의 문서 조회 가능
+     */
+    public ExpenseReportDto getExpenseDetailForSuperAdmin(Long expenseReportId) {
+        // (1) 메인 문서 정보 가져오기
+        ExpenseReportDto report = expenseMapper.selectExpenseReportByIdForSuperAdmin(expenseReportId);
+        
+        if (report == null) {
+            return null;
+        }
+
+        // (2) 상세 항목들 가져오기
+        List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetailsForSuperAdmin(expenseReportId);
+        
+        // (3) 결재 라인 가져오기
+        List<ApprovalLineDto> lines = expenseMapper.selectApprovalLinesForSuperAdmin(expenseReportId);
+
+        // (4) 영수증 목록 가져오기
+        List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseReportIdForSuperAdmin(expenseReportId);
+
+        // (5) 가져온 부품들을 메인 DTO에 조립하기
+        report.setDetails(details);
+        report.setApprovalLines(lines);
+        report.setReceipts(receipts);
+
+        // (6) 급여 카테고리인 경우 isSecret을 true로 설정
+        boolean hasSalary = hasSalaryCategory(details);
+        if (hasSalary) {
+            report.setIsSecret(true);
+        }
+
+        return report;
+    }
+
+    /**
+     * SUPERADMIN 전용: 엑셀 다운로드
+     * companyId가 null이면 전체 회사의 데이터 조회
+     */
+    public File exportExpensesToExcelForSuperAdmin(
+            LocalDate startDate, 
+            LocalDate endDate, 
+            Long companyId) throws IOException {
+        
+        // 필터 조건으로 지출결의서 목록 조회
+        List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListForSuperAdmin(
+                0, Integer.MAX_VALUE,
+                startDate, endDate,
+                null, null, null, null, null, null, null,
+                companyId);
+        
+        // 각 지출결의서의 상세 내역 조회
+        Map<Long, List<ExpenseDetailDto>> detailsMap = new HashMap<>();
+        if (!expenseReports.isEmpty()) {
+            for (ExpenseReportDto report : expenseReports) {
+                List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetailsForSuperAdmin(report.getExpenseReportId());
+                detailsMap.put(report.getExpenseReportId(), details);
+            }
+        }
+        
+        // 엑셀 파일 생성
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("지출내역");
+        
+        // 헤더 스타일
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setFontHeightInPoints((short) 12);
+        headerStyle.setFont(headerFont);
+        headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        headerStyle.setBorderBottom(BorderStyle.THIN);
+        headerStyle.setBorderTop(BorderStyle.THIN);
+        headerStyle.setBorderLeft(BorderStyle.THIN);
+        headerStyle.setBorderRight(BorderStyle.THIN);
+        
+        // 데이터 스타일
+        CellStyle dataStyle = workbook.createCellStyle();
+        dataStyle.setBorderBottom(BorderStyle.THIN);
+        dataStyle.setBorderTop(BorderStyle.THIN);
+        dataStyle.setBorderLeft(BorderStyle.THIN);
+        dataStyle.setBorderRight(BorderStyle.THIN);
+        
+        // 헤더 행 생성
+        Row headerRow = sheet.createRow(0);
+        String[] headers = {"문서번호", "회사명", "작성일", "제목", "작성자", "상태", "총액", "항목", "적요", "금액", "비고"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+        
+        // 데이터 행 생성
+        int rowNum = 1;
+        for (ExpenseReportDto report : expenseReports) {
+            List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
+            
+            if (details.isEmpty()) {
+                Row row = sheet.createRow(rowNum++);
+                createDataRowForSuperAdmin(row, report, null, 0, dataStyle);
+            } else {
+                for (int i = 0; i < details.size(); i++) {
+                    Row row = sheet.createRow(rowNum++);
+                    createDataRowForSuperAdmin(row, report, details.get(i), i, dataStyle);
+                }
+            }
+        }
+        
+        // 열 너비 자동 조정
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+        }
+        
+        // 임시 파일로 저장
+        File tempFile = File.createTempFile("expense_export_superadmin_", ".xlsx");
+        try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
+            workbook.write(outputStream);
+        }
+        workbook.close();
+        
+        logger.info("SUPERADMIN 엑셀 파일 생성 완료 - 파일명: {}, 건수: {}", tempFile.getName(), expenseReports.size());
+        
+        return tempFile;
+    }
+
+    /**
+     * SUPERADMIN 전용 엑셀 데이터 행 생성 헬퍼 메서드
+     */
+    private void createDataRowForSuperAdmin(Row row, ExpenseReportDto report, ExpenseDetailDto detail, int detailIndex, CellStyle dataStyle) {
+        int col = 0;
+        
+        // 문서번호
+        Cell cell = row.createCell(col++);
+        cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
+        cell.setCellStyle(dataStyle);
+        
+        // 회사명
+        cell = row.createCell(col++);
+        cell.setCellValue(report.getCompanyName() != null ? report.getCompanyName() : "");
+        cell.setCellStyle(dataStyle);
+        
+        // 작성일
+        cell = row.createCell(col++);
+        if (detailIndex == 0) {
+            cell.setCellValue(report.getReportDate() != null ? report.getReportDate().toString() : "");
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 제목
+        cell = row.createCell(col++);
+        if (detailIndex == 0) {
+            cell.setCellValue(report.getTitle() != null ? report.getTitle() : "");
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 작성자
+        cell = row.createCell(col++);
+        if (detailIndex == 0) {
+            cell.setCellValue(report.getDrafterName() != null ? report.getDrafterName() : "");
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 상태
+        cell = row.createCell(col++);
+        if (detailIndex == 0) {
+            cell.setCellValue(report.getStatus() != null ? report.getStatus() : "");
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 총액 (첫 번째 행에만 표시)
+        cell = row.createCell(col++);
+        if (detailIndex == 0) {
+            cell.setCellValue(report.getTotalAmount() != null ? report.getTotalAmount().doubleValue() : 0);
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 항목
+        cell = row.createCell(col++);
+        if (detail != null) {
+            cell.setCellValue(detail.getCategory() != null ? detail.getCategory() : "");
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 적요
+        cell = row.createCell(col++);
+        if (detail != null) {
+            cell.setCellValue(detail.getDescription() != null ? detail.getDescription() : "");
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 금액
+        cell = row.createCell(col++);
+        if (detail != null && detail.getAmount() != null) {
+            cell.setCellValue(detail.getAmount().doubleValue());
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 비고
+        cell = row.createCell(col++);
+        if (detail != null) {
+            cell.setCellValue(detail.getNote() != null ? detail.getNote() : "");
+        }
+        cell.setCellStyle(dataStyle);
+    }
+
+    /**
      * 엑셀 데이터 행 생성 헬퍼 메서드
      */
     private void createDataRow(Row row, ExpenseReportDto report, ExpenseDetailDto detail, int detailIndex, CellStyle dataStyle) {

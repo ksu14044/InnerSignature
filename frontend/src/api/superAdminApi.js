@@ -132,3 +132,68 @@ export const getExpenseListForSuperAdmin = async (params) => {
   }
 };
 
+// 지출결의서 상세 조회 (SUPERADMIN 전용)
+export const getExpenseDetailForSuperAdmin = async (expenseReportId) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/expenses/${expenseReportId}`);
+    return response.data;
+  } catch (error) {
+    console.error("지출결의서 상세 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 엑셀 다운로드 (SUPERADMIN 전용)
+export const downloadExpensesExcelForSuperAdmin = async (startDate = null, endDate = null, companyId = null) => {
+  try {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (companyId) params.companyId = companyId;
+    
+    const response = await axios.get(`${BASE_URL}/expenses/export/excel`, {
+      params,
+      responseType: 'blob',
+    });
+    
+    // Blob을 다운로드 링크로 변환
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // 파일명 생성
+    const filename = `지출내역_SUPERADMIN_${startDate || '전체'}_${endDate || '전체'}${companyId ? '_' + companyId : ''}.xlsx`;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true };
+  } catch (error) {
+    console.error("엑셀 다운로드 실패:", error);
+    let message = "엑셀 다운로드 중 오류가 발생했습니다.";
+    const data = error?.response?.data;
+    try {
+      if (data instanceof Blob) {
+        const text = await data.text();
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed?.message) message = parsed.message;
+        } catch {
+          if (text) message = text;
+        }
+      } else if (typeof data === 'string' && data) {
+        message = data;
+      } else if (data?.message) {
+        message = data.message;
+      }
+    } catch (e) {
+      // ignore parsing errors
+    }
+    const err = new Error(message);
+    err.userMessage = message;
+    throw err;
+  }
+};
+

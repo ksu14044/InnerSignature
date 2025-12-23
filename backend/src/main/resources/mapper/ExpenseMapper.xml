@@ -612,4 +612,45 @@
         </where>
     </select>
 
+    <!-- SUPERADMIN 전용: 지출결의서 상세 조회 (companyId가 null이어도 조회 가능) -->
+    <select id="selectExpenseReportByIdForSuperAdmin" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT 
+            r.*, 
+            u.korean_name AS drafterName,
+            c.company_name AS companyName
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        LEFT JOIN company_tb c ON r.company_id = c.company_id
+        WHERE r.expense_report_id = #{expenseReportId}
+    </select>
+
+    <!-- SUPERADMIN 전용: 지출 상세 항목 조회 (companyId 제약 없음) -->
+    <select id="selectExpenseDetailsForSuperAdmin" resultType="com.innersignature.backend.dto.ExpenseDetailDto">
+        SELECT * FROM expense_detail_tb
+        WHERE expense_report_id = #{expenseReportId}
+    </select>
+
+    <!-- SUPERADMIN 전용: 결재 라인 조회 (companyId 제약 없음) -->
+    <select id="selectApprovalLinesForSuperAdmin" resultType="com.innersignature.backend.dto.ApprovalLineDto">
+        SELECT 
+            al.*,
+            u.korean_name AS approverName,
+            u.position AS approverPosition
+        FROM approval_line_tb al
+        LEFT JOIN user_tb u ON al.approver_id = u.user_id
+        WHERE al.expense_report_id = #{expenseReportId}
+        ORDER BY al.step_order ASC
+    </select>
+
+    <!-- SUPERADMIN 전용: 영수증 조회 (companyId 제약 없음) -->
+    <select id="selectReceiptsByExpenseReportIdForSuperAdmin" resultType="com.innersignature.backend.dto.ReceiptDto">
+        SELECT 
+            r.*,
+            u.korean_name AS uploadedByName
+        FROM receipt_tb r
+        JOIN user_tb u ON r.uploaded_by = u.user_id
+        WHERE r.expense_report_id = #{expenseReportId}
+        ORDER BY r.uploaded_at DESC
+    </select>
+
 </mapper>

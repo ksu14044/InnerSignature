@@ -20,10 +20,17 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -231,6 +238,81 @@ public class SuperAdminController {
         
         logger.info("회사별 지출결의서 목록 조회 완료 - totalElements: {}", pagedResponse.getTotalElements());
         return new ApiResponse<>(true, "지출결의서 목록 조회 성공", pagedResponse);
+    }
+
+    /**
+     * 지출결의서 상세 조회 (SUPERADMIN 전용)
+     */
+    @Operation(summary = "지출결의서 상세 조회", description = "SUPERADMIN 전용 지출결의서 상세 조회")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @GetMapping("/expenses/{expenseReportId}")
+    public ApiResponse<ExpenseReportDto> getExpenseDetailForSuperAdmin(@PathVariable Long expenseReportId) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        logger.info("지출결의서 상세 조회 요청 (SUPERADMIN) - userId: {}, expenseReportId: {}", currentUserId, expenseReportId);
+        
+        ExpenseReportDto report = expenseService.getExpenseDetailForSuperAdmin(expenseReportId);
+        
+        if (report == null) {
+            return new ApiResponse<>(false, "지출결의서를 찾을 수 없습니다.", null);
+        }
+        
+        logger.info("지출결의서 상세 조회 완료 (SUPERADMIN) - expenseReportId: {}", expenseReportId);
+        return new ApiResponse<>(true, "지출결의서 상세 조회 성공", report);
+    }
+
+    /**
+     * 엑셀 다운로드 (SUPERADMIN 전용)
+     */
+    @Operation(summary = "지출 엑셀 다운로드", description = "SUPERADMIN 전용 지출 데이터 엑셀 다운로드")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @GetMapping("/expenses/export/excel")
+    public ResponseEntity<?> exportExpensesToExcelForSuperAdmin(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) Long companyId) {
+        
+        LocalDate startDateParsed = null;
+        LocalDate endDateParsed = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                startDateParsed = LocalDate.parse(startDate, formatter);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                endDateParsed = LocalDate.parse(endDate, formatter);
+            }
+        } catch (Exception e) {
+            logger.error("날짜 파싱 실패", e);
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "날짜 형식이 올바르지 않습니다. (형식: YYYY-MM-DD)", null));
+        }
+        
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        
+        try {
+            File excelFile = expenseService.exportExpensesToExcelForSuperAdmin(startDateParsed, endDateParsed, companyId);
+            Resource resource = new FileSystemResource(excelFile);
+            
+            String filename = String.format("지출내역_SUPERADMIN_%s_%s%s.xlsx",
+                    startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                    endDateParsed != null ? endDateParsed.format(formatter) : "전체",
+                    companyId != null ? "_" + companyId : "");
+            
+            logger.info("엑셀 다운로드 요청 (SUPERADMIN) - userId: {}, startDate: {}, endDate: {}, companyId: {}", 
+                    currentUserId, startDateParsed, endDateParsed, companyId);
+            
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            logger.error("엑셀 다운로드 실패 (SUPERADMIN)", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "엑셀 파일 생성 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
     }
     
     @Data

@@ -8,9 +8,11 @@ import {
   getAllSubscriptions, 
   getAllPayments,
   updateCompanyStatus,
-  getExpenseListForSuperAdmin
+  getExpenseListForSuperAdmin,
+  getExpenseDetailForSuperAdmin,
+  downloadExpensesExcelForSuperAdmin
 } from '../../api/superAdminApi';
-import { FaSignOutAlt, FaUsers, FaBuilding, FaCreditCard, FaChartLine, FaFileInvoice } from 'react-icons/fa';
+import { FaSignOutAlt, FaUsers, FaBuilding, FaCreditCard, FaChartLine, FaFileInvoice, FaFileExcel } from 'react-icons/fa';
 import { STATUS_KOREAN } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import * as S from './style';
@@ -160,6 +162,40 @@ const SuperAdminDashboardPage = () => {
     });
     setSelectedCompanyId(null);
     setExpensePage(1);
+  };
+
+  const handleExpenseDetailClick = async (expenseReportId) => {
+    try {
+      const response = await getExpenseDetailForSuperAdmin(expenseReportId);
+      if (response.success && response.data) {
+        // 상세 페이지로 이동 (기존 상세 페이지 사용)
+        navigate(`/detail/${expenseReportId}`);
+      } else {
+        alert(response.message || '상세 정보를 불러올 수 없습니다.');
+      }
+    } catch (error) {
+      console.error('상세 조회 실패:', error);
+      alert(error?.response?.data?.message || '상세 정보를 불러오는 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleExcelDownload = async () => {
+    if (!selectedCompanyId) {
+      alert('엑셀 다운로드를 하려면 회사를 선택해주세요.');
+      return;
+    }
+    
+    try {
+      await downloadExpensesExcelForSuperAdmin(
+        expenseFilters.startDate || null,
+        expenseFilters.endDate || null,
+        selectedCompanyId
+      );
+      alert('엑셀 다운로드가 시작됩니다.');
+    } catch (error) {
+      console.error('엑셀 다운로드 실패:', error);
+      alert(error?.userMessage || error?.message || '엑셀 다운로드 중 오류가 발생했습니다.');
+    }
   };
 
   const handleLogout = async () => {
@@ -591,6 +627,9 @@ const SuperAdminDashboardPage = () => {
               
               <S.FilterGroup>
                 <S.Button onClick={handleExpenseFilterReset}>필터 초기화</S.Button>
+                <S.Button onClick={handleExcelDownload}>
+                  <FaFileExcel /> 엑셀 다운로드
+                </S.Button>
               </S.FilterGroup>
             </S.FilterRow>
           </S.FilterSection>
@@ -617,7 +656,12 @@ const SuperAdminDashboardPage = () => {
                     <tr key={expense.expenseReportId}>
                       <td>{expense.expenseReportId}</td>
                       <td>{expense.companyName || '-'}</td>
-                      <td>{expense.title}</td>
+                      <td>
+                        {expense.title}
+                        {expense.isSecret && (
+                          <S.SecretBadge>비밀</S.SecretBadge>
+                        )}
+                      </td>
                       <td>{expense.drafterName || '-'}</td>
                       <td>{expense.reportDate ? new Date(expense.reportDate).toLocaleDateString() : '-'}</td>
                       <td>{formatCurrency(expense.totalAmount)}</td>
@@ -627,7 +671,7 @@ const SuperAdminDashboardPage = () => {
                         </S.StatusBadge>
                       </td>
                       <td>
-                        <S.Button onClick={() => navigate(`/detail/${expense.expenseReportId}`)}>
+                        <S.Button onClick={() => handleExpenseDetailClick(expense.expenseReportId)}>
                           상세보기
                         </S.Button>
                       </td>

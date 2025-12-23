@@ -254,3 +254,15 @@ export const Pagination = styled.div`
   }
 `;
 
+export const SecretBadge = styled.span`
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+`;
+

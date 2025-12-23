@@ -189,6 +189,18 @@ public interface ExpenseMapper {
             @Param("companyId") Long companyId
     );
     
+    // SUPERADMIN 전용: 지출결의서 상세 조회 (companyId 제약 없음)
+    ExpenseReportDto selectExpenseReportByIdForSuperAdmin(@Param("expenseReportId") Long expenseReportId);
+    
+    // SUPERADMIN 전용: 지출 상세 항목 조회 (companyId 제약 없음)
+    List<ExpenseDetailDto> selectExpenseDetailsForSuperAdmin(@Param("expenseReportId") Long expenseReportId);
+    
+    // SUPERADMIN 전용: 결재 라인 조회 (companyId 제약 없음)
+    List<ApprovalLineDto> selectApprovalLinesForSuperAdmin(@Param("expenseReportId") Long expenseReportId);
+    
+    // SUPERADMIN 전용: 영수증 조회 (companyId 제약 없음)
+    List<ReceiptDto> selectReceiptsByExpenseReportIdForSuperAdmin(@Param("expenseReportId") Long expenseReportId);
+
     // SUPERADMIN 전용: 회사별 지출결의서 개수 조회 (companyId가 null이면 전체 조회)
     long countExpenseListForSuperAdmin(
             @Param("startDate") LocalDate startDate,

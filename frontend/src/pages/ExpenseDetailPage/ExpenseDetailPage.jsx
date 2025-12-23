@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchExpenseDetail, approveExpense, rejectExpense, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, completeTaxProcessing } from '../../api/expenseApi';
+import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
 import * as S from './style'; // 스타일 가져오기
 import SignatureModal from '../../components/SignatureModal/SignatureModal';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,7 +26,12 @@ const ExpenseDetailPage = () => {
   const {user} = useAuth();
 
   useEffect(() => {
-    fetchExpenseDetail(id)
+    // SUPERADMIN인 경우 SUPERADMIN 전용 API 사용
+    const fetchDetail = user?.role === 'SUPERADMIN' 
+      ? getExpenseDetailForSuperAdmin(id)
+      : fetchExpenseDetail(id);
+    
+    fetchDetail
       .then((res) => {
         if (res.success) {
           setDetail(res.data);
@@ -38,7 +44,7 @@ const ExpenseDetailPage = () => {
         } else navigate('/');
       })
       .catch(() => navigate('/'));
-  }, [id, navigate]);
+  }, [id, navigate, user]);
 
   if (!detail) return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
 
@@ -219,7 +225,10 @@ const ExpenseDetailPage = () => {
         if(res.success) {
             alert("영수증이 업로드되었습니다!");
             // 상세 정보 다시 조회하여 영수증 목록 갱신
-            fetchExpenseDetail(id)
+            const fetchDetail = user?.role === 'SUPERADMIN' 
+              ? getExpenseDetailForSuperAdmin(id)
+              : fetchExpenseDetail(id);
+            fetchDetail
             .then((res) => {
                 if (res.success && res.data) {
                     setDetail(res.data);
@@ -268,7 +277,10 @@ const ExpenseDetailPage = () => {
             if(res.success) {
                 alert("영수증이 삭제되었습니다!");
                 // 상세 정보 다시 조회하여 영수증 목록 갱신
-                fetchExpenseDetail(id)
+                const fetchDetail = user?.role === 'SUPERADMIN' 
+                  ? getExpenseDetailForSuperAdmin(id)
+                  : fetchExpenseDetail(id);
+                fetchDetail
                 .then((res) => {
                     if (res.success && res.data) {
                         setDetail(res.data);
