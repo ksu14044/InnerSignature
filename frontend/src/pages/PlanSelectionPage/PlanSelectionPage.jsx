@@ -13,6 +13,7 @@ const PlanSelectionPage = () => {
   const [plans, setPlans] = useState([]);
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [creating, setCreating] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -28,6 +29,7 @@ const PlanSelectionPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [plansRes, subscriptionRes] = await Promise.all([
         getPlans(),
         getCurrentSubscription().catch(() => ({ success: false, data: null }))
@@ -35,12 +37,19 @@ const PlanSelectionPage = () => {
       
       if (plansRes.success) {
         setPlans(plansRes.data || []);
+        if (!plansRes.data || plansRes.data.length === 0) {
+          setError('표시할 플랜이 없습니다. 관리자에게 문의해주세요.');
+        }
+      } else {
+        setError(plansRes.message || '플랜 목록을 불러오지 못했습니다.');
       }
+      
       if (subscriptionRes.success && subscriptionRes.data) {
         setCurrentSubscription(subscriptionRes.data);
       }
     } catch (err) {
       console.error('데이터 로드 실패:', err);
+      setError('데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -117,65 +126,78 @@ const PlanSelectionPage = () => {
         </S.HeaderRight>
       </S.Header>
 
-      <S.PlansGrid>
-        {plans.map(plan => {
-          const isCurrent = currentSubscription?.planId === plan.planId;
-          return (
-            <S.PlanCard key={plan.planId} featured={plan.planCode === 'PRO'}>
-              {plan.planCode === 'PRO' && <S.FeaturedBadge>추천</S.FeaturedBadge>}
-              <S.PlanHeader>
-                <S.PlanName>{plan.planName}</S.PlanName>
-                <S.PlanPrice>
-                  {plan.price === 0 ? (
-                    <S.FreePrice>무료</S.FreePrice>
+      {error && (
+        <S.ErrorMessage>
+          {error}
+        </S.ErrorMessage>
+      )}
+
+      {plans.length === 0 && !error && !loading ? (
+        <S.NoPlansMessage>
+          표시할 플랜이 없습니다. 관리자에게 문의해주세요.
+        </S.NoPlansMessage>
+      ) : (
+        <S.PlansGrid>
+          {plans.map(plan => {
+            const isCurrent = currentSubscription?.planId === plan.planId;
+            return (
+              <S.PlanCard key={plan.planId} featured={plan.planCode === 'PRO'}>
+                {plan.planCode === 'PRO' && <S.FeaturedBadge>추천</S.FeaturedBadge>}
+                <S.PlanHeader>
+                  <S.PlanName>{plan.planName}</S.PlanName>
+                  <S.PlanPrice>
+                    {plan.price === 0 ? (
+                      <S.FreePrice>무료</S.FreePrice>
+                    ) : (
+                      <>
+                        <S.PriceAmount>{plan.price.toLocaleString()}</S.PriceAmount>
+                        <S.PriceUnit>원/월</S.PriceUnit>
+                      </>
+                    )}
+                  </S.PlanPrice>
+                </S.PlanHeader>
+
+                <S.PlanFeatures>
+                  <S.Feature>
+                    <S.FeatureIcon>✓</S.FeatureIcon>
+                    <S.FeatureText>
+                      최대 {plan.maxUsers ? `${plan.maxUsers}명` : '무제한'} 사용자
+                    </S.FeatureText>
+                  </S.Feature>
+                  {plan.features && Object.entries(plan.features).map(([key, value]) => (
+                    value && (
+                      <S.Feature key={key}>
+                        <S.FeatureIcon>✓</S.FeatureIcon>
+                        <S.FeatureText>
+                          {key === 'expense_tracking' ? '지출 관리' :
+                           key === 'tax_report' ? '세무 보고서' :
+                           key === 'audit_log' ? '감사 로그' :
+                           key === 'advanced_analytics' ? '고급 분석' :
+                           key === 'priority_support' ? '우선 지원' : key}
+                        </S.FeatureText>
+                      </S.Feature>
+                    )
+                  ))}
+                </S.PlanFeatures>
+
+                <S.PlanAction>
+                  {isCurrent ? (
+                    <S.CurrentButton disabled>현재 플랜</S.CurrentButton>
                   ) : (
-                    <>
-                      <S.PriceAmount>{plan.price.toLocaleString()}</S.PriceAmount>
-                      <S.PriceUnit>원/월</S.PriceUnit>
-                    </>
+                    <S.SelectButton 
+                      onClick={() => handleSelectPlan(plan.planId)}
+                      disabled={creating}
+                    >
+                      {creating ? '처리 중...' : plan.price === 0 ? '무료로 시작하기' : '결제하기'}
+                    </S.SelectButton>
                   )}
-                </S.PlanPrice>
-              </S.PlanHeader>
+                </S.PlanAction>
+              </S.PlanCard>
+            );
+          })}
+        </S.PlansGrid>
+      )}
 
-              <S.PlanFeatures>
-                <S.Feature>
-                  <S.FeatureIcon>✓</S.FeatureIcon>
-                  <S.FeatureText>
-                    최대 {plan.maxUsers ? `${plan.maxUsers}명` : '무제한'} 사용자
-                  </S.FeatureText>
-                </S.Feature>
-                {plan.features && Object.entries(plan.features).map(([key, value]) => (
-                  value && (
-                    <S.Feature key={key}>
-                      <S.FeatureIcon>✓</S.FeatureIcon>
-                      <S.FeatureText>
-                        {key === 'expense_tracking' ? '지출 관리' :
-                         key === 'tax_report' ? '세무 보고서' :
-                         key === 'audit_log' ? '감사 로그' :
-                         key === 'advanced_analytics' ? '고급 분석' :
-                         key === 'priority_support' ? '우선 지원' : key}
-                      </S.FeatureText>
-                    </S.Feature>
-                  )
-                ))}
-              </S.PlanFeatures>
-
-              <S.PlanAction>
-                {isCurrent ? (
-                  <S.CurrentButton disabled>현재 플랜</S.CurrentButton>
-                ) : (
-                  <S.SelectButton 
-                    onClick={() => handleSelectPlan(plan.planId)}
-                    disabled={creating}
-                  >
-                    {creating ? '처리 중...' : plan.price === 0 ? '무료로 시작하기' : '결제하기'}
-                  </S.SelectButton>
-                )}
-              </S.PlanAction>
-            </S.PlanCard>
-          );
-        })}
-      </S.PlansGrid>
 
       <PaymentConfirmModal
         isOpen={showPaymentModal}

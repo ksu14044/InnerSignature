@@ -357,8 +357,25 @@ public class UserService {
             throw new BusinessException("CEO 또는 ADMIN 권한이 필요합니다.");
         }
         
-        // 같은 회사의 사용자인지 확인
-        if (user.getCompanyId() == null || !user.getCompanyId().equals(operator.getCompanyId())) {
+        // 작업 수행자가 소속된 회사 목록 조회
+        List<UserCompanyDto> operatorCompanies = userMapper.findUserCompanies(operatorId);
+        if (operatorCompanies == null || operatorCompanies.isEmpty()) {
+            throw new BusinessException("작업 수행자가 소속된 회사가 없습니다.");
+        }
+        
+        // 작업 수행자의 기본 회사 또는 첫 번째 회사 사용
+        Long companyId = operatorCompanies.stream()
+            .filter(uc -> Boolean.TRUE.equals(uc.getIsPrimary()))
+            .map(UserCompanyDto::getCompanyId)
+            .findFirst()
+            .orElse(operatorCompanies.get(0).getCompanyId());
+        
+        // 대상 사용자가 해당 회사에 소속되어 있는지 확인
+        List<UserCompanyDto> userCompanies = userMapper.findUserCompanies(userId);
+        boolean userBelongsToCompany = userCompanies.stream()
+            .anyMatch(uc -> uc.getCompanyId().equals(companyId) && "APPROVED".equals(uc.getApprovalStatus()));
+        
+        if (!userBelongsToCompany) {
             throw new BusinessException("같은 회사의 사용자만 role을 변경할 수 있습니다.");
         }
         
@@ -372,8 +389,21 @@ public class UserService {
             throw new BusinessException("자기 자신의 role을 변경할 수 없습니다.");
         }
         
-        user.setRole(newRole);
-        return userMapper.updateUser(user);
+        // user_company_tb에서 기존 position 가져오기
+        String existingPosition = userCompanies.stream()
+            .filter(uc -> uc.getCompanyId().equals(companyId))
+            .map(UserCompanyDto::getPosition)
+            .findFirst()
+            .orElse(null);
+        
+        // user_company_tb의 role 업데이트
+        UserCompanyDto userCompanyDto = new UserCompanyDto();
+        userCompanyDto.setUserId(userId);
+        userCompanyDto.setCompanyId(companyId);
+        userCompanyDto.setRole(newRole);
+        userCompanyDto.setPosition(existingPosition); // 기존 position 유지
+        
+        return userMapper.updateUserCompanyRole(userCompanyDto);
     }
     
     /**
@@ -390,6 +420,7 @@ public class UserService {
      * @param userId 승인할 사용자 ID
      * @param operatorId 작업 수행자 ID (CEO 또는 ADMIN)
      */
+    @Transactional
     public void approveUser(Long userId, Long operatorId) {
         UserDto user = userMapper.selectUserById(userId);
         if (user == null) {
@@ -405,9 +436,22 @@ public class UserService {
             throw new BusinessException("같은 회사의 사용자만 승인할 수 있습니다.");
         }
         
+        Long companyId = user.getCompanyId();
+        
+        // 구독 사용자 수 제한 체크
+        int currentUserCount = subscriptionUtil.getCurrentUserCount(companyId);
+        subscriptionUtil.checkUserLimit(companyId, currentUserCount);
+        
+        // user_tb의 approval_status 업데이트
         user.setApprovalStatus("APPROVED");
         user.setIsActive(true);
         userMapper.updateUser(user);
+        
+        // user_company_tb의 approval_status도 업데이트 (알람 목록에서 제거하기 위해 필요)
+        int result = userMapper.approveUserCompany(userId, companyId);
+        if (result == 0) {
+            throw new BusinessException("회사 소속 승인 처리에 실패했습니다.");
+        }
     }
     
     /**
@@ -415,6 +459,7 @@ public class UserService {
      * @param userId 거부할 사용자 ID
      * @param operatorId 작업 수행자 ID (CEO 또는 ADMIN)
      */
+    @Transactional
     public void rejectUser(Long userId, Long operatorId) {
         UserDto user = userMapper.selectUserById(userId);
         if (user == null) {
@@ -430,9 +475,18 @@ public class UserService {
             throw new BusinessException("같은 회사의 사용자만 거부할 수 있습니다.");
         }
         
+        Long companyId = user.getCompanyId();
+        
+        // user_tb의 approval_status 업데이트
         user.setApprovalStatus("REJECTED");
         user.setIsActive(false);
         userMapper.updateUser(user);
+        
+        // user_company_tb의 approval_status도 업데이트 (알람 목록에서 제거하기 위해 필요)
+        int result = userMapper.rejectUserCompany(userId, companyId);
+        if (result == 0) {
+            throw new BusinessException("회사 소속 거부 처리에 실패했습니다.");
+        }
     }
     
     /**

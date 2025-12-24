@@ -199,3 +199,22 @@ export const CurrentButton = styled.button`
   cursor: default;
 `;
 
+export const ErrorMessage = styled.div`
+  background-color: #fee;
+  color: #c33;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+`;
+
+export const NoPlansMessage = styled.div`
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 18px;
+  color: #666;
+`;
+

@@ -30,6 +30,7 @@ const SubscriptionManagementPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [subscriptionRes, plansRes] = await Promise.all([
         getCurrentSubscription().catch(() => ({ success: false, data: null })),
         getPlans()
@@ -37,9 +38,17 @@ const SubscriptionManagementPage = () => {
       
       if (subscriptionRes.success && subscriptionRes.data) {
         setSubscription(subscriptionRes.data);
+      } else if (subscriptionRes.success === false && subscriptionRes.message) {
+        // 구독이 없는 경우는 정상적인 상태이므로 에러로 처리하지 않음
       }
+      
       if (plansRes.success) {
         setPlans(plansRes.data || []);
+        if (!plansRes.data || plansRes.data.length === 0) {
+          setError('표시할 플랜이 없습니다. 관리자에게 문의해주세요.');
+        }
+      } else {
+        setError(plansRes.message || '플랜 목록을 불러오지 못했습니다.');
       }
     } catch (err) {
       setError('데이터를 불러오는데 실패했습니다.');

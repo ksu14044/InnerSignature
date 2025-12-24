@@ -823,10 +823,13 @@ const ExpenseListPage = () => {
                                   setPendingUsers(refreshResponse.data || []);
                                 }
                                 alert('사용자가 승인되었습니다.');
+                              } else {
+                                // success가 false일 때 에러 메시지 표시
+                                alert(response.message || '승인에 실패했습니다.');
                               }
                             } catch (error) {
                               console.error('승인 실패:', error);
-                              alert(error?.response?.data?.message || '승인에 실패했습니다.');
+                              alert(error?.response?.data?.message || error?.message || '승인에 실패했습니다.');
                             }
                           }}
                           style={{
@@ -859,10 +862,13 @@ const ExpenseListPage = () => {
                                   setPendingUsers(refreshResponse.data || []);
                                 }
                                 alert('사용자가 거부되었습니다.');
+                              } else {
+                                // success가 false일 때 에러 메시지 표시
+                                alert(response.message || '거부에 실패했습니다.');
                               }
                             } catch (error) {
                               console.error('거부 실패:', error);
-                              alert(error?.response?.data?.message || '거부에 실패했습니다.');
+                              alert(error?.response?.data?.message || error?.message || '거부에 실패했습니다.');
                             }
                           }}
                           style={{
