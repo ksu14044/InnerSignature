@@ -32,7 +32,10 @@ frontend/.vite/
 *.log
 *.log.*
 logs/
-
 # OS
 Thumbs.db
 .DS_Store
+
+node_modules/
+playwright-report/
+test-results/

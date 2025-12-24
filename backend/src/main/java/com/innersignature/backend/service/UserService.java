@@ -443,11 +443,27 @@ public class UserService {
             throw new BusinessException("승인 권한이 없습니다.");
         }
         
-        if (user.getCompanyId() == null || !user.getCompanyId().equals(operator.getCompanyId())) {
-            throw new BusinessException("같은 회사의 사용자만 승인할 수 있습니다.");
+        // 작업 수행자가 소속된 회사 목록 조회
+        List<UserCompanyDto> operatorCompanies = userMapper.findUserCompanies(operatorId);
+        if (operatorCompanies == null || operatorCompanies.isEmpty()) {
+            throw new BusinessException("작업 수행자가 소속된 회사가 없습니다.");
         }
         
-        Long companyId = user.getCompanyId();
+        // 작업 수행자의 기본 회사 또는 첫 번째 회사 사용
+        Long companyId = operatorCompanies.stream()
+            .filter(uc -> Boolean.TRUE.equals(uc.getIsPrimary()))
+            .map(UserCompanyDto::getCompanyId)
+            .findFirst()
+            .orElse(operatorCompanies.get(0).getCompanyId());
+        
+        // 승인 대기 사용자가 해당 회사에 가입 신청했는지 확인 (user_company_tb에서 PENDING 상태 확인)
+        List<UserCompanyDto> userCompanies = userMapper.findUserCompaniesByStatus(userId, null);
+        boolean hasPendingApplication = userCompanies.stream()
+            .anyMatch(uc -> uc.getCompanyId().equals(companyId) && "PENDING".equals(uc.getApprovalStatus()));
+        
+        if (!hasPendingApplication) {
+            throw new BusinessException("해당 회사에 대한 가입 신청이 없습니다.");
+        }
         
         // 구독 사용자 수 제한 체크
         int currentUserCount = subscriptionUtil.getCurrentUserCount(companyId);
@@ -482,11 +498,27 @@ public class UserService {
             throw new BusinessException("거부 권한이 없습니다.");
         }
         
-        if (user.getCompanyId() == null || !user.getCompanyId().equals(operator.getCompanyId())) {
-            throw new BusinessException("같은 회사의 사용자만 거부할 수 있습니다.");
+        // 작업 수행자가 소속된 회사 목록 조회
+        List<UserCompanyDto> operatorCompanies = userMapper.findUserCompanies(operatorId);
+        if (operatorCompanies == null || operatorCompanies.isEmpty()) {
+            throw new BusinessException("작업 수행자가 소속된 회사가 없습니다.");
         }
         
-        Long companyId = user.getCompanyId();
+        // 작업 수행자의 기본 회사 또는 첫 번째 회사 사용
+        Long companyId = operatorCompanies.stream()
+            .filter(uc -> Boolean.TRUE.equals(uc.getIsPrimary()))
+            .map(UserCompanyDto::getCompanyId)
+            .findFirst()
+            .orElse(operatorCompanies.get(0).getCompanyId());
+        
+        // 거부할 사용자가 해당 회사에 가입 신청했는지 확인 (user_company_tb에서 PENDING 상태 확인)
+        List<UserCompanyDto> userCompanies = userMapper.findUserCompaniesByStatus(userId, null);
+        boolean hasPendingApplication = userCompanies.stream()
+            .anyMatch(uc -> uc.getCompanyId().equals(companyId) && "PENDING".equals(uc.getApprovalStatus()));
+        
+        if (!hasPendingApplication) {
+            throw new BusinessException("해당 회사에 대한 가입 신청이 없습니다.");
+        }
         
         // user_tb의 approval_status 업데이트
         user.setApprovalStatus("REJECTED");
