@@ -2,9 +2,9 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCurrentUser, updateCurrentUser, changePassword, getUserCompanies, getPendingCompanies, applyToCompany, removeUserFromCompany, setPrimaryCompany } from '../../api/userApi';
-import { searchCompanies } from '../../api/companyApi';
 import { FaSignOutAlt, FaArrowLeft, FaSearch, FaTimes, FaCheck, FaTrash } from 'react-icons/fa';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
+import CompanySearchModal from '../../components/CompanySearchModal/CompanySearchModal';
 import TourButton from '../../components/TourButton/TourButton';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
@@ -27,9 +27,7 @@ const MyProfilePage = () => {
   });
   const [companies, setCompanies] = useState([]);
   const [pendingCompanies, setPendingCompanies] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [showSearch, setShowSearch] = useState(false);
+  const [isCompanySearchModalOpen, setIsCompanySearchModalOpen] = useState(false);
   const [applying, setApplying] = useState(false);
   const [applyForm, setApplyForm] = useState({
     companyId: null,
@@ -173,23 +171,17 @@ const MyProfilePage = () => {
   };
 
 
-  const handleSearchCompanies = async () => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
+  const handleCompanySelect = (company) => {
+    // 이미 소속된 회사인지 확인
+    const companyIds = [...companies, ...pendingCompanies].map(c => c.companyId);
+    if (companyIds.includes(company.companyId)) {
+      alert('이미 소속된 회사입니다.');
       return;
     }
-    try {
-      const response = await searchCompanies(searchQuery);
-      if (response.success && response.data) {
-        // 이미 소속된 회사는 제외
-        const companyIds = [...companies, ...pendingCompanies].map(c => c.companyId);
-        const filtered = response.data.filter(c => !companyIds.includes(c.companyId));
-        setSearchResults(filtered);
-      }
-    } catch (error) {
-      console.error('회사 검색 실패:', error);
-      alert('회사 검색 중 오류가 발생했습니다.');
-    }
+    
+    // 선택한 회사로 지원 폼 설정
+    setApplyForm({ ...applyForm, companyId: company.companyId });
+    setIsCompanySearchModalOpen(false);
   };
 
   const handleApplyToCompany = async () => {
@@ -202,9 +194,6 @@ const MyProfilePage = () => {
       const response = await applyToCompany(applyForm.companyId, applyForm.role, applyForm.position);
       if (response.success) {
         alert('회사 지원 요청이 완료되었습니다. 관리자 승인을 기다려주세요.');
-        setShowSearch(false);
-        setSearchQuery('');
-        setSearchResults([]);
         setApplyForm({ companyId: null, role: 'USER', position: '' });
         loadCompanies();
       } else {
@@ -514,59 +503,16 @@ const MyProfilePage = () => {
         {/* 회사 검색 및 지원 */}
         <div>
           <S.SearchContainer data-tourid="tour-company-search">
-            <S.SearchInput
-              type="text"
-              placeholder="회사명으로 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearchCompanies()}
-            />
-            <S.Button onClick={handleSearchCompanies} primary>
-              <FaSearch /> 검색
+            <S.Button 
+              onClick={() => setIsCompanySearchModalOpen(true)} 
+              primary
+              style={{ width: '100%', padding: '12px', fontSize: '15px' }}
+            >
+              <FaSearch /> 회사 검색
             </S.Button>
-            {showSearch && (
-              <S.Button onClick={() => {
-                setShowSearch(false);
-                setSearchQuery('');
-                setSearchResults([]);
-              }}>
-                <FaTimes /> 닫기
-              </S.Button>
-            )}
           </S.SearchContainer>
 
-          {searchResults.length > 0 && (
-            <S.CompanySection>
-              <S.CompanySectionTitle>검색 결과</S.CompanySectionTitle>
-              {searchResults.map((company) => (
-                <S.CompanyCard key={company.companyId}>
-                  <S.CompanyInfo>
-                    <S.CompanyNameRow>
-                      {company.companyName}
-                    </S.CompanyNameRow>
-                    {company.adminName && (
-                      <S.CompanyDetails style={{ fontSize: '12px' }}>
-                        관리자: {company.adminName}
-                      </S.CompanyDetails>
-                    )}
-                  </S.CompanyInfo>
-                  <S.CompanyActions>
-                    <S.Button 
-                      onClick={() => {
-                        setApplyForm({ ...applyForm, companyId: company.companyId });
-                        setShowSearch(true);
-                      }}
-                      primary
-                    >
-                      지원하기
-                    </S.Button>
-                  </S.CompanyActions>
-                </S.CompanyCard>
-              ))}
-            </S.CompanySection>
-          )}
-
-          {showSearch && applyForm.companyId && (
+          {applyForm.companyId && (
             <div style={{ 
               padding: '20px', 
               border: '2px solid #007bff', 
@@ -598,7 +544,6 @@ const MyProfilePage = () => {
                 <S.Button 
                   type="button"
                   onClick={() => {
-                    setShowSearch(false);
                     setApplyForm({ companyId: null, role: 'USER', position: '' });
                   }}
                 >
@@ -657,6 +602,12 @@ const MyProfilePage = () => {
         isOpen={isCompanyModalOpen}
         onClose={() => setIsCompanyModalOpen(false)}
         onSuccess={handleCompanyRegistrationSuccess}
+      />
+      
+      <CompanySearchModal
+        isOpen={isCompanySearchModalOpen}
+        onClose={() => setIsCompanySearchModalOpen(false)}
+        onSelect={handleCompanySelect}
       />
     </S.Container>
   );

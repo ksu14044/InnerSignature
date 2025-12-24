@@ -28,14 +28,22 @@
             c.company_name AS companyName,
             c.business_reg_no AS businessRegNo,
             c.representative_name AS representativeName,
-            MAX(u.korean_name) AS adminName
+            MAX(u.korean_name) AS adminName,
+            CASE 
+                WHEN c.company_name = #{companyName} THEN 1
+                WHEN c.company_name LIKE CONCAT(#{companyName}, '%') THEN 2
+                WHEN c.company_name LIKE CONCAT('%', #{companyName}, '%') THEN 3
+                ELSE 4
+            END AS matchPriority
         FROM company_tb c
         LEFT JOIN user_tb u ON c.created_by = u.user_id AND u.role = 'ADMIN'
-        WHERE (c.company_name LIKE CONCAT('%', #{companyName}, '%')
-            OR c.business_reg_no LIKE CONCAT('%', #{companyName}, '%'))
+        WHERE (
+            c.company_name LIKE CONCAT('%', #{companyName}, '%')
+            OR REPLACE(c.business_reg_no, '-', '') LIKE CONCAT('%', REPLACE(#{companyName}, '-', ''), '%')
+        )
         AND c.is_active = 1
         GROUP BY c.company_id, c.company_name, c.business_reg_no, c.representative_name
-        ORDER BY c.company_name ASC
+        ORDER BY matchPriority ASC, c.company_name ASC
         LIMIT 20
     </select>
     

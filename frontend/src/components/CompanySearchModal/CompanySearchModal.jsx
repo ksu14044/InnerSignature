@@ -7,27 +7,51 @@ const CompanySearchModal = ({ isOpen, onClose, onSelect }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  
+  const MIN_SEARCH_LENGTH = 2;
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
+  const performSearch = async (query) => {
+    const trimmedQuery = query.trim();
+    
+    // 최소 길이 체크
+    if (!trimmedQuery) {
       setSearchResults([]);
+      setSearchError('');
+      return;
+    }
+    
+    if (trimmedQuery.length < MIN_SEARCH_LENGTH) {
+      setSearchResults([]);
+      setSearchError(`검색어는 최소 ${MIN_SEARCH_LENGTH}자 이상 입력해주세요.`);
       return;
     }
     
     try {
       setIsSearching(true);
-      const response = await searchCompanies(searchQuery);
+      setSearchError('');
+      const response = await searchCompanies(trimmedQuery);
       if (response.success) {
         setSearchResults(response.data || []);
+        if (response.data && response.data.length === 0) {
+          setSearchError('검색 결과가 없습니다.');
+        }
       } else {
         setSearchResults([]);
+        setSearchError(response.message || '검색에 실패했습니다.');
       }
     } catch (error) {
       console.error('회사 검색 실패:', error);
       setSearchResults([]);
+      const errorMessage = error?.response?.data?.message || '검색 중 오류가 발생했습니다.';
+      setSearchError(errorMessage);
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleSearch = async () => {
+    await performSearch(searchQuery);
   };
 
   const handleSelect = (company) => {
@@ -38,6 +62,7 @@ const CompanySearchModal = ({ isOpen, onClose, onSelect }) => {
   const handleClose = () => {
     setSearchQuery('');
     setSearchResults([]);
+    setSearchError('');
     onClose();
   };
 
@@ -77,7 +102,11 @@ const CompanySearchModal = ({ isOpen, onClose, onSelect }) => {
           </S.SearchSection>
 
           <S.ResultsSection>
-            {searchResults.length > 0 ? (
+            {isSearching ? (
+              <S.EmptyMessage>검색 중...</S.EmptyMessage>
+            ) : searchError ? (
+              <S.EmptyMessage style={{ color: '#dc3545' }}>{searchError}</S.EmptyMessage>
+            ) : searchResults.length > 0 ? (
               <S.CompanyList>
                 {searchResults.map((company) => (
                   <S.CompanyItem
@@ -102,9 +131,9 @@ const CompanySearchModal = ({ isOpen, onClose, onSelect }) => {
                   </S.CompanyItem>
                 ))}
               </S.CompanyList>
-            ) : searchQuery && !isSearching ? (
+            ) : searchQuery && searchQuery.trim().length >= MIN_SEARCH_LENGTH ? (
               <S.EmptyMessage>
-                검색 결과가 없습니다. 회사명을 다시 확인해주세요.
+                검색 결과가 없습니다. 회사명 또는 사업자등록번호를 다시 확인해주세요.
               </S.EmptyMessage>
             ) : null}
           </S.ResultsSection>

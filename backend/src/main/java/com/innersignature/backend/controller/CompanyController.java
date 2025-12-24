@@ -90,11 +90,22 @@ public class CompanyController {
         }
     }
     
-    @Operation(summary = "회사 검색", description = "회사명으로 회사를 검색합니다. (공개 API)")
+    @Operation(summary = "회사 검색", description = "회사명 또는 사업자등록번호로 회사를 검색합니다. (공개 API, 최소 2자 이상)")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<CompanySearchResultDto>>> searchCompanies(
             @RequestParam("name") String companyName) {
         try {
+            // 입력 검증
+            if (companyName == null || companyName.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>(false, "검색어를 입력해주세요.", null));
+            }
+            
+            if (companyName.trim().length() < 2) {
+                return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>(false, "검색어는 최소 2자 이상 입력해주세요.", null));
+            }
+            
             List<CompanySearchResultDto> results = companyService.searchByName(companyName);
             return ResponseEntity.ok(new ApiResponse<>(true, "검색 완료", results));
         } catch (Exception e) {

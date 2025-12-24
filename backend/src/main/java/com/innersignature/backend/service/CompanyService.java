@@ -50,11 +50,37 @@ public class CompanyService {
         return userMapper.findCompaniesByUserId(userId);
     }
     
+    private static final int MIN_SEARCH_LENGTH = 2;
+    private static final int MAX_SEARCH_LENGTH = 50;
+    
     public List<CompanySearchResultDto> searchByName(String companyName) {
         if (companyName == null || companyName.trim().isEmpty()) {
             return List.of();
         }
-        return companyMapper.searchByName(companyName.trim());
+        
+        String trimmedName = companyName.trim();
+        
+        // 최소 길이 검증
+        if (trimmedName.length() < MIN_SEARCH_LENGTH) {
+            logger.warn("검색어가 너무 짧습니다. 최소 {}자 이상 입력해주세요. - searchQuery: {}", MIN_SEARCH_LENGTH, trimmedName);
+            return List.of();
+        }
+        
+        // 최대 길이 검증
+        if (trimmedName.length() > MAX_SEARCH_LENGTH) {
+            logger.warn("검색어가 너무 깁니다. 최대 {}자까지 입력 가능합니다. - searchQuery length: {}", MAX_SEARCH_LENGTH, trimmedName.length());
+            trimmedName = trimmedName.substring(0, MAX_SEARCH_LENGTH);
+        }
+        
+        // 특수문자 제거 (SQL Injection 방지 및 검색 최적화)
+        // 한글, 영문, 숫자, 공백만 허용
+        String sanitized = trimmedName.replaceAll("[^가-힣a-zA-Z0-9\\s-]", "");
+        
+        if (sanitized.isEmpty()) {
+            return List.of();
+        }
+        
+        return companyMapper.searchByName(sanitized);
     }
     
     public boolean existsByBusinessRegNo(String businessRegNo) {
