@@ -403,7 +403,18 @@ public class UserService {
         userCompanyDto.setRole(newRole);
         userCompanyDto.setPosition(existingPosition); // 기존 position 유지
         
-        return userMapper.updateUserCompanyRole(userCompanyDto);
+        int companyResult = userMapper.updateUserCompanyRole(userCompanyDto);
+        
+        // user_tb의 role도 함께 업데이트
+        user.setRole(newRole);
+        int userResult = userMapper.updateUser(user);
+        
+        // 둘 다 성공했는지 확인
+        if (companyResult > 0 && userResult > 0) {
+            return 1;
+        } else {
+            throw new BusinessException("role 변경에 실패했습니다.");
+        }
     }
     
     /**
