@@ -187,9 +187,10 @@
         SELECT 
             al.*,
             u.korean_name AS approverName,
-            u.position AS approverPosition
+            uc.position AS approverPosition
         FROM approval_line_tb al
         JOIN user_tb u ON al.approver_id = u.user_id
+        JOIN user_company_tb uc ON al.approver_id = uc.user_id AND al.company_id = uc.company_id
         WHERE al.expense_report_id = #{expenseReportId}
         AND al.company_id = #{companyId}
         ORDER BY al.step_order ASC
@@ -635,9 +636,10 @@
         SELECT 
             al.*,
             u.korean_name AS approverName,
-            u.position AS approverPosition
+            uc.position AS approverPosition
         FROM approval_line_tb al
         LEFT JOIN user_tb u ON al.approver_id = u.user_id
+        LEFT JOIN user_company_tb uc ON al.approver_id = uc.user_id AND al.company_id = uc.company_id
         WHERE al.expense_report_id = #{expenseReportId}
         ORDER BY al.step_order ASC
     </select>
