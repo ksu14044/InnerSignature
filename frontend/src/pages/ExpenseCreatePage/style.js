@@ -328,9 +328,7 @@ export const TableContainer = styled.div`
   border: 1px solid var(--border-color);
 
   @media (max-width: 480px) {
-    border: none;
-    border-radius: 0;
-    overflow-x: visible;
+    display: none;
   }
 `;
 
@@ -341,13 +339,6 @@ export const Table = styled.table`
 
   @media (max-width: 768px) {
     font-size: 14px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 12px;
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
   }
 `;
 
@@ -376,18 +367,6 @@ export const Td = styled.td`
   padding: 12px 8px;
   text-align: center;
   vertical-align: middle;
-
-  @media (max-width: 480px) {
-    padding: 10px 6px;
-    font-size: 11px;
-    
-    input, select {
-      width: 100%;
-      min-width: 0;
-      padding: 8px;
-      font-size: 11px;
-    }
-  }
 `;
 
 export const DeleteButton = styled.button`
@@ -411,10 +390,11 @@ export const DeleteButton = styled.button`
   }
 
   @media (max-width: 480px) {
-    min-width: 36px;
-    min-height: 36px;
-    padding: 6px;
-    font-size: 12px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 8px;
+    font-size: 14px;
+    border-radius: 8px;
   }
 `;
 
@@ -599,4 +579,238 @@ export const InfoText = styled.span`
   color: var(--secondary-color);
   margin-top: 4px;
   display: block;
+`;
+
+export const SelectApproverButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+  }
+
+  @media (max-width: 768px) {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+  }
+`;
+
+export const SelectedApproversDisplay = styled.div`
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+`;
+
+export const SelectedApproversTitle = styled.div`
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--dark-color);
+  margin-bottom: 12px;
+`;
+
+export const SelectedApproversList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+export const SelectedApproverItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+  }
+`;
+
+export const ApproverOrderBadge = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+`;
+
+export const SelectedApproverInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+export const SelectedApproverName = styled.span`
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--dark-color);
+`;
+
+export const SelectedApproverPosition = styled.span`
+  font-size: 14px;
+  color: var(--secondary-color);
+`;
+
+export const RemoveApproverButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+
+  &:hover {
+    background-color: #c82333;
+    transform: scale(1.1);
+  }
+`;
+
+export const EmptyApproversMessage = styled.div`
+  padding: 20px;
+  text-align: center;
+  color: var(--secondary-color);
+  font-size: 14px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed var(--border-color);
+  margin-top: 20px;
+`;
+
+/* 모바일 카드 뷰 스타일 */
+export const MobileCardContainer = styled.div`
+  display: none;
+
+  @media (max-width: 480px) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+`;
+
+export const DetailCard = styled.div`
+  background-color: white;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 480px) {
+    display: block;
+  }
+`;
+
+export const CardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid var(--border-color);
+`;
+
+export const CardRowNumber = styled.span`
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--primary-color);
+`;
+
+export const CardBody = styled.div`
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+export const MobileInputGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const MobileLabel = styled.label`
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--dark-color);
+`;
+
+export const MobileInput = styled.input`
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  }
+
+  &::placeholder {
+    color: #999;
+  }
+`;
+
+export const MobileSelect = styled.select`
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  }
 `;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaPlus, FaTrash, FaSave, FaArrowLeft } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck } from 'react-icons/fa';
 
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
 import * as S from './style';
@@ -12,6 +12,7 @@ import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole } from '../../constants/categories';
 import { DEFAULT_VALUES } from '../../constants/defaults';
 import TourButton from '../../components/TourButton/TourButton';
+import ApproverSelectionModal from '../../components/ApproverSelectionModal/ApproverSelectionModal';
 
 const ExpenseCreatePage = () => {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ const ExpenseCreatePage = () => {
   const [adminUsers, setAdminUsers] = useState([]);
   const [selectedApprovers, setSelectedApprovers] = useState([]); // 선택된 결재자 ID들 (순서 보장)
   const [loadingApprovers, setLoadingApprovers] = useState(true); // 결재자 목록 로딩 상태
+  const [isApproverModalOpen, setIsApproverModalOpen] = useState(false); // 결재자 선택 모달 열림 상태
 
   // 총 금액 자동 계산
   const totalAmount = details.reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -249,67 +251,42 @@ const ExpenseCreatePage = () => {
       {/* 2. 결재자 선택 섹션 - 비밀글이거나 급여가 아닌 경우에만 표시 */}
       {!isSecretOrSalary && (
         <S.Section data-tourid="tour-approver-selection">
-          <S.SectionTitle>결재자 선택</S.SectionTitle>
-          {selectedApprovers.length > 0 && (
-            <div style={{ 
-              marginBottom: '15px', 
-              padding: '10px', 
-              backgroundColor: '#f0f7ff', 
-              borderRadius: '5px',
-              fontSize: '14px'
-            }}>
-              <strong>결재 순서:</strong> {selectedApprovers.map((userId, index) => {
-                const adminUser = adminUsers.find(user => user.userId === userId);
-                return (
-                  <span key={userId} style={{ marginLeft: '8px' }}>
-                    {index + 1}. {adminUser?.koreanName || '알 수 없음'}
-                    {index < selectedApprovers.length - 1 && ', '}
-                  </span>
-                );
-              })}
-            </div>
-          )}
-          <S.ApproverGrid>
-            {adminUsers.map((adminUser) => {
-              const orderIndex = selectedApprovers.indexOf(adminUser.userId);
-              const isSelected = orderIndex > -1;
-              return (
-                <S.ApproverCheckbox key={adminUser.userId}>
-                  <input
-                    type="checkbox"
-                    id={`approver-${adminUser.userId}`}
-                    checked={isSelected}
-                    onChange={() => handleApproverToggle(adminUser.userId)}
-                  />
-                  <label htmlFor={`approver-${adminUser.userId}`}>
-                    <S.ApproverInfo>
-                      <S.ApproverName>
-                        {adminUser.koreanName}
-                        {isSelected && (
-                          <span style={{ 
-                            marginLeft: '5px', 
-                            color: '#007bff', 
-                            fontWeight: 'bold',
-                            fontSize: '12px'
-                          }}>
-                            ({orderIndex + 1}순위)
-                          </span>
-                        )}
-                      </S.ApproverName>
-                      <S.ApproverPosition>{adminUser.position || '관리자'}</S.ApproverPosition>
-                    </S.ApproverInfo>
-                  </label>
-                </S.ApproverCheckbox>
-              );
-            })}
-          </S.ApproverGrid>
-          {loadingApprovers && adminUsers.length === 0 && (
-            <S.LoadingMessage>결재자 목록을 불러오는 중...</S.LoadingMessage>
-          )}
-          {!loadingApprovers && adminUsers.length === 0 && (
-            <S.InfoMessage style={{ marginTop: '15px' }}>
-              결재자로 지정된 사용자가 없습니다. 관리자 페이지에서 결재자를 지정해주세요.
-            </S.InfoMessage>
+          <S.SectionHeader>
+            <S.SectionTitle>결재자 선택</S.SectionTitle>
+            <S.SelectApproverButton onClick={() => setIsApproverModalOpen(true)}>
+              <FaUserCheck />
+              <span>결재자 선택</span>
+            </S.SelectApproverButton>
+          </S.SectionHeader>
+          
+          {selectedApprovers.length > 0 ? (
+            <S.SelectedApproversDisplay>
+              <S.SelectedApproversTitle>선택된 결재 순서:</S.SelectedApproversTitle>
+              <S.SelectedApproversList>
+                {selectedApprovers.map((userId, index) => {
+                  const adminUser = adminUsers.find(user => user.userId === userId);
+                  return (
+                    <S.SelectedApproverItem key={userId}>
+                      <S.ApproverOrderBadge>{index + 1}</S.ApproverOrderBadge>
+                      <S.SelectedApproverInfo>
+                        <S.SelectedApproverName>{adminUser?.koreanName || '알 수 없음'}</S.SelectedApproverName>
+                        <S.SelectedApproverPosition>{adminUser?.position || '관리자'}</S.SelectedApproverPosition>
+                      </S.SelectedApproverInfo>
+                      <S.RemoveApproverButton 
+                        onClick={() => handleApproverToggle(userId)}
+                        title="제거"
+                      >
+                        ×
+                      </S.RemoveApproverButton>
+                    </S.SelectedApproverItem>
+                  );
+                })}
+              </S.SelectedApproversList>
+            </S.SelectedApproversDisplay>
+          ) : (
+            <S.EmptyApproversMessage>
+              결재자를 선택해주세요. 우측 상단의 "결재자 선택" 버튼을 클릭하세요.
+            </S.EmptyApproversMessage>
           )}
         </S.Section>
       )}
@@ -336,6 +313,7 @@ const ExpenseCreatePage = () => {
           </S.AddButton>
         </S.SectionHeader>
 
+        {/* 데스크톱 테이블 뷰 */}
         <S.TableContainer>
           <S.Table>
             <thead>
@@ -393,6 +371,62 @@ const ExpenseCreatePage = () => {
             </tbody>
           </S.Table>
         </S.TableContainer>
+
+        {/* 모바일 카드 뷰 */}
+        <S.MobileCardContainer>
+          {details.map((detail, index) => (
+            <S.DetailCard key={index}>
+              <S.CardHeader>
+                <S.CardRowNumber>#{index + 1}</S.CardRowNumber>
+                <S.DeleteButton onClick={() => removeDetailRow(index)}>
+                  <FaTrash />
+                </S.DeleteButton>
+              </S.CardHeader>
+              <S.CardBody>
+                <S.MobileInputGroup>
+                  <S.MobileLabel>항목</S.MobileLabel>
+                  <S.MobileSelect name="category" value={detail.category} onChange={(e) => handleDetailChange(index, e)}>
+                    {availableCategories.map(category => (
+                      <option key={category.value} value={category.value}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </S.MobileSelect>
+                </S.MobileInputGroup>
+                <S.MobileInputGroup>
+                  <S.MobileLabel>적요 (내용)</S.MobileLabel>
+                  <S.MobileInput
+                    type="text"
+                    name="description"
+                    value={detail.description}
+                    onChange={(e) => handleDetailChange(index, e)}
+                    placeholder="지출 내용을 입력하세요"
+                  />
+                </S.MobileInputGroup>
+                <S.MobileInputGroup>
+                  <S.MobileLabel>금액</S.MobileLabel>
+                  <S.MobileInput
+                    type="number"
+                    name="amount"
+                    value={detail.amount}
+                    onChange={(e) => handleDetailChange(index, e)}
+                    placeholder="금액을 입력하세요"
+                  />
+                </S.MobileInputGroup>
+                <S.MobileInputGroup>
+                  <S.MobileLabel>비고</S.MobileLabel>
+                  <S.MobileInput
+                    type="text"
+                    name="note"
+                    value={detail.note}
+                    onChange={(e) => handleDetailChange(index, e)}
+                    placeholder="비고를 입력하세요 (선택사항)"
+                  />
+                </S.MobileInputGroup>
+              </S.CardBody>
+            </S.DetailCard>
+          ))}
+        </S.MobileCardContainer>
       </S.Section>
 
       {/* 4. 하단 총계 및 버튼 */}
@@ -414,6 +448,17 @@ const ExpenseCreatePage = () => {
         </S.SubmitButton>
       </S.ButtonGroup>
 
+      {/* 결재자 선택 모달 */}
+      {!isSecretOrSalary && (
+        <ApproverSelectionModal
+          isOpen={isApproverModalOpen}
+          onClose={() => setIsApproverModalOpen(false)}
+          adminUsers={adminUsers}
+          selectedApprovers={selectedApprovers}
+          onToggleApprover={handleApproverToggle}
+          loadingApprovers={loadingApprovers}
+        />
+      )}
     </S.Container>
   );
 };
