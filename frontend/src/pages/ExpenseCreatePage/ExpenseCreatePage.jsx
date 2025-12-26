@@ -351,6 +351,7 @@ const ExpenseCreatePage = () => {
                       name="amount"
                       value={detail.amount}
                       onChange={(e) => handleDetailChange(index, e)}
+                      onWheel={(e) => e.target.blur()}
                     />
                   </S.Td>
                   <S.Td>
@@ -410,6 +411,7 @@ const ExpenseCreatePage = () => {
                     name="amount"
                     value={detail.amount}
                     onChange={(e) => handleDetailChange(index, e)}
+                    onWheel={(e) => e.target.blur()}
                     placeholder="금액을 입력하세요"
                   />
                 </S.MobileInputGroup>

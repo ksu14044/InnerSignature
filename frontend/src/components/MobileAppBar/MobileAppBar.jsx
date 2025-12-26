@@ -12,6 +12,25 @@ const MobileAppBar = ({ title, onMenuClick }) => {
   const companyDropdownRef = useRef(null);
   const isLoginPage = location.pathname === '/' || location.pathname.startsWith('/find-') || location.pathname.startsWith('/reset-password');
 
+  // 외부 클릭 시 드롭다운 닫기 - early return 전에 모든 Hooks 호출
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
+        setIsCompanyDropdownOpen(false);
+      }
+    };
+
+    if (isCompanyDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isCompanyDropdownOpen]);
+
   if (isLoginPage) {
     return null;
   }
@@ -52,25 +71,6 @@ const MobileAppBar = ({ title, onMenuClick }) => {
                          location.pathname === '/dashboard' ||
                          location.pathname === '/tax/summary' ||
                          location.pathname.startsWith('/subscriptions');
-
-  // 외부 클릭 시 드롭다운 닫기
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
-        setIsCompanyDropdownOpen(false);
-      }
-    };
-
-    if (isCompanyDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [isCompanyDropdownOpen]);
 
   const handleCompanySwitch = async (companyId) => {
     try {

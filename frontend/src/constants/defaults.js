@@ -3,7 +3,7 @@ export const DEFAULT_VALUES = {
   EXPENSE_DETAIL: {
     category: '식대',
     description: '',
-    amount: 0,
+    amount: '',
     note: '',
   },
 
