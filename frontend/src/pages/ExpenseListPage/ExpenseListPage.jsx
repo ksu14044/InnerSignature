@@ -571,11 +571,10 @@ const ExpenseListPage = () => {
         <S.Table>
           <S.Thead>
             <tr>
-              <th>번호</th>
               <th>제목</th>
               <th>작성자</th>
               <th>작성일</th>
-              <th>금액</th>
+              <S.AmountTh>금액</S.AmountTh>
               <th>상태</th>
               {user && user.role !== 'USER' && <th>세무처리</th>}
               <th>관리</th>
@@ -584,7 +583,6 @@ const ExpenseListPage = () => {
           <tbody>
             {list.map((item) => (
               <S.Tr key={item.expenseReportId}>
-                <td>{item.expenseReportId}</td>
                 <S.TitleTd>
                   <S.StyledLink to={`/detail/${item.expenseReportId}`}>
                     {item.title}
@@ -595,7 +593,7 @@ const ExpenseListPage = () => {
                 </S.TitleTd>
                 <td>{item.drafterName}</td>
                 <td>{item.reportDate}</td>
-                <td>{item.totalAmount.toLocaleString()}원</td>
+                <S.AmountTd>{item.totalAmount.toLocaleString()}원</S.AmountTd>
                 <td>
                   <S.StatusBadge status={item.status}>
                     {STATUS_KOREAN[item.status] || item.status}
@@ -697,10 +695,6 @@ const ExpenseListPage = () => {
             </S.CardHeader>
 
             <S.CardContent>
-              <S.CardRow>
-                <S.CardLabel>번호</S.CardLabel>
-                <S.CardValue>{item.expenseReportId}</S.CardValue>
-              </S.CardRow>
               <S.CardRow>
                 <S.CardLabel>작성자</S.CardLabel>
                 <S.CardValue>{item.drafterName}</S.CardValue>

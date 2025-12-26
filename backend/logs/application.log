@@ -14035,3 +14035,622 @@ This generated password is for development use only. Your security configuration
 2025-12-26T10:44:21.522+09:00 DEBUG 27384 --- [http-nio-8080-exec-7] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=결재자 목록 조회 성공, data=[UserDto(userId=1, username=test_ceo, password= (truncated)...]
 2025-12-26T10:44:21.524+09:00 DEBUG 27384 --- [http-nio-8080-exec-10] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
 2025-12-26T10:44:21.526+09:00 DEBUG 27384 --- [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:50:58.717+09:00  INFO 33164 --- [main] c.i.backend.BackendApplication           : Starting BackendApplication using Java 17.0.17 with PID 33164 (C:\InnerSignature\backend\target\classes started by owner in C:\InnerSignature\backend)
+2025-12-26T10:50:58.777+09:00 DEBUG 33164 --- [main] c.i.backend.BackendApplication           : Running with Spring Boot v3.5.8, Spring v6.2.14
+2025-12-26T10:50:58.808+09:00  INFO 33164 --- [main] c.i.backend.BackendApplication           : The following 1 profile is active: "dev"
+2025-12-26T10:51:01.515+09:00 DEBUG 33164 --- [main] o.m.s.b.a.MybatisAutoConfiguration       : Searching for mappers annotated with @Mapper
+2025-12-26T10:51:01.528+09:00 DEBUG 33164 --- [main] o.m.s.b.a.MybatisAutoConfiguration       : Using auto-configuration base package 'com.innersignature.backend'
+2025-12-26T10:51:02.357+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\CompanyMapper.class]
+2025-12-26T10:51:02.376+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\ExpenseMapper.class]
+2025-12-26T10:51:02.416+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\PasswordResetTokenMapper.class]
+2025-12-26T10:51:02.481+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\PaymentMapper.class]
+2025-12-26T10:51:02.514+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\SubscriptionMapper.class]
+2025-12-26T10:51:02.523+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\SubscriptionPlanMapper.class]
+2025-12-26T10:51:02.559+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\UserMapper.class]
+2025-12-26T10:51:02.583+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'companyMapper' and 'com.innersignature.backend.mapper.CompanyMapper' mapperInterface
+2025-12-26T10:51:02.619+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'expenseMapper' and 'com.innersignature.backend.mapper.ExpenseMapper' mapperInterface
+2025-12-26T10:51:02.651+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'passwordResetTokenMapper' and 'com.innersignature.backend.mapper.PasswordResetTokenMapper' mapperInterface
+2025-12-26T10:51:02.686+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'paymentMapper' and 'com.innersignature.backend.mapper.PaymentMapper' mapperInterface
+2025-12-26T10:51:02.729+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'subscriptionMapper' and 'com.innersignature.backend.mapper.SubscriptionMapper' mapperInterface
+2025-12-26T10:51:02.768+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'subscriptionPlanMapper' and 'com.innersignature.backend.mapper.SubscriptionPlanMapper' mapperInterface
+2025-12-26T10:51:02.829+09:00 DEBUG 33164 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'userMapper' and 'com.innersignature.backend.mapper.UserMapper' mapperInterface
+2025-12-26T10:51:04.387+09:00  INFO 33164 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-12-26T10:51:04.428+09:00  INFO 33164 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-12-26T10:51:04.432+09:00  INFO 33164 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.49]
+2025-12-26T10:51:04.652+09:00  INFO 33164 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-12-26T10:51:04.661+09:00  INFO 33164 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 5758 ms
+2025-12-26T10:51:04.869+09:00 DEBUG 33164 --- [main] c.i.b.security.JwtAuthenticationFilter   : Filter 'jwtAuthenticationFilter' configured for use
+2025-12-26T10:51:04.909+09:00 DEBUG 33164 --- [main] c.i.backend.security.RateLimitFilter     : Filter 'rateLimitFilter' configured for use
+2025-12-26T10:51:06.303+09:00 DEBUG 33164 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\CompanyMapper.xml]'
+2025-12-26T10:51:06.377+09:00 DEBUG 33164 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\ExpenseMapper.xml]'
+2025-12-26T10:51:06.444+09:00 DEBUG 33164 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\PasswordResetTokenMapper.xml]'
+2025-12-26T10:51:06.480+09:00 DEBUG 33164 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\PaymentMapper.xml]'
+2025-12-26T10:51:06.528+09:00 DEBUG 33164 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\SubscriptionMapper.xml]'
+2025-12-26T10:51:06.542+09:00 DEBUG 33164 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\SubscriptionPlanMapper.xml]'
+2025-12-26T10:51:06.613+09:00 DEBUG 33164 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\UserMappeer.xml]'
+2025-12-26T10:51:09.161+09:00 DEBUG 33164 --- [main] s.w.s.m.m.a.RequestMappingHandlerMapping : 88 mappings in 'requestMappingHandlerMapping'
+2025-12-26T10:51:09.432+09:00 DEBUG 33164 --- [main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**, /api/uploads/**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2025-12-26T10:51:09.498+09:00  WARN 33164 --- [main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 6de060f7-1416-4d51-8e5e-2e03721cb3e3
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-12-26T10:51:09.580+09:00  INFO 33164 --- [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2025-12-26T10:51:09.994+09:00 DEBUG 33164 --- [main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, RateLimitFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2025-12-26T10:51:10.231+09:00 DEBUG 33164 --- [main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2025-12-26T10:51:10.361+09:00 DEBUG 33164 --- [main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2025-12-26T10:51:10.385+09:00 DEBUG 33164 --- [main] o.m.s.b.a.MybatisAutoConfiguration       : Not found configuration for registering mapper bean using @MapperScan, MapperFactoryBean and MapperScannerConfigurer.
+2025-12-26T10:51:10.782+09:00  INFO 33164 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2025-12-26T10:51:10.814+09:00  INFO 33164 --- [main] c.i.backend.BackendApplication           : Started BackendApplication in 13.428 seconds (process running for 14.185)
+2025-12-26T10:51:18.065+09:00  INFO 33164 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-12-26T10:51:18.084+09:00  INFO 33164 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-12-26T10:51:18.085+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected StandardServletMultipartResolver
+2025-12-26T10:51:18.094+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected AcceptHeaderLocaleResolver
+2025-12-26T10:51:18.096+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected FixedThemeResolver
+2025-12-26T10:51:18.167+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator@a4df251
+2025-12-26T10:51:18.200+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.support.SessionFlashMapManager@369ad7da
+2025-12-26T10:51:18.209+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : enableLoggingRequestDetails='false': request parameters and headers will be masked to prevent unsafe logging of potentially sensitive data
+2025-12-26T10:51:18.227+09:00  INFO 33164 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 141 ms
+2025-12-26T10:51:18.285+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/users/approvers
+2025-12-26T10:51:18.285+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/users/approvers
+2025-12-26T10:51:18.285+09:00 DEBUG 33164 --- [http-nio-8080-exec-3] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/companies
+2025-12-26T10:51:18.414+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.security.web.FilterChainProxy        : Securing GET /api/companies
+2025-12-26T10:51:18.418+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.s.security.web.FilterChainProxy        : Securing GET /api/users/approvers
+2025-12-26T10:51:18.432+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.security.web.FilterChainProxy        : Securing GET /api/users/approvers
+2025-12-26T10:51:18.635+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/users/approvers
+2025-12-26T10:51:18.635+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/users/approvers
+2025-12-26T10:51:18.635+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/companies
+2025-12-26T10:51:18.645+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.security.web.FilterChainProxy        : Secured GET /api/companies
+2025-12-26T10:51:18.645+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.s.security.web.FilterChainProxy        : Secured GET /api/users/approvers
+2025-12-26T10:51:18.645+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.security.web.FilterChainProxy        : Secured GET /api/users/approvers
+2025-12-26T10:51:18.658+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : GET "/api/companies", parameters={}
+2025-12-26T10:51:18.660+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : GET "/api/users/approvers", parameters={}
+2025-12-26T10:51:18.665+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.UserController#getApprovers()
+2025-12-26T10:51:18.661+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : GET "/api/users/approvers", parameters={}
+2025-12-26T10:51:18.664+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.CompanyController#getMyCompanies()
+2025-12-26T10:51:18.667+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.UserController#getApprovers()
+2025-12-26T10:51:18.715+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:18.715+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:18.715+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:18.726+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@40406f67] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:18.726+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@b92cd49] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:18.726+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2d42cc8f] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:18.748+09:00  INFO 33164 --- [http-nio-8080-exec-4] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-12-26T10:51:19.138+09:00  INFO 33164 --- [http-nio-8080-exec-4] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@29771723
+2025-12-26T10:51:19.143+09:00  INFO 33164 --- [http-nio-8080-exec-4] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-12-26T10:51:19.162+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1437133442 wrapping com.mysql.cj.jdbc.ConnectionImpl@29771723] will not be managed by Spring
+2025-12-26T10:51:19.184+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.U.findCompaniesByUserId          : ==>  Preparing: SELECT c.company_id AS companyId, c.company_code AS companyCode, c.company_name AS companyName, c.business_reg_no AS businessRegNo, c.representative_name AS representativeName, c.created_by AS createdBy, c.is_active AS isActive, c.created_at AS createdAt, c.updated_at AS updatedAt FROM company_tb c INNER JOIN user_company_tb uc ON c.company_id = uc.company_id WHERE uc.user_id = ? AND uc.approval_status = 'APPROVED' AND c.is_active = 1 ORDER BY uc.is_primary DESC, c.created_at DESC
+2025-12-26T10:51:19.229+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.U.findCompaniesByUserId          : ==> Parameters: 5(Long)
+2025-12-26T10:51:19.250+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@326621225 wrapping com.mysql.cj.jdbc.ConnectionImpl@1c5de45d] will not be managed by Spring
+2025-12-26T10:51:19.265+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.mapper.UserMapper.findApprovers    : ==>  Preparing: SELECT u.user_id, u.username, u.korean_name, u.email, uc.position, uc.role, uc.is_active, u.company_id, uc.approval_status, uc.is_approver AS isApprover FROM user_tb u INNER JOIN user_company_tb uc ON u.user_id = uc.user_id WHERE uc.company_id = ? AND uc.approval_status = 'APPROVED' AND uc.is_approver = 1 AND (uc.is_active IS NULL OR uc.is_active = 1) ORDER BY CASE uc.role WHEN 'USER' THEN 1 WHEN 'ACCOUNTANT' THEN 1 WHEN 'ADMIN' THEN 2 WHEN 'CEO' THEN 3 ELSE 99 END, u.korean_name
+2025-12-26T10:51:19.332+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.mapper.UserMapper.findApprovers    : ==> Parameters: 1(Long)
+2025-12-26T10:51:19.336+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.U.findCompaniesByUserId          : <==      Total: 2
+2025-12-26T10:51:19.441+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@b92cd49]
+2025-12-26T10:51:19.465+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@823447368 wrapping com.mysql.cj.jdbc.ConnectionImpl@29771723] will not be managed by Spring
+2025-12-26T10:51:19.466+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.findApprovers    : ==>  Preparing: SELECT u.user_id, u.username, u.korean_name, u.email, uc.position, uc.role, uc.is_active, u.company_id, uc.approval_status, uc.is_approver AS isApprover FROM user_tb u INNER JOIN user_company_tb uc ON u.user_id = uc.user_id WHERE uc.company_id = ? AND uc.approval_status = 'APPROVED' AND uc.is_approver = 1 AND (uc.is_active IS NULL OR uc.is_active = 1) ORDER BY CASE uc.role WHEN 'USER' THEN 1 WHEN 'ACCOUNTANT' THEN 1 WHEN 'ADMIN' THEN 2 WHEN 'CEO' THEN 3 ELSE 99 END, u.korean_name
+2025-12-26T10:51:19.468+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.findApprovers    : ==> Parameters: 1(Long)
+2025-12-26T10:51:19.481+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.mapper.UserMapper.findApprovers    : <==      Total: 3
+2025-12-26T10:51:19.499+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2d42cc8f]
+2025-12-26T10:51:19.500+09:00  INFO 33164 --- [http-nio-8080-exec-5] c.i.backend.controller.UserController    : 결재자 목록 조회 완료 - companyId: 1, count: 3
+2025-12-26T10:51:19.534+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.findApprovers    : <==      Total: 3
+2025-12-26T10:51:19.537+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:51:19.541+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:51:19.548+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@40406f67]
+2025-12-26T10:51:19.574+09:00  INFO 33164 --- [http-nio-8080-exec-6] c.i.backend.controller.UserController    : 결재자 목록 조회 완료 - companyId: 1, count: 3
+2025-12-26T10:51:19.567+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=결재자 목록 조회 성공, data=[UserDto(userId=4, username=test_user3, passwor (truncated)...]
+2025-12-26T10:51:19.575+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [ApiResponse(success=true, message=조회 성공, data=[CompanyDto(companyId=1, companyCode=2C4PSB, companyNa (truncated)...]
+2025-12-26T10:51:19.576+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:51:19.590+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=결재자 목록 조회 성공, data=[UserDto(userId=4, username=test_user3, passwor (truncated)...]
+2025-12-26T10:51:19.610+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:51:19.611+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:51:19.628+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:51:31.842+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/expenses/pending-approvals?userId=5
+2025-12-26T10:51:31.842+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/expenses?page=1&size=10
+2025-12-26T10:51:31.848+09:00 DEBUG 33164 --- [http-nio-8080-exec-9] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/users/pending
+2025-12-26T10:51:31.849+09:00 DEBUG 33164 --- [http-nio-8080-exec-3] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/expenses/pending-approvals?userId=5
+2025-12-26T10:51:31.851+09:00 DEBUG 33164 --- [http-nio-8080-exec-10] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/expenses?page=1&size=10
+2025-12-26T10:51:31.851+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/users/pending
+2025-12-26T10:51:31.869+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.security.web.FilterChainProxy        : Securing GET /api/expenses/pending-approvals?userId=5
+2025-12-26T10:51:31.872+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.security.web.FilterChainProxy        : Securing GET /api/expenses?page=1&size=10
+2025-12-26T10:51:31.872+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.s.security.web.FilterChainProxy        : Securing GET /api/expenses/pending-approvals?userId=5
+2025-12-26T10:51:31.874+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.security.web.FilterChainProxy        : Securing GET /api/users/pending
+2025-12-26T10:51:31.876+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.s.security.web.FilterChainProxy        : Securing GET /api/expenses?page=1&size=10
+2025-12-26T10:51:31.884+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/expenses/pending-approvals
+2025-12-26T10:51:31.886+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/expenses
+2025-12-26T10:51:31.891+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/expenses/pending-approvals
+2025-12-26T10:51:31.891+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.s.security.web.FilterChainProxy        : Securing GET /api/users/pending
+2025-12-26T10:51:31.897+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/users/pending
+2025-12-26T10:51:31.899+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/expenses
+2025-12-26T10:51:31.900+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.security.web.FilterChainProxy        : Secured GET /api/expenses/pending-approvals?userId=5
+2025-12-26T10:51:31.919+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.security.web.FilterChainProxy        : Secured GET /api/expenses?page=1&size=10
+2025-12-26T10:51:31.922+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.s.security.web.FilterChainProxy        : Secured GET /api/expenses/pending-approvals?userId=5
+2025-12-26T10:51:31.926+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/users/pending
+2025-12-26T10:51:31.927+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.security.web.FilterChainProxy        : Secured GET /api/users/pending
+2025-12-26T10:51:31.931+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.s.security.web.FilterChainProxy        : Secured GET /api/expenses?page=1&size=10
+2025-12-26T10:51:31.933+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : GET "/api/expenses/pending-approvals?userId=5", parameters={masked}
+2025-12-26T10:51:31.933+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : GET "/api/expenses?page=1&size=10", parameters={masked}
+2025-12-26T10:51:31.934+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : GET "/api/expenses/pending-approvals?userId=5", parameters={masked}
+2025-12-26T10:51:31.934+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.s.security.web.FilterChainProxy        : Secured GET /api/users/pending
+2025-12-26T10:51:31.934+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : GET "/api/users/pending", parameters={}
+2025-12-26T10:51:31.935+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : GET "/api/expenses?page=1&size=10", parameters={masked}
+2025-12-26T10:51:31.935+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.ExpenseController#getPendingApprovals()
+2025-12-26T10:51:31.939+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.ExpenseController#getExpenseList(int, int, String, String, Long, Long, String[], String, Boolean, Boolean, String)
+2025-12-26T10:51:31.940+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.ExpenseController#getPendingApprovals()
+2025-12-26T10:51:31.941+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : GET "/api/users/pending", parameters={}
+2025-12-26T10:51:31.942+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.UserController#getPendingUsers()
+2025-12-26T10:51:31.942+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.ExpenseController#getExpenseList(int, int, String, String, Long, Long, String[], String, Boolean, Boolean, String)
+2025-12-26T10:51:31.944+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:31.944+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:31.945+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.UserController#getPendingUsers()
+2025-12-26T10:51:31.947+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:31.949+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@56338a4a] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:31.947+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7270be22] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:31.948+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@58954c71] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:31.949+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:31.957+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:31.957+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:31.960+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@24c0cc54] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:31.960+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@32250766] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:31.960+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3ed8f979] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:31.962+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1506445003 wrapping com.mysql.cj.jdbc.ConnectionImpl@1c5de45d] will not be managed by Spring
+2025-12-26T10:51:31.962+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1216978351 wrapping com.mysql.cj.jdbc.ConnectionImpl@29771723] will not be managed by Spring
+2025-12-26T10:51:31.965+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1734285042 wrapping com.mysql.cj.jdbc.ConnectionImpl@4d18491e] will not be managed by Spring
+2025-12-26T10:51:31.966+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectPendingApprovalsByUserId : ==>  Preparing: SELECT DISTINCT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id JOIN approval_line_tb al ON r.expense_report_id = al.expense_report_id WHERE al.approver_id = ? AND al.status = 'WAIT' AND r.status != 'REJECTED' AND r.company_id = ? ORDER BY r.expense_report_id DESC
+2025-12-26T10:51:31.967+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1798974599 wrapping com.mysql.cj.jdbc.ConnectionImpl@2e38a724] will not be managed by Spring
+2025-12-26T10:51:31.968+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.UserMapper.findUserCompanies     : ==>  Preparing: SELECT uc.user_company_id AS userCompanyId, uc.user_id AS userId, uc.company_id AS companyId, uc.role, uc.position, uc.is_active AS isActive, uc.is_primary AS isPrimary, uc.is_approver AS isApprover, uc.approval_status AS approvalStatus, uc.created_at AS createdAt, uc.updated_at AS updatedAt, u.korean_name AS koreanName, u.username, u.email, c.company_name AS companyName, c.company_code AS companyCode FROM user_company_tb uc INNER JOIN user_tb u ON uc.user_id = u.user_id INNER JOIN company_tb c ON uc.company_id = c.company_id WHERE uc.user_id = ? AND uc.approval_status = 'APPROVED' ORDER BY uc.is_primary DESC, uc.created_at DESC
+2025-12-26T10:51:31.968+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.m.E.selectPendingApprovalsByUserId : ==>  Preparing: SELECT DISTINCT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id JOIN approval_line_tb al ON r.expense_report_id = al.expense_report_id WHERE al.approver_id = ? AND al.status = 'WAIT' AND r.status != 'REJECTED' AND r.company_id = ? ORDER BY r.expense_report_id DESC
+2025-12-26T10:51:31.974+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectPendingApprovalsByUserId : ==> Parameters: 5(Long), 1(Long)
+2025-12-26T10:51:31.975+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.UserMapper.findUserCompanies     : ==>  Preparing: SELECT uc.user_company_id AS userCompanyId, uc.user_id AS userId, uc.company_id AS companyId, uc.role, uc.position, uc.is_active AS isActive, uc.is_primary AS isPrimary, uc.is_approver AS isApprover, uc.approval_status AS approvalStatus, uc.created_at AS createdAt, uc.updated_at AS updatedAt, u.korean_name AS koreanName, u.username, u.email, c.company_name AS companyName, c.company_code AS companyCode FROM user_company_tb uc INNER JOIN user_tb u ON uc.user_id = u.user_id INNER JOIN company_tb c ON uc.company_id = c.company_id WHERE uc.user_id = ? AND uc.approval_status = 'APPROVED' ORDER BY uc.is_primary DESC, uc.created_at DESC
+2025-12-26T10:51:31.980+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.UserMapper.findUserCompanies     : ==> Parameters: 5(Long)
+2025-12-26T10:51:31.980+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.m.E.selectPendingApprovalsByUserId : ==> Parameters: 5(Long), 1(Long)
+2025-12-26T10:51:31.982+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.UserMapper.findUserCompanies     : ==> Parameters: 5(Long)
+2025-12-26T10:51:31.999+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.UserMapper.findUserCompanies     : <==      Total: 2
+2025-12-26T10:51:32.003+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.m.E.selectPendingApprovalsByUserId : <==      Total: 2
+2025-12-26T10:51:32.003+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.UserMapper.findUserCompanies     : <==      Total: 2
+2025-12-26T10:51:32.006+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectPendingApprovalsByUserId : <==      Total: 2
+2025-12-26T10:51:32.009+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@24c0cc54]
+2025-12-26T10:51:32.011+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@58954c71]
+2025-12-26T10:51:32.012+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@56338a4a]
+2025-12-26T10:51:32.012+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7270be22]
+2025-12-26T10:51:32.015+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.018+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.020+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.020+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.024+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1417150082 wrapping com.mysql.cj.jdbc.ConnectionImpl@29771723] will not be managed by Spring
+2025-12-26T10:51:32.024+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1502947287 wrapping com.mysql.cj.jdbc.ConnectionImpl@1c5de45d] will not be managed by Spring
+2025-12-26T10:51:32.027+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@154fa95d] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.028+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5b398bcb] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.030+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7b68a350] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.030+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7ed87111] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.031+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseListWithFilters   : ==>  Preparing: SELECT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id WHERE r.company_id = ? ORDER BY r.expense_report_id DESC LIMIT ? OFFSET ?
+2025-12-26T10:51:32.031+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseListWithFilters   : ==>  Preparing: SELECT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id WHERE r.company_id = ? ORDER BY r.expense_report_id DESC LIMIT ? OFFSET ?
+2025-12-26T10:51:32.032+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@390241883 wrapping com.mysql.cj.jdbc.ConnectionImpl@2e38a724] will not be managed by Spring
+2025-12-26T10:51:32.032+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@492263051 wrapping com.mysql.cj.jdbc.ConnectionImpl@4d18491e] will not be managed by Spring
+2025-12-26T10:51:32.036+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseListWithFilters   : ==> Parameters: 1(Long), 2147483647(Integer), 0(Integer)
+2025-12-26T10:51:32.040+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseListWithFilters   : ==> Parameters: 1(Long), 2147483647(Integer), 0(Integer)
+2025-12-26T10:51:32.044+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.UserMapper.findPendingUsers      : ==>  Preparing: SELECT u.user_id, u.username, u.korean_name, u.email, uc.position, uc.role, uc.is_active, u.company_id, uc.approval_status FROM user_tb u INNER JOIN user_company_tb uc ON u.user_id = uc.user_id WHERE uc.company_id = ? AND uc.approval_status = 'PENDING' ORDER BY u.user_id DESC
+2025-12-26T10:51:32.047+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T10:51:32.048+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@180452479 wrapping com.mysql.cj.jdbc.ConnectionImpl@602af8ee] will not be managed by Spring
+2025-12-26T10:51:32.058+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.UserMapper.findPendingUsers      : ==> Parameters: 1(Long)
+2025-12-26T10:51:32.064+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 5(Long)
+2025-12-26T10:51:32.072+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.UserMapper.findPendingUsers      : ==>  Preparing: SELECT u.user_id, u.username, u.korean_name, u.email, uc.position, uc.role, uc.is_active, u.company_id, uc.approval_status FROM user_tb u INNER JOIN user_company_tb uc ON u.user_id = uc.user_id WHERE uc.company_id = ? AND uc.approval_status = 'PENDING' ORDER BY u.user_id DESC
+2025-12-26T10:51:32.081+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseListWithFilters   : <==      Total: 3
+2025-12-26T10:51:32.084+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseListWithFilters   : <==      Total: 3
+2025-12-26T10:51:32.086+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.UserMapper.findPendingUsers      : ==> Parameters: 1(Long)
+2025-12-26T10:51:32.093+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T10:51:32.096+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.UserMapper.findPendingUsers      : <==      Total: 0
+2025-12-26T10:51:32.097+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@32250766]
+2025-12-26T10:51:32.097+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3ed8f979]
+2025-12-26T10:51:32.101+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5b398bcb]
+2025-12-26T10:51:32.102+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@154fa95d]
+2025-12-26T10:51:32.108+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.102+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.103+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1019900348 wrapping com.mysql.cj.jdbc.ConnectionImpl@29771723] will not be managed by Spring
+2025-12-26T10:51:32.103+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.110+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:51:32.110+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@61c56757] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.111+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@39dffe36] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.111+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.UserMapper.findPendingUsers      : <==      Total: 0
+2025-12-26T10:51:32.117+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7b68a350]
+2025-12-26T10:51:32.118+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:51:32.119+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=조회 성공, data=[])]
+2025-12-26T10:51:32.113+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T10:51:32.113+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5a632d84] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.115+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=조회 성공, data=[])]
+2025-12-26T10:51:32.116+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1645018740 wrapping com.mysql.cj.jdbc.ConnectionImpl@1c5de45d] will not be managed by Spring
+2025-12-26T10:51:32.117+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1312182907 wrapping com.mysql.cj.jdbc.ConnectionImpl@4d18491e] will not be managed by Spring
+2025-12-26T10:51:32.127+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:51:32.127+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 5(Long)
+2025-12-26T10:51:32.128+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1279826023 wrapping com.mysql.cj.jdbc.ConnectionImpl@2e38a724] will not be managed by Spring
+2025-12-26T10:51:32.130+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:51:32.132+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T10:51:32.133+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T10:51:32.136+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T10:51:32.148+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 5(Long)
+2025-12-26T10:51:32.149+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long)
+2025-12-26T10:51:32.155+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 5(Long)
+2025-12-26T10:51:32.166+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T10:51:32.167+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7ed87111]
+2025-12-26T10:51:32.168+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T10:51:32.168+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 2
+2025-12-26T10:51:32.172+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T10:51:32.175+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.176+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@39dffe36]
+2025-12-26T10:51:32.176+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@61c56757]
+2025-12-26T10:51:32.178+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.177+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7a8f9b86] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.178+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5a632d84]
+2025-12-26T10:51:32.179+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.180+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@674ce104] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.181+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@292796156 wrapping com.mysql.cj.jdbc.ConnectionImpl@29771723] will not be managed by Spring
+2025-12-26T10:51:32.181+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.181+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@36d0b1ea] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.182+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T10:51:32.182+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1342799957 wrapping com.mysql.cj.jdbc.ConnectionImpl@1c5de45d] will not be managed by Spring
+2025-12-26T10:51:32.182+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@53d44f35] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.183+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@431555060 wrapping com.mysql.cj.jdbc.ConnectionImpl@4d18491e] will not be managed by Spring
+2025-12-26T10:51:32.183+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long)
+2025-12-26T10:51:32.184+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T10:51:32.184+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@875302503 wrapping com.mysql.cj.jdbc.ConnectionImpl@2e38a724] will not be managed by Spring
+2025-12-26T10:51:32.184+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T10:51:32.188+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long), 1(Long)
+2025-12-26T10:51:32.189+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T10:51:32.190+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 5(Long)
+2025-12-26T10:51:32.196+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 2
+2025-12-26T10:51:32.196+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long), 1(Long)
+2025-12-26T10:51:32.198+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 3
+2025-12-26T10:51:32.198+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7a8f9b86]
+2025-12-26T10:51:32.199+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@674ce104]
+2025-12-26T10:51:32.200+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.200+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.203+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@55c3a973] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.201+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@283bf10c] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.201+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T10:51:32.206+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@2069974342 wrapping com.mysql.cj.jdbc.ConnectionImpl@1c5de45d] will not be managed by Spring
+2025-12-26T10:51:32.207+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 3
+2025-12-26T10:51:32.207+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@778964006 wrapping com.mysql.cj.jdbc.ConnectionImpl@29771723] will not be managed by Spring
+2025-12-26T10:51:32.208+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@36d0b1ea]
+2025-12-26T10:51:32.208+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseListWithFilters   : ==>  Preparing: SELECT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id WHERE r.company_id = ? ORDER BY r.expense_report_id DESC LIMIT ? OFFSET ?
+2025-12-26T10:51:32.208+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@53d44f35]
+2025-12-26T10:51:32.211+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseListWithFilters   : ==> Parameters: 1(Long), 2147483647(Integer), 0(Integer)
+2025-12-26T10:51:32.209+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T10:51:32.210+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:51:32.212+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.214+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@4dd31faf] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.212+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 5(Long)
+2025-12-26T10:51:32.215+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1007639751 wrapping com.mysql.cj.jdbc.ConnectionImpl@2e38a724] will not be managed by Spring
+2025-12-26T10:51:32.228+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseListWithFilters   : ==>  Preparing: SELECT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id WHERE r.company_id = ? ORDER BY r.expense_report_id DESC LIMIT ? OFFSET ?
+2025-12-26T10:51:32.227+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=미서명 건 조회 성공, data=[ExpenseReportDto(expenseReportId=3, drafterId=2 (truncated)...]
+2025-12-26T10:51:32.228+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseListWithFilters   : ==> Parameters: 1(Long), 2147483647(Integer), 0(Integer)
+2025-12-26T10:51:32.231+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseListWithFilters   : <==      Total: 3
+2025-12-26T10:51:32.244+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:51:32.245+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@55c3a973]
+2025-12-26T10:51:32.248+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.253+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5f7a9c44] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.252+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T10:51:32.253+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseListWithFilters   : <==      Total: 3
+2025-12-26T10:51:32.257+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@383614719 wrapping com.mysql.cj.jdbc.ConnectionImpl@1c5de45d] will not be managed by Spring
+2025-12-26T10:51:32.257+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@283bf10c]
+2025-12-26T10:51:32.259+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@4dd31faf]
+2025-12-26T10:51:32.260+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T10:51:32.261+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:51:32.262+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.262+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 5(Long)
+2025-12-26T10:51:32.263+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=미서명 건 조회 성공, data=[ExpenseReportDto(expenseReportId=3, drafterId=2 (truncated)...]
+2025-12-26T10:51:32.263+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@1c7b3bf8] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.265+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@2115862936 wrapping com.mysql.cj.jdbc.ConnectionImpl@2e38a724] will not be managed by Spring
+2025-12-26T10:51:32.265+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:51:32.267+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T10:51:32.268+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T10:51:32.280+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 5(Long)
+2025-12-26T10:51:32.281+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5f7a9c44]
+2025-12-26T10:51:32.283+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.297+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5b614738] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.298+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1349679276 wrapping com.mysql.cj.jdbc.ConnectionImpl@1c5de45d] will not be managed by Spring
+2025-12-26T10:51:32.301+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T10:51:32.310+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T10:51:32.312+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@1c7b3bf8]
+2025-12-26T10:51:32.312+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long), 1(Long)
+2025-12-26T10:51:32.313+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.317+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@39f59b45] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.326+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@2081735544 wrapping com.mysql.cj.jdbc.ConnectionImpl@2e38a724] will not be managed by Spring
+2025-12-26T10:51:32.328+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T10:51:32.329+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 3
+2025-12-26T10:51:32.330+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long), 1(Long)
+2025-12-26T10:51:32.330+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5b614738]
+2025-12-26T10:51:32.331+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.336+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@728dce82] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.341+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@587472748 wrapping com.mysql.cj.jdbc.ConnectionImpl@1c5de45d] will not be managed by Spring
+2025-12-26T10:51:32.345+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 3
+2025-12-26T10:51:32.348+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T10:51:32.349+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@39f59b45]
+2025-12-26T10:51:32.349+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 5(Long)
+2025-12-26T10:51:32.349+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:51:32.351+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3fe988b5] was not registered for synchronization because synchronization is not active
+2025-12-26T10:51:32.352+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@702152776 wrapping com.mysql.cj.jdbc.ConnectionImpl@2e38a724] will not be managed by Spring
+2025-12-26T10:51:32.357+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T10:51:32.357+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T10:51:32.359+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 5(Long)
+2025-12-26T10:51:32.359+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@728dce82]
+2025-12-26T10:51:32.361+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:51:32.368+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=목록 조회 성공, data=PagedResponse(content=[ExpenseReportDto(expenseRepo (truncated)...]
+2025-12-26T10:51:32.376+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T10:51:32.377+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3fe988b5]
+2025-12-26T10:51:32.379+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:51:32.385+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:51:32.386+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=목록 조회 성공, data=PagedResponse(content=[ExpenseReportDto(expenseRepo (truncated)...]
+2025-12-26T10:51:32.406+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:58:11.735+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/users/approvers
+2025-12-26T10:58:11.737+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/users/approvers
+2025-12-26T10:58:11.747+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.security.web.FilterChainProxy        : Securing GET /api/users/approvers
+2025-12-26T10:58:11.748+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.s.security.web.FilterChainProxy        : Securing GET /api/users/approvers
+2025-12-26T10:58:11.754+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/users/approvers
+2025-12-26T10:58:11.754+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 5, role: ADMIN, companyId: 1, uri: /api/users/approvers
+2025-12-26T10:58:11.755+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.s.security.web.FilterChainProxy        : Secured GET /api/users/approvers
+2025-12-26T10:58:11.758+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : GET "/api/users/approvers", parameters={}
+2025-12-26T10:58:11.757+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.security.web.FilterChainProxy        : Secured GET /api/users/approvers
+2025-12-26T10:58:11.759+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.UserController#getApprovers()
+2025-12-26T10:58:11.764+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : GET "/api/users/approvers", parameters={}
+2025-12-26T10:58:11.765+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:58:11.765+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.UserController#getApprovers()
+2025-12-26T10:58:11.767+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7d6bc0b4] was not registered for synchronization because synchronization is not active
+2025-12-26T10:58:11.767+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T10:58:11.768+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@195a5446] was not registered for synchronization because synchronization is not active
+2025-12-26T10:58:11.770+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@447724898 wrapping com.mysql.cj.jdbc.ConnectionImpl@1c5de45d] will not be managed by Spring
+2025-12-26T10:58:11.770+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1935074009 wrapping com.mysql.cj.jdbc.ConnectionImpl@2e38a724] will not be managed by Spring
+2025-12-26T10:58:11.771+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.findApprovers    : ==>  Preparing: SELECT u.user_id, u.username, u.korean_name, u.email, uc.position, uc.role, uc.is_active, u.company_id, uc.approval_status, uc.is_approver AS isApprover FROM user_tb u INNER JOIN user_company_tb uc ON u.user_id = uc.user_id WHERE uc.company_id = ? AND uc.approval_status = 'APPROVED' AND uc.is_approver = 1 AND (uc.is_active IS NULL OR uc.is_active = 1) ORDER BY CASE uc.role WHEN 'USER' THEN 1 WHEN 'ACCOUNTANT' THEN 1 WHEN 'ADMIN' THEN 2 WHEN 'CEO' THEN 3 ELSE 99 END, u.korean_name
+2025-12-26T10:58:11.772+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.findApprovers    : ==>  Preparing: SELECT u.user_id, u.username, u.korean_name, u.email, uc.position, uc.role, uc.is_active, u.company_id, uc.approval_status, uc.is_approver AS isApprover FROM user_tb u INNER JOIN user_company_tb uc ON u.user_id = uc.user_id WHERE uc.company_id = ? AND uc.approval_status = 'APPROVED' AND uc.is_approver = 1 AND (uc.is_active IS NULL OR uc.is_active = 1) ORDER BY CASE uc.role WHEN 'USER' THEN 1 WHEN 'ACCOUNTANT' THEN 1 WHEN 'ADMIN' THEN 2 WHEN 'CEO' THEN 3 ELSE 99 END, u.korean_name
+2025-12-26T10:58:11.775+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.findApprovers    : ==> Parameters: 1(Long)
+2025-12-26T10:58:11.776+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.findApprovers    : ==> Parameters: 1(Long)
+2025-12-26T10:58:11.782+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.mapper.UserMapper.findApprovers    : <==      Total: 3
+2025-12-26T10:58:11.782+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] c.i.b.mapper.UserMapper.findApprovers    : <==      Total: 3
+2025-12-26T10:58:11.784+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@195a5446]
+2025-12-26T10:58:11.785+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7d6bc0b4]
+2025-12-26T10:58:11.785+09:00  INFO 33164 --- [http-nio-8080-exec-6] c.i.backend.controller.UserController    : 결재자 목록 조회 완료 - companyId: 1, count: 3
+2025-12-26T10:58:11.785+09:00  INFO 33164 --- [http-nio-8080-exec-8] c.i.backend.controller.UserController    : 결재자 목록 조회 완료 - companyId: 1, count: 3
+2025-12-26T10:58:11.786+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:58:11.787+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T10:58:11.787+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=결재자 목록 조회 성공, data=[UserDto(userId=4, username=test_user3, passwor (truncated)...]
+2025-12-26T10:58:11.788+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=결재자 목록 조회 성공, data=[UserDto(userId=4, username=test_user3, passwor (truncated)...]
+2025-12-26T10:58:11.789+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T10:58:11.794+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T11:41:23.258+09:00 DEBUG 33164 --- [http-nio-8080-exec-9] o.s.security.web.FilterChainProxy        : Securing GET /
+2025-12-26T11:41:23.264+09:00 DEBUG 33164 --- [http-nio-8080-exec-9] o.s.s.w.a.AnonymousAuthenticationFilter  : Set SecurityContextHolder to anonymous SecurityContext
+2025-12-26T11:48:36.620+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.security.web.FilterChainProxy        : Securing GET /api/expenses?page=1&size=10
+2025-12-26T11:48:36.630+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.security.web.FilterChainProxy        : Securing GET /api/expenses?page=1&size=10
+2025-12-26T11:48:36.637+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.s.w.a.AnonymousAuthenticationFilter  : Set SecurityContextHolder to anonymous SecurityContext
+2025-12-26T11:48:36.639+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.s.w.a.AnonymousAuthenticationFilter  : Set SecurityContextHolder to anonymous SecurityContext
+2025-12-26T11:48:46.890+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/login
+2025-12-26T11:48:46.895+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.security.web.FilterChainProxy        : Securing POST /api/login
+2025-12-26T11:48:46.897+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.s.w.a.AnonymousAuthenticationFilter  : Set SecurityContextHolder to anonymous SecurityContext
+2025-12-26T11:48:46.900+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.security.web.FilterChainProxy        : Secured POST /api/login
+2025-12-26T11:48:46.901+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : POST "/api/login", parameters={}
+2025-12-26T11:48:46.905+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.UserController#login(LoginRequest)
+2025-12-26T11:48:46.982+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [UserController.LoginRequest(username=test_user1, password=1234)]
+2025-12-26T11:48:46.988+09:00  INFO 33164 --- [http-nio-8080-exec-2] c.i.backend.controller.UserController    : 로그인 시도 - username: test_user1
+2025-12-26T11:48:46.992+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:46.993+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@1be32cde] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:46.997+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1439098106 wrapping com.mysql.cj.jdbc.ConnectionImpl@70d93a65] will not be managed by Spring
+2025-12-26T11:48:46.997+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.findByUsername   : ==>  Preparing: SELECT * FROM user_tb WHERE username = ?
+2025-12-26T11:48:46.998+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.findByUsername   : ==> Parameters: test_user1(String)
+2025-12-26T11:48:47.014+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.findByUsername   : <==      Total: 1
+2025-12-26T11:48:47.015+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@1be32cde]
+2025-12-26T11:48:47.110+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.110+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5e399f21] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.111+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@2134731049 wrapping com.mysql.cj.jdbc.ConnectionImpl@70d93a65] will not be managed by Spring
+2025-12-26T11:48:47.112+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.UserMapper.findUserCompanies     : ==>  Preparing: SELECT uc.user_company_id AS userCompanyId, uc.user_id AS userId, uc.company_id AS companyId, uc.role, uc.position, uc.is_active AS isActive, uc.is_primary AS isPrimary, uc.is_approver AS isApprover, uc.approval_status AS approvalStatus, uc.created_at AS createdAt, uc.updated_at AS updatedAt, u.korean_name AS koreanName, u.username, u.email, c.company_name AS companyName, c.company_code AS companyCode FROM user_company_tb uc INNER JOIN user_tb u ON uc.user_id = u.user_id INNER JOIN company_tb c ON uc.company_id = c.company_id WHERE uc.user_id = ? AND uc.approval_status = 'APPROVED' ORDER BY uc.is_primary DESC, uc.created_at DESC
+2025-12-26T11:48:47.116+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.UserMapper.findUserCompanies     : ==> Parameters: 2(Long)
+2025-12-26T11:48:47.135+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.UserMapper.findUserCompanies     : <==      Total: 1
+2025-12-26T11:48:47.138+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5e399f21]
+2025-12-26T11:48:47.172+09:00  INFO 33164 --- [http-nio-8080-exec-2] c.i.backend.controller.UserController    : 로그인 성공 - userId: 2, role: USER, companyId: 1
+2025-12-26T11:48:47.175+09:00  INFO 33164 --- [http-nio-8080-exec-2] SECURITY                                 : LOGIN_SUCCESS userId=2 username=test_user1 role=USER
+2025-12-26T11:48:47.177+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T11:48:47.178+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=로그인 성공, data={user=UserDto(userId=2, username=test_user1, password (truncated)...]
+2025-12-26T11:48:47.181+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T11:48:47.643+09:00 DEBUG 33164 --- [http-nio-8080-exec-5] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/companies
+2025-12-26T11:48:47.651+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.security.web.FilterChainProxy        : Securing GET /api/companies
+2025-12-26T11:48:47.705+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 2, role: USER, companyId: 1, uri: /api/companies
+2025-12-26T11:48:47.718+09:00 DEBUG 33164 --- [http-nio-8080-exec-8] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/expenses?page=1&size=10
+2025-12-26T11:48:47.721+09:00 DEBUG 33164 --- [http-nio-8080-exec-10] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/expenses/pending-approvals?userId=2
+2025-12-26T11:48:47.723+09:00 DEBUG 33164 --- [http-nio-8080-exec-3] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/expenses?page=1&size=10
+2025-12-26T11:48:47.731+09:00 DEBUG 33164 --- [http-nio-8080-exec-9] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/expenses/pending-approvals?userId=2
+2025-12-26T11:48:47.746+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.security.web.FilterChainProxy        : Secured GET /api/companies
+2025-12-26T11:48:47.821+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : GET "/api/companies", parameters={}
+2025-12-26T11:48:47.872+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.CompanyController#getMyCompanies()
+2025-12-26T11:48:47.874+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.security.web.FilterChainProxy        : Securing GET /api/expenses?page=1&size=10
+2025-12-26T11:48:47.874+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.security.web.FilterChainProxy        : Securing GET /api/expenses/pending-approvals?userId=2
+2025-12-26T11:48:47.876+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.s.security.web.FilterChainProxy        : Securing GET /api/expenses?page=1&size=10
+2025-12-26T11:48:47.876+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.security.web.FilterChainProxy        : Securing GET /api/expenses/pending-approvals?userId=2
+2025-12-26T11:48:47.879+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.881+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 2, role: USER, companyId: 1, uri: /api/expenses
+2025-12-26T11:48:47.886+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 2, role: USER, companyId: 1, uri: /api/expenses/pending-approvals
+2025-12-26T11:48:47.891+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 2, role: USER, companyId: 1, uri: /api/expenses
+2025-12-26T11:48:47.903+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.s.security.web.FilterChainProxy        : Secured GET /api/expenses?page=1&size=10
+2025-12-26T11:48:47.894+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 2, role: USER, companyId: 1, uri: /api/expenses/pending-approvals
+2025-12-26T11:48:47.901+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5207cdfc] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.901+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.security.web.FilterChainProxy        : Secured GET /api/expenses?page=1&size=10
+2025-12-26T11:48:47.902+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.security.web.FilterChainProxy        : Secured GET /api/expenses/pending-approvals?userId=2
+2025-12-26T11:48:47.903+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : GET "/api/expenses?page=1&size=10", parameters={masked}
+2025-12-26T11:48:47.904+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.security.web.FilterChainProxy        : Secured GET /api/expenses/pending-approvals?userId=2
+2025-12-26T11:48:47.908+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : GET "/api/expenses?page=1&size=10", parameters={masked}
+2025-12-26T11:48:47.909+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : GET "/api/expenses/pending-approvals?userId=2", parameters={masked}
+2025-12-26T11:48:47.909+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.ExpenseController#getExpenseList(int, int, String, String, Long, Long, String[], String, Boolean, Boolean, String)
+2025-12-26T11:48:47.910+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : GET "/api/expenses/pending-approvals?userId=2", parameters={masked}
+2025-12-26T11:48:47.910+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.ExpenseController#getExpenseList(int, int, String, String, Long, Long, String[], String, Boolean, Boolean, String)
+2025-12-26T11:48:47.912+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.ExpenseController#getPendingApprovals()
+2025-12-26T11:48:47.915+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@2043983537 wrapping com.mysql.cj.jdbc.ConnectionImpl@70d93a65] will not be managed by Spring
+2025-12-26T11:48:47.919+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.921+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.ExpenseController#getPendingApprovals()
+2025-12-26T11:48:47.923+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.923+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.924+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.U.findCompaniesByUserId          : ==>  Preparing: SELECT c.company_id AS companyId, c.company_code AS companyCode, c.company_name AS companyName, c.business_reg_no AS businessRegNo, c.representative_name AS representativeName, c.created_by AS createdBy, c.is_active AS isActive, c.created_at AS createdAt, c.updated_at AS updatedAt FROM company_tb c INNER JOIN user_company_tb uc ON c.company_id = uc.company_id WHERE uc.user_id = ? AND uc.approval_status = 'APPROVED' AND c.is_active = 1 ORDER BY uc.is_primary DESC, c.created_at DESC
+2025-12-26T11:48:47.925+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@67b66993] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.925+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.930+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@63ca1beb] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.926+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@1f240f21] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.926+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5dc7ad34] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.929+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.U.findCompaniesByUserId          : ==> Parameters: 2(Long)
+2025-12-26T11:48:47.941+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1953475748 wrapping com.mysql.cj.jdbc.ConnectionImpl@29ddda57] will not be managed by Spring
+2025-12-26T11:48:47.941+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@831971383 wrapping com.mysql.cj.jdbc.ConnectionImpl@6778c8b0] will not be managed by Spring
+2025-12-26T11:48:47.941+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1385617074 wrapping com.mysql.cj.jdbc.ConnectionImpl@4ec7e62d] will not be managed by Spring
+2025-12-26T11:48:47.941+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1594660831 wrapping com.mysql.cj.jdbc.ConnectionImpl@a96ebcc] will not be managed by Spring
+2025-12-26T11:48:47.942+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] c.i.b.m.U.findCompaniesByUserId          : <==      Total: 1
+2025-12-26T11:48:47.942+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseListWithFilters   : ==>  Preparing: SELECT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id WHERE r.company_id = ? ORDER BY r.expense_report_id DESC LIMIT ? OFFSET ?
+2025-12-26T11:48:47.943+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseListWithFilters   : ==>  Preparing: SELECT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id WHERE r.company_id = ? ORDER BY r.expense_report_id DESC LIMIT ? OFFSET ?
+2025-12-26T11:48:47.943+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectPendingApprovalsByUserId : ==>  Preparing: SELECT DISTINCT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id JOIN approval_line_tb al ON r.expense_report_id = al.expense_report_id WHERE al.approver_id = ? AND al.status = 'WAIT' AND r.status != 'REJECTED' AND r.company_id = ? ORDER BY r.expense_report_id DESC
+2025-12-26T11:48:47.943+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.m.E.selectPendingApprovalsByUserId : ==>  Preparing: SELECT DISTINCT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id JOIN approval_line_tb al ON r.expense_report_id = al.expense_report_id WHERE al.approver_id = ? AND al.status = 'WAIT' AND r.status != 'REJECTED' AND r.company_id = ? ORDER BY r.expense_report_id DESC
+2025-12-26T11:48:47.944+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5207cdfc]
+2025-12-26T11:48:47.945+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseListWithFilters   : ==> Parameters: 1(Long), 2147483647(Integer), 0(Integer)
+2025-12-26T11:48:47.946+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseListWithFilters   : ==> Parameters: 1(Long), 2147483647(Integer), 0(Integer)
+2025-12-26T11:48:47.946+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectPendingApprovalsByUserId : ==> Parameters: 2(Long), 1(Long)
+2025-12-26T11:48:47.947+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.m.E.selectPendingApprovalsByUserId : ==> Parameters: 2(Long), 1(Long)
+2025-12-26T11:48:47.949+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T11:48:47.956+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [ApiResponse(success=true, message=조회 성공, data=[CompanyDto(companyId=1, companyCode=2C4PSB, companyNa (truncated)...]
+2025-12-26T11:48:47.959+09:00 DEBUG 33164 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T11:48:47.967+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseListWithFilters   : <==      Total: 3
+2025-12-26T11:48:47.975+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@1f240f21]
+2025-12-26T11:48:47.972+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseListWithFilters   : <==      Total: 3
+2025-12-26T11:48:47.977+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.978+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@1065b3bc] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.978+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@67b66993]
+2025-12-26T11:48:47.979+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1471011973 wrapping com.mysql.cj.jdbc.ConnectionImpl@29ddda57] will not be managed by Spring
+2025-12-26T11:48:47.980+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.980+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T11:48:47.980+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2dee3cfb] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.981+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 2(Long)
+2025-12-26T11:48:47.981+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@217205950 wrapping com.mysql.cj.jdbc.ConnectionImpl@6778c8b0] will not be managed by Spring
+2025-12-26T11:48:47.985+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T11:48:47.986+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 2(Long)
+2025-12-26T11:48:47.990+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T11:48:47.992+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@1065b3bc]
+2025-12-26T11:48:47.992+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T11:48:47.993+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.992+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.m.E.selectPendingApprovalsByUserId : <==      Total: 2
+2025-12-26T11:48:47.993+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2dee3cfb]
+2025-12-26T11:48:47.994+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5dc7ad34]
+2025-12-26T11:48:47.993+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectPendingApprovalsByUserId : <==      Total: 2
+2025-12-26T11:48:47.993+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7a471602] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.994+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.994+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.994+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@63ca1beb]
+2025-12-26T11:48:47.995+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@281215a1] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.995+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@ea55057] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.995+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1199743653 wrapping com.mysql.cj.jdbc.ConnectionImpl@29ddda57] will not be managed by Spring
+2025-12-26T11:48:47.996+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:47.996+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1950875068 wrapping com.mysql.cj.jdbc.ConnectionImpl@6778c8b0] will not be managed by Spring
+2025-12-26T11:48:47.996+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@860885700 wrapping com.mysql.cj.jdbc.ConnectionImpl@a96ebcc] will not be managed by Spring
+2025-12-26T11:48:47.997+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T11:48:47.997+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@784eda33] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:47.998+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T11:48:47.998+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T11:48:48.001+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long), 1(Long)
+2025-12-26T11:48:48.002+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@164216217 wrapping com.mysql.cj.jdbc.ConnectionImpl@4ec7e62d] will not be managed by Spring
+2025-12-26T11:48:48.003+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long), 1(Long)
+2025-12-26T11:48:48.003+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 2(Long)
+2025-12-26T11:48:48.004+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T11:48:48.005+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 2(Long)
+2025-12-26T11:48:48.008+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T11:48:48.009+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@ea55057]
+2025-12-26T11:48:48.010+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T11:48:48.010+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.010+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@784eda33]
+2025-12-26T11:48:48.012+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@26cdf505] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.011+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 3
+2025-12-26T11:48:48.011+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 3
+2025-12-26T11:48:48.012+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.013+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7a471602]
+2025-12-26T11:48:48.013+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@47070819 wrapping com.mysql.cj.jdbc.ConnectionImpl@a96ebcc] will not be managed by Spring
+2025-12-26T11:48:48.013+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@281215a1]
+2025-12-26T11:48:48.013+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@809ec77] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.013+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.014+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T11:48:48.014+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.014+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@102244359 wrapping com.mysql.cj.jdbc.ConnectionImpl@4ec7e62d] will not be managed by Spring
+2025-12-26T11:48:48.014+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@52722432] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.015+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long)
+2025-12-26T11:48:48.019+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7c29ceca] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.019+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T11:48:48.020+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@273141624 wrapping com.mysql.cj.jdbc.ConnectionImpl@29ddda57] will not be managed by Spring
+2025-12-26T11:48:48.021+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1143890931 wrapping com.mysql.cj.jdbc.ConnectionImpl@6778c8b0] will not be managed by Spring
+2025-12-26T11:48:48.022+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long)
+2025-12-26T11:48:48.022+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseListWithFilters   : ==>  Preparing: SELECT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id WHERE r.company_id = ? ORDER BY r.expense_report_id DESC LIMIT ? OFFSET ?
+2025-12-26T11:48:48.022+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseListWithFilters   : ==>  Preparing: SELECT r.*, u.korean_name AS drafterName FROM expense_report_tb r JOIN user_tb u ON r.drafter_id = u.user_id WHERE r.company_id = ? ORDER BY r.expense_report_id DESC LIMIT ? OFFSET ?
+2025-12-26T11:48:48.023+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseListWithFilters   : ==> Parameters: 1(Long), 2147483647(Integer), 0(Integer)
+2025-12-26T11:48:48.024+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseListWithFilters   : ==> Parameters: 1(Long), 2147483647(Integer), 0(Integer)
+2025-12-26T11:48:48.025+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 2
+2025-12-26T11:48:48.026+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@26cdf505]
+2025-12-26T11:48:48.028+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.028+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 2
+2025-12-26T11:48:48.029+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseListWithFilters   : <==      Total: 3
+2025-12-26T11:48:48.029+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseListWithFilters   : <==      Total: 3
+2025-12-26T11:48:48.030+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@77ec74dc] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.030+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@809ec77]
+2025-12-26T11:48:48.031+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@52722432]
+2025-12-26T11:48:48.032+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7c29ceca]
+2025-12-26T11:48:48.033+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@571248819 wrapping com.mysql.cj.jdbc.ConnectionImpl@a96ebcc] will not be managed by Spring
+2025-12-26T11:48:48.038+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.038+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.039+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.039+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T11:48:48.039+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2ca7a41c] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.040+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@59d46383] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.040+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@16373761] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.040+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 2(Long)
+2025-12-26T11:48:48.041+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1874281998 wrapping com.mysql.cj.jdbc.ConnectionImpl@29ddda57] will not be managed by Spring
+2025-12-26T11:48:48.042+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1353003169 wrapping com.mysql.cj.jdbc.ConnectionImpl@4ec7e62d] will not be managed by Spring
+2025-12-26T11:48:48.042+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1735391236 wrapping com.mysql.cj.jdbc.ConnectionImpl@6778c8b0] will not be managed by Spring
+2025-12-26T11:48:48.043+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T11:48:48.045+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T11:48:48.046+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T11:48:48.046+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 2(Long)
+2025-12-26T11:48:48.049+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 2(Long)
+2025-12-26T11:48:48.051+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 2(Long)
+2025-12-26T11:48:48.061+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T11:48:48.062+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@77ec74dc]
+2025-12-26T11:48:48.064+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T11:48:48.064+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=미서명 건 조회 성공, data=[ExpenseReportDto(expenseReportId=3, drafterId=2 (truncated)...]
+2025-12-26T11:48:48.072+09:00 DEBUG 33164 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T11:48:48.075+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T11:48:48.078+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T11:48:48.079+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T11:48:48.087+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2ca7a41c]
+2025-12-26T11:48:48.088+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@59d46383]
+2025-12-26T11:48:48.089+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@16373761]
+2025-12-26T11:48:48.090+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.094+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T11:48:48.094+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.095+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@15f1d8cc] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.096+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=미서명 건 조회 성공, data=[ExpenseReportDto(expenseReportId=3, drafterId=2 (truncated)...]
+2025-12-26T11:48:48.097+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3b4729cf] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.097+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@73861418 wrapping com.mysql.cj.jdbc.ConnectionImpl@29ddda57] will not be managed by Spring
+2025-12-26T11:48:48.101+09:00 DEBUG 33164 --- [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T11:48:48.105+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@350526969 wrapping com.mysql.cj.jdbc.ConnectionImpl@6778c8b0] will not be managed by Spring
+2025-12-26T11:48:48.105+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T11:48:48.107+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseDetailsBatch      : ==>  Preparing: SELECT * FROM expense_detail_tb WHERE company_id = ? AND expense_report_id IN ( ? , ? , ? ) ORDER BY expense_report_id, expense_detail_id
+2025-12-26T11:48:48.109+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long), 1(Long)
+2025-12-26T11:48:48.109+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseDetailsBatch      : ==> Parameters: 1(Long), 3(Long), 2(Long), 1(Long)
+2025-12-26T11:48:48.114+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 3
+2025-12-26T11:48:48.114+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.m.E.selectExpenseDetailsBatch      : <==      Total: 3
+2025-12-26T11:48:48.116+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3b4729cf]
+2025-12-26T11:48:48.119+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@15f1d8cc]
+2025-12-26T11:48:48.119+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.119+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2025-12-26T11:48:48.119+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@bcf2b49] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.120+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3b3ec337] was not registered for synchronization because synchronization is not active
+2025-12-26T11:48:48.120+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@163869358 wrapping com.mysql.cj.jdbc.ConnectionImpl@6778c8b0] will not be managed by Spring
+2025-12-26T11:48:48.122+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@538069796 wrapping com.mysql.cj.jdbc.ConnectionImpl@29ddda57] will not be managed by Spring
+2025-12-26T11:48:48.122+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T11:48:48.123+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.mapper.UserMapper.selectUserById   : ==>  Preparing: SELECT * FROM user_tb WHERE user_id = ?
+2025-12-26T11:48:48.124+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 2(Long)
+2025-12-26T11:48:48.124+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.mapper.UserMapper.selectUserById   : ==> Parameters: 2(Long)
+2025-12-26T11:48:48.127+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T11:48:48.127+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] c.i.b.mapper.UserMapper.selectUserById   : <==      Total: 1
+2025-12-26T11:48:48.130+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@bcf2b49]
+2025-12-26T11:48:48.131+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3b3ec337]
+2025-12-26T11:48:48.132+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T11:48:48.133+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2025-12-26T11:48:48.135+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=목록 조회 성공, data=PagedResponse(content=[ExpenseReportDto(expenseRepo (truncated)...]
+2025-12-26T11:48:48.136+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=목록 조회 성공, data=PagedResponse(content=[ExpenseReportDto(expenseRepo (truncated)...]
+2025-12-26T11:48:48.140+09:00 DEBUG 33164 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-12-26T11:48:48.140+09:00 DEBUG 33164 --- [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Completed 200 OK

@@ -917,7 +917,6 @@ const SuperAdminDashboardPage = () => {
               <S.Table>
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>회사명</th>
                     <th>제목</th>
                     <th>작성자</th>
@@ -930,7 +929,6 @@ const SuperAdminDashboardPage = () => {
                 <tbody>
                   {expenses.map((expense) => (
                     <tr key={expense.expenseReportId}>
-                      <td data-label="ID">{expense.expenseReportId}</td>
                       <td data-label="회사명">{expense.companyName || '-'}</td>
                       <td data-label="제목">
                         {expense.title}

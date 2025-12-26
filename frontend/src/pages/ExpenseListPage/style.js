@@ -608,6 +608,15 @@ export const Table = styled.table`
   background-color: white;
 `;
 
+export const AmountTh = styled.th`
+  padding: 16px 12px;
+  border-bottom: 2px solid var(--border-color);
+  color: var(--dark-color);
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center !important;
+`;
+
 export const Thead = styled.thead`
   background-color: var(--light-color);
 
@@ -620,7 +629,7 @@ export const Thead = styled.thead`
     text-align: center;
   }
   
-  th:nth-of-type(2) {
+  th:nth-of-type(1) {
     max-width: 300px;
     text-align: left;
     
@@ -631,6 +640,11 @@ export const Thead = styled.thead`
     @media (max-width: 768px) {
       max-width: 150px;
     }
+  }
+  
+  /* AmountTh는 가운데 정렬 */
+  ${AmountTh} {
+    text-align: center !important;
   }
 `;
 
@@ -662,6 +676,10 @@ export const TitleTd = styled.td`
   @media (max-width: 768px) {
     max-width: 150px;
   }
+`;
+
+export const AmountTd = styled.td`
+  text-align: center !important;
 `;
 
 export const StyledLink = styled(Link)`

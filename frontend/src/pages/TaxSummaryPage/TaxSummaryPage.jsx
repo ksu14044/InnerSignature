@@ -328,7 +328,6 @@ const TaxSummaryPage = () => {
                       onChange={toggleSelectAll}
                     />
                   </S.Th>
-                  <S.Th>번호</S.Th>
                   <S.Th>제목</S.Th>
                   <S.Th>작성자</S.Th>
                   <S.Th>작성일</S.Th>
@@ -346,7 +345,6 @@ const TaxSummaryPage = () => {
                         onChange={() => toggleSelection(item.expenseReportId)}
                       />
                     </S.Td>
-                    <S.Td>{item.expenseReportId}</S.Td>
                     <S.Td>
                       <S.LinkButton onClick={() => navigate(`/detail/${item.expenseReportId}`)}>
                         {item.title}
