@@ -377,9 +377,11 @@ export const DetailTable = styled.table`
       font-weight: 600;
       color: var(--primary-color);
       font-size: 16px;
+      align-items: center;
       
       &:before {
         color: var(--primary-color);
+        align-items: center;
       }
     }
     
@@ -387,9 +389,11 @@ export const DetailTable = styled.table`
       font-weight: 700;
       color: #333;
       font-size: 18px;
+      align-items: center;
       
       &:before {
         color: #666;
+        align-items: center;
       }
     }
     
@@ -397,6 +401,11 @@ export const DetailTable = styled.table`
     td[data-label="비고"] {
       color: #666;
       font-size: 14px;
+      align-items: center;
+      
+      &:before {
+        align-items: center;
+      }
     }
   }
 `;
