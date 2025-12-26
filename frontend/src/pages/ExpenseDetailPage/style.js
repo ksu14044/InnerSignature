@@ -294,6 +294,7 @@ export const DetailTable = styled.table`
     border: 1px solid #ddd;
     padding: 10px;
     font-size: 13px;
+    vertical-align: middle;
   }
   td {
     border: 1px solid #ddd;
@@ -303,6 +304,7 @@ export const DetailTable = styled.table`
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 0;
+    vertical-align: middle;
   }
   
   td:nth-child(2), td:nth-child(4) {
@@ -345,11 +347,10 @@ export const DetailTable = styled.table`
     td {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
       border: none;
-      padding: 8px 0;
+      padding: 12px 0;
       font-size: 14px;
-      text-align: left;
       white-space: normal;
       max-width: 100%;
       border-bottom: none;
@@ -364,7 +365,8 @@ export const DetailTable = styled.table`
         content: attr(data-label);
         font-weight: 600;
         color: #999;
-        display: inline-block;
+        display: flex;
+        align-items: center;
         min-width: 60px;
         font-size: 13px;
         flex-shrink: 0;
@@ -418,6 +420,9 @@ export const ButtonGroup = styled.div`
     transition: background 0.2s;
     min-height: 48px;
     min-width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     
     &.back {
       background-color: #e5e7eb;
@@ -464,6 +469,9 @@ export const ButtonGroup = styled.div`
       min-width: 0;
       border-radius: 12px;
       font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 `;
