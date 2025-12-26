@@ -244,3 +244,41 @@ export const InfoBadge = styled.span`
   color: #0c5460;
 `;
 
+export const PendingPlanNotice = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #e7f3ff;
+  border-left: 4px solid #007bff;
+  border-radius: 4px;
+`;
+
+export const NoticeIcon = styled.div`
+  font-size: 20px;
+  flex-shrink: 0;
+`;
+
+export const NoticeContent = styled.div`
+  flex: 1;
+`;
+
+export const NoticeTitle = styled.div`
+  font-weight: 600;
+  color: #0056b3;
+  margin-bottom: 4px;
+  font-size: 14px;
+`;
+
+export const NoticeText = styled.div`
+  font-size: 13px;
+  color: #004085;
+  line-height: 1.5;
+  
+  strong {
+    font-weight: 600;
+    color: #003d7a;
+  }
+`;
+

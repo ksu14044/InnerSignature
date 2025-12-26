@@ -88,7 +88,23 @@ const SubscriptionManagementPage = () => {
       return;
     }
 
-    // 무료 플랜으로 변경하는 경우 바로 변경
+    // 현재 플랜 가격 확인
+    const currentPlanPrice = subscription.plan?.price || 0;
+    const isDowngrade = plan.price < currentPlanPrice;
+
+    // 다운그레이드인 경우 (가격 하락)
+    if (isDowngrade) {
+      const changeDate = subscription.endDate || new Date().toISOString().split('T')[0];
+      if (window.confirm(
+        `플랜을 ${plan.planName}로 변경하시겠습니까?\n\n` +
+        `현재 플랜은 ${changeDate}까지 유지되며, 이후 ${plan.planName}로 자동 전환됩니다.`
+      )) {
+        handleUpdateSubscription(planId);
+      }
+      return;
+    }
+
+    // 무료 플랜으로 변경하는 경우 (업그레이드가 아닌 특수 케이스)
     if (plan.price === 0) {
       if (window.confirm('무료 플랜으로 변경하시겠습니까?')) {
         handleUpdateSubscription(planId);
@@ -96,7 +112,7 @@ const SubscriptionManagementPage = () => {
       return;
     }
 
-    // 유료 플랜으로 변경하는 경우 결제 확인 모달 표시
+    // 업그레이드인 경우 (가격 상승) - 결제 확인 모달 표시
     setSelectedPlan(plan);
     setShowPaymentModal(true);
   };
@@ -108,7 +124,17 @@ const SubscriptionManagementPage = () => {
       setUpdating(true);
       const res = await updateSubscription(subscription.subscriptionId, planId, subscription.autoRenew);
       if (res.success) {
-        alert('플랜이 변경되었습니다.');
+        // 다운그레이드인 경우 다른 메시지 표시
+        const currentPlanPrice = subscription.plan?.price || 0;
+        const newPlan = plans.find(p => p.planId === planId);
+        const isDowngrade = newPlan && newPlan.price < currentPlanPrice;
+        
+        if (isDowngrade) {
+          const changeDate = res.data?.endDate || subscription.endDate;
+          alert(`플랜 변경이 예약되었습니다.\n\n현재 플랜은 ${changeDate}까지 유지되며, 이후 ${newPlan?.planName || '새 플랜'}으로 자동 전환됩니다.`);
+        } else {
+          alert('플랜이 변경되었습니다.');
+        }
         setShowPaymentModal(false);
         setSelectedPlan(null);
         loadData();
@@ -212,6 +238,21 @@ const SubscriptionManagementPage = () => {
                 {subscription.plan.maxUsers ? `${subscription.plan.maxUsers}명` : '무제한'}
               </S.InfoValue>
             </S.InfoSection>
+          )}
+
+          {/* 다운그레이드 예정 안내 */}
+          {subscription.pendingPlanId && subscription.pendingPlan && subscription.pendingChangeDate && (
+            <S.PendingPlanNotice>
+              <S.NoticeIcon>ℹ️</S.NoticeIcon>
+              <S.NoticeContent>
+                <S.NoticeTitle>플랜 변경 예정</S.NoticeTitle>
+                <S.NoticeText>
+                  {subscription.pendingChangeDate}부터 <strong>{subscription.pendingPlan.planName}</strong>로 자동 전환됩니다.
+                  <br />
+                  현재는 <strong>{subscription.plan?.planName}</strong>이 {subscription.pendingChangeDate}까지 유지됩니다.
+                </S.NoticeText>
+              </S.NoticeContent>
+            </S.PendingPlanNotice>
           )}
 
           <S.Actions>

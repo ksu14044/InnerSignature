@@ -11,6 +11,9 @@
         <result property="startDate" column="start_date"/>
         <result property="endDate" column="end_date"/>
         <result property="autoRenew" column="auto_renew"/>
+        <result property="pendingPlanId" column="pending_plan_id"/>
+        <result property="pendingChangeDate" column="pending_change_date"/>
+        <result property="creditAmount" column="credit_amount"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
@@ -23,6 +26,9 @@
         <result property="startDate" column="start_date"/>
         <result property="endDate" column="end_date"/>
         <result property="autoRenew" column="auto_renew"/>
+        <result property="pendingPlanId" column="pending_plan_id"/>
+        <result property="pendingChangeDate" column="pending_change_date"/>
+        <result property="creditAmount" column="credit_amount"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <association property="plan" javaType="com.innersignature.backend.dto.SubscriptionPlanDto">
@@ -34,6 +40,8 @@
             <result property="featuresJson" column="features"/>
             <result property="isActive" column="plan_is_active"/>
         </association>
+        <association property="pendingPlan" column="pending_plan_id" 
+                     select="com.innersignature.backend.mapper.SubscriptionPlanMapper.findById"/>
     </resultMap>
 
     <select id="findActiveByCompanyId" resultMap="SubscriptionWithPlanResultMap">
@@ -76,9 +84,11 @@
 
     <insert id="insert" parameterType="com.innersignature.backend.dto.SubscriptionDto" 
             useGeneratedKeys="true" keyProperty="subscriptionId">
-        INSERT INTO subscription_tb (company_id, plan_id, status, start_date, end_date, auto_renew, created_at, updated_at)
+        INSERT INTO subscription_tb (company_id, plan_id, status, start_date, end_date, auto_renew, 
+                                    pending_plan_id, pending_change_date, credit_amount, created_at, updated_at)
         VALUES (#{companyId}, #{planId}, #{status}, #{startDate}, #{endDate}, 
-                COALESCE(#{autoRenew}, 1), #{createdAt}, #{updatedAt})
+                COALESCE(#{autoRenew}, 1), #{pendingPlanId}, #{pendingChangeDate}, 
+                COALESCE(#{creditAmount}, 0), #{createdAt}, #{updatedAt})
     </insert>
 
     <update id="update" parameterType="com.innersignature.backend.dto.SubscriptionDto">
@@ -88,6 +98,9 @@
             start_date = #{startDate},
             end_date = #{endDate},
             auto_renew = #{autoRenew},
+            pending_plan_id = #{pendingPlanId},
+            pending_change_date = #{pendingChangeDate},
+            credit_amount = #{creditAmount},
             updated_at = #{updatedAt}
         WHERE subscription_id = #{subscriptionId}
         AND company_id = #{companyId}
@@ -113,6 +126,14 @@
         WHERE status = 'ACTIVE'
         AND end_date IS NOT NULL
         AND end_date BETWEEN #{currentDate} AND DATE_ADD(#{currentDate}, INTERVAL #{days} DAY)
+    </select>
+    
+    <select id="findPendingPlanChanges" resultMap="SubscriptionResultMap">
+        SELECT * FROM subscription_tb
+        WHERE status = 'ACTIVE'
+        AND pending_plan_id IS NOT NULL
+        AND pending_change_date IS NOT NULL
+        AND pending_change_date &lt;= #{currentDate}
     </select>
     
     <select id="findAll" resultMap="SubscriptionWithPlanResultMap">

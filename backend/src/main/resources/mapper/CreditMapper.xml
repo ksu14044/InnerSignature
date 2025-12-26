@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.CreditMapper">
+    <resultMap id="CreditResultMap" type="com.innersignature.backend.dto.CreditDto">
+        <id property="creditId" column="credit_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="amount" column="amount"/>
+        <result property="reason" column="reason"/>
+        <result property="usedAmount" column="used_amount"/>
+        <result property="expiresAt" column="expires_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.CreditDto" 
+            useGeneratedKeys="true" keyProperty="creditId">
+        INSERT INTO credit_tb (company_id, amount, reason, used_amount, expires_at, created_at, updated_at)
+        VALUES (#{companyId}, #{amount}, #{reason}, #{usedAmount}, #{expiresAt}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="findById" resultMap="CreditResultMap">
+        SELECT * FROM credit_tb
+        WHERE credit_id = #{creditId}
+        LIMIT 1
+    </select>
+
+    <select id="findByCompanyId" resultMap="CreditResultMap">
+        SELECT * FROM credit_tb
+        WHERE company_id = #{companyId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findAvailableByCompanyId" resultMap="CreditResultMap">
+        SELECT * FROM credit_tb
+        WHERE company_id = #{companyId}
+          AND (expires_at IS NULL OR expires_at >= #{currentDate})
+          AND (amount - used_amount) > 0
+        ORDER BY 
+            CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END,
+            expires_at ASC,
+            created_at ASC
+    </select>
+
+    <update id="updateUsedAmount">
+        UPDATE credit_tb
+        SET used_amount = #{usedAmount},
+            updated_at = NOW()
+        WHERE credit_id = #{creditId}
+    </update>
+
+    <select id="getTotalAvailableAmount" resultType="Integer">
+        SELECT COALESCE(SUM(amount - used_amount), 0)
+        FROM credit_tb
+        WHERE company_id = #{companyId}
+          AND (expires_at IS NULL OR expires_at >= #{currentDate})
+    </select>
+</mapper>

@@ -36,6 +36,9 @@ public interface SubscriptionMapper {
     List<SubscriptionDto> findExpiringSoon(@Param("currentDate") LocalDate currentDate, 
                                           @Param("days") int days);
     
+    // 대기 중인 플랜 변경이 예정된 구독 조회 (스케줄러용)
+    List<SubscriptionDto> findPendingPlanChanges(@Param("currentDate") LocalDate currentDate);
+    
     // 전체 구독 목록 조회 (SUPERADMIN 전용)
     List<SubscriptionDto> findAll();
 }

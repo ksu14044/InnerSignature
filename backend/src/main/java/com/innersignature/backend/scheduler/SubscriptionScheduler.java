@@ -21,7 +21,7 @@ public class SubscriptionScheduler {
     private final SubscriptionService subscriptionService;
     
     /**
-     * 매일 자정에 만료된 구독 체크 및 처리
+     * 매일 자정에 만료된 구독 체크 및 처리, 대기 중인 플랜 변경 처리
      * cron 표현식: 초 분 시 일 월 요일
      * "0 0 0 * * ?" = 매일 자정 (00:00:00)
      */
@@ -48,6 +48,30 @@ public class SubscriptionScheduler {
             logger.info("만료된 구독 체크 완료");
         } catch (Exception e) {
             logger.error("만료된 구독 체크 중 오류 발생", e);
+        }
+        
+        // 대기 중인 플랜 변경 처리 (다운그레이드)
+        logger.info("대기 중인 플랜 변경 처리 시작");
+        
+        try {
+            List<SubscriptionDto> pendingChanges = subscriptionService.findPendingPlanChanges();
+            
+            logger.info("대기 중인 플랜 변경 수: {}", pendingChanges.size());
+            
+            for (SubscriptionDto subscription : pendingChanges) {
+                try {
+                    subscriptionService.processPendingPlanChange(subscription.getSubscriptionId());
+                    logger.info("대기 중인 플랜 변경 처리 완료 - subscriptionId: {}, companyId: {}", 
+                        subscription.getSubscriptionId(), subscription.getCompanyId());
+                } catch (Exception e) {
+                    logger.error("대기 중인 플랜 변경 처리 실패 - subscriptionId: {}", 
+                        subscription.getSubscriptionId(), e);
+                }
+            }
+            
+            logger.info("대기 중인 플랜 변경 처리 완료");
+        } catch (Exception e) {
+            logger.error("대기 중인 플랜 변경 처리 중 오류 발생", e);
         }
     }
     
