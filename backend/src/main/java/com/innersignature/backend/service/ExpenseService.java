@@ -423,28 +423,6 @@ public class ExpenseService {
         boolean isSecretOrSalary = hasSalary || (isSecret != null && isSecret);
 
         if (!isSecretOrSalary && lines != null && !lines.isEmpty()) {
-            // 결제담당자(ACCOUNTANT) 반드시 포함 확인 및 추가
-            boolean hasAccountant = false;
-            for (ApprovalLineDto line : lines) {
-                UserDto user = userService.selectUserById(line.getApproverId());
-                if (user != null && "ACCOUNTANT".equals(user.getRole())) {
-                    hasAccountant = true;
-                    break;
-                }
-            }
-
-            // 결제담당자가 없으면 ACCOUNTANT 역할의 첫 번째 사용자 추가
-            if (!hasAccountant) {
-                List<UserDto> accountants = userService.selectUsersByRole("ACCOUNTANT", companyId);
-                if (!accountants.isEmpty()) {
-                    ApprovalLineDto accountantLine = new ApprovalLineDto();
-                    accountantLine.setApproverId(accountants.get(0).getUserId());
-                    accountantLine.setStepOrder(lines.size() + 1);
-                    accountantLine.setStatus("WAIT");
-                    lines.add(accountantLine);
-                }
-            }
-
             logger.debug("결재 라인 저장 시작 - 라인 수: {}", lines.size());
             for (ApprovalLineDto line : lines) {
                 line.setExpenseReportId(newId); // "이 결재 라인도 그 문서(newId) 꺼야"라고 연결
@@ -464,67 +442,28 @@ public class ExpenseService {
     /**
      * 4. 결재 라인 설정 (별도 설정용)
      * 설명: 이미 생성된 지출결의서에 결재 라인을 추가합니다.
-     * ACCOUNTANT는 항상 맨 앞(stepOrder=1)에 배치됩니다.
      */
     @Transactional
     public void setApprovalLines(Long expenseReportId, List<ApprovalLineDto> approvalLines) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         
-        if (approvalLines == null) {
-            approvalLines = new ArrayList<>();
-        }
-        
-        // ACCOUNTANT 포함 여부 확인
-        boolean hasAccountant = false;
-        for (ApprovalLineDto line : approvalLines) {
-            UserDto user = userService.selectUserById(line.getApproverId());
-            if (user != null && "ACCOUNTANT".equals(user.getRole())) {
-                hasAccountant = true;
-                break;
-            }
-        }
-        
-        // ACCOUNTANT가 없으면 추가
-        if (!hasAccountant) {
-            List<UserDto> accountants = userService.selectUsersByRole("ACCOUNTANT", companyId);
-            if (!accountants.isEmpty()) {
-                ApprovalLineDto accountantLine = new ApprovalLineDto();
-                accountantLine.setApproverId(accountants.get(0).getUserId());
-                accountantLine.setStatus("WAIT");
-                approvalLines.add(0, accountantLine); // 맨 앞에 추가
-            }
-        }
-        
-        // ACCOUNTANT를 맨 앞에 배치하고 나머지는 원래 순서 유지
-        List<ApprovalLineDto> sortedLines = new ArrayList<>();
-        ApprovalLineDto accountantLine = null;
-        
-        // ACCOUNTANT 분리
-        for (ApprovalLineDto line : approvalLines) {
-            UserDto user = userService.selectUserById(line.getApproverId());
-            if (user != null && "ACCOUNTANT".equals(user.getRole())) {
-                accountantLine = line;
-            } else {
-                sortedLines.add(line);
-            }
-        }
-        
-        // ACCOUNTANT를 맨 앞에 배치
-        if (accountantLine != null) {
-            sortedLines.add(0, accountantLine);
+        if (approvalLines == null || approvalLines.isEmpty()) {
+            logger.debug("결재 라인이 비어있어 저장하지 않습니다.");
+            return;
         }
         
         // stepOrder 설정 및 저장
-        if (!sortedLines.isEmpty()) {
-            int stepOrder = 1;
-            for (ApprovalLineDto line : sortedLines) {
-                line.setExpenseReportId(expenseReportId);
-                line.setStepOrder(stepOrder++);
+        int stepOrder = 1;
+        for (ApprovalLineDto line : approvalLines) {
+            line.setExpenseReportId(expenseReportId);
+            line.setStepOrder(stepOrder++);
+            if (line.getStatus() == null) {
                 line.setStatus("WAIT");
-                line.setCompanyId(companyId);
-                expenseMapper.insertApprovalLine(line);
             }
+            line.setCompanyId(companyId);
+            expenseMapper.insertApprovalLine(line);
         }
+        logger.debug("결재 라인 저장 완료 - expenseReportId: {}, 라인 수: {}", expenseReportId, approvalLines.size());
     }
 
     /**

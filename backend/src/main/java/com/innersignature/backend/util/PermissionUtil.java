@@ -29,58 +29,83 @@ public class PermissionUtil {
     }
     
     /**
-     * 사용자가 ADMIN 역할인지 확인
+     * 사용자가 ADMIN 역할인지 확인 (현재 회사 기준)
      * 
      * @param userId 확인할 사용자 ID
      * @return ADMIN이면 true, 아니면 false
      */
     public boolean isAdmin(Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (companyId != null) {
+            return hasRoleInCompany(userId, companyId, "ADMIN");
+        }
+        // companyId가 없는 경우 (SUPERADMIN 등) user_tb의 role 확인
         UserDto user = getUserOrThrow(userId);
         return "ADMIN".equals(user.getRole());
     }
     
     /**
-     * 사용자가 CEO 역할인지 확인
+     * 사용자가 CEO 역할인지 확인 (현재 회사 기준)
      * 
      * @param userId 확인할 사용자 ID
      * @return CEO이면 true, 아니면 false
      */
     public boolean isCEO(Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (companyId != null) {
+            return hasRoleInCompany(userId, companyId, "CEO");
+        }
+        // companyId가 없는 경우 (SUPERADMIN 등) user_tb의 role 확인
         UserDto user = getUserOrThrow(userId);
         return "CEO".equals(user.getRole());
     }
     
     /**
-     * 사용자가 ADMIN 또는 CEO 역할인지 확인
+     * 사용자가 ADMIN 또는 CEO 역할인지 확인 (현재 회사 기준)
      * CEO는 ADMIN의 모든 권한을 가지고 있음
      * 
      * @param userId 확인할 사용자 ID
      * @return ADMIN 또는 CEO이면 true, 아니면 false
      */
     public boolean isAdminOrCEO(Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (companyId != null) {
+            return hasRoleInCompany(userId, companyId, "ADMIN") || hasRoleInCompany(userId, companyId, "CEO");
+        }
+        // companyId가 없는 경우 (SUPERADMIN 등) user_tb의 role 확인
         UserDto user = getUserOrThrow(userId);
         String role = user.getRole();
         return "ADMIN".equals(role) || "CEO".equals(role);
     }
     
     /**
-     * 사용자가 ACCOUNTANT 역할인지 확인
+     * 사용자가 ACCOUNTANT 역할인지 확인 (현재 회사 기준)
      * 
      * @param userId 확인할 사용자 ID
      * @return ACCOUNTANT이면 true, 아니면 false
      */
     public boolean isAccountant(Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (companyId != null) {
+            return hasRoleInCompany(userId, companyId, "ACCOUNTANT");
+        }
+        // companyId가 없는 경우 (SUPERADMIN 등) user_tb의 role 확인
         UserDto user = getUserOrThrow(userId);
         return "ACCOUNTANT".equals(user.getRole());
     }
     
     /**
-     * 사용자가 TAX_ACCOUNTANT 역할인지 확인
+     * 사용자가 TAX_ACCOUNTANT 역할인지 확인 (현재 회사 기준)
      *
      * @param userId 확인할 사용자 ID
      * @return TAX_ACCOUNTANT이면 true, 아니면 false
      */
     public boolean isTaxAccountant(Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (companyId != null) {
+            return hasRoleInCompany(userId, companyId, "TAX_ACCOUNTANT");
+        }
+        // companyId가 없는 경우 (SUPERADMIN 등) user_tb의 role 확인
         UserDto user = getUserOrThrow(userId);
         return "TAX_ACCOUNTANT".equals(user.getRole());
     }

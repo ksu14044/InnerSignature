@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllUsers, createUser, updateUser, deleteUser, updateUserRole, getCompanyUsers, getCompanyUsersById, getCompanyApplications, approveUserCompany, rejectUserCompany } from '../../api/userApi';
+import { getAllUsers, createUser, updateUser, deleteUser, updateUserRole, getCompanyUsers, getCompanyUsersById, getCompanyApplications, approveUserCompany, rejectUserCompany, updateApproverStatus } from '../../api/userApi';
 import { getUserCompanies } from '../../api/userApi';
 import { USER_ROLES } from '../../constants/status';
 import { FaPlus, FaSignOutAlt, FaEdit, FaTrash, FaTimes, FaCheck, FaBan } from 'react-icons/fa';
@@ -294,6 +294,37 @@ const UserManagementPage = () => {
     return roleMap[role] || role;
   };
 
+  const handleApproverToggle = async (targetUser) => {
+    // CEO/ADMIN만 결재자 지정 가능
+    if (!isAdmin && !isCEO) {
+      return;
+    }
+    
+    const currentCompanyId = selectedCompanyId || user?.companyId;
+    if (!currentCompanyId) {
+      alert('회사 정보가 없습니다.');
+      return;
+    }
+    
+    const newApproverStatus = !targetUser.isApprover;
+    
+    try {
+      setIsUpdating(true);
+      const response = await updateApproverStatus(targetUser.userId, currentCompanyId, newApproverStatus);
+      if (response.success) {
+        // 성공 시 사용자 목록 다시 로드
+        loadUsers(currentCompanyId);
+      } else {
+        alert(response.message || '결재자 지정 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('결재자 지정 변경 실패:', error);
+      alert(error?.response?.data?.message || '결재자 지정 변경 중 오류가 발생했습니다.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'CEO' && user.role !== 'ADMIN')) {
     return null;
   }
@@ -432,6 +463,7 @@ const UserManagementPage = () => {
               <th>직급</th>
               <th>권한</th>
               <th>상태</th>
+              {(isAdmin || isCEO) && <th>결재자 지정</th>}
               <th>작업</th>
             </tr>
           </thead>
@@ -449,6 +481,22 @@ const UserManagementPage = () => {
                     {targetUser.isActive ? '활성' : '비활성'}
                   </S.StatusBadge>
                 </td>
+                {(isAdmin || isCEO) && (
+                  <td>
+                    {/* ADMIN은 CEO를 결재자로 지정할 수 없음 */}
+                    {isAdmin && targetUser.role === 'CEO' ? (
+                      <span style={{ color: '#999', fontSize: '12px' }}>지정 불가</span>
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={targetUser.isApprover || false}
+                        onChange={() => handleApproverToggle(targetUser)}
+                        disabled={isUpdating || targetUser.userId === user?.userId}
+                        title={targetUser.isApprover ? '결재자 지정 해제' : '결재자 지정'}
+                      />
+                    )}
+                  </td>
+                )}
                 <td>
                   <S.ActionButtons>
                     {(isAdmin || isCEO) && (

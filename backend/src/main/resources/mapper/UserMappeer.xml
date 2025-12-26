@@ -131,7 +131,8 @@
             uc.role, 
             uc.is_active, 
             u.company_id, 
-            uc.approval_status
+            uc.approval_status,
+            uc.is_approver AS isApprover
         FROM user_tb u
         INNER JOIN user_company_tb uc ON u.user_id = uc.user_id
         WHERE uc.company_id = #{companyId}
@@ -149,6 +150,7 @@
             uc.position,
             uc.is_active AS isActive,
             uc.is_primary AS isPrimary,
+            uc.is_approver AS isApprover,
             uc.approval_status AS approvalStatus,
             uc.created_at AS createdAt,
             uc.updated_at AS updatedAt,
@@ -174,6 +176,7 @@
             uc.position,
             uc.is_active AS isActive,
             uc.is_primary AS isPrimary,
+            uc.is_approver AS isApprover,
             uc.approval_status AS approvalStatus,
             uc.created_at AS createdAt,
             uc.updated_at AS updatedAt,
@@ -193,25 +196,28 @@
     </select>
     
     <insert id="applyToCompany" parameterType="com.innersignature.backend.dto.UserCompanyDto">
-        INSERT INTO user_company_tb (user_id, company_id, role, position, is_active, is_primary, approval_status, created_at, updated_at)
+        INSERT INTO user_company_tb (user_id, company_id, role, position, is_active, is_primary, is_approver, approval_status, created_at, updated_at)
         VALUES (#{userId}, #{companyId}, #{role}, #{position}, 
                 COALESCE(#{isActive}, 1), 
                 COALESCE(#{isPrimary}, 0),
+                COALESCE(#{isApprover}, 0),
                 'PENDING',
                 NOW(), NOW())
     </insert>
     
     <insert id="addUserToCompany" parameterType="com.innersignature.backend.dto.UserCompanyDto">
-        INSERT INTO user_company_tb (user_id, company_id, role, position, is_active, is_primary, approval_status, created_at, updated_at)
+        INSERT INTO user_company_tb (user_id, company_id, role, position, is_active, is_primary, is_approver, approval_status, created_at, updated_at)
         VALUES (#{userId}, #{companyId}, #{role}, #{position}, 
                 COALESCE(#{isActive}, 1), 
                 COALESCE(#{isPrimary}, 0),
+                COALESCE(#{isApprover}, 0),
                 'APPROVED',
                 NOW(), NOW())
         ON DUPLICATE KEY UPDATE
             role = VALUES(role),
             position = VALUES(position),
             is_active = VALUES(is_active),
+            is_approver = VALUES(is_approver),
             approval_status = 'APPROVED',
             updated_at = NOW()
     </insert>
@@ -254,6 +260,7 @@
             uc.position,
             uc.is_active AS isActive,
             uc.is_primary AS isPrimary,
+            uc.is_approver AS isApprover,
             uc.approval_status AS approvalStatus,
             uc.created_at AS createdAt,
             uc.updated_at AS updatedAt,
@@ -285,6 +292,34 @@
             updated_at = NOW()
         WHERE user_id = #{userId} AND company_id = #{companyId}
     </update>
+    
+    <update id="updateApproverStatus">
+        UPDATE user_company_tb
+        SET is_approver = #{isApprover},
+            updated_at = NOW()
+        WHERE user_id = #{userId} AND company_id = #{companyId}
+    </update>
+    
+    <select id="findApprovers" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT 
+            u.user_id, 
+            u.username, 
+            u.korean_name, 
+            u.email, 
+            uc.position, 
+            uc.role, 
+            uc.is_active, 
+            u.company_id, 
+            uc.approval_status,
+            uc.is_approver AS isApprover
+        FROM user_tb u
+        INNER JOIN user_company_tb uc ON u.user_id = uc.user_id
+        WHERE uc.company_id = #{companyId}
+          AND uc.approval_status = 'APPROVED'
+          AND uc.is_approver = 1
+          AND (uc.is_active IS NULL OR uc.is_active = 1)
+        ORDER BY u.korean_name
+    </select>
     
     <select id="findCompaniesByUserId" resultType="com.innersignature.backend.dto.CompanyDto">
         SELECT 

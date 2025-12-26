@@ -277,3 +277,16 @@ export const rejectUserCompany = async (userId, companyId) => {
   }
 };
 
+// 결재자 지정/해제 (CEO/ADMIN용)
+export const updateApproverStatus = async (userId, companyId, isApprover) => {
+  try {
+    const response = await axios.put(
+      `${BASE_URL}/${userId}/company/${companyId}/approver?isApprover=${isApprover}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("결재자 지정 변경 실패:", error);
+    throw error;
+  }
+};
+

@@ -6,7 +6,7 @@ import { FaPlus, FaTrash, FaSave, FaArrowLeft } from 'react-icons/fa';
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
 import * as S from './style';
 import { useAuth } from '../../contexts/AuthContext';
-import { setApprovalLines, fetchAdminUsers } from '../../api/expenseApi';
+import { setApprovalLines, fetchApprovers } from '../../api/expenseApi';
 import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole } from '../../constants/categories';
@@ -34,6 +34,7 @@ const ExpenseCreatePage = () => {
   // 3. 결재자 관련 상태
   const [adminUsers, setAdminUsers] = useState([]);
   const [selectedApprovers, setSelectedApprovers] = useState([]); // 선택된 결재자 ID들 (순서 보장)
+  const [loadingApprovers, setLoadingApprovers] = useState(true); // 결재자 목록 로딩 상태
 
   // 총 금액 자동 계산
   const totalAmount = details.reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -51,26 +52,24 @@ const ExpenseCreatePage = () => {
     return getCategoriesByRole(user?.role);
   }, [user?.role]);
 
-  // ADMIN 사용자들 불러오기
+  // 결재자 목록 불러오기
   useEffect(() => {
-    const loadAdminUsers = async () => {
+    const loadApprovers = async () => {
       try {
-        const response = await fetchAdminUsers();
+        setLoadingApprovers(true);
+        const response = await fetchApprovers();
         if (response.success) {
           setAdminUsers(response.data);
         }
       } catch (error) {
-        console.error('ADMIN 사용자 불러오기 실패:', error);
-        // TODO: ADMIN 사용자가 DB에 존재하지 않을 경우를 위한 임시 fallback
-        // 실제 운영 시 이 부분은 제거하고 적절한 에러 처리를 해야 합니다.
-        setAdminUsers([
-          { userId: 1, username: 'admin1', koreanName: '관리자1', position: '팀장' },
-          { userId: 2, username: 'admin2', koreanName: '관리자2', position: '부장' }
-        ]);
+        console.error('결재자 목록 불러오기 실패:', error);
+        setAdminUsers([]);
+      } finally {
+        setLoadingApprovers(false);
       }
     };
 
-    loadAdminUsers();
+    loadApprovers();
   }, []);
 
   // --- 이벤트 핸들러 ---
@@ -268,9 +267,6 @@ const ExpenseCreatePage = () => {
                   </span>
                 );
               })}
-              <div style={{ marginTop: '5px', fontSize: '12px', color: '#666' }}>
-                * 결재담당자(ACCOUNTANT)는 자동으로 맨 앞에 배치됩니다.
-              </div>
             </div>
           )}
           <S.ApproverGrid>
@@ -307,8 +303,13 @@ const ExpenseCreatePage = () => {
               );
             })}
           </S.ApproverGrid>
-          {adminUsers.length === 0 && (
-            <S.LoadingMessage>결재 가능한 관리자를 불러오는 중...</S.LoadingMessage>
+          {loadingApprovers && adminUsers.length === 0 && (
+            <S.LoadingMessage>결재자 목록을 불러오는 중...</S.LoadingMessage>
+          )}
+          {!loadingApprovers && adminUsers.length === 0 && (
+            <S.InfoMessage style={{ marginTop: '15px' }}>
+              결재자로 지정된 사용자가 없습니다. 관리자 페이지에서 결재자를 지정해주세요.
+            </S.InfoMessage>
           )}
         </S.Section>
       )}

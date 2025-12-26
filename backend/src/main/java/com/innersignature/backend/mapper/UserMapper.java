@@ -94,6 +94,12 @@ public interface UserMapper {
     // 회사 소속 거부
     int rejectUserCompany(@Param("userId") Long userId, @Param("companyId") Long companyId);
     
+    // 결재자 지정/해제
+    int updateApproverStatus(@Param("userId") Long userId, @Param("companyId") Long companyId, @Param("isApprover") Boolean isApprover);
+    
+    // 결재자 목록 조회 (회사별)
+    List<UserDto> findApprovers(@Param("companyId") Long companyId);
+    
     // 사용자가 소속된 회사 목록 조회 (CompanyDto 반환)
     List<com.innersignature.backend.dto.CompanyDto> findCompaniesByUserId(@Param("userId") Long userId);
     

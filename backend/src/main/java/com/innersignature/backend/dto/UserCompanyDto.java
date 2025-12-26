@@ -12,6 +12,7 @@ public class UserCompanyDto {
     private String position;         // 해당 회사에서의 직급
     private Boolean isActive;        // 활성화 상태
     private Boolean isPrimary;       // 기본 회사 여부
+    private Boolean isApprover;      // 결재자 지정 여부
     private String approvalStatus;    // 승인 상태 (PENDING, APPROVED, REJECTED)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

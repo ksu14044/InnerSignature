@@ -64,6 +64,11 @@ public class CompanyController {
                 if (!hasPrimary) {
                     userService.switchPrimaryCompany(userId, company.getCompanyId());
                 }
+                
+                // CEO인 경우 결재자로 자동 지정 (자신이 만든 회사)
+                if ("CEO".equals(user.getRole())) {
+                    userService.updateApproverStatus(userId, company.getCompanyId(), true);
+                }
             }
             
             logger.info("회사 생성 완료 - companyId: {}, companyName: {}, userId: {}", 

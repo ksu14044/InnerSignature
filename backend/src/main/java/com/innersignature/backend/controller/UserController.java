@@ -61,12 +61,30 @@ public class UserController {
                 return new ApiResponse<>(false, "비활성화된 계정입니다.", null);
             }
             
-            // JWT 토큰 생성 (companyId 포함)
-            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername(), user.getRole(), user.getCompanyId());
-            String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getUsername(), user.getRole(), user.getCompanyId());
+            // 기본 회사 정보 조회 (회사별 role 가져오기)
+            List<UserCompanyDto> userCompanies = userService.getUserCompanies(user.getUserId());
+            UserCompanyDto primaryCompany = userCompanies.stream()
+                .filter(uc -> Boolean.TRUE.equals(uc.getIsPrimary()) && "APPROVED".equals(uc.getApprovalStatus()))
+                .findFirst()
+                .orElse(null);
+            
+            String companyRole = user.getRole(); // 기본값은 전역 role
+            Long companyId = user.getCompanyId(); // 기본값은 user_tb의 companyId
+            
+            if (primaryCompany != null) {
+                companyRole = primaryCompany.getRole(); // 기본 회사의 role 사용
+                companyId = primaryCompany.getCompanyId(); // 기본 회사의 ID 사용
+            }
+            
+            // JWT 토큰 생성 (회사별 role과 companyId 포함)
+            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername(), companyRole, companyId);
+            String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getUsername(), companyRole, companyId);
             
             // 비밀번호는 보안상 프론트로 보내지 않는 게 좋습니다.
             user.setPassword(null);
+            // 회사별 role과 companyId로 업데이트 (프론트엔드에서 권한 체크에 사용)
+            user.setRole(companyRole);
+            user.setCompanyId(companyId);
             
             // 토큰과 사용자 정보 반환
             Map<String, Object> responseData = new HashMap<>();
@@ -158,6 +176,8 @@ public class UserController {
                             );
                             // 기본 회사로 설정
                             userService.switchPrimaryCompany(createdUser.getUserId(), request.getCompanyId());
+                            // CEO를 결재자로 자동 지정
+                            userService.updateApproverStatus(createdUser.getUserId(), request.getCompanyId(), true);
                         }
                     }
                 } catch (Exception e) {
@@ -178,10 +198,12 @@ public class UserController {
     }
 
     /**
-     * 결재자 목록 조회 API (ADMIN, CEO)
+     * 결재자 목록 조회 API (ADMIN, CEO) - Deprecated
      * 주소: GET /api/users/admins
+     * @deprecated 결재자 지정 기능으로 대체되었습니다. GET /api/users/approvers를 사용하세요.
      */
-    @Operation(summary = "결재자 목록 조회", description = "현재 회사의 ADMIN 및 CEO 역할 사용자 목록을 조회합니다.")
+    @Deprecated
+    @Operation(summary = "결재자 목록 조회 (Deprecated)", description = "현재 회사의 ADMIN 및 CEO 역할 사용자 목록을 조회합니다. 결재자 지정 기능으로 대체되었습니다.")
     @GetMapping("/users/admins")
     public ApiResponse<List<UserDto>> getAdminUsers() {
         try {
@@ -189,11 +211,63 @@ public class UserController {
             if (companyId == null) {
                 return new ApiResponse<>(false, "회사 정보가 없습니다.", null);
             }
+            // 기존 로직 유지 (하위 호환성)
             List<UserDto> adminUsers = userService.findAdminUsers(companyId);
             return new ApiResponse<>(true, "결재자 목록 조회 성공", adminUsers);
         } catch (Exception e) {
-            // printStackTrace 대신 예외를 던져서 전역 예외 핸들러에서 처리
             throw new RuntimeException("결재자 조회 중 오류 발생: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 결재자 지정/해제 API
+     * 주소: PUT /api/users/{userId}/company/{companyId}/approver
+     */
+    @Operation(summary = "결재자 지정/해제", description = "특정 사용자를 결재자로 지정하거나 해제합니다. (CEO/ADMIN 전용)")
+    @PutMapping("/users/{userId}/company/{companyId}/approver")
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
+    public ApiResponse<Void> updateApproverStatus(
+            @PathVariable Long userId,
+            @PathVariable Long companyId,
+            @RequestParam Boolean isApprover) {
+        try {
+            Long operatorId = SecurityUtil.getCurrentUserId();
+            Long operatorCompanyId = SecurityUtil.getCurrentCompanyId();
+            
+            // 회사 접근 권한 체크
+            if (operatorCompanyId == null || !operatorCompanyId.equals(companyId)) {
+                return new ApiResponse<>(false, "해당 회사에 대한 권한이 없습니다.", null);
+            }
+            
+            userService.updateApproverStatus(userId, companyId, isApprover);
+            logger.info("결재자 지정 변경 - operatorId: {}, userId: {}, companyId: {}, isApprover: {}", 
+                       operatorId, userId, companyId, isApprover);
+            return new ApiResponse<>(true, 
+                isApprover ? "결재자로 지정되었습니다." : "결재자 지정이 해제되었습니다.", null);
+        } catch (Exception e) {
+            logger.error("결재자 지정 변경 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    /**
+     * 결재자 목록 조회 API
+     * 주소: GET /api/users/approvers
+     */
+    @Operation(summary = "결재자 목록 조회", description = "현재 회사에서 결재자로 지정된 사용자 목록을 조회합니다.")
+    @GetMapping("/users/approvers")
+    public ApiResponse<List<UserDto>> getApprovers() {
+        try {
+            Long companyId = SecurityUtil.getCurrentCompanyId();
+            if (companyId == null) {
+                return new ApiResponse<>(false, "회사 정보가 없습니다.", null);
+            }
+            List<UserDto> approvers = userService.findApprovers(companyId);
+            logger.info("결재자 목록 조회 완료 - companyId: {}, count: {}", companyId, approvers.size());
+            return new ApiResponse<>(true, "결재자 목록 조회 성공", approvers);
+        } catch (Exception e) {
+            logger.error("결재자 목록 조회 실패", e);
+            return new ApiResponse<>(false, e.getMessage(), null);
         }
     }
     
@@ -367,9 +441,34 @@ public class UserController {
         UserDto user = userService.selectUserById(currentUserId);
         if (user != null) {
             user.setPassword(null); // 비밀번호 제거
-            // JWT 토큰의 companyId를 설정 (현재 활성 회사)
-            user.setCompanyId(currentCompanyId);
-            logger.info("현재 사용자 정보 조회 완료 - userId: {}, companyId: {}", currentUserId, currentCompanyId);
+            
+            // 현재 활성 회사의 role 조회
+            List<UserCompanyDto> userCompanies = userService.getUserCompanies(currentUserId);
+            UserCompanyDto currentCompany = null;
+            if (currentCompanyId != null) {
+                currentCompany = userCompanies.stream()
+                    .filter(uc -> uc.getCompanyId().equals(currentCompanyId) && "APPROVED".equals(uc.getApprovalStatus()))
+                    .findFirst()
+                    .orElse(null);
+            }
+            
+            if (currentCompany != null) {
+                // 회사별 role과 companyId 설정
+                user.setRole(currentCompany.getRole());
+                user.setCompanyId(currentCompanyId);
+            } else {
+                // 기본 회사 정보 사용
+                UserCompanyDto primaryCompany = userCompanies.stream()
+                    .filter(uc -> Boolean.TRUE.equals(uc.getIsPrimary()) && "APPROVED".equals(uc.getApprovalStatus()))
+                    .findFirst()
+                    .orElse(null);
+                if (primaryCompany != null) {
+                    user.setRole(primaryCompany.getRole());
+                    user.setCompanyId(primaryCompany.getCompanyId());
+                }
+            }
+            
+            logger.info("현재 사용자 정보 조회 완료 - userId: {}, companyId: {}, role: {}", currentUserId, user.getCompanyId(), user.getRole());
             return new ApiResponse<>(true, "현재 사용자 정보 조회 성공", user);
         } else {
             logger.error("현재 사용자 정보 조회 실패 - userId: {}", currentUserId);
@@ -783,13 +882,14 @@ public class UserController {
     
     @Operation(summary = "승인 대기 사용자 목록", description = "CEO 또는 ADMIN이 승인 대기 중인 사용자 목록을 조회합니다.")
     @GetMapping("/users/pending")
-    @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
     public ApiResponse<List<UserDto>> getPendingUsers() {
         try {
-            Long companyId = SecurityUtil.getCurrentCompanyId();
-            if (companyId == null) {
-                // ADMIN이 회사를 선택하지 않은 경우, 사용자 정보에서 companyId 가져오기
-                Long userId = SecurityUtil.getCurrentUserId();
+            Long userId = SecurityUtil.getCurrentUserId();
+            Long tempCompanyId = SecurityUtil.getCurrentCompanyId();
+            
+            final Long companyId;
+            if (tempCompanyId == null) {
+                // companyId가 없는 경우, 사용자 정보에서 companyId 가져오기
                 UserDto currentUser = userService.selectUserById(userId);
                 if (currentUser != null && currentUser.getCompanyId() != null) {
                     companyId = currentUser.getCompanyId();
@@ -797,7 +897,21 @@ public class UserController {
                     // companyId가 없으면 빈 리스트 반환 (에러가 아닌 빈 결과로 처리)
                     return new ApiResponse<>(true, "조회 성공", new java.util.ArrayList<>());
                 }
+            } else {
+                companyId = tempCompanyId;
             }
+            
+            // 회사별 역할 확인 (user_company_tb 기준)
+            List<UserCompanyDto> userCompanies = userService.getUserCompanies(userId);
+            boolean hasPermission = userCompanies.stream()
+                .anyMatch(uc -> uc.getCompanyId().equals(companyId) 
+                    && "APPROVED".equals(uc.getApprovalStatus())
+                    && ("CEO".equals(uc.getRole()) || "ADMIN".equals(uc.getRole())));
+            
+            if (!hasPermission) {
+                return new ApiResponse<>(false, "CEO 또는 ADMIN 권한이 필요합니다.", null);
+            }
+            
             List<UserDto> pendingUsers = userService.findPendingUsers(companyId);
             // 비밀번호 제거
             pendingUsers.forEach(user -> user.setPassword(null));
@@ -898,23 +1012,32 @@ public class UserController {
                 return new ApiResponse<>(false, "회사 정보를 찾을 수 없습니다.", null);
             }
             
-            // JWT 토큰 재발급
-            String token = jwtUtil.switchCompanyToken(
-                request.getCurrentToken(), 
+            // 사용자 기본 정보 조회 (username 가져오기)
+            UserDto user = userService.selectUserById(userId);
+            if (user == null) {
+                return new ApiResponse<>(false, "사용자 정보를 찾을 수 없습니다.", null);
+            }
+            
+            // JWT 토큰 재발급 (회사별 role 사용)
+            String token = jwtUtil.generateToken(
+                userId, 
+                user.getUsername(), 
+                userCompany.getRole(), // 회사별 role 사용
                 request.getCompanyId()
             );
             String refreshToken = jwtUtil.generateRefreshToken(
                 userId, 
-                userCompany.getUsername(), 
-                userCompany.getRole(), 
+                user.getUsername(), 
+                userCompany.getRole(), // 회사별 role 사용
                 request.getCompanyId()
             );
             
-            // 사용자 정보 조회
-            UserDto user = userService.selectUserById(userId);
+            // 사용자 정보 조회 (이미 위에서 조회함)
             user.setPassword(null);
             // JWT 토큰의 companyId를 설정 (현재 활성 회사)
             user.setCompanyId(request.getCompanyId());
+            // 회사별 role로 업데이트 (프론트엔드에서 권한 체크에 사용)
+            user.setRole(userCompany.getRole());
             
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("user", user);

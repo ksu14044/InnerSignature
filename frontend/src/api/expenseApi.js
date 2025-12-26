@@ -28,13 +28,24 @@ axios.interceptors.request.use(
   }
 );
 
-// 0. ADMIN 역할 사용자 조회
+// 0. ADMIN 역할 사용자 조회 (Deprecated)
 export const fetchAdminUsers = async () => {
   try {
     const response = await axios.get(`${USER_BASE_URL}/admins`);
     return response.data;
   } catch (error) {
     console.error("ADMIN 사용자 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 0-1. 결재자 목록 조회 (결재자로 지정된 사용자만)
+export const fetchApprovers = async () => {
+  try {
+    const response = await axios.get(`${USER_BASE_URL}/approvers`);
+    return response.data;
+  } catch (error) {
+    console.error("결재자 조회 실패:", error);
     throw error;
   }
 };
