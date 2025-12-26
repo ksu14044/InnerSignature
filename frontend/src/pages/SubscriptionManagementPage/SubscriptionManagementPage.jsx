@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaUser } from 'react-icons/fa';
 import { getCurrentSubscription, cancelSubscription, updateSubscription } from '../../api/subscriptionApi';
 import { getPlans } from '../../api/subscriptionApi';
+import { getTotalAvailableAmount } from '../../api/creditApi';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import PaymentConfirmModal from '../../components/PaymentConfirmModal/PaymentConfirmModal';
@@ -18,6 +19,7 @@ const SubscriptionManagementPage = () => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [totalCredit, setTotalCredit] = useState(0);
 
   useEffect(() => {
     if (!user || (user.role !== 'CEO' && user.role !== 'ADMIN')) {
@@ -31,9 +33,10 @@ const SubscriptionManagementPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const [subscriptionRes, plansRes] = await Promise.all([
+      const [subscriptionRes, plansRes, creditRes] = await Promise.all([
         getCurrentSubscription().catch(() => ({ success: false, data: null })),
-        getPlans()
+        getPlans(),
+        getTotalAvailableAmount().catch(() => ({ success: false, data: null }))
       ]);
       
       if (subscriptionRes.success && subscriptionRes.data) {
@@ -49,6 +52,10 @@ const SubscriptionManagementPage = () => {
         }
       } else {
         setError(plansRes.message || '플랜 목록을 불러오지 못했습니다.');
+      }
+      
+      if (creditRes.success && creditRes.data) {
+        setTotalCredit(creditRes.data.totalAmount || 0);
       }
     } catch (err) {
       setError('데이터를 불러오는데 실패했습니다.');
@@ -239,6 +246,16 @@ const SubscriptionManagementPage = () => {
               </S.InfoValue>
             </S.InfoSection>
           )}
+
+          <S.InfoSection>
+            <S.InfoLabel>사용 가능한 크레딧</S.InfoLabel>
+            <S.InfoValue>
+              <S.CreditAmount>{totalCredit.toLocaleString()}원</S.CreditAmount>
+              <S.CreditLink onClick={() => navigate('/credits')}>
+                크레딧 내역 보기 →
+              </S.CreditLink>
+            </S.InfoValue>
+          </S.InfoSection>
 
           {/* 다운그레이드 예정 안내 */}
           {subscription.pendingPlanId && subscription.pendingPlan && subscription.pendingChangeDate && (

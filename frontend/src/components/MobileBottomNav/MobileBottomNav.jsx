@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaHome, FaChartBar, FaUser, FaList, FaCreditCard } from 'react-icons/fa';
+import { FaHome, FaChartBar, FaUser, FaList, FaCreditCard, FaUsers } from 'react-icons/fa';
 import * as S from './style';
 
 const MobileBottomNav = () => {
@@ -20,13 +20,19 @@ const MobileBottomNav = () => {
     if (path === '/subscriptions/manage') {
       return location.pathname.startsWith('/subscriptions');
     }
+    if (path === '/users') {
+      return location.pathname === '/users';
+    }
     return location.pathname === path;
   };
+
+  // 사용자 관리 권한이 있는지 확인
+  const canManageUsers = user?.role === 'SUPERADMIN' || user?.role === 'CEO' || user?.role === 'ADMIN';
 
   const navItems = user?.role === 'SUPERADMIN'
     ? [
         { path: '/superadmin/dashboard', icon: FaHome, label: '대시보드' },
-        { path: '/profile', icon: FaUser, label: '내정보' },
+        { path: '/users', icon: FaUsers, label: '사용자관리' },
       ]
     : [
         { path: '/expenses', icon: FaHome, label: '목록' },
@@ -39,7 +45,9 @@ const MobileBottomNav = () => {
         ...(user?.role === 'CEO' || user?.role === 'ADMIN'
           ? [{ path: '/subscriptions/manage', icon: FaCreditCard, label: '구독' }]
           : []),
-        { path: '/profile', icon: FaUser, label: '내정보' },
+        canManageUsers 
+          ? { path: '/users', icon: FaUsers, label: '사용자관리' }
+          : { path: '/profile', icon: FaUser, label: '내정보' },
       ];
 
   return (

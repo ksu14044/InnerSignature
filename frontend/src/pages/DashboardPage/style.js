@@ -433,3 +433,54 @@ export const SubscriptionCardFooter = styled.div`
   text-align: right;
 `;
 
+export const CreditCard = styled.div`
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  @media (max-width: 480px) {
+    margin: 0 8px 16px 8px;
+    padding: 16px;
+    border-radius: 16px;
+  }
+`;
+
+export const CreditCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+`;
+
+export const CreditCardTitle = styled.div`
+  font-size: 16px;
+  opacity: 0.9;
+  font-weight: 600;
+`;
+
+export const CreditAmount = styled.div`
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 10px;
+
+  @media (max-width: 480px) {
+    font-size: 28px;
+  }
+`;
+
+export const CreditCardFooter = styled.div`
+  font-size: 14px;
+  opacity: 0.8;
+  text-align: right;
+`;
+

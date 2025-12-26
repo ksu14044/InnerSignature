@@ -26,6 +26,16 @@ export const Header = styled.div`
   margin-bottom: 32px;
   padding-bottom: 16px;
   border-bottom: 2px solid var(--primary-color);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 export const HeaderLeft = styled.div`
@@ -49,6 +59,15 @@ export const WelcomeText = styled.span`
 export const HeaderRight = styled.div`
   display: flex;
   gap: 12px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 export const Toolbar = styled.div`
@@ -56,6 +75,11 @@ export const Toolbar = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+
+  @media (max-width: 480px) {
+    padding: 0 8px;
+    margin-bottom: 16px;
+  }
 `;
 
 export const Button = styled.button`
@@ -80,6 +104,14 @@ export const Button = styled.button`
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+    font-size: 13px;
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
   }
 `;
 
@@ -114,6 +146,10 @@ export const Table = styled.table`
   td {
     padding: 16px;
   }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 export const StatusBadge = styled.span`
@@ -128,6 +164,12 @@ export const StatusBadge = styled.span`
 export const ActionButtons = styled.div`
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    width: 100%;
+  }
 `;
 
 export const IconButton = styled.button`
@@ -177,6 +219,13 @@ export const Modal = styled.div`
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+
+  @media (max-width: 480px) {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
 `;
 
 export const ModalHeader = styled.div`
@@ -232,6 +281,12 @@ export const Input = styled.input`
     background-color: #f8f9fa;
     cursor: not-allowed;
   }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    font-size: 16px;
+    min-height: 48px;
+  }
 `;
 
 export const Select = styled.select`
@@ -240,6 +295,12 @@ export const Select = styled.select`
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 14px;
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    font-size: 16px;
+    min-height: 48px;
+  }
 `;
 
 export const ModalFooter = styled.div`
@@ -293,6 +354,13 @@ export const RoleSelect = styled.select`
     opacity: 0.6;
     cursor: not-allowed;
   }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    min-height: 44px;
+  }
 `;
 
 export const ProfileCard = styled.div`
@@ -301,6 +369,12 @@ export const ProfileCard = styled.div`
   padding: 24px;
   margin-bottom: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    margin: 0 8px 16px 8px;
+    border-radius: 12px;
+  }
 `;
 
 export const CardTitle = styled.h2`
@@ -310,5 +384,101 @@ export const CardTitle = styled.h2`
   color: var(--dark-color);
   border-bottom: 2px solid var(--primary-color);
   padding-bottom: 10px;
+
+  @media (max-width: 480px) {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+`;
+
+// 모바일 카드 뷰
+export const MobileCardContainer = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: block;
+    padding: 8px;
+  }
+`;
+
+export const UserCard = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+export const UserCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e9ecef;
+`;
+
+export const UserCardInfo = styled.div`
+  flex: 1;
+`;
+
+export const UserCardName = styled.div`
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin-bottom: 4px;
+`;
+
+export const UserCardId = styled.div`
+  font-size: 14px;
+  color: #666;
+`;
+
+export const UserCardBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+`;
+
+export const UserCardRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+`;
+
+export const UserCardLabel = styled.span`
+  color: #666;
+  font-weight: 500;
+`;
+
+export const UserCardValue = styled.span`
+  color: var(--dark-color);
+  font-weight: 600;
+`;
+
+export const UserCardActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+`;
+
+export const MobileSelect = styled.select`
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  min-height: 48px;
+`;
+
+export const MobileCheckbox = styled.input`
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
 `;
 

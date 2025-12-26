@@ -1,12 +1,15 @@
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaBars, FaBell, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import { FaBars, FaBell, FaUser, FaSignOutAlt, FaBuilding, FaChevronDown, FaCheck } from 'react-icons/fa';
 import * as S from './style';
 
 const MobileAppBar = ({ title, onMenuClick }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, companies, switchCompany } = useAuth();
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+  const companyDropdownRef = useRef(null);
   const isLoginPage = location.pathname === '/' || location.pathname.startsWith('/find-') || location.pathname.startsWith('/reset-password');
 
   if (isLoginPage) {
@@ -50,6 +53,35 @@ const MobileAppBar = ({ title, onMenuClick }) => {
                          location.pathname === '/tax/summary' ||
                          location.pathname.startsWith('/subscriptions');
 
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
+        setIsCompanyDropdownOpen(false);
+      }
+    };
+
+    if (isCompanyDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isCompanyDropdownOpen]);
+
+  const handleCompanySwitch = async (companyId) => {
+    try {
+      await switchCompany(companyId);
+      setIsCompanyDropdownOpen(false);
+      window.location.reload(); // 페이지 새로고침하여 데이터 업데이트
+    } catch (error) {
+      alert('회사 전환에 실패했습니다.');
+    }
+  };
+
   return (
     <S.AppBar>
       <S.LeftSection>
@@ -63,6 +95,27 @@ const MobileAppBar = ({ title, onMenuClick }) => {
       <S.RightSection>
         {user && (
           <>
+            {companies && companies.length > 1 && (
+              <S.CompanySelector ref={companyDropdownRef}>
+                <S.CompanyButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>
+                  <FaBuilding />
+                </S.CompanyButton>
+                {isCompanyDropdownOpen && (
+                  <S.CompanyDropdown>
+                    {companies.map((company) => (
+                      <S.CompanyDropdownItem
+                        key={company.companyId}
+                        selected={company.companyId === user.companyId}
+                        onClick={() => handleCompanySwitch(company.companyId)}
+                      >
+                        {company.companyId === user.companyId && <FaCheck style={{ marginRight: '8px', color: '#007bff' }} />}
+                        {company.companyName}
+                      </S.CompanyDropdownItem>
+                    ))}
+                  </S.CompanyDropdown>
+                )}
+              </S.CompanySelector>
+            )}
             {location.pathname !== '/profile' && (
               <S.IconButton onClick={() => navigate('/profile')}>
                 <FaUser />

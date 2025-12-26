@@ -123,3 +123,8 @@ export const StatusBadge = styled.span`
   color: ${props => props.color};
 `;
 
+export const PaymentMethod = styled.span`
+  color: ${props => props.color || '#6c757d'};
+  font-weight: ${props => props.color === '#28a745' ? 'bold' : 'normal'};
+`;
+

@@ -66,6 +66,22 @@ const PaymentHistoryPage = () => {
     return colors[status] || '#6c757d';
   };
 
+  const getPaymentMethodLabel = (method) => {
+    const labels = {
+      'CARD': '카드',
+      'CREDIT_USED': '크레딧 사용',
+      'BANK_TRANSFER': '계좌이체'
+    };
+    return labels[method] || method || '-';
+  };
+
+  const getPaymentMethodColor = (method) => {
+    if (method === 'CREDIT_USED') {
+      return '#28a745';
+    }
+    return '#6c757d';
+  };
+
   if (loading) {
     return <LoadingOverlay />;
   }
@@ -102,7 +118,11 @@ const PaymentHistoryPage = () => {
               <S.TableRow key={payment.paymentId}>
                 <S.TableCell>{formatDate(payment.paymentDate)}</S.TableCell>
                 <S.TableCell>{payment.amount?.toLocaleString()}원</S.TableCell>
-                <S.TableCell>{payment.paymentMethod || '-'}</S.TableCell>
+                <S.TableCell>
+                  <S.PaymentMethod color={getPaymentMethodColor(payment.paymentMethod)}>
+                    {getPaymentMethodLabel(payment.paymentMethod)}
+                  </S.PaymentMethod>
+                </S.TableCell>
                 <S.TableCell>
                   <S.StatusBadge color={getStatusColor(payment.paymentStatus)}>
                     {getStatusLabel(payment.paymentStatus)}

@@ -7,6 +7,7 @@ import {
   fetchCategoryRatio 
 } from '../../api/expenseApi';
 import { getCurrentSubscription } from '../../api/subscriptionApi';
+import { getTotalAvailableAmount } from '../../api/creditApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { STATUS_KOREAN } from '../../constants/status';
 import { 
@@ -44,6 +45,7 @@ const DashboardPage = () => {
   const [statusStats, setStatusStats] = useState([]);
   const [categoryRatio, setCategoryRatio] = useState([]);
   const [subscription, setSubscription] = useState(null);
+  const [totalCredit, setTotalCredit] = useState(0);
   const [loading, setLoading] = useState(false);
   const debounceTimer = useRef(null);
 
@@ -55,11 +57,12 @@ const DashboardPage = () => {
     try {
       setLoading(true);
       
-      const [statsRes, trendRes, statusRes, categoryRes] = await Promise.all([
+      const [statsRes, trendRes, statusRes, categoryRes, creditRes] = await Promise.all([
         fetchDashboardStats(filters.startDate || null, filters.endDate || null),
         fetchMonthlyTrend(filters.startDate || null, filters.endDate || null),
         fetchStatusStats(filters.startDate || null, filters.endDate || null),
-        fetchCategoryRatio(filters.startDate || null, filters.endDate || null)
+        fetchCategoryRatio(filters.startDate || null, filters.endDate || null),
+        getTotalAvailableAmount().catch(() => ({ success: false, data: null }))
       ]);
 
       if (statsRes.success) {
@@ -73,6 +76,9 @@ const DashboardPage = () => {
       }
       if (categoryRes.success) {
         setCategoryRatio(categoryRes.data || []);
+      }
+      if (creditRes.success && creditRes.data) {
+        setTotalCredit(creditRes.data.totalAmount || 0);
       }
     } catch (error) {
       console.error('대시보드 데이터 로드 실패:', error);
@@ -167,6 +173,17 @@ const DashboardPage = () => {
           </S.Button>
         </div>
       </S.Header>
+
+      {/* 크레딧 카드 */}
+      {totalCredit > 0 && (
+        <S.CreditCard onClick={() => navigate('/credits')}>
+          <S.CreditCardHeader>
+            <S.CreditCardTitle>사용 가능한 크레딧</S.CreditCardTitle>
+          </S.CreditCardHeader>
+          <S.CreditAmount>{totalCredit.toLocaleString()}원</S.CreditAmount>
+          <S.CreditCardFooter>크레딧 내역 보기 →</S.CreditCardFooter>
+        </S.CreditCard>
+      )}
 
       {/* 구독 상태 카드 */}
       {subscription && (() => {

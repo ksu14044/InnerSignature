@@ -282,3 +282,24 @@ export const NoticeText = styled.div`
   }
 `;
 
+export const CreditAmount = styled.span`
+  font-size: 20px;
+  font-weight: bold;
+  color: #28a745;
+  margin-right: 12px;
+`;
+
+export const CreditLink = styled.button`
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  padding: 0;
+
+  &:hover {
+    color: #0056b3;
+  }
+`;
+
