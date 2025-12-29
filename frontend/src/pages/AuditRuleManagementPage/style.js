@@ -325,3 +325,60 @@ export const Alert = styled.div`
   text-align: center;
 `;
 
+export const HelpText = styled.div`
+  font-size: 12px;
+  color: var(--secondary-color);
+  margin-top: 4px;
+  line-height: 1.4;
+`;
+
+export const CategoryCheckboxGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background-color: var(--light-color);
+  border-radius: 8px;
+  border: 2px solid var(--border-color);
+`;
+
+export const CategoryCheckbox = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  
+  label {
+    font-size: 14px;
+    color: var(--dark-color);
+    cursor: pointer;
+    user-select: none;
+  }
+`;
+
+export const InfoBox = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background-color: #e7f3ff;
+  border-left: 4px solid var(--primary-color);
+  border-radius: 4px;
+`;
+
+export const InfoIcon = styled.span`
+  font-size: 18px;
+  flex-shrink: 0;
+`;
+
+export const InfoText = styled.div`
+  font-size: 13px;
+  color: var(--dark-color);
+  line-height: 1.5;
+`;
+

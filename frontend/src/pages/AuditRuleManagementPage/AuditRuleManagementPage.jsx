@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAuditRuleList, createAuditRule, updateAuditRule, deleteAuditRule } from '../../api/auditApi';
+import { EXPENSE_CATEGORIES } from '../../constants/categories';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import { FaPlus, FaEdit, FaTrash, FaShieldAlt } from 'react-icons/fa';
@@ -54,10 +55,11 @@ const AuditRuleManagementPage = () => {
   const handleOpenModal = (rule = null) => {
     if (rule) {
       setEditingRule(rule);
+      const ruleConfig = rule.getRuleConfig ? rule.getRuleConfig() : (rule.ruleConfig || {});
       setFormData({
         ruleName: rule.ruleName || '',
         ruleType: rule.ruleType || 'NIGHT_TIME',
-        ruleConfig: rule.getRuleConfig ? rule.getRuleConfig() : {},
+        ruleConfig: ruleConfig,
         isActive: rule.isActive !== undefined ? rule.isActive : true
       });
     } else {
@@ -70,6 +72,34 @@ const AuditRuleManagementPage = () => {
       });
     }
     setIsModalOpen(true);
+  };
+
+  // 규칙 유형 변경 시 설정 초기화
+  const handleRuleTypeChange = (ruleType) => {
+    let defaultConfig = {};
+    if (ruleType === 'DUPLICATE_MERCHANT') {
+      defaultConfig = { threshold: 2 };
+    } else if (ruleType === 'FORBIDDEN_CATEGORY') {
+      defaultConfig = { categories: [] };
+    }
+    setFormData(prev => ({
+      ...prev,
+      ruleType,
+      ruleConfig: defaultConfig
+    }));
+  };
+
+  // 금지 업종 카테고리 선택/해제
+  const handleCategoryToggle = (category) => {
+    const currentCategories = formData.ruleConfig?.categories || [];
+    const newCategories = currentCategories.includes(category)
+      ? currentCategories.filter(c => c !== category)
+      : [...currentCategories, category];
+    
+    setFormData(prev => ({
+      ...prev,
+      ruleConfig: { ...prev.ruleConfig, categories: newCategories }
+    }));
   };
 
   const handleCloseModal = () => {
@@ -192,12 +222,25 @@ const AuditRuleManagementPage = () => {
                   )}
                 </S.ActionButtons>
               </S.RuleHeader>
-              {rule.ruleConfig && Object.keys(rule.ruleConfig).length > 0 && (
-                <S.RuleConfig>
-                  <S.ConfigLabel>설정:</S.ConfigLabel>
-                  <S.ConfigValue>{JSON.stringify(rule.ruleConfig, null, 2)}</S.ConfigValue>
-                </S.RuleConfig>
-              )}
+              {(() => {
+                const ruleConfig = rule.getRuleConfig ? rule.getRuleConfig() : (rule.ruleConfig || {});
+                if (!ruleConfig || Object.keys(ruleConfig).length === 0) return null;
+                
+                return (
+                  <S.RuleConfig>
+                    <S.ConfigLabel>설정:</S.ConfigLabel>
+                    {rule.ruleType === 'DUPLICATE_MERCHANT' && ruleConfig.threshold && (
+                      <S.ConfigValue>중복 횟수 기준: {ruleConfig.threshold}회 이상</S.ConfigValue>
+                    )}
+                    {rule.ruleType === 'FORBIDDEN_CATEGORY' && ruleConfig.categories && (
+                      <S.ConfigValue>금지 업종: {ruleConfig.categories.length > 0 ? ruleConfig.categories.join(', ') : '없음'}</S.ConfigValue>
+                    )}
+                    {(rule.ruleType === 'NIGHT_TIME' || rule.ruleType === 'WEEKEND') && (
+                      <S.ConfigValue>추가 설정 없음</S.ConfigValue>
+                    )}
+                  </S.RuleConfig>
+                );
+              })()}
             </S.RuleCard>
           ))
         )}
@@ -226,7 +269,7 @@ const AuditRuleManagementPage = () => {
                   <S.Label>규칙 유형</S.Label>
                   <S.Select
                     value={formData.ruleType}
-                    onChange={(e) => setFormData(prev => ({ ...prev, ruleType: e.target.value }))}
+                    onChange={(e) => handleRuleTypeChange(e.target.value)}
                     disabled={!!editingRule}
                     required
                   >
@@ -235,22 +278,59 @@ const AuditRuleManagementPage = () => {
                     ))}
                   </S.Select>
                 </S.FormGroup>
-                <S.FormGroup>
-                  <S.Label>규칙 설정 (JSON 형식)</S.Label>
-                  <S.TextArea
-                    value={JSON.stringify(formData.ruleConfig, null, 2)}
-                    onChange={(e) => {
-                      try {
-                        const config = JSON.parse(e.target.value);
-                        setFormData(prev => ({ ...prev, ruleConfig: config }));
-                      } catch {
-                        // JSON 파싱 실패 시 무시
-                      }
-                    }}
-                    placeholder='예: {"threshold": 2}'
-                    rows="4"
-                  />
-                </S.FormGroup>
+
+                {/* 규칙 유형별 설정 폼 */}
+                {formData.ruleType === 'DUPLICATE_MERCHANT' && (
+                  <S.FormGroup>
+                    <S.Label>중복 횟수 기준</S.Label>
+                    <S.Input
+                      type="number"
+                      min="2"
+                      value={formData.ruleConfig?.threshold || 2}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        ruleConfig: { ...prev.ruleConfig, threshold: parseInt(e.target.value) || 2 }
+                      }))}
+                      placeholder="예: 2"
+                    />
+                    <S.HelpText>같은 가맹점에서 몇 회 이상 결제 시 감사할지 설정합니다. (기본값: 2회)</S.HelpText>
+                  </S.FormGroup>
+                )}
+
+                {formData.ruleType === 'FORBIDDEN_CATEGORY' && (
+                  <S.FormGroup>
+                    <S.Label>금지 업종 선택</S.Label>
+                    <S.CategoryCheckboxGroup>
+                      {EXPENSE_CATEGORIES.map(category => (
+                        <S.CategoryCheckbox key={category.value}>
+                          <input
+                            type="checkbox"
+                            id={`category-${category.value}`}
+                            checked={(formData.ruleConfig?.categories || []).includes(category.value)}
+                            onChange={() => handleCategoryToggle(category.value)}
+                          />
+                          <label htmlFor={`category-${category.value}`}>
+                            {category.label}
+                          </label>
+                        </S.CategoryCheckbox>
+                      ))}
+                    </S.CategoryCheckboxGroup>
+                    <S.HelpText>선택한 업종으로 지출 시 자동으로 감사 로그가 생성됩니다.</S.HelpText>
+                  </S.FormGroup>
+                )}
+
+                {(formData.ruleType === 'NIGHT_TIME' || formData.ruleType === 'WEEKEND') && (
+                  <S.FormGroup>
+                    <S.InfoBox>
+                      <S.InfoIcon>ℹ️</S.InfoIcon>
+                      <S.InfoText>
+                        {formData.ruleType === 'NIGHT_TIME' 
+                          ? '심야 시간대(22시~06시) 사용 내역을 자동으로 감사합니다. 추가 설정이 필요하지 않습니다.'
+                          : '주말 및 공휴일 사용 내역을 자동으로 감사합니다. 추가 설정이 필요하지 않습니다.'}
+                      </S.InfoText>
+                    </S.InfoBox>
+                  </S.FormGroup>
+                )}
                 <S.FormGroup>
                   <S.CheckboxLabel>
                     <input
