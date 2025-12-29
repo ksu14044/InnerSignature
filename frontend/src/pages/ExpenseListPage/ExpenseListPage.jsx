@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { fetchExpenseList, deleteExpense, fetchPendingApprovals, downloadExpensesExcel } from '../../api/expenseApi';
 import { getPendingUsers, approveUser, getUserCompanies } from '../../api/userApi';
 import * as S from './style';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaUser, FaBuilding, FaChevronDown, FaCheck, FaTimesCircle, FaFileExcel } from 'react-icons/fa';
 import { STATUS_KOREAN, EXPENSE_STATUS } from '../../constants/status';
@@ -38,6 +38,7 @@ const ExpenseListPage = () => {
 
   const pageSize = 10;
   const navigate = useNavigate(); // 페이지 이동 훅
+  const [searchParams, setSearchParams] = useSearchParams();
   const { logout, user, companies, switchCompany } = useAuth();
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
@@ -304,6 +305,42 @@ const ExpenseListPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userId]); // user 전체 대신 user?.userId만 사용
+
+  // URL 파라미터로 알림 모달 열기
+  useEffect(() => {
+    const openNotifications = searchParams.get('openNotifications');
+    const openApprovals = searchParams.get('openApprovals');
+    
+    if (openNotifications === 'true') {
+      setIsNotificationModalOpen(true);
+      // URL에서 파라미터 제거
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('openNotifications');
+      setSearchParams(newSearchParams, { replace: true });
+    }
+    
+    if (openApprovals === 'true') {
+      setIsApprovalModalOpen(true);
+      // URL에서 파라미터 제거
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('openApprovals');
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  // 커스텀 이벤트로 모달 열기 (이미 expenses 페이지에 있을 때)
+  useEffect(() => {
+    const handleOpenNotificationModal = () => setIsNotificationModalOpen(true);
+    const handleOpenApprovalModal = () => setIsApprovalModalOpen(true);
+
+    window.addEventListener('openNotificationModal', handleOpenNotificationModal);
+    window.addEventListener('openApprovalModal', handleOpenApprovalModal);
+
+    return () => {
+      window.removeEventListener('openNotificationModal', handleOpenNotificationModal);
+      window.removeEventListener('openApprovalModal', handleOpenApprovalModal);
+    };
+  }, []);
 
   if (loading) return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
 

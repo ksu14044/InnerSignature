@@ -84,6 +84,45 @@ export const IconButton = styled.button`
   }
 `;
 
+// 알림 배지 스타일
+export const NotificationBadge = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #ff6b6b;
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 16px;
+  margin-right: 4px;
+
+  &:active {
+    background-color: #ff5252;
+    transform: scale(0.95);
+  }
+`;
+
+export const NotificationCount = styled.span`
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background-color: #ff1744;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  border: 2px solid white;
+`;
+
 export const CompanySelector = styled.div`
   position: relative;
   margin-right: 4px;

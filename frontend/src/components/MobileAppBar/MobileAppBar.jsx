@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { FaBars, FaBell, FaUser, FaSignOutAlt, FaBuilding, FaChevronDown, FaCheck } from 'react-icons/fa';
+import { fetchPendingApprovals } from '../../api/expenseApi';
+import { getPendingUsers } from '../../api/userApi';
 import * as S from './style';
 
 const MobileAppBar = ({ title, onMenuClick }) => {
@@ -9,6 +11,8 @@ const MobileAppBar = ({ title, onMenuClick }) => {
   const location = useLocation();
   const { user, logout, companies, switchCompany } = useAuth();
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
   const companyDropdownRef = useRef(null);
   const isLoginPage = location.pathname === '/' || location.pathname.startsWith('/find-') || location.pathname.startsWith('/reset-password');
 
@@ -30,6 +34,40 @@ const MobileAppBar = ({ title, onMenuClick }) => {
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [isCompanyDropdownOpen]);
+
+  // 알림 데이터 가져오기
+  useEffect(() => {
+    if (!user || isLoginPage) return;
+
+    // 미서명 건 조회 (알람)
+    if (user.userId) {
+      fetchPendingApprovals(user.userId)
+        .then((response) => {
+          if (response.success) {
+            setPendingApprovals(response.data || []);
+          }
+        })
+        .catch((error) => {
+          console.error('미서명 건 조회 실패:', error);
+        });
+    }
+
+    // 승인 대기 사용자 조회 (CEO, ADMIN만)
+    if (user.role === 'CEO' || user.role === 'ADMIN') {
+      getPendingUsers()
+        .then((response) => {
+          if (response.success) {
+            setPendingUsers(response.data || []);
+          } else {
+            setPendingUsers([]);
+          }
+        })
+        .catch((error) => {
+          console.error('승인 대기 사용자 조회 실패:', error);
+          setPendingUsers([]);
+        });
+    }
+  }, [user, isLoginPage, location.pathname]);
 
   if (isLoginPage) {
     return null;
@@ -95,6 +133,47 @@ const MobileAppBar = ({ title, onMenuClick }) => {
       <S.RightSection>
         {user && (
           <>
+            {/* 알림 배지 */}
+            {pendingApprovals.length > 0 && (
+              <S.NotificationBadge 
+                onClick={() => {
+                  if (location.pathname === '/expenses') {
+                    // 이미 expenses 페이지에 있으면 쿼리 파라미터만 추가
+                    navigate('/expenses?openNotifications=true', { replace: true });
+                    // 페이지 새로고침 없이 모달 열기 위해 약간의 지연
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('openNotificationModal'));
+                    }, 100);
+                  } else {
+                    navigate('/expenses?openNotifications=true');
+                  }
+                }}
+                title={`서명 대기: ${pendingApprovals.length}건`}
+              >
+                <FaBell />
+                <S.NotificationCount>{pendingApprovals.length}</S.NotificationCount>
+              </S.NotificationBadge>
+            )}
+            {/* 승인 대기 배지 (CEO, ADMIN만 표시) */}
+            {(user.role === 'CEO' || user.role === 'ADMIN') && pendingUsers.length > 0 && (
+              <S.NotificationBadge 
+                onClick={() => {
+                  if (location.pathname === '/expenses') {
+                    navigate('/expenses?openApprovals=true', { replace: true });
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('openApprovalModal'));
+                    }, 100);
+                  } else {
+                    navigate('/expenses?openApprovals=true');
+                  }
+                }}
+                title={`승인 대기: ${pendingUsers.length}건`}
+                style={{ backgroundColor: '#4caf50', marginRight: '4px' }}
+              >
+                <FaUser />
+                <S.NotificationCount>{pendingUsers.length}</S.NotificationCount>
+              </S.NotificationBadge>
+            )}
             {companies && companies.length > 1 && (
               <S.CompanySelector ref={companyDropdownRef}>
                 <S.CompanyButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>

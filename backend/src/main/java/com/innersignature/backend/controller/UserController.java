@@ -563,8 +563,28 @@ public class UserController {
         var claims = jwtUtil.parseToken(refreshToken);
         Long userId = Long.parseLong(claims.getSubject());
         String username = claims.get("username", String.class);
-        String role = claims.get("role", String.class);
         Long companyId = claims.get("companyId", Long.class);
+
+        // 토큰의 companyId에 해당하는 회사에서의 role을 DB에서 조회
+        String role = null;
+        if (companyId != null) {
+            List<UserCompanyDto> userCompanies = userService.getUserCompanies(userId);
+            UserCompanyDto currentCompany = userCompanies.stream()
+                .filter(uc -> uc.getCompanyId().equals(companyId) && "APPROVED".equals(uc.getApprovalStatus()))
+                .findFirst()
+                .orElse(null);
+            
+            if (currentCompany != null) {
+                role = currentCompany.getRole(); // 해당 회사에서의 role 사용
+            }
+        }
+        
+        // role을 찾지 못한 경우 (회사 탈퇴 등) fallback
+        if (role == null) {
+            role = claims.get("role", String.class); // 기존 role 사용 (하위 호환성)
+            logger.warn("토큰 재발급 시 회사별 role을 찾지 못함 - userId: {}, companyId: {}, fallback role 사용: {}", 
+                userId, companyId, role);
+        }
 
         // 리프레시 토큰 회전: 기존 토큰 블랙리스트 처리
         jwtBlacklistService.blacklist(refreshToken);
@@ -576,6 +596,7 @@ public class UserController {
         responseData.put("token", newAccessToken);
         responseData.put("refreshToken", newRefreshToken);
 
+        logger.info("토큰 재발급 완료 - userId: {}, companyId: {}, role: {}", userId, companyId, role);
         return new ApiResponse<>(true, "토큰이 재발급되었습니다.", responseData);
     }
 

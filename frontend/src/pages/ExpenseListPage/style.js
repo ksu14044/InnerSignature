@@ -15,10 +15,12 @@ export const Container = styled.div`
     padding: 0;
     width: 100%;
     max-width: 100%;
-    min-height: auto;
+    min-height: calc(100vh - 56px - 64px);
     background: #f5f5f5;
     padding-top: 56px;
     padding-bottom: 64px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 `;
 
@@ -606,15 +608,6 @@ export const Table = styled.table`
   background-color: white;
 `;
 
-export const AmountTh = styled.th`
-  padding: 16px 12px;
-  border-bottom: 2px solid var(--border-color);
-  color: var(--dark-color);
-  font-weight: 600;
-  font-size: 14px;
-  text-align: center !important;
-`;
-
 export const Thead = styled.thead`
   background-color: var(--light-color);
 
@@ -627,7 +620,7 @@ export const Thead = styled.thead`
     text-align: center;
   }
   
-  th:nth-of-type(1) {
+  th:nth-of-type(2) {
     max-width: 300px;
     text-align: left;
     
@@ -638,11 +631,6 @@ export const Thead = styled.thead`
     @media (max-width: 768px) {
       max-width: 150px;
     }
-  }
-  
-  /* AmountTh는 가운데 정렬 */
-  ${AmountTh} {
-    text-align: center !important;
   }
 `;
 
@@ -676,8 +664,15 @@ export const TitleTd = styled.td`
   }
 `;
 
+export const AmountTh = styled.th`
+  text-align: right !important;
+  font-weight: 600;
+`;
+
 export const AmountTd = styled.td`
-  text-align: center !important;
+  text-align: right !important;
+  font-weight: 600;
+  color: var(--primary-color);
 `;
 
 export const StyledLink = styled(Link)`

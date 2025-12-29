@@ -10,10 +10,12 @@ export const Container = styled.div`
     padding: 0;
     width: 100%;
     max-width: 100%;
-    min-height: auto;
+    min-height: calc(100vh - 56px - 64px);
     background: #f5f5f5;
     padding-top: 56px;
     padding-bottom: 64px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 `;
 
@@ -163,18 +165,12 @@ export const ButtonGroup = styled.div`
   border-top: 1px solid #e9ecef;
 
   @media (max-width: 480px) {
-    position: fixed;
-    bottom: 64px;
-    left: 0;
-    right: 0;
-    background: white;
-    padding: 12px 16px;
-    margin: 0;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-    border-top: 1px solid #f0f0f0;
-    z-index: 998;
+    position: relative;
+    margin-top: 24px;
+    padding-top: 20px;
     justify-content: stretch;
     gap: 8px;
+    border-top: 1px solid #e9ecef;
   }
 `;
 
