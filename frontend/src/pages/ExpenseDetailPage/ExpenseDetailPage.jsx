@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, completeTaxProcessing } from '../../api/expenseApi';
+import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, completeTaxProcessing, updateExpenseDetailTaxInfo } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
 import * as S from './style'; // 스타일 가져오기
 import SignatureModal from '../../components/SignatureModal/SignatureModal';
@@ -25,6 +25,8 @@ const ExpenseDetailPage = () => {
   const [isCompletingTax, setIsCompletingTax] = useState(false);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [deletingReceiptId, setDeletingReceiptId] = useState(null);
+  const [editingTaxInfo, setEditingTaxInfo] = useState(null);
+  const [taxInfoForm, setTaxInfoForm] = useState({ isTaxDeductible: true, nonDeductibleReason: '' });
   const {user} = useAuth();
 
   useEffect(() => {
@@ -504,6 +506,12 @@ const ExpenseDetailPage = () => {
               <th>적요</th>
               <th style={{ textAlign: 'right' }}>금액</th>
               <th>비고</th>
+              {user?.role === 'TAX_ACCOUNTANT' && (
+                <>
+                  <th>부가세 공제</th>
+                  <th>불공제 사유</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -513,6 +521,95 @@ const ExpenseDetailPage = () => {
                 <td data-label="적요">{item.description}</td>
                 <td style={{ textAlign: 'right' }} data-label="금액">{item.amount.toLocaleString()}원</td>
                 <td style={{ textAlign: 'center' }} data-label="비고">{item.note || '-'}</td>
+                {user?.role === 'TAX_ACCOUNTANT' && (
+                  <>
+                    <td style={{ textAlign: 'center' }} data-label="부가세 공제">
+                      {editingTaxInfo === item.expenseDetailId ? (
+                        <select
+                          value={taxInfoForm.isTaxDeductible ? 'true' : 'false'}
+                          onChange={(e) => setTaxInfoForm(prev => ({ ...prev, isTaxDeductible: e.target.value === 'true' }))}
+                          style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                        >
+                          <option value="true">공제</option>
+                          <option value="false">불공제</option>
+                        </select>
+                      ) : (
+                        <span 
+                          style={{ 
+                            color: item.isTaxDeductible === false ? '#dc3545' : '#28a745', 
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            setEditingTaxInfo(item.expenseDetailId);
+                            setTaxInfoForm({
+                              isTaxDeductible: item.isTaxDeductible !== false,
+                              nonDeductibleReason: item.nonDeductibleReason || ''
+                            });
+                          }}
+                        >
+                          {item.isTaxDeductible === false ? '불공제' : '공제'}
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center' }} data-label="불공제 사유">
+                      {editingTaxInfo === item.expenseDetailId ? (
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                          <select
+                            value={taxInfoForm.nonDeductibleReason || ''}
+                            onChange={(e) => setTaxInfoForm(prev => ({ ...prev, nonDeductibleReason: e.target.value }))}
+                            disabled={taxInfoForm.isTaxDeductible}
+                            style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd', flex: 1 }}
+                          >
+                            <option value="">선택하세요</option>
+                            <option value="BUSINESS_UNRELATED">사업 무관</option>
+                            <option value="ENTERTAINMENT">접대비</option>
+                            <option value="SMALL_CAR">비영업용 소형승용차</option>
+                            <option value="OTHER">기타</option>
+                          </select>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await updateExpenseDetailTaxInfo(
+                                  item.expenseDetailId,
+                                  taxInfoForm.isTaxDeductible,
+                                  taxInfoForm.isTaxDeductible ? null : taxInfoForm.nonDeductibleReason || null
+                                );
+                                alert('부가세 공제 정보가 업데이트되었습니다.');
+                                setEditingTaxInfo(null);
+                                window.location.reload();
+                              } catch (error) {
+                                alert(error?.userMessage || error?.response?.data?.message || '업데이트 중 오류가 발생했습니다.');
+                              }
+                            }}
+                            style={{ padding: '4px 8px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          >
+                            저장
+                          </button>
+                          <button
+                            onClick={() => setEditingTaxInfo(null)}
+                            style={{ padding: '4px 8px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          >
+                            취소
+                          </button>
+                        </div>
+                      ) : (
+                        <span
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => {
+                            setEditingTaxInfo(item.expenseDetailId);
+                            setTaxInfoForm({
+                              isTaxDeductible: item.isTaxDeductible !== false,
+                              nonDeductibleReason: item.nonDeductibleReason || ''
+                            });
+                          }}
+                        >
+                          {item.nonDeductibleReason || '-'}
+                        </span>
+                      )}
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>

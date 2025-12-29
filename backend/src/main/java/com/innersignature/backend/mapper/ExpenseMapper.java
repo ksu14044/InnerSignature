@@ -95,6 +95,11 @@ public interface ExpenseMapper {
     // 문서 상태 업데이트
     void updateExpenseReportStatus(@Param("expenseReportId") Long expenseReportId, @Param("status") String status, @Param("companyId") Long companyId);
 
+    // 증빙 누락 건 조회
+    List<ExpenseReportDto> selectMissingReceipts(
+            @Param("companyId") Long companyId,
+            @Param("cutoffDate") LocalDate cutoffDate);
+
     // 세무처리 완료 업데이트
     void updateTaxProcessed(
         @Param("expenseReportId") Long expenseReportId,
@@ -138,6 +143,16 @@ public interface ExpenseMapper {
 
     // 영수증 조회 (단건)
     ReceiptDto selectReceiptById(@Param("receiptId") Long receiptId, @Param("companyId") Long companyId);
+
+    // 상세 항목의 부가세 공제 정보 업데이트
+    void updateExpenseDetailTaxInfo(
+            @Param("expenseDetailId") Long expenseDetailId,
+            @Param("isTaxDeductible") Boolean isTaxDeductible,
+            @Param("nonDeductibleReason") String nonDeductibleReason,
+            @Param("companyId") Long companyId);
+
+    // 상세 항목 ID로 지출결의서 ID 조회
+    Long selectExpenseReportIdByDetailId(@Param("expenseDetailId") Long expenseDetailId, @Param("companyId") Long companyId);
 
     // 대시보드 통계 조회
     DashboardStatsDto selectDashboardStats(

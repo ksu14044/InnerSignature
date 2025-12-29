@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.AccountCodeMappingMapper">
+    <resultMap id="AccountCodeMappingResultMap" type="com.innersignature.backend.dto.AccountCodeMappingDto">
+        <id property="mappingId" column="mapping_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="category" column="category"/>
+        <result property="merchantKeyword" column="merchant_keyword"/>
+        <result property="accountCode" column="account_code"/>
+        <result property="accountName" column="account_name"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="AccountCodeMappingResultMap">
+        SELECT * FROM account_code_mapping_tb
+        WHERE mapping_id = #{mappingId}
+          AND (company_id = #{companyId} OR company_id IS NULL)
+    </select>
+
+    <select id="findByCategoryAndMerchant" resultMap="AccountCodeMappingResultMap">
+        SELECT * FROM account_code_mapping_tb
+        WHERE category = #{category}
+          AND (company_id = #{companyId} OR company_id IS NULL)
+          AND (
+            merchant_keyword IS NULL 
+            OR merchant_keyword = ''
+            OR #{merchantKeyword} LIKE CONCAT('%', merchant_keyword, '%')
+          )
+        ORDER BY 
+          CASE WHEN company_id = #{companyId} THEN 0 ELSE 1 END,
+          CASE WHEN merchant_keyword IS NOT NULL AND merchant_keyword != '' THEN 0 ELSE 1 END
+        LIMIT 1
+    </select>
+
+    <select id="findByCompanyId" resultMap="AccountCodeMappingResultMap">
+        SELECT * FROM account_code_mapping_tb
+        WHERE company_id = #{companyId} OR company_id IS NULL
+        ORDER BY company_id DESC, category ASC, account_name ASC
+    </select>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.AccountCodeMappingDto" 
+            useGeneratedKeys="true" keyProperty="mappingId">
+        INSERT INTO account_code_mapping_tb (
+            company_id, category, merchant_keyword, account_code, account_name
+        ) VALUES (
+            #{companyId}, #{category}, #{merchantKeyword}, #{accountCode}, #{accountName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.innersignature.backend.dto.AccountCodeMappingDto">
+        UPDATE account_code_mapping_tb
+        SET
+            category = #{category},
+            merchant_keyword = #{merchantKeyword},
+            account_code = #{accountCode},
+            account_name = #{accountName},
+            updated_at = NOW()
+        WHERE mapping_id = #{mappingId}
+          AND (company_id = #{companyId} OR company_id IS NULL)
+    </update>
+
+    <delete id="delete">
+        DELETE FROM account_code_mapping_tb
+        WHERE mapping_id = #{mappingId}
+          AND (company_id = #{companyId} OR company_id IS NULL)
+    </delete>
+</mapper>

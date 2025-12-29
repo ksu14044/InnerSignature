@@ -468,3 +468,130 @@ export const downloadExpensesExcel = async (startDate = null, endDate = null) =>
     throw err;
   }
 };
+
+// 25. 부가세 신고 서식 다운로드 (TAX_ACCOUNTANT 전용)
+export const downloadTaxReport = async (startDate = null, endDate = null) => {
+  try {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    
+    const response = await axiosInstance.get(`${BASE_URL}/export/tax-report`, {
+      params,
+      responseType: 'blob', // 파일 다운로드를 위해 blob으로 받기
+    });
+    
+    // Blob을 다운로드 링크로 변환
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // 파일명 생성
+    const filename = `부가세신고서식_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true };
+  } catch (error) {
+    console.error("부가세 신고 서식 다운로드 실패:", error);
+    let message = "부가세 신고 서식 다운로드 중 오류가 발생했습니다.";
+    const data = error?.response?.data;
+    try {
+      if (data instanceof Blob) {
+        const text = await data.text();
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed?.message) message = parsed.message;
+        } catch {
+          if (text) message = text;
+        }
+      } else if (typeof data === 'string' && data) {
+        message = data;
+      } else if (data?.message) {
+        message = data.message;
+      }
+    } catch (e) {
+      // ignore parsing errors
+    }
+    const err = new Error(message);
+    err.userMessage = message;
+    throw err;
+  }
+};
+
+// 26. 상세 항목 부가세 공제 정보 업데이트 (TAX_ACCOUNTANT 전용)
+export const updateExpenseDetailTaxInfo = async (expenseDetailId, isTaxDeductible, nonDeductibleReason = null) => {
+  try {
+    const response = await axiosInstance.put(`${BASE_URL}/details/${expenseDetailId}/tax-info`, {
+      isTaxDeductible,
+      nonDeductibleReason
+    });
+    return response.data;
+  } catch (error) {
+    console.error("부가세 공제 정보 업데이트 실패:", error);
+    let message = "부가세 공제 정보 업데이트 중 오류가 발생했습니다.";
+    const data = error?.response?.data;
+    if (data?.message) {
+      message = data.message;
+    }
+    const err = new Error(message);
+    err.userMessage = message;
+    throw err;
+  }
+};
+
+// 24. 전표 다운로드 (ACCOUNTANT 전용)
+export const downloadJournalEntries = async (startDate = null, endDate = null) => {
+  try {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    
+    const response = await axiosInstance.get(`${BASE_URL}/export/journal`, {
+      params,
+      responseType: 'blob', // 파일 다운로드를 위해 blob으로 받기
+    });
+    
+    // Blob을 다운로드 링크로 변환
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // 파일명 생성
+    const filename = `전표_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true };
+  } catch (error) {
+    console.error("전표 다운로드 실패:", error);
+    let message = "전표 다운로드 중 오류가 발생했습니다.";
+    const data = error?.response?.data;
+    try {
+      if (data instanceof Blob) {
+        const text = await data.text();
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed?.message) message = parsed.message;
+        } catch {
+          if (text) message = text;
+        }
+      } else if (typeof data === 'string' && data) {
+        message = data;
+      } else if (data?.message) {
+        message = data.message;
+      }
+    } catch (e) {
+      // ignore parsing errors
+    }
+    const err = new Error(message);
+    err.userMessage = message;
+    throw err;
+  }
+};

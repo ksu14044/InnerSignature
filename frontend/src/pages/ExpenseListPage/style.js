@@ -241,6 +241,87 @@ export const LogoutButton = styled.button`
   }
 `;
 
+export const ManagementDropdown = styled.div`
+  position: relative;
+  
+  @media (max-width: 480px) {
+    width: 100%;
+  }
+`;
+
+export const ManagementButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 48px;
+
+  &:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: center;
+  }
+`;
+
+export const ManagementMenu = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  
+  @media (max-width: 480px) {
+    right: auto;
+    left: 0;
+    width: 100%;
+    min-width: auto;
+  }
+`;
+
+export const ManagementMenuItem = styled.button`
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--dark-color);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    background-color: var(--light-color);
+    color: var(--primary-color);
+  }
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+  }
+`;
+
 export const ActionBar = styled.div`
   display: flex;
   justify-content: space-between;

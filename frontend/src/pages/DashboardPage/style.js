@@ -482,3 +482,95 @@ export const CreditCardFooter = styled.div`
   text-align: right;
 `;
 
+export const ManagementSection = styled.div`
+  margin-bottom: 32px;
+  
+  @media (max-width: 480px) {
+    margin-bottom: 24px;
+  }
+`;
+
+export const SectionTitle = styled.h2`
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin-bottom: 16px;
+  
+  @media (max-width: 480px) {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+`;
+
+export const ManagementGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+`;
+
+export const ManagementCard = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary-color);
+  }
+  
+  @media (max-width: 480px) {
+    padding: 16px 12px;
+  }
+`;
+
+export const ManagementIcon = styled.div`
+  font-size: 32px;
+  margin-bottom: 12px;
+  text-align: center;
+  
+  @media (max-width: 480px) {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+`;
+
+export const ManagementTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin-bottom: 8px;
+  text-align: center;
+  
+  @media (max-width: 480px) {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+`;
+
+export const ManagementDesc = styled.p`
+  font-size: 12px;
+  color: var(--secondary-color);
+  text-align: center;
+  line-height: 1.4;
+  margin: 0;
+  
+  @media (max-width: 480px) {
+    font-size: 11px;
+  }
+`;
+

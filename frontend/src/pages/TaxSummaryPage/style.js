@@ -57,6 +57,7 @@ export const Button = styled.button`
     if (variant === 'secondary') return '#6c757d';
     if (variant === 'danger') return '#dc3545';
     if (variant === 'primary') return '#007bff';
+    if (variant === 'success') return '#28a745';
     return 'var(--primary-color)';
   }};
   transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s;

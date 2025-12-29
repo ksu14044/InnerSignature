@@ -35,7 +35,7 @@
     <select id="findAvailableByCompanyId" resultMap="CreditResultMap">
         SELECT * FROM credit_tb
         WHERE company_id = #{companyId}
-          AND (expires_at IS NULL OR expires_at >= #{currentDate})
+          AND (expires_at IS NULL OR expires_at &gt;= #{currentDate})
           AND (amount - used_amount) > 0
         ORDER BY 
             CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END,
@@ -54,6 +54,6 @@
         SELECT COALESCE(SUM(amount - used_amount), 0)
         FROM credit_tb
         WHERE company_id = #{companyId}
-          AND (expires_at IS NULL OR expires_at >= #{currentDate})
+          AND (expires_at IS NULL OR expires_at &gt;= #{currentDate})
     </select>
 </mapper>

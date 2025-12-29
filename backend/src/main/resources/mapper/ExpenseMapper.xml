@@ -704,4 +704,29 @@
         ORDER BY r.uploaded_at DESC
     </select>
 
+    <!-- 증빙 누락 건 조회: 영수증이 없거나 작성일이 오래된 건 -->
+    <select id="selectMissingReceipts" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT 
+            r.*, 
+            u.korean_name AS drafterName 
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        LEFT JOIN receipt_tb rec ON r.expense_report_id = rec.expense_report_id
+        WHERE r.company_id = #{companyId}
+          AND r.report_date &lt;= #{cutoffDate}
+          AND r.status IN ('WAIT', 'APPROVED')
+          AND rec.receipt_id IS NULL
+        ORDER BY r.report_date ASC, r.expense_report_id ASC
+    </select>
+
+    <!-- 상세 항목의 부가세 공제 정보 업데이트 -->
+    <update id="updateExpenseDetailTaxInfo">
+        UPDATE expense_detail_tb
+        SET
+            is_tax_deductible = #{isTaxDeductible},
+            non_deductible_reason = #{nonDeductibleReason}
+        WHERE expense_detail_id = #{expenseDetailId}
+          AND company_id = #{companyId}
+    </update>
+
 </mapper>

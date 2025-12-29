@@ -15,6 +15,12 @@ import PlanSelectionPage from './pages/PlanSelectionPage/PlanSelectionPage';
 import PaymentHistoryPage from './pages/PaymentHistoryPage/PaymentHistoryPage';
 import SuperAdminDashboardPage from './pages/SuperAdminDashboardPage/SuperAdminDashboardPage';
 import CreditManagementPage from './pages/CreditManagementPage/CreditManagementPage';
+import MonthlyClosingPage from './pages/MonthlyClosingPage/MonthlyClosingPage';
+import BudgetManagementPage from './pages/BudgetManagementPage/BudgetManagementPage';
+import AuditRuleManagementPage from './pages/AuditRuleManagementPage/AuditRuleManagementPage';
+import AuditLogPage from './pages/AuditLogPage/AuditLogPage';
+import MissingReceiptPage from './pages/MissingReceiptPage/MissingReceiptPage';
+import AccountCodeMappingPage from './pages/AccountCodeMappingPage/AccountCodeMappingPage';
 import MobileAppBar from './components/MobileAppBar/MobileAppBar';
 import MobileBottomNav from './components/MobileBottomNav/MobileBottomNav';
 import MobileFAB from './components/MobileFAB/MobileFAB';
@@ -42,6 +48,12 @@ function App() {
         <Route path="/subscriptions/plans" element={<PlanSelectionPage />} />
         <Route path="/subscriptions/payments" element={<PaymentHistoryPage />} />
         <Route path="/credits" element={<CreditManagementPage />} />
+        <Route path="/monthly-closing" element={<MonthlyClosingPage />} />
+        <Route path="/budget" element={<BudgetManagementPage />} />
+        <Route path="/audit-rules" element={<AuditRuleManagementPage />} />
+        <Route path="/audit-logs" element={<AuditLogPage />} />
+        <Route path="/missing-receipts" element={<MissingReceiptPage />} />
+        <Route path="/account-codes" element={<AccountCodeMappingPage />} />
         <Route path="/superadmin/dashboard" element={<SuperAdminDashboardPage />} />
         </Routes>
         <MobileBottomNav />

@@ -6,7 +6,8 @@ import {
   fetchTaxStatus,
   fetchMonthlyTaxSummary,
   batchCompleteTaxProcessing,
-  completeTaxProcessing
+  completeTaxProcessing,
+  downloadTaxReport
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
 import * as S from './style';

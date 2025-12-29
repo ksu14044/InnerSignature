@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.AuditRuleMapper">
+    <resultMap id="AuditRuleResultMap" type="com.innersignature.backend.dto.AuditRuleDto">
+        <id property="ruleId" column="rule_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="ruleName" column="rule_name"/>
+        <result property="ruleType" column="rule_type"/>
+        <result property="ruleConfigJson" column="rule_config"/>
+        <result property="isActive" column="is_active"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="AuditRuleResultMap">
+        SELECT * FROM audit_rule_tb
+        WHERE rule_id = #{ruleId}
+          AND company_id = #{companyId}
+    </select>
+
+    <select id="findActiveByCompanyId" resultMap="AuditRuleResultMap">
+        SELECT * FROM audit_rule_tb
+        WHERE company_id = #{companyId}
+          AND is_active = 1
+        ORDER BY rule_type, rule_name
+    </select>
+
+    <select id="findByCompanyId" resultMap="AuditRuleResultMap">
+        SELECT * FROM audit_rule_tb
+        WHERE company_id = #{companyId}
+        ORDER BY rule_type, rule_name
+    </select>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.AuditRuleDto" 
+            useGeneratedKeys="true" keyProperty="ruleId">
+        INSERT INTO audit_rule_tb (
+            company_id, rule_name, rule_type, rule_config, is_active
+        ) VALUES (
+            #{companyId}, #{ruleName}, #{ruleType}, 
+            #{ruleConfigJson}, 
+            #{isActive}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.innersignature.backend.dto.AuditRuleDto">
+        UPDATE audit_rule_tb
+        SET
+            rule_name = #{ruleName},
+            rule_config = #{ruleConfigJson},
+            is_active = #{isActive},
+            updated_at = NOW()
+        WHERE rule_id = #{ruleId}
+          AND company_id = #{companyId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM audit_rule_tb
+        WHERE rule_id = #{ruleId}
+          AND company_id = #{companyId}
+    </delete>
+</mapper>

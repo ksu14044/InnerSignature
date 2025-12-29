@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.MonthlyClosingMapper">
+    <resultMap id="MonthlyClosingResultMap" type="com.innersignature.backend.dto.MonthlyClosingDto">
+        <id property="closingId" column="closing_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="closingYear" column="closing_year"/>
+        <result property="closingMonth" column="closing_month"/>
+        <result property="closedBy" column="closed_by"/>
+        <result property="closedAt" column="closed_at"/>
+        <result property="isClosed" column="is_closed"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="closedByName" column="closed_by_name"/>
+    </resultMap>
+
+    <select id="findById" resultMap="MonthlyClosingResultMap">
+        SELECT 
+            mc.*,
+            u.korean_name AS closed_by_name
+        FROM monthly_closing_tb mc
+        LEFT JOIN user_tb u ON mc.closed_by = u.user_id
+        WHERE mc.closing_id = #{closingId}
+          AND mc.company_id = #{companyId}
+    </select>
+
+    <select id="findByCompanyAndDate" resultMap="MonthlyClosingResultMap">
+        SELECT 
+            mc.*,
+            u.korean_name AS closed_by_name
+        FROM monthly_closing_tb mc
+        LEFT JOIN user_tb u ON mc.closed_by = u.user_id
+        WHERE mc.company_id = #{companyId}
+          AND mc.closing_year = #{year}
+          AND mc.closing_month = #{month}
+    </select>
+
+    <select id="findByCompanyId" resultMap="MonthlyClosingResultMap">
+        SELECT 
+            mc.*,
+            u.korean_name AS closed_by_name
+        FROM monthly_closing_tb mc
+        LEFT JOIN user_tb u ON mc.closed_by = u.user_id
+        WHERE mc.company_id = #{companyId}
+        ORDER BY mc.closing_year DESC, mc.closing_month DESC
+    </select>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.MonthlyClosingDto" 
+            useGeneratedKeys="true" keyProperty="closingId">
+        INSERT INTO monthly_closing_tb (
+            company_id, closing_year, closing_month, closed_by, closed_at, is_closed
+        ) VALUES (
+            #{companyId}, #{closingYear}, #{closingMonth}, #{closedBy}, 
+            #{closedAt}, #{isClosed}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.innersignature.backend.dto.MonthlyClosingDto">
+        UPDATE monthly_closing_tb
+        SET
+            is_closed = #{isClosed},
+            closed_by = #{closedBy},
+            closed_at = #{closedAt},
+            updated_at = NOW()
+        WHERE closing_id = #{closingId}
+          AND company_id = #{companyId}
+    </update>
+
+    <update id="reopen">
+        UPDATE monthly_closing_tb
+        SET
+            is_closed = 0,
+            updated_at = NOW()
+        WHERE closing_id = #{closingId}
+          AND company_id = #{companyId}
+    </update>
+
+    <select id="isClosed" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM monthly_closing_tb
+        WHERE company_id = #{companyId}
+          AND closing_year = #{year}
+          AND closing_month = #{month}
+          AND is_closed = 1
+    </select>
+</mapper>

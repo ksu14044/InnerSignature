@@ -244,6 +244,51 @@ const DashboardPage = () => {
         );
       })()}
 
+      {/* 관리 메뉴 섹션 */}
+      {(user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'ACCOUNTANT') && (
+        <S.ManagementSection>
+          <S.SectionTitle>관리 메뉴</S.SectionTitle>
+          <S.ManagementGrid>
+            {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
+              <>
+                <S.ManagementCard onClick={() => navigate('/budget')}>
+                  <S.ManagementIcon>💰</S.ManagementIcon>
+                  <S.ManagementTitle>예산 관리</S.ManagementTitle>
+                  <S.ManagementDesc>연간/월간 예산 설정 및 모니터링</S.ManagementDesc>
+                </S.ManagementCard>
+                <S.ManagementCard onClick={() => navigate('/audit-rules')}>
+                  <S.ManagementIcon>🛡️</S.ManagementIcon>
+                  <S.ManagementTitle>감사 규칙</S.ManagementTitle>
+                  <S.ManagementDesc>자동 감사 규칙 설정 및 관리</S.ManagementDesc>
+                </S.ManagementCard>
+                <S.ManagementCard onClick={() => navigate('/account-codes')}>
+                  <S.ManagementIcon>📊</S.ManagementIcon>
+                  <S.ManagementTitle>계정 과목 매핑</S.ManagementTitle>
+                  <S.ManagementDesc>카테고리별 계정 과목 자동 분류 설정</S.ManagementDesc>
+                </S.ManagementCard>
+                <S.ManagementCard onClick={() => navigate('/monthly-closing')}>
+                  <S.ManagementIcon>📅</S.ManagementIcon>
+                  <S.ManagementTitle>월 마감 관리</S.ManagementTitle>
+                  <S.ManagementDesc>회계 월 마감 처리 및 관리</S.ManagementDesc>
+                </S.ManagementCard>
+              </>
+            )}
+            <S.ManagementCard onClick={() => navigate('/audit-logs')}>
+              <S.ManagementIcon>📋</S.ManagementIcon>
+              <S.ManagementTitle>감사 로그</S.ManagementTitle>
+              <S.ManagementDesc>자동 감사로 탐지된 이슈 확인</S.ManagementDesc>
+            </S.ManagementCard>
+            {user?.role === 'ACCOUNTANT' && (
+              <S.ManagementCard onClick={() => navigate('/missing-receipts')}>
+                <S.ManagementIcon>⚠️</S.ManagementIcon>
+                <S.ManagementTitle>증빙 누락 관리</S.ManagementTitle>
+                <S.ManagementDesc>영수증 미제출 건 조회 및 관리</S.ManagementDesc>
+              </S.ManagementCard>
+            )}
+          </S.ManagementGrid>
+        </S.ManagementSection>
+      )}
+
       <S.FilterCard data-tourid="tour-date-filter">
         <S.FilterGrid>
           <div>

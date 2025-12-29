@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.AuditLogMapper">
+    <resultMap id="AuditLogResultMap" type="com.innersignature.backend.dto.AuditLogDto">
+        <id property="auditLogId" column="audit_log_id"/>
+        <result property="expenseReportId" column="expense_report_id"/>
+        <result property="ruleId" column="rule_id"/>
+        <result property="severity" column="severity"/>
+        <result property="message" column="message"/>
+        <result property="detectedAt" column="detected_at"/>
+        <result property="isResolved" column="is_resolved"/>
+        <result property="resolvedAt" column="resolved_at"/>
+        <result property="resolvedBy" column="resolved_by"/>
+        <result property="ruleName" column="rule_name"/>
+        <result property="expenseTitle" column="expense_title"/>
+        <result property="resolvedByName" column="resolved_by_name"/>
+    </resultMap>
+
+    <select id="findById" resultMap="AuditLogResultMap">
+        SELECT 
+            al.*,
+            ar.rule_name,
+            er.title AS expense_title,
+            u.korean_name AS resolved_by_name
+        FROM audit_log_tb al
+        LEFT JOIN audit_rule_tb ar ON al.rule_id = ar.rule_id
+        LEFT JOIN expense_report_tb er ON al.expense_report_id = er.expense_report_id
+        LEFT JOIN user_tb u ON al.resolved_by = u.user_id
+        WHERE al.audit_log_id = #{auditLogId}
+    </select>
+
+    <select id="findByExpenseReportId" resultMap="AuditLogResultMap">
+        SELECT 
+            al.*,
+            ar.rule_name,
+            er.title AS expense_title,
+            u.korean_name AS resolved_by_name
+        FROM audit_log_tb al
+        LEFT JOIN audit_rule_tb ar ON al.rule_id = ar.rule_id
+        LEFT JOIN expense_report_tb er ON al.expense_report_id = er.expense_report_id
+        LEFT JOIN user_tb u ON al.resolved_by = u.user_id
+        WHERE al.expense_report_id = #{expenseReportId}
+        ORDER BY al.detected_at DESC
+    </select>
+
+    <select id="findByCompanyId" resultMap="AuditLogResultMap">
+        SELECT 
+            al.*,
+            ar.rule_name,
+            er.title AS expense_title,
+            u.korean_name AS resolved_by_name
+        FROM audit_log_tb al
+        INNER JOIN expense_report_tb er ON al.expense_report_id = er.expense_report_id
+        LEFT JOIN audit_rule_tb ar ON al.rule_id = ar.rule_id
+        LEFT JOIN user_tb u ON al.resolved_by = u.user_id
+        WHERE er.company_id = #{companyId}
+          AND (#{severity} IS NULL OR al.severity = #{severity})
+          AND (#{isResolved} IS NULL OR al.is_resolved = #{isResolved})
+          AND (#{startDate} IS NULL OR al.detected_at &gt;= #{startDate})
+          AND (#{endDate} IS NULL OR al.detected_at &lt;= #{endDate})
+        ORDER BY al.detected_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByCompanyId" resultType="long">
+        SELECT COUNT(*)
+        FROM audit_log_tb al
+        INNER JOIN expense_report_tb er ON al.expense_report_id = er.expense_report_id
+        WHERE er.company_id = #{companyId}
+          AND (#{severity} IS NULL OR al.severity = #{severity})
+          AND (#{isResolved} IS NULL OR al.is_resolved = #{isResolved})
+          AND (#{startDate} IS NULL OR al.detected_at &gt;= #{startDate})
+          AND (#{endDate} IS NULL OR al.detected_at &lt;= #{endDate})
+    </select>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.AuditLogDto" 
+            useGeneratedKeys="true" keyProperty="auditLogId">
+        INSERT INTO audit_log_tb (
+            expense_report_id, rule_id, severity, message
+        ) VALUES (
+            #{expenseReportId}, #{ruleId}, #{severity}, #{message}
+        )
+    </insert>
+
+    <update id="resolve">
+        UPDATE audit_log_tb
+        SET
+            is_resolved = 1,
+            resolved_at = NOW(),
+            resolved_by = #{resolvedBy}
+        WHERE audit_log_id = #{auditLogId}
+    </update>
+</mapper>

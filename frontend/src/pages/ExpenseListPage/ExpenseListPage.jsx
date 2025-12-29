@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
-import { fetchExpenseList, deleteExpense, fetchPendingApprovals, downloadExpensesExcel } from '../../api/expenseApi';
+import { fetchExpenseList, deleteExpense, fetchPendingApprovals, downloadExpensesExcel, downloadJournalEntries } from '../../api/expenseApi';
 import { getPendingUsers, approveUser, getUserCompanies } from '../../api/userApi';
 import * as S from './style';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaUser, FaBuilding, FaChevronDown, FaCheck, FaTimesCircle, FaFileExcel } from 'react-icons/fa';
+import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaUser, FaBuilding, FaChevronDown, FaCheck, FaTimesCircle, FaFileExcel, FaCog } from 'react-icons/fa';
 import { STATUS_KOREAN, EXPENSE_STATUS } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
@@ -42,6 +42,7 @@ const ExpenseListPage = () => {
   const { logout, user, companies, switchCompany } = useAuth();
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [isManagementDropdownOpen, setIsManagementDropdownOpen] = useState(false);
   const checkedCompanyModalRef = useRef(false);
 
   const handleLogout = async () => {
@@ -231,6 +232,25 @@ const ExpenseListPage = () => {
     }
   };
 
+  // 전표 다운로드 핸들러
+  const handleExportJournal = async () => {
+    if (!user || user.role !== 'ACCOUNTANT') {
+      alert('전표 다운로드는 ACCOUNTANT 권한만 가능합니다.');
+      return;
+    }
+
+    try {
+      // 현재 필터 조건의 기간을 사용
+      const startDate = filters.startDate || null;
+      const endDate = filters.endDate || null;
+      
+      await downloadJournalEntries(startDate, endDate);
+      alert('전표 파일 다운로드가 시작되었습니다.');
+    } catch (error) {
+      alert(error.userMessage || '전표 다운로드 중 오류가 발생했습니다.');
+    }
+  };
+
   useEffect(() => {
     // SUPERADMIN은 지출결의서 목록 페이지에 접근할 수 없도록 리다이렉트
     if (user?.role === 'SUPERADMIN') {
@@ -342,6 +362,23 @@ const ExpenseListPage = () => {
     };
   }, []);
 
+  // 관리 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isManagementDropdownOpen && !event.target.closest('[data-management-dropdown]')) {
+        setIsManagementDropdownOpen(false);
+      }
+    };
+
+    if (isManagementDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isManagementDropdownOpen]);
+
   if (loading) return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
 
   return (
@@ -432,6 +469,43 @@ const ExpenseListPage = () => {
               사용자 관리
             </S.AdminButton>
           )}
+          {(user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'ACCOUNTANT') && (
+            <S.ManagementDropdown data-management-dropdown>
+              <S.ManagementButton onClick={() => setIsManagementDropdownOpen(!isManagementDropdownOpen)}>
+                <FaCog />
+                <span>관리</span>
+                <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />
+              </S.ManagementButton>
+              {isManagementDropdownOpen && (
+                <S.ManagementMenu>
+                  {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
+                    <>
+                      <S.ManagementMenuItem onClick={() => { navigate('/budget'); setIsManagementDropdownOpen(false); }}>
+                        💰 예산 관리
+                      </S.ManagementMenuItem>
+                      <S.ManagementMenuItem onClick={() => { navigate('/audit-rules'); setIsManagementDropdownOpen(false); }}>
+                        🛡️ 감사 규칙
+                      </S.ManagementMenuItem>
+                      <S.ManagementMenuItem onClick={() => { navigate('/account-codes'); setIsManagementDropdownOpen(false); }}>
+                        📊 계정 과목 매핑
+                      </S.ManagementMenuItem>
+                      <S.ManagementMenuItem onClick={() => { navigate('/monthly-closing'); setIsManagementDropdownOpen(false); }}>
+                        📅 월 마감 관리
+                      </S.ManagementMenuItem>
+                    </>
+                  )}
+                  <S.ManagementMenuItem onClick={() => { navigate('/audit-logs'); setIsManagementDropdownOpen(false); }}>
+                    📋 감사 로그
+                  </S.ManagementMenuItem>
+                  {user?.role === 'ACCOUNTANT' && (
+                    <S.ManagementMenuItem onClick={() => { navigate('/missing-receipts'); setIsManagementDropdownOpen(false); }}>
+                      ⚠️ 증빙 누락 관리
+                    </S.ManagementMenuItem>
+                  )}
+                </S.ManagementMenu>
+              )}
+            </S.ManagementDropdown>
+          )}
           <S.LogoutButton onClick={handleLogout}>
             <FaSignOutAlt />
             <span>로그아웃</span>
@@ -466,6 +540,12 @@ const ExpenseListPage = () => {
             <S.ExportButton onClick={handleExportExcel}>
               <FaFileExcel />
               <span>엑셀 다운로드</span>
+            </S.ExportButton>
+          )}
+          {user && user.role === 'ACCOUNTANT' && (
+            <S.ExportButton onClick={handleExportJournal}>
+              <FaFileExcel />
+              <span>전표 다운로드</span>
             </S.ExportButton>
           )}
         </div>

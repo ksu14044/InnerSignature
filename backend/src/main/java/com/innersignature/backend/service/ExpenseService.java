@@ -36,7 +36,6 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +54,10 @@ public class ExpenseService {
     private final ExpenseMapper expenseMapper; // 아까 만든 Mapper 가져오기
     private final UserService userService; // 사용자 정보 조회용
     private final PermissionUtil permissionUtil; // 권한 체크 유틸리티
+    private final MonthlyClosingService monthlyClosingService; // 월 마감 서비스
+    private final BudgetService budgetService; // 예산 서비스
+    private final AuditService auditService; // 감사 서비스
+    private final TaxReportService taxReportService; // 부가세 신고 서식 서비스
     
     @Value("${file.upload.base-dir:uploads}")
     private String fileUploadBaseDir;
@@ -502,6 +505,23 @@ public class ExpenseService {
             request.setStatus("PAID");
         }
 
+        // (0-6) 예산 체크 (상세 항목별로)
+        if (details != null) {
+            LocalDate reportDate = request.getReportDate();
+            int year = reportDate.getYear();
+            int month = reportDate.getMonthValue();
+            
+            for (ExpenseDetailDto detail : details) {
+                String budgetWarning = budgetService.checkBudget(
+                        year, month, detail.getCategory(), detail.getAmount());
+                if (budgetWarning != null) {
+                    logger.warn("예산 경고 - category: {}, amount: {}, warning: {}", 
+                            detail.getCategory(), detail.getAmount(), budgetWarning);
+                    // 경고는 로그만 남기고 계속 진행 (차단은 checkBudget 내부에서 예외 발생)
+                }
+            }
+        }
+
         // (1) 메인 문서(제목, 작성자 등) 먼저 저장
         // 이 과정이 끝나야 문서 번호(ID)가 생성됩니다.
         Long companyId = SecurityUtil.getCurrentCompanyId();
@@ -524,22 +544,17 @@ public class ExpenseService {
         }
 
         // (3) 결재 라인(누가 승인해야 하는지) 저장
-        // 급여이거나 비밀글이 아닌 경우에만 결재 라인 생성
         // ※ 현재 플로우에서는 프론트에서 별도 API(setApprovalLines)를 통해 결재 라인을 설정하므로,
-        //    여기서는 request에 결재 라인이 있는 경우에만 처리합니다.
-        List<ApprovalLineDto> lines = request.getApprovalLines();
-        boolean isSecretOrSalary = hasSalary || (isSecret != null && isSecret);
+        //    createExpense에서는 결재 라인을 저장하지 않습니다.
+        //    결재 라인은 프론트엔드에서 setApprovalLines API를 호출하여 별도로 설정합니다.
+        logger.debug("결재 라인은 setApprovalLines API를 통해 별도로 설정됩니다.");
 
-        if (!isSecretOrSalary && lines != null && !lines.isEmpty()) {
-            logger.debug("결재 라인 저장 시작 - 라인 수: {}", lines.size());
-            for (ApprovalLineDto line : lines) {
-                line.setExpenseReportId(newId); // "이 결재 라인도 그 문서(newId) 꺼야"라고 연결
-                line.setCompanyId(companyId);
-                expenseMapper.insertApprovalLine(line);
-            }
-            logger.debug("결재 라인 저장 완료");
-        } else if (isSecretOrSalary) {
-            logger.debug("급여 또는 비밀글 문서는 결재 라인이 생성되지 않습니다.");
+        // (4) 자동 감사 실행
+        try {
+            auditService.auditExpenseReport(newId);
+        } catch (Exception e) {
+            logger.error("자동 감사 실행 실패 - expenseReportId: {}", newId, e);
+            // 감사 실패해도 문서 생성은 계속 진행
         }
 
         // 생성된 문서 ID 반환
@@ -560,6 +575,16 @@ public class ExpenseService {
         ExpenseReportDto existingReport = expenseMapper.selectExpenseReportById(expenseId, companyId);
         if (existingReport == null) {
             throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
+        }
+
+        // 1-1. 마감된 월인지 확인
+        if (existingReport.getReportDate() != null) {
+            if (monthlyClosingService.isDateClosed(existingReport.getReportDate())) {
+                throw new com.innersignature.backend.exception.BusinessException(
+                        String.format("%d년 %d월은 마감되어 있어 수정할 수 없습니다.", 
+                                existingReport.getReportDate().getYear(), 
+                                existingReport.getReportDate().getMonthValue()));
+            }
         }
 
         // 2. WAIT 상태에서만 수정 가능
@@ -734,6 +759,16 @@ public class ExpenseService {
 
         // 2. 권한 체크: 작성자 본인, ADMIN, 또는 ACCOUNTANT 권한자만 삭제 가능
         permissionUtil.checkDeletePermission(report, userId);
+
+        // 2-1. 마감된 월인지 확인
+        if (report.getReportDate() != null) {
+            if (monthlyClosingService.isDateClosed(report.getReportDate())) {
+                throw new com.innersignature.backend.exception.BusinessException(
+                        String.format("%d년 %d월은 마감되어 있어 삭제할 수 없습니다.", 
+                                report.getReportDate().getYear(), 
+                                report.getReportDate().getMonthValue()));
+            }
+        }
 
         // 3. 문서 삭제 (CASCADE DELETE로 관련 데이터도 함께 삭제됨)
         expenseMapper.deleteExpenseReport(expenseReportId, companyId);
@@ -1114,7 +1149,6 @@ public class ExpenseService {
         
         // CEO는 같은 회사의 모든 문서 조회 가능 (필터링 없음)
         boolean isCEO = "CEO".equals(user.getRole());
-        Long userCompanyId = user.getCompanyId();
         
         // 배치 조회: 모든 expense_report_id의 상세 항목을 한 번에 조회 (N+1 문제 해결)
         List<Long> expenseReportIds = reports.stream()
@@ -1754,5 +1788,232 @@ public class ExpenseService {
         Cell cell10 = row.createCell(colNum++);
         cell10.setCellValue(detail != null && detail.getNote() != null ? detail.getNote() : "");
         cell10.setCellStyle(dataStyle);
+    }
+
+    /**
+     * 전표 생성 및 분개 (회계 전표 형식)
+     * 승인된 지출결의서를 차변(비용)과 대변(미지급금)으로 분개하여 엑셀 파일로 생성
+     * @param startDate 시작일 (optional)
+     * @param endDate 종료일 (optional)
+     * @param userId 현재 사용자 ID (권한 필터링용)
+     * @return 생성된 엑셀 파일
+     * @throws IOException 파일 생성 실패 시
+     */
+    public File exportJournalEntriesToExcel(LocalDate startDate, LocalDate endDate, Long userId) throws IOException {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        // 승인된 지출결의서만 조회 (APPROVED 상태)
+        List<String> statuses = List.of("APPROVED");
+        List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
+                0, Integer.MAX_VALUE,
+                startDate, endDate,
+                null, null, statuses, null, null, null, null,
+                companyId);
+        
+        // 권한 필터링 적용
+        filterSalaryExpenses(expenseReports, userId);
+        
+        // 각 지출결의서의 상세 내역 조회
+        List<Long> expenseReportIds = expenseReports.stream()
+                .map(ExpenseReportDto::getExpenseReportId)
+                .collect(Collectors.toList());
+        
+        Map<Long, List<ExpenseDetailDto>> detailsMap = new HashMap<>();
+        if (!expenseReportIds.isEmpty()) {
+            List<ExpenseDetailDto> allDetails = expenseMapper.selectExpenseDetailsBatch(expenseReportIds, companyId);
+            detailsMap = allDetails.stream()
+                    .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
+        }
+        
+        // 엑셀 파일 생성
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("전표");
+        
+        // 헤더 스타일
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setFontHeightInPoints((short) 12);
+        headerStyle.setFont(headerFont);
+        headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        headerStyle.setBorderBottom(BorderStyle.THIN);
+        headerStyle.setBorderTop(BorderStyle.THIN);
+        headerStyle.setBorderLeft(BorderStyle.THIN);
+        headerStyle.setBorderRight(BorderStyle.THIN);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+        
+        // 데이터 스타일
+        CellStyle dataStyle = workbook.createCellStyle();
+        dataStyle.setBorderBottom(BorderStyle.THIN);
+        dataStyle.setBorderTop(BorderStyle.THIN);
+        dataStyle.setBorderLeft(BorderStyle.THIN);
+        dataStyle.setBorderRight(BorderStyle.THIN);
+        
+        // 숫자 스타일
+        CellStyle numberStyle = workbook.createCellStyle();
+        numberStyle.cloneStyleFrom(dataStyle);
+        DataFormat format = workbook.createDataFormat();
+        numberStyle.setDataFormat(format.getFormat("#,##0"));
+        
+        // 헤더 행 생성
+        Row headerRow = sheet.createRow(0);
+        String[] headers = {"전표일자", "적요", "차변계정과목", "차변금액", "대변계정과목", "대변금액", "문서번호", "비고"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+        
+        // 데이터 행 생성
+        int rowNum = 1;
+        for (ExpenseReportDto report : expenseReports) {
+            List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
+            
+            if (details.isEmpty()) {
+                // 상세 내역이 없는 경우 (문서 총액 기준으로 분개)
+                Row row = sheet.createRow(rowNum++);
+                createJournalEntryRow(row, report, null, dataStyle, numberStyle);
+            } else {
+                // 상세 내역이 있는 경우 (각 항목별로 분개)
+                for (ExpenseDetailDto detail : details) {
+                    Row row = sheet.createRow(rowNum++);
+                    createJournalEntryRow(row, report, detail, dataStyle, numberStyle);
+                }
+            }
+        }
+        
+        // 열 너비 자동 조정
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+        }
+        
+        // 임시 파일로 저장
+        File tempFile = File.createTempFile("journal_entry_", ".xlsx");
+        try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
+            workbook.write(outputStream);
+        }
+        workbook.close();
+        
+        logger.info("전표 엑셀 파일 생성 완료 - 파일명: {}, 건수: {}", tempFile.getName(), expenseReports.size());
+        
+            return tempFile;
+    }
+
+    /**
+     * 부가세 신고 서식 생성
+     */
+    public File exportTaxReportToExcel(LocalDate startDate, LocalDate endDate) throws IOException {
+        return taxReportService.exportTaxReportToExcel(startDate, endDate);
+    }
+
+    /**
+     * 상세 항목의 부가세 공제 정보 업데이트 (TAX_ACCOUNTANT 전용)
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void updateExpenseDetailTaxInfo(Long expenseDetailId, Boolean isTaxDeductible, String nonDeductibleReason) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        // 상세 항목 조회
+        List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetails(
+                expenseMapper.selectExpenseReportIdByDetailId(expenseDetailId, companyId), companyId);
+        
+        ExpenseDetailDto targetDetail = details.stream()
+                .filter(d -> d.getExpenseDetailId().equals(expenseDetailId))
+                .findFirst()
+                .orElseThrow(() -> new com.innersignature.backend.exception.ResourceNotFoundException("상세 항목을 찾을 수 없습니다."));
+        
+        // 업데이트
+        expenseMapper.updateExpenseDetailTaxInfo(expenseDetailId, isTaxDeductible, nonDeductibleReason, companyId);
+        
+        logger.info("부가세 공제 정보 업데이트 완료 - expenseDetailId: {}, isTaxDeductible: {}, reason: {}", 
+                expenseDetailId, isTaxDeductible, nonDeductibleReason);
+    }
+    
+    /**
+     * 전표 행 생성 헬퍼 메서드
+     * 차변(비용)과 대변(미지급금)으로 분개
+     */
+    private void createJournalEntryRow(Row row, ExpenseReportDto report, ExpenseDetailDto detail, CellStyle dataStyle, CellStyle numberStyle) {
+        int col = 0;
+        
+        // 전표일자 (작성일)
+        Cell cell = row.createCell(col++);
+        if (report.getReportDate() != null) {
+            cell.setCellValue(report.getReportDate().toString());
+        } else {
+            cell.setCellValue("");
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 적요 (제목 또는 상세 적요)
+        cell = row.createCell(col++);
+        String description = detail != null && detail.getDescription() != null && !detail.getDescription().isEmpty()
+                ? detail.getDescription()
+                : (report.getTitle() != null ? report.getTitle() : "");
+        cell.setCellValue(description);
+        cell.setCellStyle(dataStyle);
+        
+        // 차변 계정과목 (카테고리 기반, 예: 식대 -> 식대비, 교통비 -> 여비교통비)
+        cell = row.createCell(col++);
+        String category = detail != null && detail.getCategory() != null ? detail.getCategory() : "";
+        String debitAccount = mapCategoryToAccountCode(category);
+        cell.setCellValue(debitAccount);
+        cell.setCellStyle(dataStyle);
+        
+        // 차변 금액 (비용)
+        cell = row.createCell(col++);
+        Long amount = detail != null && detail.getAmount() != null ? detail.getAmount() : 
+                     (report.getTotalAmount() != null ? report.getTotalAmount() : 0L);
+        cell.setCellValue(amount.doubleValue());
+        cell.setCellStyle(numberStyle);
+        
+        // 대변 계정과목 (미지급금)
+        cell = row.createCell(col++);
+        cell.setCellValue("미지급금");
+        cell.setCellStyle(dataStyle);
+        
+        // 대변 금액 (미지급금)
+        cell = row.createCell(col++);
+        cell.setCellValue(amount.doubleValue());
+        cell.setCellStyle(numberStyle);
+        
+        // 문서번호
+        cell = row.createCell(col++);
+        cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
+        cell.setCellStyle(dataStyle);
+        
+        // 비고
+        cell = row.createCell(col++);
+        String note = detail != null && detail.getNote() != null ? detail.getNote() : "";
+        cell.setCellValue(note);
+        cell.setCellStyle(dataStyle);
+    }
+    
+    /**
+     * 카테고리를 계정과목 코드로 매핑
+     * @param category 카테고리
+     * @return 계정과목명
+     */
+    private String mapCategoryToAccountCode(String category) {
+        if (category == null || category.isEmpty()) {
+            return "기타비용";
+        }
+        
+        // 카테고리별 계정과목 매핑
+        switch (category) {
+            case "식대":
+                return "식대비";
+            case "교통비":
+                return "여비교통비";
+            case "비품비":
+                return "소모품비";
+            case "급여":
+                return "급여";
+            case "기타":
+            default:
+                return "기타비용";
+        }
     }
 }

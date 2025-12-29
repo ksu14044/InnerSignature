@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.BudgetMapper">
+    <resultMap id="BudgetResultMap" type="com.innersignature.backend.dto.BudgetDto">
+        <id property="budgetId" column="budget_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="budgetYear" column="budget_year"/>
+        <result property="budgetMonth" column="budget_month"/>
+        <result property="category" column="category"/>
+        <result property="budgetAmount" column="budget_amount"/>
+        <result property="alertThreshold" column="alert_threshold"/>
+        <result property="isBlocking" column="is_blocking"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="usedAmount" column="used_amount"/>
+        <result property="usageRate" column="usage_rate"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BudgetResultMap">
+        SELECT 
+            b.*,
+            COALESCE((
+                SELECT SUM(ed.amount)
+                FROM expense_detail_tb ed
+                INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
+                WHERE er.company_id = b.company_id
+                  AND YEAR(er.report_date) = b.budget_year
+                  AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
+                  AND ed.category = b.category
+                  AND er.status IN ('APPROVED', 'PAID')
+            ), 0) AS used_amount,
+            CASE 
+                WHEN b.budget_amount > 0 THEN
+                    ROUND((COALESCE((
+                        SELECT SUM(ed.amount)
+                        FROM expense_detail_tb ed
+                        INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
+                        WHERE er.company_id = b.company_id
+                          AND YEAR(er.report_date) = b.budget_year
+                          AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
+                          AND ed.category = b.category
+                          AND er.status IN ('APPROVED', 'PAID')
+                    ), 0) * 100.0 / b.budget_amount), 2)
+                ELSE 0
+            END AS usage_rate
+        FROM budget_tb b
+        WHERE b.budget_id = #{budgetId}
+          AND b.company_id = #{companyId}
+    </select>
+
+    <select id="findByCompanyAndCategory" resultMap="BudgetResultMap">
+        SELECT 
+            b.*,
+            COALESCE((
+                SELECT SUM(ed.amount)
+                FROM expense_detail_tb ed
+                INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
+                WHERE er.company_id = b.company_id
+                  AND YEAR(er.report_date) = b.budget_year
+                  AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
+                  AND ed.category = b.category
+                  AND er.status IN ('APPROVED', 'PAID')
+            ), 0) AS used_amount,
+            CASE 
+                WHEN b.budget_amount > 0 THEN
+                    ROUND((COALESCE((
+                        SELECT SUM(ed.amount)
+                        FROM expense_detail_tb ed
+                        INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
+                        WHERE er.company_id = b.company_id
+                          AND YEAR(er.report_date) = b.budget_year
+                          AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
+                          AND ed.category = b.category
+                          AND er.status IN ('APPROVED', 'PAID')
+                    ), 0) * 100.0 / b.budget_amount), 2)
+                ELSE 0
+            END AS usage_rate
+        FROM budget_tb b
+        WHERE b.company_id = #{companyId}
+          AND b.budget_year = #{year}
+          AND (b.budget_month = #{month} OR (b.budget_month IS NULL AND #{month} IS NULL))
+          AND b.category = #{category}
+    </select>
+
+    <select id="findByCompanyId" resultMap="BudgetResultMap">
+        SELECT 
+            b.*,
+            COALESCE((
+                SELECT SUM(ed.amount)
+                FROM expense_detail_tb ed
+                INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
+                WHERE er.company_id = b.company_id
+                  AND YEAR(er.report_date) = b.budget_year
+                  AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
+                  AND ed.category = b.category
+                  AND er.status IN ('APPROVED', 'PAID')
+            ), 0) AS used_amount,
+            CASE 
+                WHEN b.budget_amount > 0 THEN
+                    ROUND((COALESCE((
+                        SELECT SUM(ed.amount)
+                        FROM expense_detail_tb ed
+                        INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
+                        WHERE er.company_id = b.company_id
+                          AND YEAR(er.report_date) = b.budget_year
+                          AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
+                          AND ed.category = b.category
+                          AND er.status IN ('APPROVED', 'PAID')
+                    ), 0) * 100.0 / b.budget_amount), 2)
+                ELSE 0
+            END AS usage_rate
+        FROM budget_tb b
+        WHERE b.company_id = #{companyId}
+          AND (#{year} IS NULL OR b.budget_year = #{year})
+          AND (#{month} IS NULL OR b.budget_month = #{month} OR b.budget_month IS NULL)
+        ORDER BY b.budget_year DESC, b.budget_month DESC, b.category ASC
+    </select>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.BudgetDto" 
+            useGeneratedKeys="true" keyProperty="budgetId">
+        INSERT INTO budget_tb (
+            company_id, budget_year, budget_month, category, budget_amount, 
+            alert_threshold, is_blocking
+        ) VALUES (
+            #{companyId}, #{budgetYear}, #{budgetMonth}, #{category}, #{budgetAmount},
+            #{alertThreshold}, #{isBlocking}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.innersignature.backend.dto.BudgetDto">
+        UPDATE budget_tb
+        SET
+            budget_amount = #{budgetAmount},
+            alert_threshold = #{alertThreshold},
+            is_blocking = #{isBlocking},
+            updated_at = NOW()
+        WHERE budget_id = #{budgetId}
+          AND company_id = #{companyId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM budget_tb
+        WHERE budget_id = #{budgetId}
+          AND company_id = #{companyId}
+    </delete>
+
+    <select id="calculateUsedAmount" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(ed.amount), 0)
+        FROM expense_detail_tb ed
+        INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
+        WHERE er.company_id = #{companyId}
+          AND YEAR(er.report_date) = #{year}
+          AND (#{month} IS NULL OR MONTH(er.report_date) = #{month})
+          AND ed.category = #{category}
+          AND er.status IN ('APPROVED', 'PAID')
+    </select>
+</mapper>

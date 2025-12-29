@@ -42,6 +42,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Tag(name = "Expense", description = "지출결의서 관리 API")
@@ -772,6 +773,144 @@ public class ExpenseController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new ApiResponse<>(false, "엑셀 파일 생성 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
+    }
+
+    /**
+     * 24. 전표 다운로드 API
+     * GET /api/expenses/export/journal?startDate=2024-01-01&endDate=2024-12-31
+     * 설명: ACCOUNTANT 권한 사용자만 접근 가능
+     */
+    @PreAuthorize("hasRole('ACCOUNTANT')")
+    @Operation(summary = "전표 다운로드", description = "승인된 지출결의서를 회계 전표 형식으로 엑셀 파일로 다운로드합니다. (ACCOUNTANT)")
+    @GetMapping("/export/journal")
+    public ResponseEntity<?> exportJournalEntries(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        
+        LocalDate startDateParsed = null;
+        LocalDate endDateParsed = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                startDateParsed = LocalDate.parse(startDate, formatter);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                endDateParsed = LocalDate.parse(endDate, formatter);
+            }
+        } catch (Exception e) {
+            logger.error("날짜 파싱 실패", e);
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "날짜 형식이 올바르지 않습니다. (형식: YYYY-MM-DD)", null));
+        }
+        
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        
+        try {
+            File excelFile = expenseService.exportJournalEntriesToExcel(startDateParsed, endDateParsed, currentUserId);
+            Resource resource = new FileSystemResource(excelFile);
+            
+            String filename = String.format("전표_%s_%s.xlsx",
+                    startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                    endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            
+            logger.info("전표 다운로드 요청 - userId: {}, startDate: {}, endDate: {}", 
+                    currentUserId, startDateParsed, endDateParsed);
+            
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            logger.error("전표 다운로드 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "전표 파일 생성 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
+    }
+
+    /**
+     * 25. 부가세 신고 서식 다운로드 API
+     * GET /api/expenses/export/tax-report?startDate=2024-01-01&endDate=2024-12-31
+     * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
+     */
+    @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
+    @Operation(summary = "부가세 신고 서식 다운로드", description = "부가세 신고용 서식을 엑셀 파일로 다운로드합니다. (TAX_ACCOUNTANT)")
+    @GetMapping("/export/tax-report")
+    public ResponseEntity<?> exportTaxReport(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        
+        LocalDate startDateParsed = null;
+        LocalDate endDateParsed = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                startDateParsed = LocalDate.parse(startDate, formatter);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                endDateParsed = LocalDate.parse(endDate, formatter);
+            }
+        } catch (Exception e) {
+            logger.error("날짜 파싱 실패", e);
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "날짜 형식이 올바르지 않습니다. (형식: YYYY-MM-DD)", null));
+        }
+        
+        try {
+            File excelFile = expenseService.exportTaxReportToExcel(startDateParsed, endDateParsed);
+            Resource resource = new FileSystemResource(excelFile);
+            
+            String filename = String.format("부가세신고서식_%s_%s.xlsx",
+                    startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                    endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            
+            logger.info("부가세 신고 서식 다운로드 요청 - startDate: {}, endDate: {}", 
+                    startDateParsed, endDateParsed);
+            
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            logger.error("부가세 신고 서식 다운로드 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "부가세 신고 서식 파일 생성 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
+    }
+
+    /**
+     * 26. 상세 항목 부가세 공제 정보 업데이트 API
+     * PUT /api/expenses/details/{expenseDetailId}/tax-info
+     * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
+     */
+    @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
+    @Operation(summary = "부가세 공제 정보 업데이트", description = "상세 항목의 부가세 공제 여부 및 불공제 사유를 업데이트합니다. (TAX_ACCOUNTANT)")
+    @PutMapping("/details/{expenseDetailId}/tax-info")
+    public ResponseEntity<ApiResponse<Void>> updateExpenseDetailTaxInfo(
+            @PathVariable Long expenseDetailId,
+            @RequestBody Map<String, Object> request) {
+        try {
+            Boolean isTaxDeductible = request.get("isTaxDeductible") != null 
+                    ? Boolean.valueOf(request.get("isTaxDeductible").toString()) 
+                    : true;
+            String nonDeductibleReason = (String) request.get("nonDeductibleReason");
+            
+            expenseService.updateExpenseDetailTaxInfo(expenseDetailId, isTaxDeductible, nonDeductibleReason);
+            
+            logger.info("부가세 공제 정보 업데이트 완료 - expenseDetailId: {}", expenseDetailId);
+            
+            return ResponseEntity.ok(new ApiResponse<>(true, "부가세 공제 정보가 업데이트되었습니다.", null));
+        } catch (Exception e) {
+            logger.error("부가세 공제 정보 업데이트 실패", e);
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, e.getMessage(), null));
         }
     }
 
