@@ -333,6 +333,114 @@ public class ExpenseService {
         // 4. 문서 상태를 REJECTED로 변경
         expenseMapper.updateExpenseReportStatus(expenseId, "REJECTED", companyId);
     }
+
+    /**
+     * 결재 취소 처리
+     * 서명 완료된 결재 라인을 WAIT 상태로 되돌립니다.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void cancelApproval(Long expenseId, Long approverId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        // 1. 해당 문서의 모든 결재 라인 조회
+        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(expenseId, companyId);
+
+        // 2. 현재 결재자의 결재 라인 찾기
+        ApprovalLineDto currentApproverLine = null;
+        for (ApprovalLineDto line : approvalLines) {
+            if (line.getApproverId().equals(approverId)) {
+                currentApproverLine = line;
+                break;
+            }
+        }
+
+        if (currentApproverLine == null) {
+            throw new com.innersignature.backend.exception.BusinessException("해당 결재자가 결재 라인에 존재하지 않습니다.");
+        }
+
+        // 3. 현재 결재 라인이 APPROVED 상태인지 확인
+        if (!"APPROVED".equals(currentApproverLine.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("결재 완료된 결재 라인만 취소할 수 있습니다.");
+        }
+
+        // 4. PAID 상태인 문서는 취소 불가
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseId, companyId);
+        if (report != null && "PAID".equals(report.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("결제 완료된 문서는 결재 취소할 수 없습니다.");
+        }
+
+        // 5. 결재 취소 처리 (APPROVED -> WAIT)
+        ApprovalLineDto lineDto = new ApprovalLineDto();
+        lineDto.setExpenseReportId(expenseId);
+        lineDto.setApproverId(approverId);
+        expenseMapper.cancelApprovalLine(lineDto, companyId);
+
+        // 6. 취소 후 최신 결재 라인 상태 조회
+        List<ApprovalLineDto> updatedApprovalLines = expenseMapper.selectApprovalLines(expenseId, companyId);
+
+        // 7. 모든 결재 라인이 WAIT 상태인지 확인
+        boolean allWait = true;
+        for (ApprovalLineDto line : updatedApprovalLines) {
+            if (!"WAIT".equals(line.getStatus())) {
+                allWait = false;
+                break;
+            }
+        }
+
+        // 8. 모든 결재 라인이 WAIT 상태면 문서 상태를 WAIT로 변경
+        if (allWait) {
+            expenseMapper.updateExpenseReportStatus(expenseId, "WAIT", companyId);
+        } else {
+            // 일부만 취소된 경우 문서 상태를 WAIT로 변경 (다시 결재 진행 가능하도록)
+            expenseMapper.updateExpenseReportStatus(expenseId, "WAIT", companyId);
+        }
+    }
+
+    /**
+     * 반려 취소 처리
+     * 반려된 결재 라인을 WAIT 상태로 되돌립니다.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void cancelRejection(Long expenseId, Long approverId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        // 1. 해당 문서의 모든 결재 라인 조회
+        List<ApprovalLineDto> approvalLines = expenseMapper.selectApprovalLines(expenseId, companyId);
+
+        // 2. 현재 결재자의 결재 라인 찾기
+        ApprovalLineDto currentApproverLine = null;
+        for (ApprovalLineDto line : approvalLines) {
+            if (line.getApproverId().equals(approverId)) {
+                currentApproverLine = line;
+                break;
+            }
+        }
+
+        if (currentApproverLine == null) {
+            throw new com.innersignature.backend.exception.BusinessException("해당 결재자가 결재 라인에 존재하지 않습니다.");
+        }
+
+        // 3. 현재 결재 라인이 REJECTED 상태인지 확인
+        if (!"REJECTED".equals(currentApproverLine.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("반려된 결재 라인만 취소할 수 있습니다.");
+        }
+
+        // 4. PAID 상태인 문서는 취소 불가
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseId, companyId);
+        if (report != null && "PAID".equals(report.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("결제 완료된 문서는 반려 취소할 수 없습니다.");
+        }
+
+        // 5. 반려 취소 처리 (REJECTED -> WAIT)
+        ApprovalLineDto lineDto = new ApprovalLineDto();
+        lineDto.setExpenseReportId(expenseId);
+        lineDto.setApproverId(approverId);
+        expenseMapper.cancelRejectionLine(lineDto, companyId);
+
+        // 6. 문서 상태를 WAIT로 변경 (다시 결재 진행 가능하도록)
+        expenseMapper.updateExpenseReportStatus(expenseId, "WAIT", companyId);
+    }
+
     /**
      * 3. 기안서 생성 (저장) 로직
      * 설명: 프론트에서 받은 큰 덩어리 데이터를 쪼개서 DB 테이블 3곳에 차례대로 넣습니다.
@@ -437,6 +545,119 @@ public class ExpenseService {
         // 생성된 문서 ID 반환
         logger.info("지출결의서 생성 완료 - expenseReportId: {}", newId);
         return newId;
+    }
+
+    /**
+     * 3-1. 기안서 수정 로직
+     * 설명: WAIT 상태의 지출결의서만 수정 가능합니다.
+     * @return 수정된 지출결의서 ID
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Long updateExpense(Long expenseId, ExpenseReportDto request, Long currentUserId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        // 1. 기존 문서 조회
+        ExpenseReportDto existingReport = expenseMapper.selectExpenseReportById(expenseId, companyId);
+        if (existingReport == null) {
+            throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
+        }
+
+        // 2. WAIT 상태에서만 수정 가능
+        if (!"WAIT".equals(existingReport.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("WAIT 상태의 문서만 수정할 수 있습니다.");
+        }
+
+        // 3. PAID 상태 체크 (이중 체크)
+        if ("PAID".equals(existingReport.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("결제 완료된 문서는 수정할 수 없습니다.");
+        }
+
+        // 4. 작성자 본인만 수정 가능
+        if (!existingReport.getDrafterId().equals(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("작성자 본인만 수정할 수 있습니다.");
+        }
+
+        // 5. 역할 검증: TAX_ACCOUNTANT는 수정 불가
+        if (permissionUtil.isTaxAccountant(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("TAX_ACCOUNTANT 역할은 결의서를 수정할 수 없습니다.");
+        }
+
+        // 6. 상세 항목들로부터 총 금액 계산 및 급여 카테고리 확인
+        List<ExpenseDetailDto> details = request.getDetails();
+        long totalAmount = 0L;
+        boolean hasSalary = false;
+        if (details != null) {
+            for (ExpenseDetailDto detail : details) {
+                totalAmount += detail.getAmount();
+                if ("급여".equals(detail.getCategory())) {
+                    hasSalary = true;
+                }
+            }
+        }
+        request.setTotalAmount(totalAmount);
+
+        // 7. 급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT만 사용 가능
+        if (hasSalary && !permissionUtil.isAdminOrCEO(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
+        }
+
+        // 8. 급여 카테고리인 경우 자동으로 비밀글 설정
+        Boolean isSecret = request.getIsSecret();
+        if (hasSalary) {
+            request.setIsSecret(true);
+            isSecret = true;
+        }
+
+        // 9. 비밀글은 CEO, ADMIN 또는 ACCOUNTANT만 사용 가능
+        if (isSecret != null && isSecret && !permissionUtil.isAdminOrCEO(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("비밀글은 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
+        }
+
+        // 10. 메인 문서 수정
+        request.setExpenseReportId(expenseId);
+        request.setDrafterId(existingReport.getDrafterId()); // 작성자는 변경 불가
+        request.setCompanyId(companyId);
+        request.setStatus("WAIT"); // 상태는 WAIT로 유지
+        expenseMapper.updateExpenseReport(request, companyId);
+
+        // 11. 기존 상세 항목 삭제
+        expenseMapper.deleteExpenseDetails(expenseId, companyId);
+
+        // 12. 새로운 상세 항목 저장
+        if (details != null) {
+            logger.debug("상세 항목 수정 시작 - 항목 수: {}", details.size());
+            for (ExpenseDetailDto detail : details) {
+                detail.setExpenseReportId(expenseId);
+                detail.setCompanyId(companyId);
+                expenseMapper.insertExpenseDetail(detail);
+            }
+            logger.debug("상세 항목 수정 완료");
+        }
+
+        // 13. 기존 결재 라인 삭제 (WAIT 상태이므로 결재가 시작되지 않았음)
+        expenseMapper.deleteApprovalLines(expenseId, companyId);
+
+        // 14. 새로운 결재 라인 저장 (급여이거나 비밀글이 아닌 경우에만)
+        List<ApprovalLineDto> lines = request.getApprovalLines();
+        boolean isSecretOrSalary = hasSalary || (isSecret != null && isSecret);
+
+        if (!isSecretOrSalary && lines != null && !lines.isEmpty()) {
+            logger.debug("결재 라인 수정 시작 - 라인 수: {}", lines.size());
+            int stepOrder = 1;
+            for (ApprovalLineDto line : lines) {
+                line.setExpenseReportId(expenseId);
+                line.setStepOrder(stepOrder++);
+                line.setStatus("WAIT");
+                line.setCompanyId(companyId);
+                expenseMapper.insertApprovalLine(line);
+            }
+            logger.debug("결재 라인 수정 완료");
+        } else if (isSecretOrSalary) {
+            logger.debug("급여 또는 비밀글 문서는 결재 라인이 생성되지 않습니다.");
+        }
+
+        logger.info("지출결의서 수정 완료 - expenseReportId: {}", expenseId);
+        return expenseId;
     }
 
     /**

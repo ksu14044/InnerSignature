@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchExpenseDetail, approveExpense, rejectExpense, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, completeTaxProcessing } from '../../api/expenseApi';
+import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, completeTaxProcessing } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
 import * as S from './style'; // 스타일 가져오기
 import SignatureModal from '../../components/SignatureModal/SignatureModal';
@@ -19,6 +19,8 @@ const ExpenseDetailPage = () => {
   const [receipts, setReceipts] = useState([]); // 영수증 목록
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [isCancelingApproval, setIsCancelingApproval] = useState(false);
+  const [isCancelingRejection, setIsCancelingRejection] = useState(false);
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
   const [isCompletingTax, setIsCompletingTax] = useState(false);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
@@ -130,6 +132,60 @@ const ExpenseDetailPage = () => {
     })
     .catch(() => alert("오류가 발생했습니다."))
     .finally(() => setIsRejecting(false));
+  };
+
+  // 결재 취소 처리
+  const handleCancelApproval = () => {
+    if(isCancelingApproval) return;
+    if(!user) {
+        alert("로그인 후 진행할 수 있습니다.");
+        return;
+    }
+
+    if(window.confirm("정말로 결재를 취소하시겠습니까?")) {
+        setIsCancelingApproval(true);
+        cancelApproval(id)
+        .then((res) => {
+            if(res.success) {
+                alert("결재가 취소되었습니다!");
+                window.location.reload();
+            } else {
+                alert("결재 취소 실패: " + res.message);
+            }
+        })
+        .catch((error) => {
+            const errorMessage = error?.response?.data?.message || error?.message || "오류가 발생했습니다.";
+            alert(errorMessage);
+        })
+        .finally(() => setIsCancelingApproval(false));
+    }
+  };
+
+  // 반려 취소 처리
+  const handleCancelRejection = () => {
+    if(isCancelingRejection) return;
+    if(!user) {
+        alert("로그인 후 진행할 수 있습니다.");
+        return;
+    }
+
+    if(window.confirm("정말로 반려를 취소하시겠습니까?")) {
+        setIsCancelingRejection(true);
+        cancelRejection(id)
+        .then((res) => {
+            if(res.success) {
+                alert("반려가 취소되었습니다!");
+                window.location.reload();
+            } else {
+                alert("반려 취소 실패: " + res.message);
+            }
+        })
+        .catch((error) => {
+            const errorMessage = error?.response?.data?.message || error?.message || "오류가 발생했습니다.";
+            alert(errorMessage);
+        })
+        .finally(() => setIsCancelingRejection(false));
+    }
   };
 
   // 결제 완료 처리 (ACCOUNTANT 전용)
@@ -350,31 +406,77 @@ const ExpenseDetailPage = () => {
               <S.StampDate></S.StampDate>
             </S.StampBox>
           ) : detail.approvalLines && detail.approvalLines.length > 0 ? (
-            detail.approvalLines.map((line) => (
-              <S.StampBox key={line.approvalLineId}>
-                <S.StampPosition>{line.approverPosition}</S.StampPosition>
-                <S.StampContent>
-                  {line.signatureData ? (
-                    <img src={line.signatureData} alt="서명" />
-                  ) : line.status === 'REJECTED' ? (
-                    <span>
-                      {line.approverName}<br />
-                      ({STATUS_KOREAN[line.status] || line.status})
-                      {line.rejectionReason && (
-                        <div style={{ fontSize: '9px', color: '#666', marginTop: '2px', lineHeight: '1.2' }}>
-                          사유: {line.rejectionReason}
-                        </div>
-                      )}
-                    </span>
-                  ) : (
-                    <span>{line.approverName}<br />({STATUS_KOREAN[line.status] || line.status})</span>
+            detail.approvalLines.map((line) => {
+              // 현재 사용자가 해당 결재자인지 확인
+              const isCurrentUser = user && line.approverId === user.userId;
+              // PAID 상태가 아니고, 현재 사용자가 해당 결재자인 경우 취소 가능
+              const canCancel = detail.status !== 'PAID' && isCurrentUser;
+              
+              return (
+                <S.StampBox key={line.approvalLineId}>
+                  <S.StampPosition>{line.approverPosition}</S.StampPosition>
+                  <S.StampContent>
+                    {line.signatureData ? (
+                      <img src={line.signatureData} alt="서명" />
+                    ) : line.status === 'REJECTED' ? (
+                      <span>
+                        {line.approverName}<br />
+                        ({STATUS_KOREAN[line.status] || line.status})
+                        {line.rejectionReason && (
+                          <div style={{ fontSize: '9px', color: '#666', marginTop: '2px', lineHeight: '1.2' }}>
+                            사유: {line.rejectionReason}
+                          </div>
+                        )}
+                      </span>
+                    ) : (
+                      <span>{line.approverName}<br />({STATUS_KOREAN[line.status] || line.status})</span>
+                    )}
+                  </S.StampContent>
+                  <S.StampDate>
+                    {line.approvalDate ? line.approvalDate.split('T')[0] : ''}
+                  </S.StampDate>
+                  {/* 결재 취소/반려 취소 버튼 */}
+                  {canCancel && line.status === 'APPROVED' && (
+                    <div style={{ marginTop: '8px' }}>
+                      <button
+                        onClick={handleCancelApproval}
+                        disabled={isCancelingApproval || isCancelingRejection || isApproving || isRejecting || isMarkingAsPaid || isCompletingTax}
+                        style={{
+                          fontSize: '11px',
+                          padding: '4px 8px',
+                          backgroundColor: '#ffc107',
+                          color: '#000',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {isCancelingApproval ? '취소 중...' : '결재 취소'}
+                      </button>
+                    </div>
                   )}
-                </S.StampContent>
-                <S.StampDate>
-                  {line.approvalDate ? line.approvalDate.split('T')[0] : ''}
-                </S.StampDate>
-              </S.StampBox>
-            ))
+                  {canCancel && line.status === 'REJECTED' && (
+                    <div style={{ marginTop: '8px' }}>
+                      <button
+                        onClick={handleCancelRejection}
+                        disabled={isCancelingApproval || isCancelingRejection || isApproving || isRejecting || isMarkingAsPaid || isCompletingTax}
+                        style={{
+                          fontSize: '11px',
+                          padding: '4px 8px',
+                          backgroundColor: '#ffc107',
+                          color: '#000',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {isCancelingRejection ? '취소 중...' : '반려 취소'}
+                      </button>
+                    </div>
+                  )}
+                </S.StampBox>
+              );
+            })
           ) : (
             // approvalLines가 없을 때 기본 결재 라인 표시
             <S.StampBox>
@@ -420,26 +522,36 @@ const ExpenseDetailPage = () => {
       {/* 3. 버튼 */}
       <S.ButtonGroup>
          <button className="back" onClick={() => navigate('/expenses')}>목록으로</button>
+         {/* WAIT 상태이고 작성자 본인일 때만 수정 버튼 표시 */}
+         {detail.status === 'WAIT' && user && detail.drafterId === user.userId && (
+           <button 
+             className="edit" 
+             onClick={() => navigate(`/expenses/edit/${id}`)}
+             style={{ backgroundColor: '#17a2b8', color: 'white' }}
+           >
+             수정하기
+           </button>
+         )}
          {/* 결재 권한이 있고, 문서가 반려되지 않고 결제가 완료되지 않은 경우에만 결재하기/반려하기 버튼 표시 */}
          {hasApprovalPermission() && detail.status !== 'REJECTED' && detail.status !== 'PAID' && (
            <>
-             <button className="approve" onClick={handleOpenModal} disabled={isApproving || isRejecting || isMarkingAsPaid || isCompletingTax}>
+             <button className="approve" onClick={handleOpenModal} disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
                {isApproving ? '처리 중...' : '결재하기'}
              </button>
-             <button className="reject" onClick={handleOpenRejectModal} disabled={isApproving || isRejecting || isMarkingAsPaid || isCompletingTax}>
+             <button className="reject" onClick={handleOpenRejectModal} disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
                {isRejecting ? '처리 중...' : '반려하기'}
              </button>
            </>
          )}
          {/* ACCOUNTANT 권한을 가진 사용자가 APPROVED 상태의 문서를 PAID로 변경 가능 */}
          {user && user.role === 'ACCOUNTANT' && detail.status === 'APPROVED' && (
-           <button className="paid" onClick={handleMarkAsPaid} disabled={isApproving || isRejecting || isMarkingAsPaid || isCompletingTax}>
+           <button className="paid" onClick={handleMarkAsPaid} disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
              {isMarkingAsPaid ? '처리 중...' : '결제 완료'}
            </button>
          )}
          {/* TAX_ACCOUNTANT 권한을 가진 사용자가 PAID 상태의 문서를 세무처리 완료 가능 */}
          {user && user.role === 'TAX_ACCOUNTANT' && detail.status === 'PAID' && !detail.taxProcessed && (
-           <button className="tax" onClick={handleCompleteTaxProcessing} disabled={isApproving || isRejecting || isMarkingAsPaid || isCompletingTax} style={{ backgroundColor: '#17a2b8', color: 'white' }}>
+           <button className="tax" onClick={handleCompleteTaxProcessing} disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax} style={{ backgroundColor: '#17a2b8', color: 'white' }}>
              {isCompletingTax ? '처리 중...' : '세무처리 완료'}
            </button>
          )}
@@ -452,14 +564,14 @@ const ExpenseDetailPage = () => {
              <S.SectionTitle>영수증</S.SectionTitle>
              {canUploadReceipt() && (
                <label>
-                 <S.UploadButton disabled={isUploadingReceipt || isApproving || isRejecting || isMarkingAsPaid || isCompletingTax}>
+                 <S.UploadButton disabled={isUploadingReceipt || isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
                    {isUploadingReceipt ? '업로드 중...' : '영수증 추가'}
                  </S.UploadButton>
                  <input
                    type="file"
                    accept="image/*,application/pdf"
                    onChange={handleReceiptUpload}
-                   disabled={isUploadingReceipt || isApproving || isRejecting || isMarkingAsPaid || isCompletingTax}
+                   disabled={isUploadingReceipt || isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
                    style={{ display: 'none' }}
                  />
                </label>

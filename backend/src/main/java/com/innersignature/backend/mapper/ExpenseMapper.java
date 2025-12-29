@@ -86,6 +86,12 @@ public interface ExpenseMapper {
     // 결재 반려 처리
     void rejectApprovalLine(@Param("approvalLineDto") ApprovalLineDto approvalLineDto, @Param("companyId") Long companyId);
 
+    // 결재 취소 처리 (APPROVED -> WAIT)
+    void cancelApprovalLine(@Param("approvalLineDto") ApprovalLineDto approvalLineDto, @Param("companyId") Long companyId);
+
+    // 반려 취소 처리 (REJECTED -> WAIT)
+    void cancelRejectionLine(@Param("approvalLineDto") ApprovalLineDto approvalLineDto, @Param("companyId") Long companyId);
+
     // 문서 상태 업데이트
     void updateExpenseReportStatus(@Param("expenseReportId") Long expenseReportId, @Param("status") String status, @Param("companyId") Long companyId);
 
@@ -100,11 +106,20 @@ public interface ExpenseMapper {
     // 1. 메인 문서 저장
     void insertExpenseReport(ExpenseReportDto expenseReportDto);
 
+    // 1-1. 메인 문서 수정
+    void updateExpenseReport(@Param("expenseReportDto") ExpenseReportDto expenseReportDto, @Param("companyId") Long companyId);
+
     // 2. 상세 항목(지출 내역) 저장
     void insertExpenseDetail(ExpenseDetailDto expenseDetailDto);
 
+    // 2-1. 상세 항목 삭제
+    void deleteExpenseDetails(@Param("expenseReportId") Long expenseReportId, @Param("companyId") Long companyId);
+
     // 3. 결재 라인 저장
     void insertApprovalLine(ApprovalLineDto approvalLineDto);
+
+    // 3-1. 결재 라인 삭제
+    void deleteApprovalLines(@Param("expenseReportId") Long expenseReportId, @Param("companyId") Long companyId);
 
     // 지출결의서 삭제 (작성자 또는 ADMIN 권한 필요)
     void deleteExpenseReport(@Param("expenseReportId") Long expenseReportId, @Param("companyId") Long companyId);

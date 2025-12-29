@@ -220,6 +220,30 @@
             AND company_id = #{companyId}
     </update>
 
+    <update id="cancelApprovalLine">
+        UPDATE approval_line_tb
+        SET
+            status = 'WAIT',
+            signature_data = NULL,
+            approval_date = NULL
+        WHERE
+            expense_report_id = #{approvalLineDto.expenseReportId}
+            AND approver_id = #{approvalLineDto.approverId}
+            AND company_id = #{companyId}
+    </update>
+
+    <update id="cancelRejectionLine">
+        UPDATE approval_line_tb
+        SET
+            status = 'WAIT',
+            rejection_reason = NULL,
+            approval_date = NULL
+        WHERE
+            expense_report_id = #{approvalLineDto.expenseReportId}
+            AND approver_id = #{approvalLineDto.approverId}
+            AND company_id = #{companyId}
+    </update>
+
     <update id="updateExpenseReportStatus">
         UPDATE expense_report_tb
         SET status = #{status}
@@ -249,6 +273,19 @@
         )
     </insert>
 
+    <update id="updateExpenseReport">
+        UPDATE expense_report_tb
+        SET
+            title = #{expenseReportDto.title},
+            report_date = #{expenseReportDto.reportDate},
+            total_amount = #{expenseReportDto.totalAmount},
+            payment_req_date = #{expenseReportDto.paymentReqDate},
+            is_secret = #{expenseReportDto.isSecret, jdbcType=TINYINT}
+        WHERE
+            expense_report_id = #{expenseReportDto.expenseReportId}
+            AND company_id = #{companyId}
+    </update>
+
     <insert id="insertExpenseDetail">
         INSERT INTO expense_detail_tb (
             expense_report_id,
@@ -266,6 +303,12 @@
             #{companyId}
         )
     </insert>
+
+    <delete id="deleteExpenseDetails">
+        DELETE FROM expense_detail_tb
+        WHERE expense_report_id = #{expenseReportId}
+        AND company_id = #{companyId}
+    </delete>
 
     <insert id="insertApprovalLine">
         INSERT INTO approval_line_tb (
@@ -288,6 +331,12 @@
             #{companyId}
         )
     </insert>
+
+    <delete id="deleteApprovalLines">
+        DELETE FROM approval_line_tb
+        WHERE expense_report_id = #{expenseReportId}
+        AND company_id = #{companyId}
+    </delete>
 
     <delete id="deleteExpenseReport">
         DELETE FROM expense_report_tb

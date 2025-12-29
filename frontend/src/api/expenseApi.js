@@ -84,6 +84,17 @@ export const fetchExpenseDetail = async (id) => {
   }
 };
 
+// 2-1. 지출결의서 수정 함수
+export const updateExpense = async (expenseId, data) => {
+  try {
+    const response = await axiosInstance.put(`${BASE_URL}/${expenseId}`, data);
+    return response.data;
+  } catch (error) {
+    console.error("지출결의서 수정 실패:", error);
+    throw error;
+  }
+};
+
 // 3. 결재 라인 설정
 export const setApprovalLines = async (expenseId, approvalLines) => {
     try {
@@ -116,6 +127,28 @@ export const rejectExpense = async (expenseId, data) => {
       return response.data;
     } catch (error) {
       console.error("결재 반려 실패:", error);
+      throw error;
+    }
+  };
+
+// 5-1. 결재 취소
+export const cancelApproval = async (expenseId) => {
+    try {
+      const response = await axiosInstance.post(`${BASE_URL}/${expenseId}/cancel-approval`);
+      return response.data;
+    } catch (error) {
+      console.error("결재 취소 실패:", error);
+      throw error;
+    }
+  };
+
+// 5-2. 반려 취소
+export const cancelRejection = async (expenseId) => {
+    try {
+      const response = await axiosInstance.post(`${BASE_URL}/${expenseId}/cancel-rejection`);
+      return response.data;
+    } catch (error) {
+      console.error("반려 취소 실패:", error);
       throw error;
     }
   };

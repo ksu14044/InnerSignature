@@ -493,8 +493,18 @@ const LoginPage = () => {
               placeholder="아이디"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              hasClearButton={!!username}
               required
             />
+            {username && (
+              <S.ClearButton
+                type="button"
+                onClick={() => setUsername('')}
+                aria-label="아이디 지우기"
+              >
+                <FaTimes />
+              </S.ClearButton>
+            )}
           </S.InputGroup>
 
           <S.InputGroup>
@@ -506,8 +516,18 @@ const LoginPage = () => {
               placeholder="비밀번호"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              hasClearButton={!!password}
               required
             />
+            {password && (
+              <S.ClearButton
+                type="button"
+                onClick={() => setPassword('')}
+                aria-label="비밀번호 지우기"
+              >
+                <FaTimes />
+              </S.ClearButton>
+            )}
           </S.InputGroup>
 
           <S.SubmitButtonBase type="submit" disabled={isLoggingIn}>

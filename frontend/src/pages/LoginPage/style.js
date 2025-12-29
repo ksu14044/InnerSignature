@@ -94,7 +94,7 @@ export const InputIcon = styled.div`
 
 export const Input = styled.input`
   width: 100%;
-  padding: 16px 16px 16px 48px;
+  padding: 16px ${props => props.hasClearButton ? '48px' : '16px'} 16px 48px;
   border: 2px solid var(--border-color);
   border-radius: 12px;
   font-size: 16px;
@@ -110,6 +110,34 @@ export const Input = styled.input`
 
   &::placeholder {
     color: var(--secondary-color);
+  }
+`;
+
+export const ClearButton = styled.button`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--secondary-color);
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  z-index: 2;
+  font-size: 14px;
+
+  &:hover {
+    background-color: var(--light-color);
+    color: var(--dark-color);
+  }
+
+  &:active {
+    transform: translateY(-50%) scale(0.95);
   }
 `;
 

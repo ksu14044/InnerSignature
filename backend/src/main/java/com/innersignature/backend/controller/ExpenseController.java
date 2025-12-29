@@ -173,6 +173,34 @@ public class ExpenseController {
             return new ApiResponse<Void>(true, "결제 반려 완료", null);
     }
 
+    /**
+     * 3-2. 결재 취소 API
+     * POST /api/expenses/{expenseId}/cancel-approval
+     */
+    @Operation(summary = "결재 취소", description = "서명 완료된 결재를 취소합니다.")
+    @PostMapping("/{expenseId}/cancel-approval")
+    public ApiResponse<Void> cancelApproval(@PathVariable Long expenseId) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        logger.info("결재 취소 요청 - expenseId: {}, approverId: {}", expenseId, currentUserId);
+        expenseService.cancelApproval(expenseId, currentUserId);
+        logger.info("결재 취소 완료 - expenseId: {}", expenseId);
+        return new ApiResponse<Void>(true, "결재 취소 완료", null);
+    }
+
+    /**
+     * 3-3. 반려 취소 API
+     * POST /api/expenses/{expenseId}/cancel-rejection
+     */
+    @Operation(summary = "반려 취소", description = "반려된 결재를 취소합니다.")
+    @PostMapping("/{expenseId}/cancel-rejection")
+    public ApiResponse<Void> cancelRejection(@PathVariable Long expenseId) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        logger.info("반려 취소 요청 - expenseId: {}, approverId: {}", expenseId, currentUserId);
+        expenseService.cancelRejection(expenseId, currentUserId);
+        logger.info("반려 취소 완료 - expenseId: {}", expenseId);
+        return new ApiResponse<Void>(true, "반려 취소 완료", null);
+    }
+
     @Data
     static class ApproveRequest {
         private Long approverId;
@@ -193,6 +221,24 @@ public class ExpenseController {
         Long expenseId = expenseService.createExpense(request, currentUserId);
         logger.info("지출결의서 생성 완료 - expenseId: {}", expenseId);
         return new ApiResponse<>(true, "기안서 저장 성공", expenseId);
+    }
+
+    /**
+     * 4-1. 기안서 수정 API
+     * 주소: PUT /api/expenses/{expenseId}
+     * 설명: WAIT 상태의 지출결의서를 수정합니다.
+     */
+    @Operation(summary = "지출결의서 수정", description = "WAIT 상태의 기안서를 수정합니다.")
+    @PutMapping("/{expenseId}")
+    public ApiResponse<Long> updateExpense(
+            @PathVariable Long expenseId,
+            @Valid @RequestBody ExpenseReportDto request) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        logger.info("지출결의서 수정 요청 - expenseId: {}, currentUserId: {}, title: {}, totalAmount: {}", 
+                expenseId, currentUserId, request.getTitle(), request.getTotalAmount());
+        Long updatedExpenseId = expenseService.updateExpense(expenseId, request, currentUserId);
+        logger.info("지출결의서 수정 완료 - expenseId: {}", updatedExpenseId);
+        return new ApiResponse<>(true, "기안서 수정 성공", updatedExpenseId);
     }
 
     /**

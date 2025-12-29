@@ -1,23 +1,27 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';
 import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck } from 'react-icons/fa';
 
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
 import * as S from './style';
 import { useAuth } from '../../contexts/AuthContext';
-import { setApprovalLines, fetchApprovers } from '../../api/expenseApi';
+import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense } from '../../api/expenseApi';
 import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole } from '../../constants/categories';
 import { DEFAULT_VALUES } from '../../constants/defaults';
 import TourButton from '../../components/TourButton/TourButton';
 import ApproverSelectionModal from '../../components/ApproverSelectionModal/ApproverSelectionModal';
+import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 
 const ExpenseCreatePage = () => {
   const navigate = useNavigate();
+  const { id } = useParams(); // 수정 모드일 때 expenseId
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const isEditMode = !!id; // id가 있으면 수정 모드
 
   // 1. 문서 기본 정보 상태
   const [report, setReport] = useState({
@@ -84,6 +88,65 @@ const ExpenseCreatePage = () => {
 
     loadApprovers();
   }, []);
+
+  // 수정 모드일 때 기존 데이터 불러오기
+  useEffect(() => {
+    if (isEditMode && id) {
+      const loadExpenseData = async () => {
+        try {
+          setIsLoading(true);
+          const response = await fetchExpenseDetail(id);
+          if (response.success && response.data) {
+            const expense = response.data;
+            
+            // WAIT 상태가 아니면 수정 불가
+            if (expense.status !== 'WAIT') {
+              alert('WAIT 상태의 문서만 수정할 수 있습니다.');
+              navigate(`/detail/${id}`);
+              return;
+            }
+
+            // 작성자 본인이 아니면 수정 불가
+            if (expense.drafterId !== user?.userId) {
+              alert('작성자 본인만 수정할 수 있습니다.');
+              navigate(`/detail/${id}`);
+              return;
+            }
+
+            // 기본 정보 설정
+            setReport({
+              title: expense.title || '',
+              paymentReqDate: expense.paymentReqDate || '',
+              reportDate: expense.reportDate || new Date().toISOString().split('T')[0],
+              isSecret: expense.isSecret || false,
+            });
+
+            // 상세 내역 설정
+            if (expense.details && expense.details.length > 0) {
+              setDetails(expense.details);
+            }
+
+            // 결재 라인 설정
+            if (expense.approvalLines && expense.approvalLines.length > 0) {
+              const approverIds = expense.approvalLines.map(line => line.approverId);
+              setSelectedApprovers(approverIds);
+            }
+          } else {
+            alert('문서를 불러올 수 없습니다.');
+            navigate('/expenses');
+          }
+        } catch (error) {
+          console.error('문서 불러오기 실패:', error);
+          alert('문서를 불러오는 중 오류가 발생했습니다.');
+          navigate('/expenses');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      loadExpenseData();
+    }
+  }, [isEditMode, id, user, navigate]);
 
   // --- 이벤트 핸들러 ---
 
@@ -266,56 +329,83 @@ const ExpenseCreatePage = () => {
       totalAmount: totalAmount,
       details: details,
       isSecret: report.isSecret || false,
+      approvalLines: !isSecretOrSalary ? selectedApprovers.map(userId => {
+        const adminUser = adminUsers.find(user => user.userId === userId);
+        return {
+          approverId: userId,
+          approverPosition: adminUser?.position || DEFAULT_VALUES.APPROVER_DEFAULTS.position,
+          approverName: adminUser?.koreanName || DEFAULT_VALUES.APPROVER_DEFAULTS.name,
+          status: APPROVAL_STATUS.WAIT
+        };
+      }) : [],
     };
 
     try {
       setIsSubmitting(true);
-      const response = await axiosInstance.post(`${API_CONFIG.EXPENSES_BASE_URL}/create`, payload);
 
-      if (response.data.success) {
-        // 생성된 지출 결의서의 ID를 받아서 Detail 페이지로 이동
-        const expenseId = response.data.data;
-
-        if (expenseId) {
-          // 비밀글이거나 급여가 아닌 경우에만 결재 라인 설정
-          if (!isSecretOrSalary) {
-            // 선택된 결재자들을 approvalLines로 변환 (순서 보장)
-            const approvalLines = selectedApprovers.map(userId => {
-              const adminUser = adminUsers.find(user => user.userId === userId);
-              return {
-                approverId: userId,
-                approverPosition: adminUser?.position || DEFAULT_VALUES.APPROVER_DEFAULTS.position,
-                approverName: adminUser?.koreanName || DEFAULT_VALUES.APPROVER_DEFAULTS.name,
-                status: APPROVAL_STATUS.WAIT
-              };
-            });
-
-            try {
-              await setApprovalLines(expenseId, approvalLines);
-              alert('지출결의서가 작성되고 결재 라인이 설정되었습니다!');
-            } catch (approvalError) {
-              console.error('결재 라인 설정 실패:', approvalError);
-              alert('지출결의서는 작성되었으나 결재 라인 설정에 실패했습니다.');
-            }
-          } else {
-            alert(report.isSecret ? '비밀글 지출결의서가 작성되었습니다!' : '급여 지출결의서가 작성되었습니다!');
-          }
-
-          navigate(`/detail/${expenseId}`);
+      if (isEditMode) {
+        // 수정 모드
+        const response = await updateExpense(id, payload);
+        if (response.success) {
+          alert('지출결의서가 수정되었습니다!');
+          navigate(`/detail/${id}`);
         } else {
-          alert('지출결의서가 작성되었으나 ID를 확인할 수 없습니다.');
-          navigate('/expenses');
+          alert('수정 실패: ' + response.message);
         }
       } else {
-        alert('작성 실패: ' + response.data.message);
+        // 생성 모드
+        const response = await axiosInstance.post(`${API_CONFIG.EXPENSES_BASE_URL}/create`, payload);
+
+        if (response.data.success) {
+          // 생성된 지출 결의서의 ID를 받아서 Detail 페이지로 이동
+          const expenseId = response.data.data;
+
+          if (expenseId) {
+            // 비밀글이거나 급여가 아닌 경우에만 결재 라인 설정
+            if (!isSecretOrSalary) {
+              // 선택된 결재자들을 approvalLines로 변환 (순서 보장)
+              const approvalLines = selectedApprovers.map(userId => {
+                const adminUser = adminUsers.find(user => user.userId === userId);
+                return {
+                  approverId: userId,
+                  approverPosition: adminUser?.position || DEFAULT_VALUES.APPROVER_DEFAULTS.position,
+                  approverName: adminUser?.koreanName || DEFAULT_VALUES.APPROVER_DEFAULTS.name,
+                  status: APPROVAL_STATUS.WAIT
+                };
+              });
+
+              try {
+                await setApprovalLines(expenseId, approvalLines);
+                alert('지출결의서가 작성되고 결재 라인이 설정되었습니다!');
+              } catch (approvalError) {
+                console.error('결재 라인 설정 실패:', approvalError);
+                alert('지출결의서는 작성되었으나 결재 라인 설정에 실패했습니다.');
+              }
+            } else {
+              alert(report.isSecret ? '비밀글 지출결의서가 작성되었습니다!' : '급여 지출결의서가 작성되었습니다!');
+            }
+
+            navigate(`/detail/${expenseId}`);
+          } else {
+            alert('지출결의서가 작성되었으나 ID를 확인할 수 없습니다.');
+            navigate('/expenses');
+          }
+        } else {
+          alert('작성 실패: ' + response.data.message);
+        }
       }
     } catch (error) {
       console.error('에러 발생:', error);
-      alert('서버 통신 중 오류가 발생했습니다.');
+      const errorMessage = error?.response?.data?.message || error?.message || '서버 통신 중 오류가 발생했습니다.';
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
+  }
 
   return (
     <S.Container>
@@ -323,7 +413,7 @@ const ExpenseCreatePage = () => {
         <S.BackButton onClick={() => navigate(-1)}>
           <FaArrowLeft />
         </S.BackButton>
-        <S.Title>지출결의서 작성</S.Title>
+        <S.Title>{isEditMode ? '지출결의서 수정' : '지출결의서 작성'}</S.Title>
         <div style={{ marginLeft: 'auto' }}>
           <TourButton />
         </div>

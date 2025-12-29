@@ -33,6 +33,7 @@ function App() {
         <Route path="/expenses" element={<ExpenseListPage />} />
         <Route path="/detail/:id" element={<ExpenseDetailPage />} />
         <Route path="/expenses/create" element={<ExpenseCreatePage />} />
+        <Route path="/expenses/edit/:id" element={<ExpenseCreatePage />} />
         <Route path="/tax/summary" element={<TaxSummaryPage />} />
         <Route path="/users" element={<UserManagementPage />} />
         <Route path="/profile" element={<MyProfilePage />} />
