@@ -812,3 +812,91 @@ export const MobileSelect = styled.select`
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
   }
 `;
+
+// 토스트 메시지 스타일
+export const ToastMessage = styled.div`
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #dc3545;
+  color: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 90%;
+  animation: slideDown 0.3s ease-out;
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  @media (max-width: 480px) {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    transform: none;
+    max-width: none;
+    padding: 14px 20px;
+    font-size: 14px;
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+`;
+
+export const ToastIcon = styled.span`
+  font-size: 20px;
+  flex-shrink: 0;
+`;
+
+export const ToastContent = styled.div`
+  flex: 1;
+  line-height: 1.5;
+`;
+
+export const ToastTitle = styled.div`
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 15px;
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
+`;
+
+export const ToastList = styled.ul`
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  list-style-type: disc;
+  font-size: 14px;
+  line-height: 1.6;
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+    padding-left: 18px;
+  }
+`;
+
+export const ToastListItem = styled.li`
+  margin-bottom: 4px;
+`;

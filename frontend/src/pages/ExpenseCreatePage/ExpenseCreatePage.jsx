@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck } from 'react-icons/fa';
@@ -37,6 +37,17 @@ const ExpenseCreatePage = () => {
   const [selectedApprovers, setSelectedApprovers] = useState([]); // 선택된 결재자 ID들 (순서 보장)
   const [loadingApprovers, setLoadingApprovers] = useState(true); // 결재자 목록 로딩 상태
   const [isApproverModalOpen, setIsApproverModalOpen] = useState(false); // 결재자 선택 모달 열림 상태
+
+  // 5. 토스트 메시지 상태
+  const [toastMessage, setToastMessage] = useState(null);
+
+  // 4. 필드 참조 (스크롤 이동용)
+  const titleInputRef = useRef(null);
+  const paymentReqDateInputRef = useRef(null);
+  const descriptionInputRefs = useRef([]);
+  const amountInputRefs = useRef([]);
+  const approverSectionRef = useRef(null);
+  const detailsSectionRef = useRef(null);
 
   // 총 금액 자동 계산
   const totalAmount = details.reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -88,6 +99,34 @@ const ExpenseCreatePage = () => {
     setDetails(newDetails);
   };
 
+  // 필드로 스크롤 이동하는 함수
+  const scrollToField = (ref, behavior = 'smooth') => {
+    if (ref) {
+      // ref가 직접 DOM 요소인 경우 (함수형 ref)
+      if (ref.focus) {
+        ref.scrollIntoView({ behavior, block: 'center' });
+        setTimeout(() => {
+          ref.focus();
+          if (ref.select) {
+            ref.select();
+          }
+        }, 300);
+      } 
+      // ref가 ref 객체인 경우 (useRef로 생성된 경우)
+      else if (ref.current) {
+        ref.current.scrollIntoView({ behavior, block: 'center' });
+        setTimeout(() => {
+          if (ref.current && ref.current.focus) {
+            ref.current.focus();
+            if (ref.current.select) {
+              ref.current.select();
+            }
+          }
+        }, 300);
+      }
+    }
+  };
+
   const addDetailRow = () => {
     setDetails([...details, { ...DEFAULT_VALUES.EXPENSE_DETAIL }]);
   };
@@ -121,6 +160,99 @@ const ExpenseCreatePage = () => {
     // 급여 카테고리는 ADMIN 또는 ACCOUNTANT만 사용 가능
     if (hasSalaryCategory && user.role !== 'ADMIN' && user.role !== 'ACCOUNTANT') {
       alert("급여 카테고리는 ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
+      return;
+    }
+
+    // 유효성 검사: 누락된 항목 확인 및 첫 번째 누락 필드로 스크롤
+    let firstMissingField = null;
+    const missingFields = [];
+    
+    // 1. 제목 확인
+    if (!report.title || report.title.trim() === '') {
+      missingFields.push('제목');
+      if (!firstMissingField) {
+        firstMissingField = { type: 'title', ref: titleInputRef };
+      }
+    }
+    
+    // 2. 지급 요청일 확인
+    if (!report.paymentReqDate || report.paymentReqDate.trim() === '') {
+      missingFields.push('지급 요청일');
+      if (!firstMissingField) {
+        firstMissingField = { type: 'paymentReqDate', ref: paymentReqDateInputRef };
+      }
+    }
+    
+    // 3. 상세 내역 확인
+    if (!details || details.length === 0) {
+      missingFields.push('지출 상세 내역 (최소 1개 이상 필요)');
+      if (!firstMissingField) {
+        firstMissingField = { type: 'detailsSection', ref: detailsSectionRef };
+      }
+    } else {
+      // 각 상세 내역 항목 확인
+      for (let index = 0; index < details.length; index++) {
+        const detail = details[index];
+        const rowNumber = index + 1;
+        
+        // 적요(내용) 확인
+        if (!detail.description || detail.description.trim() === '') {
+          missingFields.push(`상세 내역 ${rowNumber}행: 적요(내용)`);
+          if (!firstMissingField) {
+            firstMissingField = { 
+              type: 'description', 
+              ref: descriptionInputRefs.current[index],
+              index 
+            };
+          }
+        }
+        
+        // 금액 확인
+        if (!detail.amount || detail.amount === '' || Number(detail.amount) <= 0) {
+          missingFields.push(`상세 내역 ${rowNumber}행: 금액`);
+          if (!firstMissingField) {
+            firstMissingField = { 
+              type: 'amount', 
+              ref: amountInputRefs.current[index],
+              index 
+            };
+          }
+        }
+      }
+    }
+    
+    // 4. 결재자 선택 확인 (비밀글이거나 급여가 아닌 경우)
+    if (!isSecretOrSalary && (!selectedApprovers || selectedApprovers.length === 0)) {
+      missingFields.push('결재자 선택');
+      if (!firstMissingField) {
+        firstMissingField = { type: 'approver', ref: approverSectionRef };
+      }
+    }
+    
+    // 누락된 항목이 있으면 해당 필드로 스크롤하고 토스트 메시지 표시
+    if (firstMissingField) {
+      // 토스트 메시지 표시
+      setToastMessage(missingFields);
+      
+      // 5초 후 자동으로 메시지 숨김
+      setTimeout(() => {
+        setToastMessage(null);
+      }, 5000);
+      
+      // 해당 필드로 스크롤
+      if (firstMissingField.ref) {
+        scrollToField(firstMissingField.ref);
+      } else if (firstMissingField.type === 'description' && firstMissingField.index !== undefined) {
+        // descriptionInputRefs가 아직 설정되지 않은 경우 섹션으로 이동
+        scrollToField(detailsSectionRef);
+      } else if (firstMissingField.type === 'amount' && firstMissingField.index !== undefined) {
+        // amountInputRefs가 아직 설정되지 않은 경우 섹션으로 이동
+        scrollToField(detailsSectionRef);
+      } else if (firstMissingField.type === 'detailsSection') {
+        scrollToField(detailsSectionRef);
+      } else if (firstMissingField.type === 'approver') {
+        scrollToField(approverSectionRef);
+      }
       return;
     }
 
@@ -204,6 +336,7 @@ const ExpenseCreatePage = () => {
           <S.InputGroup>
             <S.Label>제목</S.Label>
             <S.Input
+              ref={titleInputRef}
               type="text"
               name="title"
               value={report.title}
@@ -215,6 +348,7 @@ const ExpenseCreatePage = () => {
           <S.InputGroup>
             <S.Label>지급 요청일</S.Label>
             <S.Input
+              ref={paymentReqDateInputRef}
               type="date"
               name="paymentReqDate"
               value={report.paymentReqDate}
@@ -250,7 +384,7 @@ const ExpenseCreatePage = () => {
 
       {/* 2. 결재자 선택 섹션 - 비밀글이거나 급여가 아닌 경우에만 표시 */}
       {!isSecretOrSalary && (
-        <S.Section data-tourid="tour-approver-selection">
+        <S.Section ref={approverSectionRef} data-tourid="tour-approver-selection">
           <S.SectionHeader>
             <S.SectionTitle>결재자 선택</S.SectionTitle>
             <S.SelectApproverButton onClick={() => setIsApproverModalOpen(true)}>
@@ -304,7 +438,7 @@ const ExpenseCreatePage = () => {
       )}
 
       {/* 3. 상세 내역 입력 섹션 */}
-      <S.Section data-tourid="tour-expense-details">
+      <S.Section ref={detailsSectionRef} data-tourid="tour-expense-details">
         <S.SectionHeader>
           <S.SectionTitle>지출 상세 내역</S.SectionTitle>
           <S.AddButton onClick={addDetailRow}>
@@ -339,6 +473,7 @@ const ExpenseCreatePage = () => {
                   </S.Td>
                   <S.Td>
                     <S.Input
+                      ref={(el) => (descriptionInputRefs.current[index] = el)}
                       type="text"
                       name="description"
                       value={detail.description}
@@ -347,6 +482,7 @@ const ExpenseCreatePage = () => {
                   </S.Td>
                   <S.Td>
                     <S.Input
+                      ref={(el) => (amountInputRefs.current[index] = el)}
                       type="number"
                       name="amount"
                       value={detail.amount}
@@ -397,6 +533,7 @@ const ExpenseCreatePage = () => {
                 <S.MobileInputGroup>
                   <S.MobileLabel>적요 (내용)</S.MobileLabel>
                   <S.MobileInput
+                    ref={(el) => (descriptionInputRefs.current[index] = el)}
                     type="text"
                     name="description"
                     value={detail.description}
@@ -407,6 +544,7 @@ const ExpenseCreatePage = () => {
                 <S.MobileInputGroup>
                   <S.MobileLabel>금액</S.MobileLabel>
                   <S.MobileInput
+                    ref={(el) => (amountInputRefs.current[index] = el)}
                     type="number"
                     name="amount"
                     value={detail.amount}
@@ -460,6 +598,21 @@ const ExpenseCreatePage = () => {
           onToggleApprover={handleApproverToggle}
           loadingApprovers={loadingApprovers}
         />
+      )}
+
+      {/* 토스트 메시지 */}
+      {toastMessage && (
+        <S.ToastMessage onClick={() => setToastMessage(null)}>
+          <S.ToastIcon>⚠️</S.ToastIcon>
+          <S.ToastContent>
+            <S.ToastTitle>다음 항목이 누락되었습니다:</S.ToastTitle>
+            <S.ToastList>
+              {toastMessage.map((field, index) => (
+                <S.ToastListItem key={index}>{field}</S.ToastListItem>
+              ))}
+            </S.ToastList>
+          </S.ToastContent>
+        </S.ToastMessage>
       )}
     </S.Container>
   );
