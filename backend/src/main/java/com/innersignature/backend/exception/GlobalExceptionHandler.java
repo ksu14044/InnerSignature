@@ -38,6 +38,17 @@ public class GlobalExceptionHandler {
     }
     
     /**
+     * Swagger 관련 경로인지 확인
+     */
+    private boolean isSwaggerPath(String path) {
+        if (path == null) return false;
+        return path.startsWith("/swagger-ui") ||
+               path.startsWith("/v3/api-docs") ||
+               path.startsWith("/webjars") ||
+               path.startsWith("/swagger-resources");
+    }
+    
+    /**
      * 입력 검증 실패 예외 처리
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -126,11 +137,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
         // Swagger 관련 경로는 예외 처리 제외 (SpringDoc 내부 예외는 그대로 전파)
-        String path = request.getRequestURI();
-        if (path != null && (path.startsWith("/swagger-ui") || 
-            path.startsWith("/v3/api-docs") ||
-            path.startsWith("/webjars") ||
-            path.startsWith("/swagger-resources"))) {
+        if (isSwaggerPath(request.getRequestURI())) {
             throw ex; // 원래 예외를 다시 던짐
         }
         
@@ -150,11 +157,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception ex, HttpServletRequest request) {
         // Swagger 관련 경로는 예외 처리 제외 (SpringDoc 내부 예외는 그대로 전파)
-        String path = request.getRequestURI();
-        if (path != null && (path.startsWith("/swagger-ui") || 
-            path.startsWith("/v3/api-docs") ||
-            path.startsWith("/webjars") ||
-            path.startsWith("/swagger-resources"))) {
+        if (isSwaggerPath(request.getRequestURI())) {
             throw new RuntimeException(ex); // 원래 예외를 RuntimeException으로 래핑하여 다시 던짐
         }
         

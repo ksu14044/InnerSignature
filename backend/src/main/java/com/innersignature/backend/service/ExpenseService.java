@@ -608,26 +608,38 @@ public class ExpenseService {
         String fileName = "receipt_" + timestamp + "_" + sanitizedFilename;
         Path filePath = uploadPath.resolve(fileName);
 
-        // 9. 파일 저장
+        boolean fileSaved = false;
+        
         try {
+            // 9. 파일 저장
             file.transferTo(filePath.toFile());
-        } catch (IOException e) {
-            throw new IOException("파일 저장 중 오류가 발생했습니다: " + filePath.toAbsolutePath() + " - " + e.getMessage(), e);
+            fileSaved = true;
+            
+            // 10. DB에 영수증 정보 저장 (receipt_tb에 저장)
+            String relativePath = fileUploadBaseDir + "/" + fileUploadReceiptsDir + "/" + expenseReportId + "/" + uniqueDir + "/" + fileName;
+            ReceiptDto receiptDto = new ReceiptDto();
+            receiptDto.setExpenseReportId(expenseReportId);
+            receiptDto.setFilePath(relativePath);
+            receiptDto.setOriginalFilename(originalFilename);
+            receiptDto.setFileSize(file.getSize());
+            receiptDto.setUploadedBy(userId);
+            receiptDto.setUploadedAt(LocalDateTime.now());
+            receiptDto.setCompanyId(companyId);
+            expenseMapper.insertReceipt(receiptDto);
+            
+            SecurityLogger.fileAccess("UPLOAD", userId, expenseReportId, sanitizedFilename);
+        } catch (Exception e) {
+            // DB 저장 실패 시 파일 삭제
+            if (fileSaved && Files.exists(filePath)) {
+                try {
+                    Files.delete(filePath);
+                    logger.warn("DB 저장 실패로 인해 파일 삭제: {}", filePath);
+                } catch (IOException deleteEx) {
+                    logger.error("파일 삭제 실패: {}", filePath, deleteEx);
+                }
+            }
+            throw e;
         }
-
-        // 10. DB에 영수증 정보 저장 (receipt_tb에 저장)
-        String relativePath = fileUploadBaseDir + "/" + fileUploadReceiptsDir + "/" + expenseReportId + "/" + uniqueDir + "/" + fileName;
-        ReceiptDto receiptDto = new ReceiptDto();
-        receiptDto.setExpenseReportId(expenseReportId);
-        receiptDto.setFilePath(relativePath);
-        receiptDto.setOriginalFilename(originalFilename);
-        receiptDto.setFileSize(file.getSize());
-        receiptDto.setUploadedBy(userId);
-        receiptDto.setUploadedAt(LocalDateTime.now());
-        receiptDto.setCompanyId(companyId);
-        expenseMapper.insertReceipt(receiptDto);
-
-        SecurityLogger.fileAccess("UPLOAD", userId, expenseReportId, sanitizedFilename);
     }
 
     /**

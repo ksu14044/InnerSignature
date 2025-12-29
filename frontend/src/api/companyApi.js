@@ -1,36 +1,12 @@
-import axios from 'axios';
+import axiosInstance from '../utils/axiosInstance';
 import { API_CONFIG } from '../config/api';
 
 const BASE_URL = `${API_CONFIG.BASE_URL}/companies`;
 
-// 쿠키에서 토큰 가져오기
-const getCookie = (name) => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    return parts.pop().split(';').shift();
-  }
-  return null;
-};
-
-// Axios 인터셉터로 JWT 토큰 자동 추가
-axios.interceptors.request.use(
-  (config) => {
-    const token = getCookie('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 // 회사 생성 (ADMIN 전용)
 export const createCompany = async (companyName, businessRegNo, representativeName) => {
   try {
-    const response = await axios.post(BASE_URL, { 
+    const response = await axiosInstance.post(BASE_URL, { 
       companyName, 
       businessRegNo, 
       representativeName 
@@ -45,7 +21,7 @@ export const createCompany = async (companyName, businessRegNo, representativeNa
 // 사업자등록번호 중복 확인
 export const checkBusinessRegNoDuplicate = async (businessRegNo) => {
   try {
-    const response = await axios.get(`${BASE_URL}/check-business-reg-no`, {
+    const response = await axiosInstance.get(`${BASE_URL}/check-business-reg-no`, {
       params: { businessRegNo }
     });
     return response.data;
@@ -58,7 +34,7 @@ export const checkBusinessRegNoDuplicate = async (businessRegNo) => {
 // 사용자가 소속된 회사 목록 조회 (모든 사용자)
 export const getMyCompanies = async () => {
   try {
-    const response = await axios.get(BASE_URL);
+    const response = await axiosInstance.get(BASE_URL);
     return response.data;
   } catch (error) {
     console.error("회사 목록 조회 실패:", error);
@@ -69,7 +45,7 @@ export const getMyCompanies = async () => {
 // 회사 검색 (공개 API)
 export const searchCompanies = async (companyName) => {
   try {
-    const response = await axios.get(`${BASE_URL}/search`, {
+    const response = await axiosInstance.get(`${BASE_URL}/search`, {
       params: { name: companyName }
     });
     return response.data;
@@ -82,7 +58,7 @@ export const searchCompanies = async (companyName) => {
 // 회사 조회
 export const getCompany = async (companyId) => {
   try {
-    const response = await axios.get(`${BASE_URL}/${companyId}`);
+    const response = await axiosInstance.get(`${BASE_URL}/${companyId}`);
     return response.data;
   } catch (error) {
     console.error("회사 조회 실패:", error);
@@ -94,7 +70,7 @@ export const getCompany = async (companyId) => {
 export const switchCompany = async (companyId, currentToken) => {
   try {
     // JWT 토큰 재발급을 위해 /users/switch-company 엔드포인트 사용
-    const response = await axios.post(`${API_CONFIG.BASE_URL}/users/switch-company`, {
+    const response = await axiosInstance.post(`${API_CONFIG.BASE_URL}/users/switch-company`, {
       companyId,
       currentToken
     });

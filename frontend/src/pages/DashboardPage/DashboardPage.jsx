@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   fetchDashboardStats, 
@@ -49,9 +49,14 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(false);
   const debounceTimer = useRef(null);
 
-  const isAuthorized = user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT';
+  // isAuthorized를 useMemo로 메모이제이션
+  const isAuthorized = useMemo(() => 
+    user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT',
+    [user?.role]
+  );
 
-  const loadDashboardData = async () => {
+  // loadDashboardData를 useCallback으로 메모이제이션
+  const loadDashboardData = useCallback(async () => {
     if (!isAuthorized) return;
 
     try {
@@ -86,7 +91,7 @@ const DashboardPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthorized, filters.startDate, filters.endDate]);
 
   // 필터 자동 적용 (debounce)
   useEffect(() => {
@@ -105,8 +110,7 @@ const DashboardPage = () => {
         clearTimeout(debounceTimer.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.startDate, filters.endDate, isAuthorized]);
+  }, [isAuthorized, loadDashboardData]);
 
   // 초기 로드
   useEffect(() => {
@@ -146,19 +150,25 @@ const DashboardPage = () => {
     );
   }
 
-  // 상태별 통계 차트 데이터 준비
-  const statusChartData = statusStats.map(item => ({
-    name: STATUS_KOREAN[item.status] || item.status,
-    건수: item.count,
-    금액: item.totalAmount
-  }));
+  // 상태별 통계 차트 데이터 준비 (useMemo로 메모이제이션)
+  const statusChartData = useMemo(() => 
+    statusStats.map(item => ({
+      name: STATUS_KOREAN[item.status] || item.status,
+      건수: item.count,
+      금액: item.totalAmount
+    })),
+    [statusStats]
+  );
 
-  // 카테고리별 비율 차트 데이터 준비
-  const categoryChartData = categoryRatio.map(item => ({
-    name: item.category,
-    value: item.amount,
-    ratio: (item.ratio * 100).toFixed(1)
-  }));
+  // 카테고리별 비율 차트 데이터 준비 (useMemo로 메모이제이션)
+  const categoryChartData = useMemo(() => 
+    categoryRatio.map(item => ({
+      name: item.category,
+      value: item.amount,
+      ratio: (item.ratio * 100).toFixed(1)
+    })),
+    [categoryRatio]
+  );
 
   return (
     <S.Container>

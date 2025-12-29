@@ -1,37 +1,13 @@
-import axios from 'axios';
+import axiosInstance from '../utils/axiosInstance';
 import { API_CONFIG } from '../config/api';
 
 const BASE_URL = API_CONFIG.EXPENSES_BASE_URL;
 const USER_BASE_URL = API_CONFIG.USERS_BASE_URL;
 
-// 쿠키에서 값을 가져오는 유틸리티 함수
-const getCookie = (name) => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    return parts.pop().split(';').shift();
-  }
-  return null;
-};
-
-// Axios 인터셉터로 JWT 토큰 자동 추가
-axios.interceptors.request.use(
-  (config) => {
-    const token = getCookie('token'); // 쿠키에서 토큰 가져오기
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 // 0. ADMIN 역할 사용자 조회 (Deprecated)
 export const fetchAdminUsers = async () => {
   try {
-    const response = await axios.get(`${USER_BASE_URL}/admins`);
+    const response = await axiosInstance.get(`${USER_BASE_URL}/admins`);
     return response.data;
   } catch (error) {
     console.error("ADMIN 사용자 조회 실패:", error);
@@ -42,7 +18,7 @@ export const fetchAdminUsers = async () => {
 // 0-1. 결재자 목록 조회 (결재자로 지정된 사용자만)
 export const fetchApprovers = async () => {
   try {
-    const response = await axios.get(`${USER_BASE_URL}/approvers`);
+    const response = await axiosInstance.get(`${USER_BASE_URL}/approvers`);
     return response.data;
   } catch (error) {
     console.error("결재자 조회 실패:", error);
@@ -89,7 +65,7 @@ export const fetchExpenseList = async (page = 1, size = 10, filters = {}) => {
       params.drafterName = filters.drafterName.trim();
     }
 
-    const response = await axios.get(BASE_URL, { params });
+    const response = await axiosInstance.get(BASE_URL, { params });
     return response.data; // 백엔드가 준 { success, message, data } 반환
   } catch (error) {
     console.error("목록 조회 실패:", error);
@@ -100,7 +76,7 @@ export const fetchExpenseList = async (page = 1, size = 10, filters = {}) => {
 // 2. 상세 조회 함수 (나중에 쓸 것 미리 만듦)
 export const fetchExpenseDetail = async (id) => {
   try {
-    const response = await axios.get(`${BASE_URL}/${id}`);
+    const response = await axiosInstance.get(`${BASE_URL}/${id}`);
     return response.data;
   } catch (error) {
     console.error("상세 조회 실패:", error);
@@ -112,7 +88,7 @@ export const fetchExpenseDetail = async (id) => {
 export const setApprovalLines = async (expenseId, approvalLines) => {
     try {
       // approvalLines = [{ approverId: 1, approverPosition: "팀장", approverName: "홍길동", status: "WAIT" }, ...]
-      const response = await axios.post(`${BASE_URL}/${expenseId}/approval-lines`, { approvalLines });
+      const response = await axiosInstance.post(`${BASE_URL}/${expenseId}/approval-lines`, { approvalLines });
       return response.data;
     } catch (error) {
       console.error("결재 라인 설정 실패:", error);
@@ -124,7 +100,7 @@ export const setApprovalLines = async (expenseId, approvalLines) => {
 export const approveExpense = async (expenseId, data) => {
     try {
       // data = { approverId: 2, signatureData: "..." }
-      const response = await axios.post(`${BASE_URL}/${expenseId}/approve`, data);
+      const response = await axiosInstance.post(`${BASE_URL}/${expenseId}/approve`, data);
       return response.data;
     } catch (error) {
       console.error("결재 실패:", error);
@@ -136,7 +112,7 @@ export const approveExpense = async (expenseId, data) => {
 export const rejectExpense = async (expenseId, data) => {
     try {
       // data = { approverId: 2, rejectionReason: "반려 사유" }
-      const response = await axios.post(`${BASE_URL}/${expenseId}/reject`, data);
+      const response = await axiosInstance.post(`${BASE_URL}/${expenseId}/reject`, data);
       return response.data;
     } catch (error) {
       console.error("결재 반려 실패:", error);
@@ -147,7 +123,7 @@ export const rejectExpense = async (expenseId, data) => {
 // 6. 지출결의서 상태 변경 (ACCOUNTANT 전용)
 export const updateExpenseStatus = async (expenseId, userId, status) => {
     try {
-      const response = await axios.put(`${BASE_URL}/${expenseId}/status`, { userId, status });
+      const response = await axiosInstance.put(`${BASE_URL}/${expenseId}/status`, { userId, status });
       return response.data;
     } catch (error) {
       console.error("상태 변경 실패:", error);
@@ -158,7 +134,7 @@ export const updateExpenseStatus = async (expenseId, userId, status) => {
 // 7. 지출결의서 삭제
 export const deleteExpense = async (expenseId, userId) => {
     try {
-      const response = await axios.delete(`${BASE_URL}/${expenseId}?userId=${userId}`);
+      const response = await axiosInstance.delete(`${BASE_URL}/${expenseId}?userId=${userId}`);
       return response.data;
     } catch (error) {
       console.error("지출결의서 삭제 실패:", error);
@@ -169,7 +145,7 @@ export const deleteExpense = async (expenseId, userId) => {
 // 8. 미서명 건 조회 (알람)
 export const fetchPendingApprovals = async (userId) => {
     try {
-      const response = await axios.get(`${BASE_URL}/pending-approvals?userId=${userId}`);
+      const response = await axiosInstance.get(`${BASE_URL}/pending-approvals?userId=${userId}`);
       return response.data;
     } catch (error) {
       console.error("미서명 건 조회 실패:", error);
@@ -184,7 +160,7 @@ export const uploadReceipt = async (expenseId, userId, file) => {
       formData.append('file', file);
       formData.append('userId', userId);
       
-      const response = await axios.post(`${BASE_URL}/${expenseId}/receipt`, formData, {
+      const response = await axiosInstance.post(`${BASE_URL}/${expenseId}/receipt`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -199,7 +175,7 @@ export const uploadReceipt = async (expenseId, userId, file) => {
 // 10. 영수증 목록 조회
 export const getReceipts = async (expenseId) => {
     try {
-      const response = await axios.get(`${BASE_URL}/${expenseId}/receipts`);
+      const response = await axiosInstance.get(`${BASE_URL}/${expenseId}/receipts`);
       return response.data;
     } catch (error) {
       console.error("영수증 목록 조회 실패:", error);
@@ -210,7 +186,7 @@ export const getReceipts = async (expenseId) => {
 // 11. 영수증 삭제
 export const deleteReceipt = async (receiptId, userId) => {
     try {
-      const response = await axios.delete(`${BASE_URL}/receipts/${receiptId}?userId=${userId}`);
+      const response = await axiosInstance.delete(`${BASE_URL}/receipts/${receiptId}?userId=${userId}`);
       return response.data;
     } catch (error) {
       console.error("영수증 삭제 실패:", error);
@@ -221,7 +197,7 @@ export const deleteReceipt = async (receiptId, userId) => {
 // 12. 영수증 다운로드
 export const downloadReceipt = async (receiptId, filename) => {
     try {
-      const response = await axios.get(`${BASE_URL}/receipts/${receiptId}/download`, {
+      const response = await axiosInstance.get(`${BASE_URL}/receipts/${receiptId}/download`, {
         responseType: 'blob', // 파일 다운로드를 위해 blob으로 받기
       });
       
@@ -277,7 +253,7 @@ export const fetchCategorySummary = async (filters = {}) => {
       params.isSecret = filters.isSecret;
     }
 
-    const response = await axios.get(`${BASE_URL}/summary/by-category`, { params });
+    const response = await axiosInstance.get(`${BASE_URL}/summary/by-category`, { params });
     return response.data;
   } catch (error) {
     console.error("카테고리 요약 조회 실패:", error);
@@ -288,7 +264,7 @@ export const fetchCategorySummary = async (filters = {}) => {
 // 14. 세무처리 완료 (TAX_ACCOUNTANT 전용)
 export const completeTaxProcessing = async (expenseId) => {
   try {
-    const response = await axios.put(`${BASE_URL}/${expenseId}/tax-processing/complete`);
+    const response = await axiosInstance.put(`${BASE_URL}/${expenseId}/tax-processing/complete`);
     return response.data;
   } catch (error) {
     console.error("세무처리 완료 실패:", error);
@@ -302,7 +278,7 @@ export const fetchDashboardStats = async (startDate = null, endDate = null) => {
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
-    const response = await axios.get(`${BASE_URL}/dashboard/stats`, { params });
+    const response = await axiosInstance.get(`${BASE_URL}/dashboard/stats`, { params });
     return response.data;
   } catch (error) {
     console.error("대시보드 통계 조회 실패:", error);
@@ -316,7 +292,7 @@ export const fetchMonthlyTrend = async (startDate = null, endDate = null) => {
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
-    const response = await axios.get(`${BASE_URL}/dashboard/monthly-trend`, { params });
+    const response = await axiosInstance.get(`${BASE_URL}/dashboard/monthly-trend`, { params });
     return response.data;
   } catch (error) {
     console.error("월별 추이 조회 실패:", error);
@@ -330,7 +306,7 @@ export const fetchStatusStats = async (startDate = null, endDate = null) => {
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
-    const response = await axios.get(`${BASE_URL}/dashboard/status-stats`, { params });
+    const response = await axiosInstance.get(`${BASE_URL}/dashboard/status-stats`, { params });
     return response.data;
   } catch (error) {
     console.error("상태별 통계 조회 실패:", error);
@@ -344,7 +320,7 @@ export const fetchCategoryRatio = async (startDate = null, endDate = null) => {
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
-    const response = await axios.get(`${BASE_URL}/dashboard/category-ratio`, { params });
+    const response = await axiosInstance.get(`${BASE_URL}/dashboard/category-ratio`, { params });
     return response.data;
   } catch (error) {
     console.error("카테고리별 비율 조회 실패:", error);
@@ -358,7 +334,7 @@ export const fetchTaxPendingReports = async (startDate = null, endDate = null) =
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
-    const response = await axios.get(`${BASE_URL}/tax/pending`, { params });
+    const response = await axiosInstance.get(`${BASE_URL}/tax/pending`, { params });
     return response.data;
   } catch (error) {
     console.error("세무처리 대기 건 조회 실패:", error);
@@ -372,7 +348,7 @@ export const fetchTaxStatus = async (startDate = null, endDate = null) => {
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
-    const response = await axios.get(`${BASE_URL}/tax/status`, { params });
+    const response = await axiosInstance.get(`${BASE_URL}/tax/status`, { params });
     return response.data;
   } catch (error) {
     console.error("세무처리 현황 통계 조회 실패:", error);
@@ -386,7 +362,7 @@ export const fetchMonthlyTaxSummary = async (startDate = null, endDate = null) =
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
-    const response = await axios.get(`${BASE_URL}/tax/monthly-summary`, { params });
+    const response = await axiosInstance.get(`${BASE_URL}/tax/monthly-summary`, { params });
     return response.data;
   } catch (error) {
     console.error("월별 세무처리 집계 조회 실패:", error);
@@ -397,7 +373,7 @@ export const fetchMonthlyTaxSummary = async (startDate = null, endDate = null) =
 // 22. 세무처리 일괄 완료 처리 (TAX_ACCOUNTANT 전용)
 export const batchCompleteTaxProcessing = async (expenseReportIds) => {
   try {
-    const response = await axios.post(`${BASE_URL}/tax/batch-complete`, {
+    const response = await axiosInstance.post(`${BASE_URL}/tax/batch-complete`, {
       expenseReportIds
     });
     return response.data;
@@ -414,7 +390,7 @@ export const downloadExpensesExcel = async (startDate = null, endDate = null) =>
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     
-    const response = await axios.get(`${BASE_URL}/export/excel`, {
+    const response = await axiosInstance.get(`${BASE_URL}/export/excel`, {
       params,
       responseType: 'blob', // 파일 다운로드를 위해 blob으로 받기
     });
