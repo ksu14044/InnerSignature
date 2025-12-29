@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../../utils/axiosInstance';
 import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck } from 'react-icons/fa';
 
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
@@ -270,7 +270,7 @@ const ExpenseCreatePage = () => {
 
     try {
       setIsSubmitting(true);
-      const response = await axios.post(`${API_CONFIG.EXPENSES_BASE_URL}/create`, payload);
+      const response = await axiosInstance.post(`${API_CONFIG.EXPENSES_BASE_URL}/create`, payload);
 
       if (response.data.success) {
         // 생성된 지출 결의서의 ID를 받아서 Detail 페이지로 이동
