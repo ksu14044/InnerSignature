@@ -302,6 +302,7 @@
             description,
             amount,
             actual_paid_amount,
+            payment_method,
             note,
             company_id
         ) VALUES (
@@ -310,6 +311,7 @@
             #{description},
             #{amount},
             #{actualPaidAmount},
+            #{paymentMethod},
             #{note},
             #{companyId}
         )
@@ -745,6 +747,15 @@
         UPDATE expense_detail_tb
         SET
             actual_paid_amount = #{actualPaidAmount}
+        WHERE expense_detail_id = #{expenseDetailId}
+          AND company_id = #{companyId}
+    </update>
+
+    <!-- 상세 항목의 결제수단 업데이트 -->
+    <update id="updateExpenseDetailPaymentMethod">
+        UPDATE expense_detail_tb
+        SET
+            payment_method = #{paymentMethod}
         WHERE expense_detail_id = #{expenseDetailId}
           AND company_id = #{companyId}
     </update>

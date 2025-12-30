@@ -19,6 +19,7 @@ const ExpenseDetailPage = () => {
   const [rejectionReason, setRejectionReason] = useState(''); // 반려 사유
   const [actualPaidAmount, setActualPaidAmount] = useState(''); // 실제 지급 금액 (문서 전체)
   const [detailActualPaidAmounts, setDetailActualPaidAmounts] = useState({}); // 상세 항목별 실제 지급 금액 {expenseDetailId: amount}
+  const [detailPaymentMethods, setDetailPaymentMethods] = useState({}); // 상세 항목별 결제수단 {expenseDetailId: paymentMethod}
   const [amountDifferenceReason, setAmountDifferenceReason] = useState(''); // 금액 차이 사유
   const [receipts, setReceipts] = useState([]); // 영수증 목록
   const [isApproving, setIsApproving] = useState(false);
@@ -206,12 +207,16 @@ const ExpenseDetailPage = () => {
     
     // 상세 항목별 초기값 설정 (결재 금액으로)
     const initialDetailAmounts = {};
+    const initialPaymentMethods = {};
     if (detail.details && detail.details.length > 0) {
       detail.details.forEach(item => {
         initialDetailAmounts[item.expenseDetailId] = item.amount ? item.amount.toString() : '';
+        // 기존 결제수단이 있으면 사용, 없으면 기본값 'CASH'
+        initialPaymentMethods[item.expenseDetailId] = item.paymentMethod || 'CASH';
       });
     }
     setDetailActualPaidAmounts(initialDetailAmounts);
+    setDetailPaymentMethods(initialPaymentMethods);
     
     setIsPaymentModalOpen(true);
   };
@@ -221,6 +226,7 @@ const ExpenseDetailPage = () => {
     setIsPaymentModalOpen(false);
     setActualPaidAmount('');
     setDetailActualPaidAmounts({});
+    setDetailPaymentMethods({});
     setAmountDifferenceReason('');
   };
 
@@ -239,6 +245,8 @@ const ExpenseDetailPage = () => {
     if (detail.details && detail.details.length > 0) {
       detail.details.forEach(item => {
         const detailAmountStr = detailActualPaidAmounts[item.expenseDetailId] || '';
+        const paymentMethod = detailPaymentMethods[item.expenseDetailId] || 'CASH';
+        
         if (detailAmountStr) {
           const detailAmount = parseInt(detailAmountStr.replace(/,/g, ''));
           if (detailAmount <= 0) {
@@ -247,14 +255,16 @@ const ExpenseDetailPage = () => {
           }
           detailActualPaidAmountList.push({
             expenseDetailId: item.expenseDetailId,
-            actualPaidAmount: detailAmount
+            actualPaidAmount: detailAmount,
+            paymentMethod: paymentMethod
           });
           totalDetailAmount += detailAmount;
         } else {
           // 입력하지 않은 경우 결재 금액 사용
           detailActualPaidAmountList.push({
             expenseDetailId: item.expenseDetailId,
-            actualPaidAmount: item.amount || 0
+            actualPaidAmount: item.amount || 0,
+            paymentMethod: paymentMethod
           });
           totalDetailAmount += (item.amount || 0);
         }
@@ -330,6 +340,14 @@ const ExpenseDetailPage = () => {
     setDetailActualPaidAmounts(prev => ({
       ...prev,
       [expenseDetailId]: formatted
+    }));
+  };
+
+  // 상세 항목별 결제수단 변경 핸들러
+  const handleDetailPaymentMethodChange = (expenseDetailId, paymentMethod) => {
+    setDetailPaymentMethods(prev => ({
+      ...prev,
+      [expenseDetailId]: paymentMethod
     }));
   };
 
@@ -653,6 +671,12 @@ const ExpenseDetailPage = () => {
               <th>항목</th>
               <th>적요</th>
               <th style={{ textAlign: 'right' }}>금액</th>
+              {detail.status === 'PAID' && (
+                <>
+                  <th style={{ textAlign: 'right' }}>실제 지급 금액</th>
+                  <th>결제수단</th>
+                </>
+              )}
               <th>비고</th>
               {user?.role === 'TAX_ACCOUNTANT' && (
                 <>
@@ -663,11 +687,37 @@ const ExpenseDetailPage = () => {
             </tr>
           </thead>
           <tbody>
-            {detail.details.map((item) => (
+            {detail.details.map((item) => {
+              const getPaymentMethodLabel = (method) => {
+                const labels = {
+                  'CASH': '현금',
+                  'BANK_TRANSFER': '계좌이체',
+                  'TRANSFER': '계좌이체',
+                  'CARD': '카드',
+                  'CREDIT_CARD': '카드',
+                  'DEBIT_CARD': '카드',
+                  'CHECK': '수표'
+                };
+                return labels[method] || method || '-';
+              };
+
+              return (
               <tr key={item.expenseDetailId}>
                 <td style={{ textAlign: 'center' }} data-label="항목">{item.category}</td>
                 <td data-label="적요">{item.description}</td>
                 <td style={{ textAlign: 'right' }} data-label="금액">{item.amount.toLocaleString()}원</td>
+                {detail.status === 'PAID' && (
+                  <>
+                    <td style={{ textAlign: 'right' }} data-label="실제 지급 금액">
+                      {item.actualPaidAmount !== null && item.actualPaidAmount !== undefined 
+                        ? item.actualPaidAmount.toLocaleString() + '원'
+                        : item.amount.toLocaleString() + '원'}
+                    </td>
+                    <td style={{ textAlign: 'center' }} data-label="결제수단">
+                      {getPaymentMethodLabel(item.paymentMethod)}
+                    </td>
+                  </>
+                )}
                 <td style={{ textAlign: 'center' }} data-label="비고">{item.note || '-'}</td>
                 {user?.role === 'TAX_ACCOUNTANT' && (
                   <>
@@ -759,7 +809,8 @@ const ExpenseDetailPage = () => {
                   </>
                 )}
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </S.DetailTable>
       </S.ContentArea>
@@ -926,7 +977,7 @@ const ExpenseDetailPage = () => {
                               결재: {item.amount.toLocaleString()}원
                             </span>
                           </div>
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
                             <input
                               type="text"
                               value={detailAmount}
@@ -950,6 +1001,26 @@ const ExpenseDetailPage = () => {
                                 {detailAmountNum < item.amount ? '▼' : '▲'} {Math.abs(item.amount - detailAmountNum).toLocaleString()}
                               </span>
                             )}
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <label style={{ fontSize: '13px', color: '#666', minWidth: '70px' }}>결제수단:</label>
+                            <select
+                              value={detailPaymentMethods[item.expenseDetailId] || 'CASH'}
+                              onChange={(e) => handleDetailPaymentMethodChange(item.expenseDetailId, e.target.value)}
+                              style={{
+                                flex: 1,
+                                padding: '8px',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                fontSize: '14px',
+                                backgroundColor: 'white'
+                              }}
+                            >
+                              <option value="CASH">현금</option>
+                              <option value="BANK_TRANSFER">계좌이체</option>
+                              <option value="CARD">카드</option>
+                              <option value="CHECK">수표</option>
+                            </select>
                           </div>
                         </div>
                       );

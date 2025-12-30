@@ -762,17 +762,27 @@ public class ExpenseService {
             // 모든 상세 항목 조회
             List<ExpenseDetailDto> existingDetails = expenseMapper.selectExpenseDetails(expenseReportId, companyId);
             
-            // 상세 항목별 실제 지급 금액 업데이트
+            // 상세 항목별 실제 지급 금액 및 결제수단 업데이트
             for (ExpenseDetailDto detailUpdate : detailActualPaidAmounts) {
                 // 해당 상세 항목이 존재하는지 확인
                 boolean exists = existingDetails.stream()
                         .anyMatch(d -> d.getExpenseDetailId().equals(detailUpdate.getExpenseDetailId()));
                 
-                if (exists && detailUpdate.getActualPaidAmount() != null) {
-                    expenseMapper.updateExpenseDetailActualPaidAmount(
-                            detailUpdate.getExpenseDetailId(),
-                            detailUpdate.getActualPaidAmount(),
-                            companyId);
+                if (exists) {
+                    // 실제 지급 금액 업데이트
+                    if (detailUpdate.getActualPaidAmount() != null) {
+                        expenseMapper.updateExpenseDetailActualPaidAmount(
+                                detailUpdate.getExpenseDetailId(),
+                                detailUpdate.getActualPaidAmount(),
+                                companyId);
+                    }
+                    // 결제수단 업데이트
+                    if (detailUpdate.getPaymentMethod() != null) {
+                        expenseMapper.updateExpenseDetailPaymentMethod(
+                                detailUpdate.getExpenseDetailId(),
+                                detailUpdate.getPaymentMethod(),
+                                companyId);
+                    }
                 }
             }
             
@@ -2124,7 +2134,7 @@ public class ExpenseService {
     
     /**
      * PAID 시점 분개 행 생성
-     * 차변(미지급금) / 대변(현금) - 실제 지급 금액 기준
+     * 차변(미지급금) / 대변(결제수단별 계정과목) - 실제 지급 금액 기준
      */
     private void createJournalEntryRowForPaid(Row row, ExpenseReportDto report, ExpenseDetailDto detail, CellStyle dataStyle, CellStyle numberStyle) {
         int col = 0;
@@ -2167,9 +2177,13 @@ public class ExpenseService {
         cell.setCellValue(actualPaidAmount.doubleValue());
         cell.setCellStyle(numberStyle);
         
-        // 대변 계정과목 (현금)
+        // 대변 계정과목 (결제수단에 따라 결정)
         cell = row.createCell(col++);
-        cell.setCellValue("현금");
+        String paymentMethod = detail != null && detail.getPaymentMethod() != null 
+                              ? detail.getPaymentMethod() 
+                              : null;
+        String creditAccount = mapPaymentMethodToCreditAccount(paymentMethod);
+        cell.setCellValue(creditAccount);
         cell.setCellStyle(dataStyle);
         
         // 대변 금액 (현금 - 실제 지급 금액)
@@ -2269,6 +2283,34 @@ public class ExpenseService {
             case "기타":
             default:
                 return "기타비용";
+        }
+    }
+    
+    /**
+     * 결제수단을 대변 계정과목으로 매핑
+     * @param paymentMethod 결제수단
+     * @return 계정과목명
+     */
+    private String mapPaymentMethodToCreditAccount(String paymentMethod) {
+        if (paymentMethod == null || paymentMethod.isEmpty()) {
+            return "현금"; // 기본값
+        }
+        
+        // 결제수단별 계정과목 매핑
+        switch (paymentMethod.toUpperCase()) {
+            case "CASH":
+                return "현금";
+            case "BANK_TRANSFER":
+            case "TRANSFER":
+                return "일반예금";
+            case "CARD":
+            case "CREDIT_CARD":
+            case "DEBIT_CARD":
+                return "카드대금";
+            case "CHECK":
+                return "수표";
+            default:
+                return "현금"; // 기본값
         }
     }
 }

@@ -165,6 +165,12 @@ public interface ExpenseMapper {
             @Param("actualPaidAmount") Long actualPaidAmount,
             @Param("companyId") Long companyId);
 
+    // 상세 항목의 결제수단 업데이트
+    void updateExpenseDetailPaymentMethod(
+            @Param("expenseDetailId") Long expenseDetailId,
+            @Param("paymentMethod") String paymentMethod,
+            @Param("companyId") Long companyId);
+
     // 상세 항목 ID로 지출결의서 ID 조회
     Long selectExpenseReportIdByDetailId(@Param("expenseDetailId") Long expenseDetailId, @Param("companyId") Long companyId);
 

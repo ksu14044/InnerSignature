@@ -24,6 +24,9 @@ public class ExpenseDetailDto {
     
     private Long actualPaidAmount; // 실제 지급 금액 (결재 금액과 다를 수 있음)
     
+    @Size(max = 50, message = "결제수단은 50자 이하여야 합니다.")
+    private String paymentMethod; // 결제수단 (CASH, BANK_TRANSFER, CARD, CHECK 등)
+    
     @Size(max = 1000, message = "비고는 1000자 이하여야 합니다.")
     private String note;          // 비고
     
