@@ -17,7 +17,7 @@ public class ApprovalLineDto {
     private String status;        // 상태 (WAIT, APPROVED...)
     private LocalDateTime approvalDate; // 결재 일시
     
-    @Size(max = 10000, message = "서명 데이터는 10000자 이하여야 합니다.")
+    @Size(max = 5000000, message = "서명 데이터는 5MB 이하여야 합니다.")
     private String signatureData; // 서명 데이터 (Base64 Long Text)
     
     @Size(max = 500, message = "반려 사유는 500자 이하여야 합니다.")

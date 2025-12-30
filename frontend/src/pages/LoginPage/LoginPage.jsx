@@ -501,6 +501,7 @@ const LoginPage = () => {
                 type="button"
                 onClick={() => setUsername('')}
                 aria-label="아이디 지우기"
+                tabIndex={-1}
               >
                 <FaTimes />
               </S.ClearButton>
@@ -524,6 +525,7 @@ const LoginPage = () => {
                 type="button"
                 onClick={() => setPassword('')}
                 aria-label="비밀번호 지우기"
+                tabIndex={-1}
               >
                 <FaTimes />
               </S.ClearButton>
