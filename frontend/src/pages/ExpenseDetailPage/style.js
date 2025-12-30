@@ -663,6 +663,9 @@ export const PaymentModal = styled.div`
 export const PaymentModalContent = styled(RejectModalContent)``;
 export const PaymentModalHeader = styled(RejectModalHeader)``;
 export const PaymentModalBody = styled(RejectModalBody)`
+  max-height: 80vh;
+  overflow-y: auto;
+  
   input[type="number"] {
     width: 100%;
     padding: 12px;

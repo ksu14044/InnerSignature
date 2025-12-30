@@ -1961,10 +1961,12 @@ public class ExpenseService {
             List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
             
             if ("PAID".equals(report.getStatus())) {
-                // PAID 상태인 경우 세 가지 분개 필요:
+                // PAID 상태인 경우 분개 처리:
                 // 1. APPROVED 시점의 분개: 차변(비용) / 대변(미지급금) - 결재 금액 기준
                 // 2. PAID 시점의 분개: 차변(미지급금) / 대변(현금) - 실제 지급 금액 기준
-                // 3. 미지급금 잔액 정리: 차변(미지급금 잔액) / 대변(기타수익) - 결재 금액과 실제 지급 금액의 차액
+                // 3-1. 실제 지급 < 결재: 미지급금 잔액 정리 - 차변(미지급금 잔액) / 대변(기타수익)
+                // 3-2. 실제 지급 > 결재: 추가 비용 발생 - 차변(해당 항목 계정과목) / 대변(미지급금)
+                //      * 항목별로 차액을 계산하고, 각 항목의 계정과목으로 처리 (회계 원칙 준수)
                 
                 // 1. APPROVED 시점 분개 생성 (결재 금액 기준)
                 if (details.isEmpty()) {
@@ -1988,20 +1990,56 @@ public class ExpenseService {
                     }
                 }
                 
-                // 3. 미지급금 잔액 정리 분개 생성 (결재 금액과 실제 지급 금액의 차액)
-                long totalApprovalAmount = details.isEmpty() 
-                    ? (report.getTotalAmount() != null ? report.getTotalAmount() : 0L)
-                    : details.stream().mapToLong(d -> d.getAmount() != null ? d.getAmount() : 0L).sum();
-                
-                long totalActualPaidAmount = details.isEmpty()
-                    ? (report.getActualPaidAmount() != null ? report.getActualPaidAmount() : totalApprovalAmount)
-                    : details.stream().mapToLong(d -> d.getActualPaidAmount() != null ? d.getActualPaidAmount() : (d.getAmount() != null ? d.getAmount() : 0L)).sum();
-                
-                // 차액이 있는 경우에만 잔액 정리 분개 생성
-                long difference = totalApprovalAmount - totalActualPaidAmount;
-                if (difference > 0) {
-                    Row row = sheet.createRow(rowNum++);
-                    createJournalEntryRowForRemainingBalance(row, report, difference, dataStyle, numberStyle);
+                // 3. 미지급금 잔액 정리 및 추가 비용 분개 생성 (항목별 차액 처리)
+                if (details.isEmpty()) {
+                    // 상세 항목이 없는 경우 문서 레벨 금액으로 처리
+                    long totalApprovalAmount = report.getTotalAmount() != null ? report.getTotalAmount() : 0L;
+                    long totalActualPaidAmount = report.getActualPaidAmount() != null ? report.getActualPaidAmount() : totalApprovalAmount;
+                    long difference = totalApprovalAmount - totalActualPaidAmount;
+                    
+                    if (difference > 0) {
+                        // 실제 지급 금액이 결재 금액보다 작은 경우: 잔액 정리
+                        Row row = sheet.createRow(rowNum++);
+                        createJournalEntryRowForRemainingBalance(row, report, difference, dataStyle, numberStyle);
+                    } else if (difference < 0) {
+                        // 실제 지급 금액이 결재 금액보다 큰 경우: 추가 비용
+                        Row row = sheet.createRow(rowNum++);
+                        createJournalEntryRowForAdditionalExpense(row, report, null, Math.abs(difference), "기타비용", dataStyle, numberStyle);
+                    }
+                } else {
+                    // 상세 항목별로 차액 계산 및 처리
+                    // 추가 비용: 계정과목별로 그룹화하여 합산 처리 (회계 원칙 준수)
+                    Map<String, Long> additionalExpenseByAccount = new HashMap<>();
+                    long totalRemainingBalance = 0;
+                    
+                    for (ExpenseDetailDto detail : details) {
+                        long approvalAmount = detail.getAmount() != null ? detail.getAmount() : 0L;
+                        long actualPaidAmount = detail.getActualPaidAmount() != null ? detail.getActualPaidAmount() : approvalAmount;
+                        long itemDifference = approvalAmount - actualPaidAmount;
+                        
+                        if (itemDifference < 0) {
+                            // 실제 지급 금액이 결재 금액보다 큰 경우: 추가 비용
+                            // 해당 항목의 계정과목으로 처리 (회계 원칙)
+                            String category = detail.getCategory() != null ? detail.getCategory() : "";
+                            String accountCode = mapCategoryToAccountCode(category);
+                            additionalExpenseByAccount.merge(accountCode, Math.abs(itemDifference), Long::sum);
+                        } else if (itemDifference > 0) {
+                            // 실제 지급 금액이 결재 금액보다 작은 경우: 잔액 합산
+                            totalRemainingBalance += itemDifference;
+                        }
+                    }
+                    
+                    // 추가 비용 분개 생성 (계정과목별로)
+                    for (Map.Entry<String, Long> entry : additionalExpenseByAccount.entrySet()) {
+                        Row row = sheet.createRow(rowNum++);
+                        createJournalEntryRowForAdditionalExpense(row, report, null, entry.getValue(), entry.getKey(), dataStyle, numberStyle);
+                    }
+                    
+                    // 잔액 정리 분개 생성
+                    if (totalRemainingBalance > 0) {
+                        Row row = sheet.createRow(rowNum++);
+                        createJournalEntryRowForRemainingBalance(row, report, totalRemainingBalance, dataStyle, numberStyle);
+                    }
                 }
             } else if ("APPROVED".equals(report.getStatus())) {
                 // APPROVED 상태인 경우: 차변(비용) / 대변(미지급금) - 결재 금액 기준
@@ -2253,6 +2291,72 @@ public class ExpenseService {
         // 비고
         cell = row.createCell(col++);
         String note = "결재 금액과 실제 지급 금액 차액";
+        if (report.getAmountDifferenceReason() != null && !report.getAmountDifferenceReason().trim().isEmpty()) {
+            note += " - " + report.getAmountDifferenceReason();
+        }
+        cell.setCellValue(note);
+        cell.setCellStyle(dataStyle);
+    }
+    
+    /**
+     * 추가 비용 분개 행 생성 (실제 지급 금액이 결재 금액보다 클 때)
+     * 회계 원칙: 차변(해당 항목의 계정과목) / 대변(미지급금)
+     * @param row 엑셀 행
+     * @param report 지출결의서 정보
+     * @param detail 상세 항목 정보 (선택적, 단일 항목일 때 사용)
+     * @param additionalAmount 추가 지급 금액
+     * @param accountCode 계정과목명
+     * @param dataStyle 데이터 스타일
+     * @param numberStyle 숫자 스타일
+     */
+    private void createJournalEntryRowForAdditionalExpense(Row row, ExpenseReportDto report, ExpenseDetailDto detail, Long additionalAmount, String accountCode, CellStyle dataStyle, CellStyle numberStyle) {
+        int col = 0;
+        
+        // 전표일자 (작성일)
+        Cell cell = row.createCell(col++);
+        if (report.getReportDate() != null) {
+            cell.setCellValue(report.getReportDate().toString());
+        } else {
+            cell.setCellValue("");
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 적요 (제목 또는 상세 적요 + " 추가 지급")
+        cell = row.createCell(col++);
+        String description = detail != null && detail.getDescription() != null && !detail.getDescription().isEmpty()
+                ? detail.getDescription() + " 추가 지급"
+                : (report.getTitle() != null ? report.getTitle() + " 추가 지급" : "추가 지급");
+        cell.setCellValue(description);
+        cell.setCellStyle(dataStyle);
+        
+        // 차변 계정과목 (해당 항목의 계정과목)
+        cell = row.createCell(col++);
+        cell.setCellValue(accountCode);
+        cell.setCellStyle(dataStyle);
+        
+        // 차변 금액 (추가 지급 금액)
+        cell = row.createCell(col++);
+        cell.setCellValue(additionalAmount.doubleValue());
+        cell.setCellStyle(numberStyle);
+        
+        // 대변 계정과목 (미지급금)
+        cell = row.createCell(col++);
+        cell.setCellValue("미지급금");
+        cell.setCellStyle(dataStyle);
+        
+        // 대변 금액 (추가 지급 금액)
+        cell = row.createCell(col++);
+        cell.setCellValue(additionalAmount.doubleValue());
+        cell.setCellStyle(numberStyle);
+        
+        // 문서번호
+        cell = row.createCell(col++);
+        cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
+        cell.setCellStyle(dataStyle);
+        
+        // 비고 (차이 사유 포함)
+        cell = row.createCell(col++);
+        String note = "실제 지급 금액이 결재 금액보다 큰 경우 추가 비용";
         if (report.getAmountDifferenceReason() != null && !report.getAmountDifferenceReason().trim().isEmpty()) {
             note += " - " + report.getAmountDifferenceReason();
         }
