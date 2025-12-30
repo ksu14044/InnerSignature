@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-import java.math.BigDecimal; // 금액 계산용
 
 @Data
 public class ExpenseDetailDto {
@@ -22,6 +21,8 @@ public class ExpenseDetailDto {
     @NotNull(message = "금액은 필수입니다.")
     @Positive(message = "금액은 양수여야 합니다.")
     private Long amount;          // 금액 (원 단위라 Long 사용)
+    
+    private Long actualPaidAmount; // 실제 지급 금액 (결재 금액과 다를 수 있음)
     
     @Size(max = 1000, message = "비고는 1000자 이하여야 합니다.")
     private String note;          // 비고

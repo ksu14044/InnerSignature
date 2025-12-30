@@ -154,7 +154,7 @@ export const cancelRejection = async (expenseId) => {
   };
 
 // 6. 지출결의서 상태 변경 (ACCOUNTANT 전용)
-export const updateExpenseStatus = async (expenseId, userId, status, actualPaidAmount = null, amountDifferenceReason = null) => {
+export const updateExpenseStatus = async (expenseId, userId, status, actualPaidAmount = null, amountDifferenceReason = null, detailActualPaidAmounts = null) => {
     try {
       const requestBody = { status };
       if (actualPaidAmount !== null) {
@@ -162,6 +162,9 @@ export const updateExpenseStatus = async (expenseId, userId, status, actualPaidA
       }
       if (amountDifferenceReason !== null && amountDifferenceReason !== '') {
         requestBody.amountDifferenceReason = amountDifferenceReason;
+      }
+      if (detailActualPaidAmounts !== null && detailActualPaidAmounts.length > 0) {
+        requestBody.detailActualPaidAmounts = detailActualPaidAmounts;
       }
       const response = await axiosInstance.put(`${BASE_URL}/${expenseId}/status`, requestBody);
       return response.data;

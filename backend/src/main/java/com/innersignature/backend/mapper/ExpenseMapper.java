@@ -159,6 +159,12 @@ public interface ExpenseMapper {
             @Param("nonDeductibleReason") String nonDeductibleReason,
             @Param("companyId") Long companyId);
 
+    // 상세 항목의 실제 지급 금액 업데이트
+    void updateExpenseDetailActualPaidAmount(
+            @Param("expenseDetailId") Long expenseDetailId,
+            @Param("actualPaidAmount") Long actualPaidAmount,
+            @Param("companyId") Long companyId);
+
     // 상세 항목 ID로 지출결의서 ID 조회
     Long selectExpenseReportIdByDetailId(@Param("expenseDetailId") Long expenseDetailId, @Param("companyId") Long companyId);
 

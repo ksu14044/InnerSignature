@@ -17,7 +17,8 @@ const ExpenseDetailPage = () => {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false); // 반려 모달 열림 여부
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false); // 결제 완료 모달 열림 여부
   const [rejectionReason, setRejectionReason] = useState(''); // 반려 사유
-  const [actualPaidAmount, setActualPaidAmount] = useState(''); // 실제 지급 금액
+  const [actualPaidAmount, setActualPaidAmount] = useState(''); // 실제 지급 금액 (문서 전체)
+  const [detailActualPaidAmounts, setDetailActualPaidAmounts] = useState({}); // 상세 항목별 실제 지급 금액 {expenseDetailId: amount}
   const [amountDifferenceReason, setAmountDifferenceReason] = useState(''); // 금액 차이 사유
   const [receipts, setReceipts] = useState([]); // 영수증 목록
   const [isApproving, setIsApproving] = useState(false);
@@ -202,6 +203,16 @@ const ExpenseDetailPage = () => {
     // 초기값을 결재 금액으로 설정
     setActualPaidAmount(detail.totalAmount.toString());
     setAmountDifferenceReason('');
+    
+    // 상세 항목별 초기값 설정 (결재 금액으로)
+    const initialDetailAmounts = {};
+    if (detail.details && detail.details.length > 0) {
+      detail.details.forEach(item => {
+        initialDetailAmounts[item.expenseDetailId] = item.amount ? item.amount.toString() : '';
+      });
+    }
+    setDetailActualPaidAmounts(initialDetailAmounts);
+    
     setIsPaymentModalOpen(true);
   };
 
@@ -209,6 +220,7 @@ const ExpenseDetailPage = () => {
   const handleClosePaymentModal = () => {
     setIsPaymentModalOpen(false);
     setActualPaidAmount('');
+    setDetailActualPaidAmounts({});
     setAmountDifferenceReason('');
   };
 
@@ -220,17 +232,61 @@ const ExpenseDetailPage = () => {
         return;
     }
 
+    // 상세 항목별 실제 지급 금액 검증 및 변환
+    const detailActualPaidAmountList = [];
+    let totalDetailAmount = 0;
+    
+    if (detail.details && detail.details.length > 0) {
+      detail.details.forEach(item => {
+        const detailAmountStr = detailActualPaidAmounts[item.expenseDetailId] || '';
+        if (detailAmountStr) {
+          const detailAmount = parseInt(detailAmountStr.replace(/,/g, ''));
+          if (detailAmount <= 0) {
+            alert(`${item.category || '항목'}의 실제 지급 금액은 0보다 커야 합니다.`);
+            return;
+          }
+          detailActualPaidAmountList.push({
+            expenseDetailId: item.expenseDetailId,
+            actualPaidAmount: detailAmount
+          });
+          totalDetailAmount += detailAmount;
+        } else {
+          // 입력하지 않은 경우 결재 금액 사용
+          detailActualPaidAmountList.push({
+            expenseDetailId: item.expenseDetailId,
+            actualPaidAmount: item.amount || 0
+          });
+          totalDetailAmount += (item.amount || 0);
+        }
+      });
+    }
+
     const paidAmount = actualPaidAmount ? parseInt(actualPaidAmount.replace(/,/g, '')) : null;
     const approvalAmount = detail.totalAmount;
     
-    // 금액 검증
+    // 문서 전체 금액 검증 (상세 항목 합계와 일치하는지 확인)
     if (paidAmount !== null && paidAmount <= 0) {
       alert("실제 지급 금액은 0보다 커야 합니다.");
       return;
     }
-
+    
+    // 최종 사용할 금액 (문서 전체 금액이 없으면 상세 항목 합계 사용)
+    let finalPaidAmount = paidAmount !== null ? paidAmount : totalDetailAmount;
+    
+    // 상세 항목 합계가 문서 전체 금액과 다른 경우 확인
+    if (paidAmount !== null && paidAmount !== totalDetailAmount) {
+      const confirmMsg = `상세 항목 합계(${totalDetailAmount.toLocaleString()}원)와 문서 전체 금액(${paidAmount.toLocaleString()}원)이 다릅니다. 상세 항목 합계로 진행하시겠습니까?`;
+      if (window.confirm(confirmMsg)) {
+        // 상세 항목 합계로 문서 전체 금액 조정
+        finalPaidAmount = totalDetailAmount;
+      } else {
+        // 사용자가 취소하면 진행하지 않음
+        return;
+      }
+    }
+    
     // 금액 차이가 있는 경우 사유 필수
-    if (paidAmount !== null && paidAmount !== approvalAmount) {
+    if (finalPaidAmount !== approvalAmount) {
       if (!amountDifferenceReason.trim()) {
         alert("결재 금액과 실제 지급 금액이 다를 경우 차이 사유를 입력해주세요.");
         return;
@@ -238,7 +294,7 @@ const ExpenseDetailPage = () => {
     }
 
     setIsMarkingAsPaid(true);
-    updateExpenseStatus(id, user.userId, 'PAID', paidAmount, amountDifferenceReason.trim())
+    updateExpenseStatus(id, user.userId, 'PAID', finalPaidAmount, amountDifferenceReason.trim(), detailActualPaidAmountList)
     .then((res) => {
         if(res.success) {
             alert("결제가 완료되었습니다!");
@@ -262,10 +318,19 @@ const ExpenseDetailPage = () => {
     return parseInt(numericValue).toLocaleString();
   };
 
-  // 금액 입력 핸들러
+  // 금액 입력 핸들러 (문서 전체)
   const handleAmountChange = (e) => {
     const formatted = formatAmount(e.target.value);
     setActualPaidAmount(formatted);
+  };
+  
+  // 상세 항목별 금액 입력 핸들러
+  const handleDetailAmountChange = (expenseDetailId, value) => {
+    const formatted = formatAmount(value);
+    setDetailActualPaidAmounts(prev => ({
+      ...prev,
+      [expenseDetailId]: formatted
+    }));
   };
 
   // 세무처리 완료 처리 (TAX_ACCOUNTANT 전용)
@@ -830,58 +895,143 @@ const ExpenseDetailPage = () => {
                <h3>결제 완료 처리</h3>
                <button onClick={handleClosePaymentModal}>×</button>
              </S.PaymentModalHeader>
-             <S.PaymentModalBody>
-               <div className="amount-info">
-                 <div className="amount-row">
-                   <span>결재 금액:</span>
-                   <strong>{detail.totalAmount.toLocaleString()}원</strong>
-                 </div>
-               </div>
-               
-               <label htmlFor="actualPaidAmount">실제 지급 금액:</label>
-               <input
-                 type="text"
-                 id="actualPaidAmount"
-                 value={actualPaidAmount}
-                 onChange={handleAmountChange}
-                 placeholder="결재 금액과 동일하면 비워두세요"
-               />
-               
-               {actualPaidAmount && parseInt(actualPaidAmount.replace(/,/g, '')) !== detail.totalAmount && (
-                 <>
-                   <label htmlFor="amountDifferenceReason" style={{ marginTop: '16px', display: 'block' }}>
-                     금액 차이 사유 <span style={{ color: '#ef4444' }}>*</span>:
-                   </label>
-                   <textarea
-                     id="amountDifferenceReason"
-                     value={amountDifferenceReason}
-                     onChange={(e) => setAmountDifferenceReason(e.target.value)}
-                     placeholder="결재 금액과 실제 지급 금액이 다른 이유를 입력해주세요."
-                     rows={4}
-                   />
-                 </>
-               )}
-               
-               {actualPaidAmount && parseInt(actualPaidAmount.replace(/,/g, '')) !== detail.totalAmount && (
-                 <div className="amount-info" style={{ marginTop: '16px' }}>
-                   <div className="amount-row">
-                     <span>결재 금액:</span>
-                     <span>{detail.totalAmount.toLocaleString()}원</span>
-                   </div>
-                   <div className="amount-row">
-                     <span>실제 지급 금액:</span>
-                     <span>{actualPaidAmount}원</span>
-                   </div>
-                   <div className="amount-row">
-                     <span>차이액:</span>
-                     <span>
-                       {Math.abs(detail.totalAmount - parseInt(actualPaidAmount.replace(/,/g, ''))).toLocaleString()}원
-                       {detail.totalAmount > parseInt(actualPaidAmount.replace(/,/g, '')) ? ' (감액)' : ' (증액)'}
-                     </span>
-                   </div>
-                 </div>
-               )}
-             </S.PaymentModalBody>
+            <S.PaymentModalBody>
+              <div className="amount-info">
+                <div className="amount-row">
+                  <span>결재 금액:</span>
+                  <strong>{detail.totalAmount.toLocaleString()}원</strong>
+                </div>
+              </div>
+              
+              {/* 상세 항목별 실제 지급 금액 입력 */}
+              {detail.details && detail.details.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>
+                    항목별 실제 지급 금액:
+                  </label>
+                  <div style={{ border: '1px solid #ddd', borderRadius: '4px', padding: '12px', maxHeight: '300px', overflowY: 'auto' }}>
+                    {detail.details.map((item) => {
+                      const detailAmount = detailActualPaidAmounts[item.expenseDetailId] || item.amount.toString();
+                      const detailAmountNum = parseInt(detailAmount.replace(/,/g, '')) || item.amount;
+                      const isDifferent = detailAmountNum !== item.amount;
+                      
+                      return (
+                        <div key={item.expenseDetailId} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #f0f0f0' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <div>
+                              <strong>{item.category}</strong>
+                              {item.description && <span style={{ color: '#666', marginLeft: '8px', fontSize: '13px' }}>({item.description})</span>}
+                            </div>
+                            <span style={{ fontSize: '13px', color: '#666' }}>
+                              결재: {item.amount.toLocaleString()}원
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              value={detailAmount}
+                              onChange={(e) => handleDetailAmountChange(item.expenseDetailId, e.target.value)}
+                              placeholder={item.amount.toString()}
+                              style={{
+                                flex: 1,
+                                padding: '8px',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                fontSize: '14px'
+                              }}
+                            />
+                            <span style={{ fontSize: '13px', color: '#666', minWidth: '60px' }}>원</span>
+                            {isDifferent && (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: detailAmountNum < item.amount ? '#dc3545' : '#28a745',
+                                fontWeight: 'bold'
+                              }}>
+                                {detailAmountNum < item.amount ? '▼' : '▲'} {Math.abs(item.amount - detailAmountNum).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* 상세 항목 합계 표시 */}
+                  <div style={{ marginTop: '12px', padding: '8px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 'bold' }}>항목 합계:</span>
+                      <span style={{ fontWeight: 'bold' }}>
+                        {detail.details.reduce((sum, item) => {
+                          const detailAmountStr = detailActualPaidAmounts[item.expenseDetailId];
+                          if (detailAmountStr && detailAmountStr.trim()) {
+                            const num = parseInt(detailAmountStr.replace(/,/g, ''));
+                            return sum + (num || 0);
+                          }
+                          return sum + (item.amount || 0);
+                        }, 0).toLocaleString()}원
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <label htmlFor="actualPaidAmount" style={{ marginTop: '20px', display: 'block' }}>
+                문서 전체 실제 지급 금액:
+              </label>
+              <input
+                type="text"
+                id="actualPaidAmount"
+                value={actualPaidAmount}
+                onChange={handleAmountChange}
+                placeholder="상세 항목 합계와 동일하면 비워두세요"
+                style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+              />
+              
+              {(actualPaidAmount && parseInt(actualPaidAmount.replace(/,/g, '')) !== detail.totalAmount) || 
+               (detail.details && detail.details.some(item => {
+                 const detailAmount = detailActualPaidAmounts[item.expenseDetailId];
+                 return detailAmount && parseInt(detailAmount.replace(/,/g, '')) !== item.amount;
+               })) ? (
+                <>
+                  <label htmlFor="amountDifferenceReason" style={{ marginTop: '16px', display: 'block' }}>
+                    금액 차이 사유 <span style={{ color: '#ef4444' }}>*</span>:
+                  </label>
+                  <textarea
+                    id="amountDifferenceReason"
+                    value={amountDifferenceReason}
+                    onChange={(e) => setAmountDifferenceReason(e.target.value)}
+                    placeholder="결재 금액과 실제 지급 금액이 다른 이유를 입력해주세요."
+                    rows={4}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'inherit' }}
+                  />
+                </>
+              ) : null}
+              
+              {/* 최종 요약 */}
+              {actualPaidAmount && (
+                <div className="amount-info" style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                  <div className="amount-row">
+                    <span>결재 금액:</span>
+                    <span>{detail.totalAmount.toLocaleString()}원</span>
+                  </div>
+                  <div className="amount-row">
+                    <span>실제 지급 금액:</span>
+                    <span style={{ fontWeight: 'bold' }}>{actualPaidAmount}원</span>
+                  </div>
+                  {parseInt(actualPaidAmount.replace(/,/g, '')) !== detail.totalAmount && (
+                    <div className="amount-row">
+                      <span>차이액:</span>
+                      <span style={{ 
+                        fontWeight: 'bold',
+                        color: detail.totalAmount > parseInt(actualPaidAmount.replace(/,/g, '')) ? '#dc3545' : '#28a745'
+                      }}>
+                        {Math.abs(detail.totalAmount - parseInt(actualPaidAmount.replace(/,/g, ''))).toLocaleString()}원
+                        {detail.totalAmount > parseInt(actualPaidAmount.replace(/,/g, '')) ? ' (감액)' : ' (증액)'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </S.PaymentModalBody>
              <S.PaymentModalFooter>
                <button onClick={handleClosePaymentModal} disabled={isMarkingAsPaid}>취소</button>
                <button onClick={handleMarkAsPaid} disabled={isMarkingAsPaid}>

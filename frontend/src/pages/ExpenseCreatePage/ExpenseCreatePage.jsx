@@ -26,7 +26,7 @@ const ExpenseCreatePage = () => {
   // 1. 문서 기본 정보 상태
   const [report, setReport] = useState({
     title: '',
-    paymentReqDate: '',
+    paymentReqDate: new Date().toISOString().split('T')[0], // 오늘 날짜로 디폴트 설정
     reportDate: new Date().toISOString().split('T')[0],
     isSecret: false, // 비밀글 여부
   });
@@ -155,10 +155,37 @@ const ExpenseCreatePage = () => {
     setReport({ ...report, [name]: value });
   };
 
+  // 숫자에 콤마 포맷팅 적용
+  const formatNumber = (value) => {
+    if (!value && value !== 0) return '';
+    // 숫자인 경우 문자열로 변환
+    const stringValue = String(value);
+    // 숫자가 아닌 문자 제거
+    const numericValue = stringValue.replace(/[^0-9]/g, '');
+    if (!numericValue) return '';
+    // 3자리마다 콤마 추가
+    return Number(numericValue).toLocaleString('ko-KR');
+  };
+
+  // 콤마가 포함된 문자열을 숫자로 변환
+  const parseFormattedNumber = (value) => {
+    if (!value) return '';
+    return value.replace(/,/g, '');
+  };
+
   const handleDetailChange = (index, e) => {
     const { name, value } = e.target;
     const newDetails = [...details];
-    newDetails[index][name] = value;
+    
+    // 금액 필드인 경우 포맷팅 적용
+    if (name === 'amount') {
+      // 입력값에서 콤마 제거 후 숫자로 변환하여 저장
+      const numericValue = parseFormattedNumber(value);
+      newDetails[index][name] = numericValue;
+    } else {
+      newDetails[index][name] = value;
+    }
+    
     setDetails(newDetails);
   };
 
@@ -319,6 +346,12 @@ const ExpenseCreatePage = () => {
       return;
     }
 
+    // 금액을 숫자로 변환하여 제출
+    const formattedDetails = details.map(detail => ({
+      ...detail,
+      amount: detail.amount ? Number(parseFormattedNumber(detail.amount)) : 0
+    }));
+
     const payload = {
       drafterId: user.userId,
       drafterName: user.koreanName,
@@ -327,7 +360,7 @@ const ExpenseCreatePage = () => {
       paymentReqDate: report.paymentReqDate,
       status: isSecretOrSalary ? EXPENSE_STATUS.PAID : EXPENSE_STATUS.WAIT,
       totalAmount: totalAmount,
-      details: details,
+      details: formattedDetails,
       isSecret: report.isSecret || false,
       approvalLines: !isSecretOrSalary ? selectedApprovers.map(userId => {
         const adminUser = adminUsers.find(user => user.userId === userId);
@@ -573,11 +606,12 @@ const ExpenseCreatePage = () => {
                   <S.Td>
                     <S.Input
                       ref={(el) => (amountInputRefs.current[index] = el)}
-                      type="number"
+                      type="text"
                       name="amount"
-                      value={detail.amount}
+                      value={detail.amount ? formatNumber(detail.amount) : ''}
                       onChange={(e) => handleDetailChange(index, e)}
                       onWheel={(e) => e.target.blur()}
+                      placeholder="금액을 입력하세요"
                     />
                   </S.Td>
                   <S.Td>
@@ -635,9 +669,9 @@ const ExpenseCreatePage = () => {
                   <S.MobileLabel>금액</S.MobileLabel>
                   <S.MobileInput
                     ref={(el) => (amountInputRefs.current[index] = el)}
-                    type="number"
+                    type="text"
                     name="amount"
-                    value={detail.amount}
+                    value={detail.amount ? formatNumber(detail.amount) : ''}
                     onChange={(e) => handleDetailChange(index, e)}
                     onWheel={(e) => e.target.blur()}
                     placeholder="금액을 입력하세요"

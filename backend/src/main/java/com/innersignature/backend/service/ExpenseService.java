@@ -727,6 +727,15 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateExpenseStatus(Long expenseReportId, Long userId, String status, Long actualPaidAmount, String amountDifferenceReason) {
+        updateExpenseStatus(expenseReportId, userId, status, actualPaidAmount, amountDifferenceReason, null);
+    }
+    
+    /**
+     * 지출결의서 상태 변경 (실제 지급 금액 및 상세 항목별 실제 지급 금액 포함)
+     * ACCOUNTANT 권한을 가진 사용자만 상태를 변경할 수 있습니다.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void updateExpenseStatus(Long expenseReportId, Long userId, String status, Long actualPaidAmount, String amountDifferenceReason, List<ExpenseDetailDto> detailActualPaidAmounts) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         
         // 1. 변경할 문서 정보 조회
@@ -738,14 +747,45 @@ public class ExpenseService {
         // 2. 권한 체크: ACCOUNTANT 권한자만 상태 변경 가능
         permissionUtil.checkAccountantPermission(userId);
 
-        // 4. 유효한 상태 값인지 확인
+        // 3. 유효한 상태 값인지 확인
         if (!"PAID".equals(status)) {
             throw new com.innersignature.backend.exception.BusinessException("유효하지 않은 상태 값입니다. PAID만 허용됩니다.");
         }
 
-        // 5. 현재 상태가 APPROVED인 경우에만 PAID로 변경 가능
+        // 4. 현재 상태가 APPROVED인 경우에만 PAID로 변경 가능
         if (!"APPROVED".equals(report.getStatus())) {
             throw new com.innersignature.backend.exception.BusinessException("APPROVED 상태의 문서만 PAID로 변경할 수 있습니다.");
+        }
+
+        // 5. 상세 항목별 실제 지급 금액 저장
+        if (detailActualPaidAmounts != null && !detailActualPaidAmounts.isEmpty()) {
+            // 모든 상세 항목 조회
+            List<ExpenseDetailDto> existingDetails = expenseMapper.selectExpenseDetails(expenseReportId, companyId);
+            
+            // 상세 항목별 실제 지급 금액 업데이트
+            for (ExpenseDetailDto detailUpdate : detailActualPaidAmounts) {
+                // 해당 상세 항목이 존재하는지 확인
+                boolean exists = existingDetails.stream()
+                        .anyMatch(d -> d.getExpenseDetailId().equals(detailUpdate.getExpenseDetailId()));
+                
+                if (exists && detailUpdate.getActualPaidAmount() != null) {
+                    expenseMapper.updateExpenseDetailActualPaidAmount(
+                            detailUpdate.getExpenseDetailId(),
+                            detailUpdate.getActualPaidAmount(),
+                            companyId);
+                }
+            }
+            
+            // 상세 항목별 실제 지급 금액의 합계 계산
+            long totalDetailActualPaidAmount = detailActualPaidAmounts.stream()
+                    .filter(d -> d.getActualPaidAmount() != null)
+                    .mapToLong(ExpenseDetailDto::getActualPaidAmount)
+                    .sum();
+            
+            // 문서 레벨 actualPaidAmount가 없으면 상세 항목 합계로 설정
+            if (actualPaidAmount == null) {
+                actualPaidAmount = totalDetailActualPaidAmount > 0 ? totalDetailActualPaidAmount : report.getTotalAmount();
+            }
         }
 
         // 6. 실제 지급 금액 검증
@@ -1812,7 +1852,8 @@ public class ExpenseService {
 
     /**
      * 전표 생성 및 분개 (회계 전표 형식)
-     * 승인된 지출결의서를 차변(비용)과 대변(미지급금)으로 분개하여 엑셀 파일로 생성
+     * APPROVED 상태: 차변(비용) / 대변(미지급금)
+     * PAID 상태: 차변(미지급금) / 대변(현금)
      * @param startDate 시작일 (optional)
      * @param endDate 종료일 (optional)
      * @param userId 현재 사용자 ID (권한 필터링용)
@@ -1822,8 +1863,8 @@ public class ExpenseService {
     public File exportJournalEntriesToExcel(LocalDate startDate, LocalDate endDate, Long userId) throws IOException {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         
-        // 승인된 지출결의서만 조회 (APPROVED 상태)
-        List<String> statuses = List.of("APPROVED");
+        // APPROVED와 PAID 상태의 지출결의서 조회
+        List<String> statuses = List.of("APPROVED", "PAID");
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
@@ -1832,6 +1873,25 @@ public class ExpenseService {
         
         // 권한 필터링 적용
         filterSalaryExpenses(expenseReports, userId);
+        
+        // 전표는 시간 순서대로 정렬 (날짜 오름차순, 문서번호 오름차순)
+        expenseReports.sort((a, b) -> {
+            // 날짜 비교 (오름차순: 과거 -> 최근)
+            if (a.getReportDate() != null && b.getReportDate() != null) {
+                int dateCompare = a.getReportDate().compareTo(b.getReportDate());
+                if (dateCompare != 0) {
+                    return dateCompare;
+                }
+            } else if (a.getReportDate() != null) {
+                return -1; // a가 null이 아니면 a가 앞으로
+            } else if (b.getReportDate() != null) {
+                return 1; // b가 null이 아니면 b가 앞으로
+            }
+            // 같은 날짜면 문서번호 오름차순
+            Long aId = a.getExpenseReportId() != null ? a.getExpenseReportId() : 0L;
+            Long bId = b.getExpenseReportId() != null ? b.getExpenseReportId() : 0L;
+            return Long.compare(aId, bId);
+        });
         
         // 각 지출결의서의 상세 내역 조회
         List<Long> expenseReportIds = expenseReports.stream()
@@ -1890,15 +1950,59 @@ public class ExpenseService {
         for (ExpenseReportDto report : expenseReports) {
             List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
             
-            if (details.isEmpty()) {
-                // 상세 내역이 없는 경우 (문서 총액 기준으로 분개)
-                Row row = sheet.createRow(rowNum++);
-                createJournalEntryRow(row, report, null, dataStyle, numberStyle);
-            } else {
-                // 상세 내역이 있는 경우 (각 항목별로 분개)
-                for (ExpenseDetailDto detail : details) {
+            if ("PAID".equals(report.getStatus())) {
+                // PAID 상태인 경우 세 가지 분개 필요:
+                // 1. APPROVED 시점의 분개: 차변(비용) / 대변(미지급금) - 결재 금액 기준
+                // 2. PAID 시점의 분개: 차변(미지급금) / 대변(현금) - 실제 지급 금액 기준
+                // 3. 미지급금 잔액 정리: 차변(미지급금 잔액) / 대변(기타수익) - 결재 금액과 실제 지급 금액의 차액
+                
+                // 1. APPROVED 시점 분개 생성 (결재 금액 기준)
+                if (details.isEmpty()) {
                     Row row = sheet.createRow(rowNum++);
-                    createJournalEntryRow(row, report, detail, dataStyle, numberStyle);
+                    createJournalEntryRowForApproved(row, report, null, dataStyle, numberStyle);
+                } else {
+                    for (ExpenseDetailDto detail : details) {
+                        Row row = sheet.createRow(rowNum++);
+                        createJournalEntryRowForApproved(row, report, detail, dataStyle, numberStyle);
+                    }
+                }
+                
+                // 2. PAID 시점 분개 생성 (실제 지급 금액 기준)
+                if (details.isEmpty()) {
+                    Row row = sheet.createRow(rowNum++);
+                    createJournalEntryRowForPaid(row, report, null, dataStyle, numberStyle);
+                } else {
+                    for (ExpenseDetailDto detail : details) {
+                        Row row = sheet.createRow(rowNum++);
+                        createJournalEntryRowForPaid(row, report, detail, dataStyle, numberStyle);
+                    }
+                }
+                
+                // 3. 미지급금 잔액 정리 분개 생성 (결재 금액과 실제 지급 금액의 차액)
+                long totalApprovalAmount = details.isEmpty() 
+                    ? (report.getTotalAmount() != null ? report.getTotalAmount() : 0L)
+                    : details.stream().mapToLong(d -> d.getAmount() != null ? d.getAmount() : 0L).sum();
+                
+                long totalActualPaidAmount = details.isEmpty()
+                    ? (report.getActualPaidAmount() != null ? report.getActualPaidAmount() : totalApprovalAmount)
+                    : details.stream().mapToLong(d -> d.getActualPaidAmount() != null ? d.getActualPaidAmount() : (d.getAmount() != null ? d.getAmount() : 0L)).sum();
+                
+                // 차액이 있는 경우에만 잔액 정리 분개 생성
+                long difference = totalApprovalAmount - totalActualPaidAmount;
+                if (difference > 0) {
+                    Row row = sheet.createRow(rowNum++);
+                    createJournalEntryRowForRemainingBalance(row, report, difference, dataStyle, numberStyle);
+                }
+            } else if ("APPROVED".equals(report.getStatus())) {
+                // APPROVED 상태인 경우: 차변(비용) / 대변(미지급금) - 결재 금액 기준
+                if (details.isEmpty()) {
+                    Row row = sheet.createRow(rowNum++);
+                    createJournalEntryRowForApproved(row, report, null, dataStyle, numberStyle);
+                } else {
+                    for (ExpenseDetailDto detail : details) {
+                        Row row = sheet.createRow(rowNum++);
+                        createJournalEntryRowForApproved(row, report, detail, dataStyle, numberStyle);
+                    }
                 }
             }
         }
@@ -1935,14 +2039,19 @@ public class ExpenseService {
     public void updateExpenseDetailTaxInfo(Long expenseDetailId, Boolean isTaxDeductible, String nonDeductibleReason) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         
-        // 상세 항목 조회
-        List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetails(
-                expenseMapper.selectExpenseReportIdByDetailId(expenseDetailId, companyId), companyId);
+        // 상세 항목 존재 여부 확인
+        Long expenseReportId = expenseMapper.selectExpenseReportIdByDetailId(expenseDetailId, companyId);
+        if (expenseReportId == null) {
+            throw new com.innersignature.backend.exception.ResourceNotFoundException("상세 항목을 찾을 수 없습니다.");
+        }
         
-        ExpenseDetailDto targetDetail = details.stream()
-                .filter(d -> d.getExpenseDetailId().equals(expenseDetailId))
-                .findFirst()
-                .orElseThrow(() -> new com.innersignature.backend.exception.ResourceNotFoundException("상세 항목을 찾을 수 없습니다."));
+        List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetails(expenseReportId, companyId);
+        boolean exists = details.stream()
+                .anyMatch(d -> d.getExpenseDetailId().equals(expenseDetailId));
+        
+        if (!exists) {
+            throw new com.innersignature.backend.exception.ResourceNotFoundException("상세 항목을 찾을 수 없습니다.");
+        }
         
         // 업데이트
         expenseMapper.updateExpenseDetailTaxInfo(expenseDetailId, isTaxDeductible, nonDeductibleReason, companyId);
@@ -1952,10 +2061,10 @@ public class ExpenseService {
     }
     
     /**
-     * 전표 행 생성 헬퍼 메서드
-     * 차변(비용)과 대변(미지급금)으로 분개
+     * APPROVED 시점 분개 행 생성
+     * 차변(비용) / 대변(미지급금) - 결재 금액 기준
      */
-    private void createJournalEntryRow(Row row, ExpenseReportDto report, ExpenseDetailDto detail, CellStyle dataStyle, CellStyle numberStyle) {
+    private void createJournalEntryRowForApproved(Row row, ExpenseReportDto report, ExpenseDetailDto detail, CellStyle dataStyle, CellStyle numberStyle) {
         int col = 0;
         
         // 전표일자 (작성일)
@@ -1975,18 +2084,20 @@ public class ExpenseService {
         cell.setCellValue(description);
         cell.setCellStyle(dataStyle);
         
-        // 차변 계정과목 (카테고리 기반, 예: 식대 -> 식대비, 교통비 -> 여비교통비)
+        // 결재 금액 (원래 금액)
+        Long approvalAmount = detail != null && detail.getAmount() != null ? detail.getAmount() : 
+                             (report.getTotalAmount() != null ? report.getTotalAmount() : 0L);
+        
+        // 차변 계정과목 (카테고리 기반)
         cell = row.createCell(col++);
         String category = detail != null && detail.getCategory() != null ? detail.getCategory() : "";
         String debitAccount = mapCategoryToAccountCode(category);
         cell.setCellValue(debitAccount);
         cell.setCellStyle(dataStyle);
         
-        // 차변 금액 (비용)
+        // 차변 금액 (비용 - 결재 금액)
         cell = row.createCell(col++);
-        Long amount = detail != null && detail.getAmount() != null ? detail.getAmount() : 
-                     (report.getTotalAmount() != null ? report.getTotalAmount() : 0L);
-        cell.setCellValue(amount.doubleValue());
+        cell.setCellValue(approvalAmount.doubleValue());
         cell.setCellStyle(numberStyle);
         
         // 대변 계정과목 (미지급금)
@@ -1994,9 +2105,9 @@ public class ExpenseService {
         cell.setCellValue("미지급금");
         cell.setCellStyle(dataStyle);
         
-        // 대변 금액 (미지급금)
+        // 대변 금액 (미지급금 - 결재 금액)
         cell = row.createCell(col++);
-        cell.setCellValue(amount.doubleValue());
+        cell.setCellValue(approvalAmount.doubleValue());
         cell.setCellStyle(numberStyle);
         
         // 문서번호
@@ -2007,6 +2118,130 @@ public class ExpenseService {
         // 비고
         cell = row.createCell(col++);
         String note = detail != null && detail.getNote() != null ? detail.getNote() : "";
+        cell.setCellValue(note);
+        cell.setCellStyle(dataStyle);
+    }
+    
+    /**
+     * PAID 시점 분개 행 생성
+     * 차변(미지급금) / 대변(현금) - 실제 지급 금액 기준
+     */
+    private void createJournalEntryRowForPaid(Row row, ExpenseReportDto report, ExpenseDetailDto detail, CellStyle dataStyle, CellStyle numberStyle) {
+        int col = 0;
+        
+        // 전표일자 (작성일)
+        Cell cell = row.createCell(col++);
+        if (report.getReportDate() != null) {
+            cell.setCellValue(report.getReportDate().toString());
+        } else {
+            cell.setCellValue("");
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 적요 (제목 또는 상세 적요)
+        cell = row.createCell(col++);
+        String description = detail != null && detail.getDescription() != null && !detail.getDescription().isEmpty()
+                ? detail.getDescription()
+                : (report.getTitle() != null ? report.getTitle() : "");
+        cell.setCellValue(description);
+        cell.setCellStyle(dataStyle);
+        
+        // 결재 금액 (원래 금액)
+        Long approvalAmount = detail != null && detail.getAmount() != null ? detail.getAmount() : 
+                             (report.getTotalAmount() != null ? report.getTotalAmount() : 0L);
+        
+        // 실제 지급 금액 (있으면 사용, 없으면 결재 금액과 동일)
+        Long actualPaidAmount = detail != null && detail.getActualPaidAmount() != null 
+                                ? detail.getActualPaidAmount() 
+                                : (report.getActualPaidAmount() != null && detail == null 
+                                    ? report.getActualPaidAmount() 
+                                    : approvalAmount);
+        
+        // 차변 계정과목 (미지급금)
+        cell = row.createCell(col++);
+        cell.setCellValue("미지급금");
+        cell.setCellStyle(dataStyle);
+        
+        // 차변 금액 (미지급금 - 실제 지급 금액)
+        cell = row.createCell(col++);
+        cell.setCellValue(actualPaidAmount.doubleValue());
+        cell.setCellStyle(numberStyle);
+        
+        // 대변 계정과목 (현금)
+        cell = row.createCell(col++);
+        cell.setCellValue("현금");
+        cell.setCellStyle(dataStyle);
+        
+        // 대변 금액 (현금 - 실제 지급 금액)
+        cell = row.createCell(col++);
+        cell.setCellValue(actualPaidAmount.doubleValue());
+        cell.setCellStyle(numberStyle);
+        
+        // 문서번호
+        cell = row.createCell(col++);
+        cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
+        cell.setCellStyle(dataStyle);
+        
+        // 비고
+        cell = row.createCell(col++);
+        String note = detail != null && detail.getNote() != null ? detail.getNote() : "";
+        cell.setCellValue(note);
+        cell.setCellStyle(dataStyle);
+    }
+    
+    /**
+     * 미지급금 잔액 정리 분개 행 생성
+     * 차변(미지급금 잔액) / 대변(기타수익) - 결재 금액과 실제 지급 금액의 차액
+     */
+    private void createJournalEntryRowForRemainingBalance(Row row, ExpenseReportDto report, Long balanceAmount, CellStyle dataStyle, CellStyle numberStyle) {
+        int col = 0;
+        
+        // 전표일자 (작성일)
+        Cell cell = row.createCell(col++);
+        if (report.getReportDate() != null) {
+            cell.setCellValue(report.getReportDate().toString());
+        } else {
+            cell.setCellValue("");
+        }
+        cell.setCellStyle(dataStyle);
+        
+        // 적요 (제목 + " 미지급금 잔액 정리")
+        cell = row.createCell(col++);
+        String description = (report.getTitle() != null ? report.getTitle() : "") + " 미지급금 잔액 정리";
+        cell.setCellValue(description);
+        cell.setCellStyle(dataStyle);
+        
+        // 차변 계정과목 (미지급금)
+        cell = row.createCell(col++);
+        cell.setCellValue("미지급금");
+        cell.setCellStyle(dataStyle);
+        
+        // 차변 금액 (미지급금 잔액)
+        cell = row.createCell(col++);
+        cell.setCellValue(balanceAmount.doubleValue());
+        cell.setCellStyle(numberStyle);
+        
+        // 대변 계정과목 (기타수익)
+        cell = row.createCell(col++);
+        cell.setCellValue("기타수익");
+        cell.setCellStyle(dataStyle);
+        
+        // 대변 금액 (기타수익)
+        cell = row.createCell(col++);
+        cell.setCellValue(balanceAmount.doubleValue());
+        cell.setCellStyle(numberStyle);
+        
+        // 문서번호
+        cell = row.createCell(col++);
+        cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
+        cell.setCellStyle(dataStyle);
+        
+        // 비고
+        cell = row.createCell(col++);
+        String note = "결재 금액과 실제 지급 금액 차액";
+        if (report.getAmountDifferenceReason() != null && !report.getAmountDifferenceReason().trim().isEmpty()) {
+            note += " - " + report.getAmountDifferenceReason();
+        }
         cell.setCellValue(note);
         cell.setCellStyle(dataStyle);
     }
