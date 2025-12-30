@@ -718,6 +718,15 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateExpenseStatus(Long expenseReportId, Long userId, String status) {
+        updateExpenseStatus(expenseReportId, userId, status, null, null);
+    }
+    
+    /**
+     * 지출결의서 상태 변경 (실제 지급 금액 포함)
+     * ACCOUNTANT 권한을 가진 사용자만 상태를 변경할 수 있습니다.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void updateExpenseStatus(Long expenseReportId, Long userId, String status, Long actualPaidAmount, String amountDifferenceReason) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         
         // 1. 변경할 문서 정보 조회
@@ -739,8 +748,19 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("APPROVED 상태의 문서만 PAID로 변경할 수 있습니다.");
         }
 
-        // 6. 상태 변경
-        expenseMapper.updateExpenseReportStatus(expenseReportId, status, companyId);
+        // 6. 실제 지급 금액 검증
+        // actualPaidAmount가 null이면 결재 금액과 동일한 것으로 간주
+        Long finalPaidAmount = actualPaidAmount != null ? actualPaidAmount : report.getTotalAmount();
+        
+        // 금액 차이가 있는 경우 사유 필수
+        if (!finalPaidAmount.equals(report.getTotalAmount())) {
+            if (amountDifferenceReason == null || amountDifferenceReason.trim().isEmpty()) {
+                throw new com.innersignature.backend.exception.BusinessException("결재 금액과 실제 지급 금액이 다를 경우 차이 사유를 입력해야 합니다.");
+            }
+        }
+        
+        // 7. 상태 및 실제 지급 금액 변경
+        expenseMapper.updateExpenseReportStatusWithPayment(expenseReportId, status, finalPaidAmount, amountDifferenceReason, companyId);
     }
 
     /**

@@ -94,6 +94,14 @@ public interface ExpenseMapper {
 
     // 문서 상태 업데이트
     void updateExpenseReportStatus(@Param("expenseReportId") Long expenseReportId, @Param("status") String status, @Param("companyId") Long companyId);
+    
+    // 문서 상태 업데이트 (PAID 상태일 때 실제 지급 금액 포함)
+    void updateExpenseReportStatusWithPayment(
+            @Param("expenseReportId") Long expenseReportId, 
+            @Param("status") String status,
+            @Param("actualPaidAmount") Long actualPaidAmount,
+            @Param("amountDifferenceReason") String amountDifferenceReason,
+            @Param("companyId") Long companyId);
 
     // 증빙 누락 건 조회
     List<ExpenseReportDto> selectMissingReceipts(

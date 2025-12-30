@@ -646,6 +646,70 @@ export const RejectModalFooter = styled.div`
   }
 `;
 
+// 결제 완료 모달 (RejectModal과 동일한 스타일 재사용)
+export const PaymentModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+export const PaymentModalContent = styled(RejectModalContent)``;
+export const PaymentModalHeader = styled(RejectModalHeader)``;
+export const PaymentModalBody = styled(RejectModalBody)`
+  input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 14px;
+
+    &:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  }
+
+  .amount-info {
+    background-color: #f3f4f6;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    
+    .amount-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      
+      &:last-child {
+        margin-bottom: 0;
+        padding-top: 8px;
+        border-top: 1px solid #d1d5db;
+        font-weight: 600;
+        color: #ef4444;
+      }
+    }
+  }
+`;
+export const PaymentModalFooter = styled(RejectModalFooter)`
+  button:last-of-type {
+    background-color: #28a745;
+    color: white;
+
+    &:hover {
+      background-color: #218838;
+    }
+  }
+`;
+
 // 영수증 섹션
 export const ReceiptSection = styled.div`
   margin-top: 40px;

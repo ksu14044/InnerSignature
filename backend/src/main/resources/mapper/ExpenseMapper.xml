@@ -251,6 +251,15 @@
         AND company_id = #{companyId}
     </update>
 
+    <update id="updateExpenseReportStatusWithPayment">
+        UPDATE expense_report_tb
+        SET status = #{status},
+            actual_paid_amount = #{actualPaidAmount},
+            amount_difference_reason = #{amountDifferenceReason}
+        WHERE expense_report_id = #{expenseReportId}
+        AND company_id = #{companyId}
+    </update>
+
     <insert id="insertExpenseReport" useGeneratedKeys="true" keyProperty="expenseReportId">
         INSERT INTO expense_report_tb (
             drafter_id,

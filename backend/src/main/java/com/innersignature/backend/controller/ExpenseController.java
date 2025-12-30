@@ -268,15 +268,16 @@ public class ExpenseController {
      * 설명: ACCOUNTANT 권한을 가진 사용자만 상태를 변경할 수 있습니다.
      */
     @PreAuthorize("hasRole('ACCOUNTANT')")
-    @Operation(summary = "지출결의서 상태 변경", description = "ACCOUNTANT가 결의서 상태를 변경합니다.")
+    @Operation(summary = "지출결의서 상태 변경", description = "ACCOUNTANT가 결의서 상태를 변경합니다. PAID 상태로 변경 시 실제 지급 금액과 차이 사유를 입력할 수 있습니다.")
     @PutMapping("/{expenseId}/status")
     public ApiResponse<Void> updateExpenseStatus(
             @PathVariable Long expenseId,
             @RequestBody StatusUpdateRequest request) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
-        logger.info("지출결의서 상태 변경 요청 - expenseId: {}, userId: {}, status: {}", 
-                expenseId, currentUserId, request.getStatus());
-        expenseService.updateExpenseStatus(expenseId, currentUserId, request.getStatus());
+        logger.info("지출결의서 상태 변경 요청 - expenseId: {}, userId: {}, status: {}, actualPaidAmount: {}", 
+                expenseId, currentUserId, request.getStatus(), request.getActualPaidAmount());
+        expenseService.updateExpenseStatus(expenseId, currentUserId, request.getStatus(), 
+                request.getActualPaidAmount(), request.getAmountDifferenceReason());
         logger.info("지출결의서 상태 변경 완료 - expenseId: {}, status: {}", expenseId, request.getStatus());
         return new ApiResponse<>(true, "상태 변경 완료", null);
     }
@@ -284,6 +285,8 @@ public class ExpenseController {
     @Data
     static class StatusUpdateRequest {
         private String status;
+        private Long actualPaidAmount; // 실제 지급 금액 (선택사항, null이면 결재 금액과 동일)
+        private String amountDifferenceReason; // 금액 차이 사유 (금액이 다를 경우 필수)
     }
 
     /**

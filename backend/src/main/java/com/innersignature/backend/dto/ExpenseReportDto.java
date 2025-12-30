@@ -21,7 +21,10 @@ public class ExpenseReportDto {
     private String title;         // 제목
     
     @Positive(message = "총 금액은 양수여야 합니다.")
-    private Long totalAmount;     // 총 합계
+    private Long totalAmount;     // 총 합계 (결재 금액)
+    
+    private Long actualPaidAmount; // 실제 지급 금액 (결재 금액과 다를 수 있음)
+    private String amountDifferenceReason; // 금액 차이 사유
     
     private String status;        // 문서 상태
     private LocalDate paymentReqDate; // 지급 요청일

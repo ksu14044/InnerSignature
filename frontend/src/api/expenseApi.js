@@ -154,9 +154,16 @@ export const cancelRejection = async (expenseId) => {
   };
 
 // 6. 지출결의서 상태 변경 (ACCOUNTANT 전용)
-export const updateExpenseStatus = async (expenseId, userId, status) => {
+export const updateExpenseStatus = async (expenseId, userId, status, actualPaidAmount = null, amountDifferenceReason = null) => {
     try {
-      const response = await axiosInstance.put(`${BASE_URL}/${expenseId}/status`, { userId, status });
+      const requestBody = { status };
+      if (actualPaidAmount !== null) {
+        requestBody.actualPaidAmount = actualPaidAmount;
+      }
+      if (amountDifferenceReason !== null && amountDifferenceReason !== '') {
+        requestBody.amountDifferenceReason = amountDifferenceReason;
+      }
+      const response = await axiosInstance.put(`${BASE_URL}/${expenseId}/status`, requestBody);
       return response.data;
     } catch (error) {
       console.error("상태 변경 실패:", error);
