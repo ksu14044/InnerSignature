@@ -1999,8 +1999,9 @@ public class ExpenseService {
                     
                     if (difference > 0) {
                         // 실제 지급 금액이 결재 금액보다 작은 경우: 잔액 정리
+                        // 상세 항목이 없으므로 기본 계정과목 사용
                         Row row = sheet.createRow(rowNum++);
-                        createJournalEntryRowForRemainingBalance(row, report, difference, dataStyle, numberStyle);
+                        createJournalEntryRowForRemainingBalance(row, report, difference, "기타비용", dataStyle, numberStyle);
                     } else if (difference < 0) {
                         // 실제 지급 금액이 결재 금액보다 큰 경우: 추가 비용
                         Row row = sheet.createRow(rowNum++);
@@ -2010,7 +2011,8 @@ public class ExpenseService {
                     // 상세 항목별로 차액 계산 및 처리
                     // 추가 비용: 계정과목별로 그룹화하여 합산 처리 (회계 원칙 준수)
                     Map<String, Long> additionalExpenseByAccount = new HashMap<>();
-                    long totalRemainingBalance = 0;
+                    // 잔액 정리: 계정과목별로 그룹화하여 합산 처리 (회계 원칙 준수)
+                    Map<String, Long> remainingBalanceByAccount = new HashMap<>();
                     
                     for (ExpenseDetailDto detail : details) {
                         long approvalAmount = detail.getAmount() != null ? detail.getAmount() : 0L;
@@ -2024,8 +2026,11 @@ public class ExpenseService {
                             String accountCode = mapCategoryToAccountCode(category);
                             additionalExpenseByAccount.merge(accountCode, Math.abs(itemDifference), Long::sum);
                         } else if (itemDifference > 0) {
-                            // 실제 지급 금액이 결재 금액보다 작은 경우: 잔액 합산
-                            totalRemainingBalance += itemDifference;
+                            // 실제 지급 금액이 결재 금액보다 작은 경우: 잔액 정리
+                            // 해당 항목의 계정과목으로 차감 처리 (회계 원칙 - 비용 차감, 수익 증가 금지)
+                            String category = detail.getCategory() != null ? detail.getCategory() : "";
+                            String accountCode = mapCategoryToAccountCode(category);
+                            remainingBalanceByAccount.merge(accountCode, itemDifference, Long::sum);
                         }
                     }
                     
@@ -2035,10 +2040,10 @@ public class ExpenseService {
                         createJournalEntryRowForAdditionalExpense(row, report, null, entry.getValue(), entry.getKey(), dataStyle, numberStyle);
                     }
                     
-                    // 잔액 정리 분개 생성
-                    if (totalRemainingBalance > 0) {
+                    // 잔액 정리 분개 생성 (계정과목별로 - 비용 차감 처리)
+                    for (Map.Entry<String, Long> entry : remainingBalanceByAccount.entrySet()) {
                         Row row = sheet.createRow(rowNum++);
-                        createJournalEntryRowForRemainingBalance(row, report, totalRemainingBalance, dataStyle, numberStyle);
+                        createJournalEntryRowForRemainingBalance(row, report, entry.getValue(), entry.getKey(), dataStyle, numberStyle);
                     }
                 }
             } else if ("APPROVED".equals(report.getStatus())) {
@@ -2243,9 +2248,10 @@ public class ExpenseService {
     
     /**
      * 미지급금 잔액 정리 분개 행 생성
-     * 차변(미지급금 잔액) / 대변(기타수익) - 결재 금액과 실제 지급 금액의 차액
+     * 차변(미지급금 잔액) / 대변(원래 비용 계정과목) - 결재 금액과 실제 지급 금액의 차액
+     * 비용이 줄어야 하므로 수익을 늘리지 않고 원래 비용 계정과목을 차감 처리
      */
-    private void createJournalEntryRowForRemainingBalance(Row row, ExpenseReportDto report, Long balanceAmount, CellStyle dataStyle, CellStyle numberStyle) {
+    private void createJournalEntryRowForRemainingBalance(Row row, ExpenseReportDto report, Long balanceAmount, String accountCode, CellStyle dataStyle, CellStyle numberStyle) {
         int col = 0;
         
         // 전표일자 (작성일)
@@ -2273,12 +2279,12 @@ public class ExpenseService {
         cell.setCellValue(balanceAmount.doubleValue());
         cell.setCellStyle(numberStyle);
         
-        // 대변 계정과목 (기타수익)
+        // 대변 계정과목 (원래 비용 계정과목 - 기타수익이 아님)
         cell = row.createCell(col++);
-        cell.setCellValue("기타수익");
+        cell.setCellValue(accountCode != null ? accountCode : "기타비용");
         cell.setCellStyle(dataStyle);
         
-        // 대변 금액 (기타수익)
+        // 대변 금액 (비용 차감)
         cell = row.createCell(col++);
         cell.setCellValue(balanceAmount.doubleValue());
         cell.setCellStyle(numberStyle);
