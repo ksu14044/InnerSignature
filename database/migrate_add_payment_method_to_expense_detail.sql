@@ -5,3 +5,5 @@
 ALTER TABLE `expense_detail_tb`
 ADD COLUMN `payment_method` VARCHAR(50) NULL COMMENT '결제수단 (CASH, BANK_TRANSFER, CARD, CHECK 등)' AFTER `actual_paid_amount`;
 
+
+

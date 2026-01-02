@@ -5,3 +5,5 @@
 ALTER TABLE `expense_detail_tb`
 ADD COLUMN `actual_paid_amount` DECIMAL(15,0) NULL COMMENT '실제 지급 금액 (결재 금액과 다를 수 있음)' AFTER `amount`;
 
+
+
