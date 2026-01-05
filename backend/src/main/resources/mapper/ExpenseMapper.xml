@@ -126,7 +126,7 @@
     <select id="selectCategorySummary" resultType="com.innersignature.backend.dto.CategorySummaryDto">
         SELECT
             d.category AS category,
-            COALESCE(SUM(d.amount), 0) AS totalAmount,
+            COALESCE(SUM(COALESCE(d.actual_paid_amount, d.amount)), 0) AS totalAmount,
             COUNT(*) AS itemCount,
             COUNT(DISTINCT d.expense_report_id) AS reportCount
         FROM expense_detail_tb d
@@ -434,11 +434,11 @@
     <!-- 대시보드 전체 요약 통계 조회 -->
     <select id="selectDashboardStats" resultType="com.innersignature.backend.dto.DashboardStatsDto">
         SELECT 
-            COALESCE(SUM(total_amount), 0) AS totalAmount,
+            COALESCE(SUM(COALESCE(actual_paid_amount, total_amount)), 0) AS totalAmount,
             COUNT(*) AS totalCount,
-            COALESCE(AVG(total_amount), 0) AS averageAmount,
-            COALESCE(MAX(total_amount), 0) AS maxAmount,
-            COALESCE(MIN(total_amount), 0) AS minAmount,
+            COALESCE(AVG(COALESCE(actual_paid_amount, total_amount)), 0) AS averageAmount,
+            COALESCE(MAX(COALESCE(actual_paid_amount, total_amount)), 0) AS maxAmount,
+            COALESCE(MIN(COALESCE(actual_paid_amount, total_amount)), 0) AS minAmount,
             SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) AS pendingCount
         FROM expense_report_tb
         <where>
@@ -456,7 +456,7 @@
     <select id="selectMonthlyTrend" resultType="com.innersignature.backend.dto.MonthlyTrendDto">
         SELECT 
             DATE_FORMAT(report_date, '%Y-%m') AS yearMonth,
-            COALESCE(SUM(total_amount), 0) AS totalAmount,
+            COALESCE(SUM(COALESCE(actual_paid_amount, total_amount)), 0) AS totalAmount,
             COUNT(*) AS count
         FROM expense_report_tb
         <where>
@@ -477,7 +477,7 @@
         SELECT 
             status,
             COUNT(*) AS count,
-            COALESCE(SUM(total_amount), 0) AS totalAmount
+            COALESCE(SUM(COALESCE(actual_paid_amount, total_amount)), 0) AS totalAmount
         FROM expense_report_tb
         <where>
             company_id = #{companyId}
@@ -496,7 +496,7 @@
     <select id="selectCategoryRatio" resultType="com.innersignature.backend.dto.CategoryRatioDto">
         SELECT 
             d.category AS category,
-            COALESCE(SUM(d.amount), 0) AS amount,
+            COALESCE(SUM(COALESCE(d.actual_paid_amount, d.amount)), 0) AS amount,
             0.0 AS ratio
         FROM expense_detail_tb d
         JOIN expense_report_tb r ON d.expense_report_id = r.expense_report_id
@@ -543,9 +543,9 @@
                     CAST(SUM(CASE WHEN tax_processed = 1 THEN 1 ELSE 0 END) AS DECIMAL) / COUNT(*)
                 ELSE 0.0 
             END AS completionRate,
-            COALESCE(SUM(total_amount), 0) AS totalAmount,
-            COALESCE(SUM(CASE WHEN (tax_processed = 0 OR tax_processed IS NULL) THEN total_amount ELSE 0 END), 0) AS pendingAmount,
-            COALESCE(SUM(CASE WHEN tax_processed = 1 THEN total_amount ELSE 0 END), 0) AS completedAmount
+            COALESCE(SUM(COALESCE(actual_paid_amount, total_amount)), 0) AS totalAmount,
+            COALESCE(SUM(CASE WHEN (tax_processed = 0 OR tax_processed IS NULL) THEN COALESCE(actual_paid_amount, total_amount) ELSE 0 END), 0) AS pendingAmount,
+            COALESCE(SUM(CASE WHEN tax_processed = 1 THEN COALESCE(actual_paid_amount, total_amount) ELSE 0 END), 0) AS completedAmount
         FROM expense_report_tb
         WHERE status = 'PAID'
         AND company_id = #{companyId}
@@ -562,8 +562,8 @@
         SELECT 
             DATE_FORMAT(report_date, '%Y-%m') AS yearMonth,
             SUM(CASE WHEN tax_processed = 1 THEN 1 ELSE 0 END) AS completedCount,
-            COALESCE(SUM(total_amount), 0) AS totalAmount,
-            COALESCE(SUM(CASE WHEN tax_processed = 1 THEN total_amount ELSE 0 END), 0) AS completedAmount
+            COALESCE(SUM(COALESCE(actual_paid_amount, total_amount)), 0) AS totalAmount,
+            COALESCE(SUM(CASE WHEN tax_processed = 1 THEN COALESCE(actual_paid_amount, total_amount) ELSE 0 END), 0) AS completedAmount
         FROM expense_report_tb
         WHERE status = 'PAID'
         AND company_id = #{companyId}

@@ -7,3 +7,4 @@ ADD COLUMN `actual_paid_amount` DECIMAL(15,0) NULL COMMENT '실제 지급 금액
 
 
 
+

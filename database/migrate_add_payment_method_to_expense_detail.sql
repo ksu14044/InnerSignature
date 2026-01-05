@@ -7,3 +7,4 @@ ADD COLUMN `payment_method` VARCHAR(50) NULL COMMENT '결제수단 (CASH, BANK_T
 
 
 
+

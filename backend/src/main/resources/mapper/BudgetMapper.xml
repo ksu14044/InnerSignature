@@ -22,7 +22,7 @@
         SELECT 
             b.*,
             COALESCE((
-                SELECT SUM(ed.amount)
+                SELECT SUM(COALESCE(ed.actual_paid_amount, ed.amount))
                 FROM expense_detail_tb ed
                 INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
                 WHERE er.company_id = b.company_id
@@ -34,7 +34,7 @@
             CASE 
                 WHEN b.budget_amount > 0 THEN
                     ROUND((COALESCE((
-                        SELECT SUM(ed.amount)
+                        SELECT SUM(COALESCE(ed.actual_paid_amount, ed.amount))
                         FROM expense_detail_tb ed
                         INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
                         WHERE er.company_id = b.company_id
@@ -54,7 +54,7 @@
         SELECT 
             b.*,
             COALESCE((
-                SELECT SUM(ed.amount)
+                SELECT SUM(COALESCE(ed.actual_paid_amount, ed.amount))
                 FROM expense_detail_tb ed
                 INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
                 WHERE er.company_id = b.company_id
@@ -66,7 +66,7 @@
             CASE 
                 WHEN b.budget_amount > 0 THEN
                     ROUND((COALESCE((
-                        SELECT SUM(ed.amount)
+                        SELECT SUM(COALESCE(ed.actual_paid_amount, ed.amount))
                         FROM expense_detail_tb ed
                         INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
                         WHERE er.company_id = b.company_id
@@ -88,7 +88,7 @@
         SELECT 
             b.*,
             COALESCE((
-                SELECT SUM(ed.amount)
+                SELECT SUM(COALESCE(ed.actual_paid_amount, ed.amount))
                 FROM expense_detail_tb ed
                 INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
                 WHERE er.company_id = b.company_id
@@ -100,7 +100,7 @@
             CASE 
                 WHEN b.budget_amount > 0 THEN
                     ROUND((COALESCE((
-                        SELECT SUM(ed.amount)
+                        SELECT SUM(COALESCE(ed.actual_paid_amount, ed.amount))
                         FROM expense_detail_tb ed
                         INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
                         WHERE er.company_id = b.company_id
@@ -147,7 +147,7 @@
     </delete>
 
     <select id="calculateUsedAmount" resultType="java.lang.Long">
-        SELECT COALESCE(SUM(ed.amount), 0)
+        SELECT COALESCE(SUM(COALESCE(ed.actual_paid_amount, ed.amount)), 0)
         FROM expense_detail_tb ed
         INNER JOIN expense_report_tb er ON ed.expense_report_id = er.expense_report_id
         WHERE er.company_id = #{companyId}
