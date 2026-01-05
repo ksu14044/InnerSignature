@@ -952,9 +952,9 @@ const ExpenseDetailPage = () => {
                   </label>
                   <div style={{ border: '1px solid #ddd', borderRadius: '4px', padding: '12px', maxHeight: '300px', overflowY: 'auto' }}>
                     {detail.details.map((item) => {
-                      const detailAmount = detailActualPaidAmounts[item.expenseDetailId] || item.amount.toString();
-                      const detailAmountNum = parseInt(detailAmount.replace(/,/g, '')) || item.amount;
-                      const isDifferent = detailAmountNum !== item.amount;
+                      const detailAmount = detailActualPaidAmounts[item.expenseDetailId] ?? item.amount.toString();
+                      const detailAmountNum = detailAmount ? parseInt(detailAmount.replace(/,/g, '')) : 0;
+                      const isDifferent = detailAmountNum !== item.amount && detailAmountNum > 0;
                       
                       return (
                         <div key={item.expenseDetailId} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #f0f0f0' }}>

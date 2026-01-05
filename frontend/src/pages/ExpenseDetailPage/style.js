@@ -658,13 +658,37 @@ export const PaymentModal = styled.div`
   align-items: center;
   justify-content: center;
   z-index: 1000;
+
+  @media (max-width: 480px) {
+    align-items: flex-end;
+    padding: 20px 0 84px 0;  // 하단: 20px(padding) + 64px(하단 네비게이션)
+  }
 `;
 
-export const PaymentModalContent = styled(RejectModalContent)``;
-export const PaymentModalHeader = styled(RejectModalHeader)``;
+export const PaymentModalContent = styled(RejectModalContent)`
+  @media (max-width: 480px) {
+    display: flex !important;
+    flex-direction: column;
+    max-height: calc(100vh - 104px) !important;  // 20px(padding-top) + 20px(padding-bottom) + 64px(하단 네비게이션)
+    height: auto;
+    overflow: hidden !important;
+    overflow-y: hidden !important;
+  }
+`;
+export const PaymentModalHeader = styled(RejectModalHeader)`
+  flex-shrink: 0;
+`;
 export const PaymentModalBody = styled(RejectModalBody)`
   max-height: 80vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  
+  @media (max-width: 480px) {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
   
   input[type="number"] {
     width: 100%;
@@ -703,6 +727,8 @@ export const PaymentModalBody = styled(RejectModalBody)`
   }
 `;
 export const PaymentModalFooter = styled(RejectModalFooter)`
+  flex-shrink: 0;
+
   button:last-of-type {
     background-color: #28a745;
     color: white;
