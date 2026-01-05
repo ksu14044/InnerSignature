@@ -73,8 +73,8 @@ public class CompanyService {
         }
         
         // 특수문자 제거 (SQL Injection 방지 및 검색 최적화)
-        // 한글, 영문, 숫자, 공백만 허용
-        String sanitized = trimmedName.replaceAll("[^가-힣a-zA-Z0-9\\s-]", "");
+        // 한글, 영문, 숫자, 공백, 하이픈, 언더스코어 허용
+        String sanitized = trimmedName.replaceAll("[^가-힣a-zA-Z0-9\\s_-]", "");
         
         if (sanitized.isEmpty()) {
             return List.of();
