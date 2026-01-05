@@ -660,8 +660,8 @@ export const PaymentModal = styled.div`
   z-index: 1000;
 
   @media (max-width: 480px) {
-    align-items: flex-end;
-    padding: 20px 0 84px 0;  // 하단: 20px(padding) + 64px(하단 네비게이션)
+    align-items: center;
+    padding: 20px 20px calc(64px + 20px) 20px;  // 하단: 64px(네비게이션) + 20px(padding)
   }
 `;
 
