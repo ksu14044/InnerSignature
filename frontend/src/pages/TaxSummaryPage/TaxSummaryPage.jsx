@@ -328,8 +328,8 @@ const TaxSummaryPage = () => {
                       checked={selectedIds.size === pendingReports.length && pendingReports.length > 0}
                       onChange={toggleSelectAll}
                     />
+                    제목
                   </S.Th>
-                  <S.Th>제목</S.Th>
                   <S.Th>작성자</S.Th>
                   <S.Th>작성일</S.Th>
                   <S.Th>금액</S.Th>
@@ -339,22 +339,23 @@ const TaxSummaryPage = () => {
               <tbody>
                 {pendingReports.map((item, index) => (
                   <S.Tr key={item.expenseReportId} even={index % 2 === 1}>
-                    <S.Td>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(item.expenseReportId)}
-                        onChange={() => toggleSelection(item.expenseReportId)}
-                      />
+                    <S.Td data-label="제목">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.expenseReportId)}
+                          onChange={() => toggleSelection(item.expenseReportId)}
+                          style={{ margin: 0, flexShrink: 0 }}
+                        />
+                        <S.LinkButton onClick={() => navigate(`/detail/${item.expenseReportId}`)}>
+                          {item.title}
+                        </S.LinkButton>
+                      </div>
                     </S.Td>
-                    <S.Td>
-                      <S.LinkButton onClick={() => navigate(`/detail/${item.expenseReportId}`)}>
-                        {item.title}
-                      </S.LinkButton>
-                    </S.Td>
-                    <S.Td>{item.drafterName}</S.Td>
-                    <S.Td>{item.reportDate}</S.Td>
-                    <S.Td align="right">{item.totalAmount?.toLocaleString()}원</S.Td>
-                    <S.Td>
+                    <S.Td data-label="작성자">{item.drafterName}</S.Td>
+                    <S.Td data-label="작성일">{item.reportDate}</S.Td>
+                    <S.Td align="right" data-label="금액">{item.totalAmount?.toLocaleString()}원</S.Td>
+                    <S.Td data-label="처리">
                       <S.Button
                         variant="secondary"
                         onClick={() => handleSingleComplete(item.expenseReportId)}
@@ -392,10 +393,10 @@ const TaxSummaryPage = () => {
             <tbody>
               {sortedSummary.map((row, index) => (
                 <S.Tr key={row.category} even={index % 2 === 1}>
-                  <S.Td>{row.category}</S.Td>
-                  <S.Td align="right">{(row.totalAmount || 0).toLocaleString()}원</S.Td>
-                  <S.Td align="right">{row.itemCount}</S.Td>
-                  <S.Td align="right">{row.reportCount}</S.Td>
+                  <S.Td data-label="카테고리">{row.category}</S.Td>
+                  <S.Td align="right" data-label="총 금액">{(row.totalAmount || 0).toLocaleString()}원</S.Td>
+                  <S.Td align="right" data-label="상세 건수">{row.itemCount}</S.Td>
+                  <S.Td align="right" data-label="결의서 수">{row.reportCount}</S.Td>
                 </S.Tr>
               ))}
             </tbody>
@@ -423,10 +424,10 @@ const TaxSummaryPage = () => {
             <tbody>
               {monthlySummary.map((row, index) => (
                 <S.Tr key={row.yearMonth} even={index % 2 === 1}>
-                  <S.Td>{row.yearMonth}</S.Td>
-                  <S.Td align="right">{row.completedCount}</S.Td>
-                  <S.Td align="right">{(row.totalAmount || 0).toLocaleString()}원</S.Td>
-                  <S.Td align="right">{(row.completedAmount || 0).toLocaleString()}원</S.Td>
+                  <S.Td data-label="년월">{row.yearMonth}</S.Td>
+                  <S.Td align="right" data-label="세무처리 완료 건수">{row.completedCount}</S.Td>
+                  <S.Td align="right" data-label="총 금액">{(row.totalAmount || 0).toLocaleString()}원</S.Td>
+                  <S.Td align="right" data-label="세무처리 완료 금액">{(row.completedAmount || 0).toLocaleString()}원</S.Td>
                 </S.Tr>
               ))}
             </tbody>

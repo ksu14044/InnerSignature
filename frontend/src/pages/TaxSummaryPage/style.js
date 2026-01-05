@@ -24,28 +24,58 @@ export const Header = styled.div`
   margin-bottom: 24px;
   border-bottom: 2px solid var(--primary-color);
   padding-bottom: 12px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 export const Title = styled.h1`
   font-size: 26px;
   margin: 0;
   color: var(--dark-color);
+
+  @media (max-width: 480px) {
+    font-size: 20px;
+  }
 `;
 
 export const SubTitle = styled.div`
   font-size: 14px;
   color: var(--secondary-color);
   margin-top: 6px;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
 `;
 
 export const ButtonRow = styled.div`
   display: flex;
   gap: 10px;
+
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
 `;
 
 export const Button = styled.button`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 10px 14px;
   border: none;
@@ -66,6 +96,18 @@ export const Button = styled.button`
     transform: translateY(-1px);
     opacity: 0.95;
   }
+
+  @media (max-width: 768px) {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 14px;
+    min-height: 44px;
+  }
 `;
 
 export const FilterCard = styled.div`
@@ -75,6 +117,15 @@ export const FilterCard = styled.div`
   padding: 16px;
   margin-bottom: 20px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+
+  @media (max-width: 480px) {
+    margin: 0 0 12px 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 16px;
+    box-shadow: none;
+  }
 `;
 
 export const FilterStatusBar = styled.div`
@@ -92,17 +143,34 @@ export const FilterStatusLabel = styled.span`
   font-size: 13px;
   font-weight: 600;
   color: var(--secondary-color);
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
 `;
 
 export const FilterStatusText = styled.span`
   font-size: 13px;
   color: #495057;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
 `;
 
 export const FilterGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 12px;
+  }
 `;
 
 export const Label = styled.label`
@@ -111,6 +179,11 @@ export const Label = styled.label`
   color: var(--secondary-color);
   margin-bottom: 6px;
   display: block;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
 `;
 
 export const Input = styled.input`
@@ -123,6 +196,12 @@ export const Input = styled.input`
     outline: none;
     border-color: var(--primary-color);
   }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    font-size: 14px;
+    min-height: 44px;
+  }
 `;
 
 export const SummaryTable = styled.table`
@@ -133,6 +212,32 @@ export const SummaryTable = styled.table`
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+
+  @media (max-width: 480px) {
+    display: block;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: block;
+    }
+
+    tr {
+      display: block;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+  }
 `;
 
 export const Th = styled.th`
@@ -172,6 +277,15 @@ export const Th = styled.th`
       opacity: 0.7;
     }
   `}
+
+  @media (max-width: 768px) {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 export const Td = styled.td`
@@ -179,6 +293,64 @@ export const Td = styled.td`
   border-bottom: 1px solid #f1f1f1;
   color: #333;
   text-align: ${({ align }) => align || 'left'};
+
+  @media (max-width: 768px) {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  @media (max-width: 480px) {
+    display: block;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left !important;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &::before {
+      content: attr(data-label) ': ';
+      font-weight: 700;
+      color: var(--secondary-color);
+      display: inline-block;
+      min-width: 100px;
+      margin-right: 8px;
+    }
+
+    &:has(input[type="checkbox"]) {
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      text-align: left;
+    }
+
+    &:has(input[type="checkbox"])::before {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    &:has(button) {
+      text-align: center;
+      padding-top: 12px;
+      border-top: 1px solid #e0e0e0;
+      margin-top: 8px;
+    }
+
+    &:has(button)::before {
+      display: none;
+    }
+
+    &:has(input[type="checkbox"]):has(button) {
+      text-align: left;
+      padding-top: 8px;
+      border-top: none;
+      margin-top: 0;
+    }
+
+    &:has(input[type="checkbox"]):has(button)::before {
+      display: block;
+    }
+  }
 `;
 
 export const Tr = styled.tr`
@@ -193,12 +365,29 @@ export const Tr = styled.tr`
     `
     background-color: #fafbfc;
   `}
+
+  @media (max-width: 480px) {
+    &:hover {
+      background-color: #fff;
+    }
+
+    ${({ even }) =>
+      even &&
+      `
+      background-color: #fff;
+    `}
+  }
 `;
 
 export const Empty = styled.div`
   padding: 24px;
   text-align: center;
   color: var(--secondary-color);
+
+  @media (max-width: 480px) {
+    padding: 20px 16px;
+    font-size: 14px;
+  }
 `;
 
 export const Alert = styled.div`
@@ -209,6 +398,12 @@ export const Alert = styled.div`
   padding: 12px 14px;
   color: #d9480f;
   font-size: 14px;
+
+  @media (max-width: 480px) {
+    margin: 0 16px 16px 16px;
+    padding: 12px;
+    font-size: 13px;
+  }
 `;
 
 export const Card = styled.div`
@@ -218,26 +413,65 @@ export const Card = styled.div`
   padding: 16px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
   margin-bottom: 16px;
+
+  @media (max-width: 480px) {
+    margin: 0 0 12px 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 16px;
+    box-shadow: none;
+  }
 `;
 
 export const CardTitle = styled.h3`
-  margin: 0 0 8px 0;
+  margin: 0 0 16px 0;
   font-size: 18px;
   color: var(--dark-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  @media (max-width: 768px) {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 16px;
+    margin-bottom: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+
+    button {
+      width: 100%;
+      margin-left: 0 !important;
+      font-size: 13px !important;
+      padding: 8px 12px !important;
+    }
+  }
 `;
 
 export const Small = styled.div`
   font-size: 13px;
   color: var(--secondary-color);
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
 `;
 
 export const StatusChips = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+
+  @media (max-width: 480px) {
+    gap: 6px;
+  }
 `;
 
 export const StatusChip = styled.button`
@@ -254,6 +488,11 @@ export const StatusChip = styled.button`
     border-color: var(--primary-color);
     color: var(--primary-color);
   }
+
+  @media (max-width: 480px) {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
 `;
 
 export const StatCard = styled.div`
@@ -265,24 +504,57 @@ export const StatCard = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px;
+  }
+
+  @media (max-width: 480px) {
+    margin: 0 0 12px 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 16px;
+    box-shadow: none;
+  }
 `;
 
 export const StatItem = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  @media (max-width: 480px) {
+    gap: 4px;
+  }
 `;
 
 export const StatLabel = styled.div`
   font-size: 13px;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
+
+  @media (max-width: 480px) {
+    font-size: 11px;
+  }
 `;
 
 export const StatValue = styled.div`
   font-size: 24px;
   color: #fff;
   font-weight: 700;
+
+  @media (max-width: 768px) {
+    font-size: 20px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 18px;
+  }
 `;
 
 export const LinkButton = styled.button`
@@ -294,9 +566,16 @@ export const LinkButton = styled.button`
   text-decoration: underline;
   font-size: inherit;
   transition: color 0.15s ease;
+  word-break: break-word;
+  text-align: left;
 
   &:hover {
     color: #0056b3;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+    width: 100%;
   }
 `;
 
@@ -308,6 +587,12 @@ export const Pagination = styled.div`
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid #e0e0e0;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+  }
 `;
 
 export const PaginationButton = styled.button`
@@ -330,12 +615,21 @@ export const PaginationButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
+
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
 `;
 
 export const PaginationInfo = styled.span`
   font-size: 14px;
   color: var(--secondary-color);
   font-weight: 500;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
 `;
 
 export const TaxProcessedBadge = styled.span`
@@ -356,6 +650,11 @@ export const TaxProcessedBadge = styled.span`
     color: #6c757d;
     border: 1px solid #dee2e6;
   `}
+
+  @media (max-width: 480px) {
+    font-size: 0.75em;
+    padding: 3px 8px;
+  }
 `;
 
 export const SecretBadge = styled.span`
@@ -368,5 +667,11 @@ export const SecretBadge = styled.span`
   font-size: 11px;
   font-weight: 600;
   vertical-align: middle;
+
+  @media (max-width: 480px) {
+    font-size: 10px;
+    padding: 2px 6px;
+    margin-left: 4px;
+  }
 `;
 
