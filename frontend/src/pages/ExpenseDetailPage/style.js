@@ -282,6 +282,22 @@ export const TotalAmount = styled.div`
   }
 `;
 
+// 상호명 셀 스타일
+export const MerchantNameCell = styled.td`
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: ${props => props.hasTooltip ? 'help' : 'default'};
+  position: relative;
+  
+  &:hover {
+    ${props => props.hasTooltip && `
+      background-color: #f0f8ff;
+    `}
+  }
+`;
+
 // 테이블 재사용 (간단한 스타일이라 여기서 다시 정의하거나 공통 컴포넌트로 뺄 수 있음)
 export const DetailTable = styled.table`
   width: 100%;

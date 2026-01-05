@@ -81,7 +81,8 @@ public class ExpenseController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Boolean taxProcessed,
             @RequestParam(required = false) Boolean isSecret,
-            @RequestParam(required = false) String drafterName) {
+            @RequestParam(required = false) String drafterName,
+            @RequestParam(required = false) String paymentMethod) {
         
         // 날짜 파라미터 변환
         LocalDate startDateParsed = null;
@@ -117,7 +118,7 @@ public class ExpenseController {
         PagedResponse<ExpenseReportDto> pagedResponse = expenseService.getExpenseList(
                 page, size, startDateParsed, endDateParsed,
                 minAmount, maxAmount, statusList, category,
-                taxProcessed, isSecret, drafterName, currentUserId);
+                taxProcessed, isSecret, drafterName, currentUserId, paymentMethod);
         
         // 약속된 포장지(ApiResponse)에 담아서 리턴
         return new ApiResponse<>(true, "목록 조회 성공", pagedResponse);
@@ -217,8 +218,8 @@ public class ExpenseController {
     @PostMapping("/create")
     public ApiResponse<Long> createExpense(@Valid @RequestBody ExpenseReportDto request) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
-        logger.info("지출결의서 생성 요청 - drafterId: {}, currentUserId: {}, title: {}, totalAmount: {}", 
-                request.getDrafterId(), currentUserId, request.getTitle(), request.getTotalAmount());
+        logger.info("지출결의서 생성 요청 - drafterId: {}, currentUserId: {}, totalAmount: {}", 
+                request.getDrafterId(), currentUserId, request.getTotalAmount());
         Long expenseId = expenseService.createExpense(request, currentUserId);
         logger.info("지출결의서 생성 완료 - expenseId: {}", expenseId);
         return new ApiResponse<>(true, "기안서 저장 성공", expenseId);
@@ -235,8 +236,8 @@ public class ExpenseController {
             @PathVariable Long expenseId,
             @Valid @RequestBody ExpenseReportDto request) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
-        logger.info("지출결의서 수정 요청 - expenseId: {}, currentUserId: {}, title: {}, totalAmount: {}", 
-                expenseId, currentUserId, request.getTitle(), request.getTotalAmount());
+        logger.info("지출결의서 수정 요청 - expenseId: {}, currentUserId: {}, totalAmount: {}", 
+                expenseId, currentUserId, request.getTotalAmount());
         Long updatedExpenseId = expenseService.updateExpense(expenseId, request, currentUserId);
         logger.info("지출결의서 수정 완료 - expenseId: {}", updatedExpenseId);
         return new ApiResponse<>(true, "기안서 수정 성공", updatedExpenseId);
@@ -255,6 +256,21 @@ public class ExpenseController {
 
         expenseService.setApprovalLines(expenseId, request.getApprovalLines());
         return new ApiResponse<>(true, "결재 라인 설정 성공", null);
+    }
+
+    /**
+     * 5-1. 추가 결재 라인 추가 API
+     * 주소: POST /api/expenses/{expenseId}/approval-lines/add
+     * 설명: 첫 결재자가 결재한 후 추가 결재자를 추가합니다.
+     */
+    @Operation(summary = "추가 결재 라인 추가", description = "첫 결재자가 결재한 후 추가 결재자를 추가합니다.")
+    @PostMapping("/{expenseId}/approval-lines/add")
+    public ApiResponse<Void> addApprovalLine(
+            @PathVariable Long expenseId,
+            @RequestBody ApprovalLineDto approvalLine) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        expenseService.addApprovalLine(expenseId, approvalLine, currentUserId);
+        return new ApiResponse<>(true, "추가 결재 라인 추가 성공", null);
     }
 
     @Data

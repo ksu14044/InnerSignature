@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.UserApproverMapper">
+    <resultMap id="UserApproverMappingResultMap" type="com.innersignature.backend.dto.UserApproverMappingDto">
+        <id property="mappingId" column="mapping_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="approverId" column="approver_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="priority" column="priority"/>
+        <result property="isActive" column="is_active"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="approverName" column="approver_name"/>
+        <result property="approverPosition" column="approver_position"/>
+    </resultMap>
+
+    <select id="findByUserId" resultMap="UserApproverMappingResultMap">
+        SELECT 
+            uam.*,
+            u.korean_name AS approver_name,
+            uc.position AS approver_position
+        FROM user_approver_mapping_tb uam
+        JOIN user_tb u ON uam.approver_id = u.user_id
+        LEFT JOIN user_company_tb uc ON uam.approver_id = uc.user_id AND uam.company_id = uc.company_id
+        WHERE uam.user_id = #{userId}
+          AND uam.company_id = #{companyId}
+          AND (uam.is_active IS NULL OR uam.is_active = 1)
+        ORDER BY uam.priority ASC, uam.created_at ASC
+    </select>
+
+    <select id="findByApproverId" resultMap="UserApproverMappingResultMap">
+        SELECT * FROM user_approver_mapping_tb
+        WHERE approver_id = #{approverId}
+          AND company_id = #{companyId}
+          AND (is_active IS NULL OR is_active = 1)
+        ORDER BY priority ASC
+    </select>
+
+    <select id="findByUserAndApprover" resultMap="UserApproverMappingResultMap">
+        SELECT * FROM user_approver_mapping_tb
+        WHERE user_id = #{userId}
+          AND approver_id = #{approverId}
+          AND company_id = #{companyId}
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.UserApproverMappingDto" 
+            useGeneratedKeys="true" keyProperty="mappingId">
+        INSERT INTO user_approver_mapping_tb (
+            user_id, approver_id, company_id, priority, is_active
+        ) VALUES (
+            #{userId}, #{approverId}, #{companyId}, 
+            COALESCE(#{priority}, 1), 
+            COALESCE(#{isActive}, 1)
+        )
+    </insert>
+
+    <update id="update" parameterType="com.innersignature.backend.dto.UserApproverMappingDto">
+        UPDATE user_approver_mapping_tb
+        SET
+            priority = #{priority},
+            is_active = #{isActive},
+            updated_at = NOW()
+        WHERE mapping_id = #{mappingId}
+          AND company_id = #{companyId}
+    </update>
+
+    <delete id="delete">
+        UPDATE user_approver_mapping_tb
+        SET is_active = 0, updated_at = NOW()
+        WHERE mapping_id = #{mappingId}
+          AND company_id = #{companyId}
+    </delete>
+
+    <select id="findActiveApproversByUserId" resultType="com.innersignature.backend.dto.UserDto">
+        SELECT 
+            u.user_id,
+            u.username,
+            u.korean_name,
+            u.email,
+            uc.position,
+            uc.role,
+            uc.is_active,
+            u.company_id,
+            uc.approval_status,
+            uc.is_approver AS isApprover
+        FROM user_approver_mapping_tb uam
+        JOIN user_tb u ON uam.approver_id = u.user_id
+        JOIN user_company_tb uc ON uam.approver_id = uc.user_id AND uam.company_id = uc.company_id
+        WHERE uam.user_id = #{userId}
+          AND uam.company_id = #{companyId}
+          AND (uam.is_active IS NULL OR uam.is_active = 1)
+          AND uc.approval_status = 'APPROVED'
+          AND uc.is_approver = 1
+          AND (uc.is_active IS NULL OR uc.is_active = 1)
+        ORDER BY uam.priority ASC, u.korean_name ASC
+    </select>
+</mapper>

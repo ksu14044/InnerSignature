@@ -35,7 +35,17 @@
     <select id="selectExpenseListWithFilters" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT 
             r.*, 
-            u.korean_name AS drafterName 
+            u.korean_name AS drafterName,
+            (SELECT MAX(al.approval_date) 
+             FROM approval_line_tb al 
+             WHERE al.expense_report_id = r.expense_report_id 
+               AND al.status = 'APPROVED'
+               AND al.company_id = r.company_id) AS finalApprovalDate,
+            (SELECT MIN(d.payment_req_date)
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.payment_req_date IS NOT NULL) AS minPaymentReqDate
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         <where>
@@ -63,6 +73,7 @@
                     SELECT 1 FROM expense_detail_tb d
                     WHERE d.expense_report_id = r.expense_report_id
                       AND d.category = #{category}
+                      AND d.company_id = r.company_id
                 )
             </if>
             <if test="taxProcessed != null">
@@ -74,8 +85,22 @@
             <if test="drafterName != null and drafterName != ''">
                 AND u.korean_name LIKE CONCAT('%', #{drafterName}, '%')
             </if>
+            <if test="paymentMethod != null and paymentMethod != ''">
+                AND EXISTS (
+                    SELECT 1 FROM expense_detail_tb d
+                    WHERE d.expense_report_id = r.expense_report_id
+                      AND d.payment_method = #{paymentMethod}
+                      AND d.company_id = r.company_id
+                )
+            </if>
         </where>
-        ORDER BY r.expense_report_id DESC
+        ORDER BY 
+            COALESCE((SELECT MIN(d.payment_req_date)
+                      FROM expense_detail_tb d
+                      WHERE d.expense_report_id = r.expense_report_id
+                        AND d.company_id = r.company_id
+                        AND d.payment_req_date IS NOT NULL), r.payment_req_date, r.report_date) DESC,
+            r.expense_report_id DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
@@ -167,7 +192,23 @@
     </select>
 
     <select id="selectExpenseDetails" resultType="com.innersignature.backend.dto.ExpenseDetailDto">
-        SELECT * FROM expense_detail_tb
+        SELECT 
+            expense_detail_id,
+            expense_report_id,
+            category,
+            merchant_name,
+            description,
+            amount,
+            actual_paid_amount,
+            payment_method,
+            payment_req_date,
+            card_number,
+            is_pre_approval,
+            note,
+            is_tax_deductible,
+            non_deductible_reason,
+            company_id
+        FROM expense_detail_tb
         WHERE expense_report_id = #{expenseReportId}
         AND company_id = #{companyId}
     </select>
@@ -264,19 +305,19 @@
         INSERT INTO expense_report_tb (
             drafter_id,
             report_date,
-            title,
             total_amount,
             status,
             payment_req_date,
+            is_pre_approval,
             is_secret,
             company_id
         ) VALUES (
             #{drafterId},
             #{reportDate},
-            #{title},
             #{totalAmount},
             #{status, jdbcType=VARCHAR},
             #{paymentReqDate},
+            #{isPreApproval, jdbcType=TINYINT},
             #{isSecret, jdbcType=TINYINT},
             #{companyId}
         )
@@ -285,10 +326,10 @@
     <update id="updateExpenseReport">
         UPDATE expense_report_tb
         SET
-            title = #{expenseReportDto.title},
             report_date = #{expenseReportDto.reportDate},
             total_amount = #{expenseReportDto.totalAmount},
             payment_req_date = #{expenseReportDto.paymentReqDate},
+            is_pre_approval = #{expenseReportDto.isPreApproval, jdbcType=TINYINT},
             is_secret = #{expenseReportDto.isSecret, jdbcType=TINYINT}
         WHERE
             expense_report_id = #{expenseReportDto.expenseReportId}
@@ -299,19 +340,27 @@
         INSERT INTO expense_detail_tb (
             expense_report_id,
             category,
+            merchant_name,
             description,
             amount,
             actual_paid_amount,
             payment_method,
+            payment_req_date,
+            card_number,
+            is_pre_approval,
             note,
             company_id
         ) VALUES (
             #{expenseReportId},
             #{category},
+            #{merchantName},
             #{description},
             #{amount},
             #{actualPaidAmount},
             #{paymentMethod},
+            NULL,
+            #{cardNumber},
+            NULL,
             #{note},
             #{companyId}
         )

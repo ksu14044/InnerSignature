@@ -1,6 +1,5 @@
 package com.innersignature.backend.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
@@ -17,8 +16,8 @@ public class ExpenseReportDto {
     
     private LocalDate reportDate; // 작성일 (YYYY-MM-DD)
     
-    @NotBlank(message = "제목은 필수입니다.")
-    private String title;         // 제목
+    // 제목 필드 제거 (더 이상 사용하지 않음)
+    // private String title;         // 제목
     
     @Positive(message = "총 금액은 양수여야 합니다.")
     private Long totalAmount;     // 총 합계 (결재 금액)
@@ -27,8 +26,10 @@ public class ExpenseReportDto {
     private String amountDifferenceReason; // 금액 차이 사유
     
     private String status;        // 문서 상태
-    private LocalDate paymentReqDate; // 지급 요청일
+    private LocalDate paymentReqDate; // 지급 요청일 (결의서 단위)
+    private Boolean isPreApproval; // 가승인 요청 여부 (결의서 단위)
     private LocalDateTime createdAt;  // 시스템 등록 시간
+    private LocalDateTime finalApprovalDate; // 최종 승인 완료일 (모든 결재자 승인 완료 시점)
     private Boolean taxProcessed;      // 세무처리 완료 여부
     private LocalDateTime taxProcessedAt; // 세무처리 완료 일시
     private Boolean isSecret;           // 비밀글 여부

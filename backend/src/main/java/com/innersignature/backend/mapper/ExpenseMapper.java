@@ -42,7 +42,8 @@ public interface ExpenseMapper {
             @Param("taxProcessed") Boolean taxProcessed,
             @Param("isSecret") Boolean isSecret,
             @Param("drafterName") String drafterName,
-            @Param("companyId") Long companyId
+            @Param("companyId") Long companyId,
+            @Param("paymentMethod") String paymentMethod
     );
 
     // 1-4. 필터링된 전체 개수 조회: 필터링 조건을 적용한 지출결의서 전체 개수 조회
@@ -56,7 +57,8 @@ public interface ExpenseMapper {
             @Param("taxProcessed") Boolean taxProcessed,
             @Param("isSecret") Boolean isSecret,
             @Param("drafterName") String drafterName,
-            @Param("companyId") Long companyId
+            @Param("companyId") Long companyId,
+            @Param("paymentMethod") String paymentMethod
     );
     
     // 1-5. 카테고리별 합계/건수 요약 조회 (세무사용)

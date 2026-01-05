@@ -21,6 +21,9 @@ import AuditRuleManagementPage from './pages/AuditRuleManagementPage/AuditRuleMa
 import AuditLogPage from './pages/AuditLogPage/AuditLogPage';
 import MissingReceiptPage from './pages/MissingReceiptPage/MissingReceiptPage';
 import AccountCodeMappingPage from './pages/AccountCodeMappingPage/AccountCodeMappingPage';
+import MainDashboardPage from './pages/MainDashboardPage/MainDashboardPage';
+import ExpenseCategoryPage from './pages/ExpenseCategoryPage/ExpenseCategoryPage';
+import MyApproverPage from './pages/MyApproverPage/MyApproverPage';
 import MobileAppBar from './components/MobileAppBar/MobileAppBar';
 import MobileBottomNav from './components/MobileBottomNav/MobileBottomNav';
 import MobileFAB from './components/MobileFAB/MobileFAB';
@@ -44,6 +47,9 @@ function App() {
         <Route path="/users" element={<UserManagementPage />} />
         <Route path="/profile" element={<MyProfilePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard/main" element={<MainDashboardPage />} />
+        <Route path="/expense-categories" element={<ExpenseCategoryPage />} />
+        <Route path="/my-approvers" element={<MyApproverPage />} />
         <Route path="/subscriptions/manage" element={<SubscriptionManagementPage />} />
         <Route path="/subscriptions/plans" element={<PlanSelectionPage />} />
         <Route path="/subscriptions/payments" element={<PaymentHistoryPage />} />

@@ -58,6 +58,8 @@ public class ExpenseService {
     private final BudgetService budgetService; // 예산 서비스
     private final AuditService auditService; // 감사 서비스
     private final TaxReportService taxReportService; // 부가세 신고 서식 서비스
+    private final UserApproverService userApproverService; // 담당 결재자 서비스
+    private final com.innersignature.backend.util.EncryptionUtil encryptionUtil; // 암호화 유틸리티
     
     @Value("${file.upload.base-dir:uploads}")
     private String fileUploadBaseDir;
@@ -139,7 +141,8 @@ public class ExpenseService {
             Boolean taxProcessed,
             Boolean isSecret,
             String drafterName,
-            Long userId) {
+            Long userId,
+            String paymentMethod) {
         
         // statuses가 null이거나 비어있으면 null로 설정 (필터링 안 함)
         if (statuses != null && statuses.isEmpty()) {
@@ -147,27 +150,43 @@ public class ExpenseService {
         }
         
         // 필터링 조건 + 권한 필터링 후 실제 조회 가능한 전체 개수 계산
+        // 일반 사용자는 자신이 작성한 글만 조회
+        UserDto currentUser = userService.selectUserById(userId);
+        boolean isRegularUser = currentUser != null && "USER".equals(currentUser.getRole());
+        String finalDrafterName = drafterName;
+        if (isRegularUser && (finalDrafterName == null || finalDrafterName.trim().isEmpty())) {
+            finalDrafterName = currentUser.getKoreanName();
+        }
+        
         long totalElements = calculateFilteredTotalElements(
                 startDate, endDate, minAmount, maxAmount,
                 statuses, category, taxProcessed, isSecret,
-                drafterName, userId);
+                finalDrafterName, userId, null); // paymentMethod는 null로 전달 (추후 추가)
         
         // 전체 페이지 수 계산
         int totalPages = (int) Math.ceil((double) totalElements / size);
         
         // 필터링된 전체 데이터 조회 (페이지네이션 없이)
         Long companyId = SecurityUtil.getCurrentCompanyId();
+        
         List<ExpenseReportDto> allContent = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 minAmount, maxAmount,
                 statuses, category, taxProcessed, isSecret,
-                drafterName, companyId);
+                finalDrafterName, companyId, paymentMethod);
         
         // 급여 문서 권한 필터링
         filterSalaryExpenses(allContent, userId);
         // 권한에 따라 세무처리 정보 필터링
         filterTaxProcessingInfo(allContent, userId);
+        
+        // 일반 사용자는 자신이 작성한 글만 필터링 (이중 체크)
+        if (isRegularUser) {
+            allContent = allContent.stream()
+                .filter(report -> report.getDrafterId().equals(userId))
+                .collect(java.util.stream.Collectors.toList());
+        }
         
         // 필터링 후 페이지네이션 적용
         int offset = (page - 1) * size;
@@ -475,6 +494,23 @@ public class ExpenseService {
         boolean hasSalary = false;
         if (details != null) {
             for (ExpenseDetailDto detail : details) {
+                // 결제수단 필수 검증
+                if (detail.getPaymentMethod() == null || detail.getPaymentMethod().trim().isEmpty()) {
+                    throw new com.innersignature.backend.exception.BusinessException("결제수단은 필수입니다.");
+                }
+                
+                // 카드 결제인 경우 카드번호 암호화
+                if ("CARD".equals(detail.getPaymentMethod()) || "CREDIT_CARD".equals(detail.getPaymentMethod()) || "DEBIT_CARD".equals(detail.getPaymentMethod())) {
+                    if (detail.getCardNumber() != null && !detail.getCardNumber().trim().isEmpty()) {
+                        String encryptedCardNumber = encryptionUtil.encrypt(detail.getCardNumber());
+                        detail.setCardNumber(encryptedCardNumber);
+                    }
+                }
+                
+                // 지급 요청일과 가승인은 결의서 단위이므로 detail에서는 null로 설정
+                detail.setPaymentReqDate(null);
+                detail.setIsPreApproval(null);
+                
                 totalAmount += detail.getAmount();
                 if ("급여".equals(detail.getCategory())) {
                     hasSalary = true;
@@ -482,6 +518,9 @@ public class ExpenseService {
             }
         }
         request.setTotalAmount(totalAmount);
+        
+        // (0-3-1) 가승인이 아닌 경우 영수증 필수 검증 (실제로는 프론트에서 검증하지만 백엔드에서도 체크)
+        // 영수증은 별도 API로 업로드되므로 여기서는 검증만 수행
 
         // (0-4) 급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT만 사용 가능
         if (hasSalary && !permissionUtil.isAdminOrCEO(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
@@ -541,6 +580,30 @@ public class ExpenseService {
                 expenseMapper.insertExpenseDetail(detail);
             }
             logger.debug("상세 항목 저장 완료");
+        }
+        
+        // (2-1) 담당 결재자 자동 설정 (비밀글이거나 급여가 아닌 경우)
+        if (!hasSalary && (request.getIsSecret() == null || !request.getIsSecret())) {
+            try {
+                List<UserDto> approvers = userApproverService.getActiveApproversByUserId(currentUserId, companyId);
+                if (approvers != null && !approvers.isEmpty()) {
+                    // 담당 결재자가 1명이면 자동 설정, 2명 이상이면 첫 번째 담당 결재자 자동 설정
+                    // (실제로는 프론트에서 선택하지만, 백엔드에서도 기본값 설정)
+                    if (request.getApprovalLines() == null || request.getApprovalLines().isEmpty()) {
+                        // 첫 번째 담당 결재자를 기본 결재자로 설정
+                        UserDto firstApprover = approvers.get(0);
+                        ApprovalLineDto defaultLine = new ApprovalLineDto();
+                        defaultLine.setApproverId(firstApprover.getUserId());
+                        defaultLine.setApproverName(firstApprover.getKoreanName());
+                        defaultLine.setApproverPosition(firstApprover.getPosition());
+                        defaultLine.setStatus("WAIT");
+                        request.setApprovalLines(java.util.Collections.singletonList(defaultLine));
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("담당 결재자 자동 설정 실패 - userId: {}", currentUserId, e);
+                // 담당 결재자 설정 실패해도 문서 생성은 계속 진행 (프론트에서 수동 선택 가능)
+            }
         }
 
         // (3) 결재 라인(누가 승인해야 하는지) 저장
@@ -654,6 +717,9 @@ public class ExpenseService {
             for (ExpenseDetailDto detail : details) {
                 detail.setExpenseReportId(expenseId);
                 detail.setCompanyId(companyId);
+                // 지급 요청일과 가승인은 결의서 단위이므로 detail에서는 null로 설정
+                detail.setPaymentReqDate(null);
+                detail.setIsPreApproval(null);
                 expenseMapper.insertExpenseDetail(detail);
             }
             logger.debug("상세 항목 수정 완료");
@@ -710,6 +776,59 @@ public class ExpenseService {
             expenseMapper.insertApprovalLine(line);
         }
         logger.debug("결재 라인 저장 완료 - expenseReportId: {}, 라인 수: {}", expenseReportId, approvalLines.size());
+    }
+
+    /**
+     * 4-1. 추가 결재 라인 추가 (첫 결재자가 결재 후 추가 결재자 추가)
+     * 설명: 첫 결재자가 결재한 후 추가 결재자를 추가합니다.
+     */
+    @Transactional
+    public void addApprovalLine(Long expenseReportId, ApprovalLineDto approvalLine, Long currentUserId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        // 1. 문서 조회
+        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
+        if (report == null) {
+            throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
+        }
+        
+        // 2. 기존 결재 라인 조회
+        List<ApprovalLineDto> existingLines = expenseMapper.selectApprovalLines(expenseReportId, companyId);
+        if (existingLines == null || existingLines.isEmpty()) {
+            throw new com.innersignature.backend.exception.BusinessException("기존 결재 라인이 없습니다.");
+        }
+        
+        // 3. 첫 결재자가 결재했는지 확인
+        ApprovalLineDto firstLine = existingLines.get(0);
+        if (firstLine.getSignatureData() == null || firstLine.getSignatureData().trim().isEmpty()) {
+            throw new com.innersignature.backend.exception.BusinessException("첫 결재자가 아직 결재하지 않았습니다.");
+        }
+        
+        // 4. 첫 결재자가 현재 사용자인지 확인
+        if (!firstLine.getApproverId().equals(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("첫 결재자만 추가 결재자를 설정할 수 있습니다.");
+        }
+        
+        // 5. 이미 추가된 결재자인지 확인
+        boolean alreadyExists = existingLines.stream()
+            .anyMatch(line -> line.getApproverId().equals(approvalLine.getApproverId()));
+        if (alreadyExists) {
+            throw new com.innersignature.backend.exception.BusinessException("이미 결재 라인에 존재하는 결재자입니다.");
+        }
+        
+        // 6. stepOrder는 기존 최대값 + 1로 설정
+        int maxStepOrder = existingLines.stream()
+            .mapToInt(ApprovalLineDto::getStepOrder)
+            .max()
+            .orElse(0);
+        
+        approvalLine.setExpenseReportId(expenseReportId);
+        approvalLine.setStepOrder(maxStepOrder + 1);
+        approvalLine.setStatus("WAIT");
+        approvalLine.setCompanyId(companyId);
+        
+        expenseMapper.insertApprovalLine(approvalLine);
+        logger.info("추가 결재 라인 추가 완료 - expenseReportId: {}, approverId: {}", expenseReportId, approvalLine.getApproverId());
     }
 
     /**
@@ -1313,14 +1432,23 @@ public class ExpenseService {
             Boolean taxProcessed,
             Boolean isSecret,
             String drafterName,
-            Long userId) {
+            Long userId,
+            String paymentMethod) {
 
         Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        // 일반 사용자는 자신이 작성한 글만 조회
+        UserDto currentUser = userId != null ? userService.selectUserById(userId) : null;
+        boolean isRegularUser = currentUser != null && "USER".equals(currentUser.getRole());
+        if (isRegularUser && (drafterName == null || drafterName.trim().isEmpty())) {
+            drafterName = currentUser.getKoreanName();
+        }
+        
         if (userId == null) {
             return expenseMapper.countExpenseListWithFilters(
                     startDate, endDate, minAmount, maxAmount,
                     statuses, category, taxProcessed, isSecret,
-                    drafterName, companyId);
+                    drafterName, companyId, paymentMethod);
         }
 
         // 필터링된 전체 목록 조회 (페이지네이션 없이, 큰 수로 설정)
@@ -1329,7 +1457,7 @@ public class ExpenseService {
                 startDate, endDate,
                 minAmount, maxAmount,
                 statuses, category, taxProcessed, isSecret,
-                drafterName, companyId);
+                drafterName, companyId, paymentMethod);
 
         // 권한 필터링 적용
         filterSalaryExpenses(allReports, userId);
@@ -1450,7 +1578,7 @@ public class ExpenseService {
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 null, null, null, null, null, null, null,
-                companyId);
+                companyId, null);
         
         // 권한 필터링 적용
         filterSalaryExpenses(expenseReports, userId);
@@ -1736,7 +1864,8 @@ public class ExpenseService {
         // 제목
         cell = row.createCell(col++);
         if (detailIndex == 0) {
-            cell.setCellValue(report.getTitle() != null ? report.getTitle() : "");
+            // 제목 필드 제거로 인해 빈 문자열 사용
+            cell.setCellValue("");
         }
         cell.setCellStyle(dataStyle);
         
@@ -1811,9 +1940,9 @@ public class ExpenseService {
             }
             cell2.setCellStyle(dataStyle);
             
-            // 제목
+            // 제목 (제거됨 - 빈 문자열 사용)
             Cell cell3 = row.createCell(colNum++);
-            cell3.setCellValue(report.getTitle() != null ? report.getTitle() : "");
+            cell3.setCellValue("");
             cell3.setCellStyle(dataStyle);
             
             // 작성자
@@ -1879,22 +2008,34 @@ public class ExpenseService {
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 null, null, statuses, null, null, null, null,
-                companyId);
+                companyId, null);
         
         // 권한 필터링 적용
         filterSalaryExpenses(expenseReports, userId);
         
-        // 전표는 시간 순서대로 정렬 (날짜 오름차순, 문서번호 오름차순)
+        // 전표는 승인일 순서대로 정렬 (최종 승인일 오름차순, 문서번호 오름차순)
+        // 승인일이 null인 경우(이론적으로는 발생하지 않지만) 작성일을 대체로 사용
         expenseReports.sort((a, b) -> {
-            // 날짜 비교 (오름차순: 과거 -> 최근)
-            if (a.getReportDate() != null && b.getReportDate() != null) {
-                int dateCompare = a.getReportDate().compareTo(b.getReportDate());
+            // 최종 승인일 비교 (오름차순: 과거 -> 최근)
+            LocalDateTime aApprovalDate = a.getFinalApprovalDate();
+            LocalDateTime bApprovalDate = b.getFinalApprovalDate();
+            
+            // 승인일이 null인 경우 작성일을 대체로 사용
+            if (aApprovalDate == null && a.getReportDate() != null) {
+                aApprovalDate = a.getReportDate().atStartOfDay();
+            }
+            if (bApprovalDate == null && b.getReportDate() != null) {
+                bApprovalDate = b.getReportDate().atStartOfDay();
+            }
+            
+            if (aApprovalDate != null && bApprovalDate != null) {
+                int dateCompare = aApprovalDate.compareTo(bApprovalDate);
                 if (dateCompare != 0) {
                     return dateCompare;
                 }
-            } else if (a.getReportDate() != null) {
+            } else if (aApprovalDate != null) {
                 return -1; // a가 null이 아니면 a가 앞으로
-            } else if (b.getReportDate() != null) {
+            } else if (bApprovalDate != null) {
                 return 1; // b가 null이 아니면 b가 앞으로
             }
             // 같은 날짜면 문서번호 오름차순
@@ -2120,9 +2261,11 @@ public class ExpenseService {
     private void createJournalEntryRowForApproved(Row row, ExpenseReportDto report, ExpenseDetailDto detail, CellStyle dataStyle, CellStyle numberStyle) {
         int col = 0;
         
-        // 전표일자 (작성일)
+        // 전표일자 (최종 승인일, 없으면 작성일)
         Cell cell = row.createCell(col++);
-        if (report.getReportDate() != null) {
+        if (report.getFinalApprovalDate() != null) {
+            cell.setCellValue(report.getFinalApprovalDate().toLocalDate().toString());
+        } else if (report.getReportDate() != null) {
             cell.setCellValue(report.getReportDate().toString());
         } else {
             cell.setCellValue("");
@@ -2133,7 +2276,7 @@ public class ExpenseService {
         cell = row.createCell(col++);
         String description = detail != null && detail.getDescription() != null && !detail.getDescription().isEmpty()
                 ? detail.getDescription()
-                : (report.getTitle() != null ? report.getTitle() : "");
+                : "";
         cell.setCellValue(description);
         cell.setCellStyle(dataStyle);
         
@@ -2182,9 +2325,11 @@ public class ExpenseService {
     private void createJournalEntryRowForPaid(Row row, ExpenseReportDto report, ExpenseDetailDto detail, CellStyle dataStyle, CellStyle numberStyle) {
         int col = 0;
         
-        // 전표일자 (작성일)
+        // 전표일자 (최종 승인일, 없으면 작성일)
         Cell cell = row.createCell(col++);
-        if (report.getReportDate() != null) {
+        if (report.getFinalApprovalDate() != null) {
+            cell.setCellValue(report.getFinalApprovalDate().toLocalDate().toString());
+        } else if (report.getReportDate() != null) {
             cell.setCellValue(report.getReportDate().toString());
         } else {
             cell.setCellValue("");
@@ -2195,7 +2340,7 @@ public class ExpenseService {
         cell = row.createCell(col++);
         String description = detail != null && detail.getDescription() != null && !detail.getDescription().isEmpty()
                 ? detail.getDescription()
-                : (report.getTitle() != null ? report.getTitle() : "");
+                : "";
         cell.setCellValue(description);
         cell.setCellStyle(dataStyle);
         
@@ -2254,18 +2399,20 @@ public class ExpenseService {
     private void createJournalEntryRowForRemainingBalance(Row row, ExpenseReportDto report, Long balanceAmount, String accountCode, CellStyle dataStyle, CellStyle numberStyle) {
         int col = 0;
         
-        // 전표일자 (작성일)
+        // 전표일자 (최종 승인일, 없으면 작성일)
         Cell cell = row.createCell(col++);
-        if (report.getReportDate() != null) {
+        if (report.getFinalApprovalDate() != null) {
+            cell.setCellValue(report.getFinalApprovalDate().toLocalDate().toString());
+        } else if (report.getReportDate() != null) {
             cell.setCellValue(report.getReportDate().toString());
         } else {
             cell.setCellValue("");
         }
         cell.setCellStyle(dataStyle);
         
-        // 적요 (제목 + " 미지급금 잔액 정리")
+        // 적요 (" 미지급금 잔액 정리")
         cell = row.createCell(col++);
-        String description = (report.getTitle() != null ? report.getTitle() : "") + " 미지급금 잔액 정리";
+        String description = "미지급금 잔액 정리";
         cell.setCellValue(description);
         cell.setCellStyle(dataStyle);
         
@@ -2318,9 +2465,11 @@ public class ExpenseService {
     private void createJournalEntryRowForAdditionalExpense(Row row, ExpenseReportDto report, ExpenseDetailDto detail, Long additionalAmount, String accountCode, CellStyle dataStyle, CellStyle numberStyle) {
         int col = 0;
         
-        // 전표일자 (작성일)
+        // 전표일자 (최종 승인일, 없으면 작성일)
         Cell cell = row.createCell(col++);
-        if (report.getReportDate() != null) {
+        if (report.getFinalApprovalDate() != null) {
+            cell.setCellValue(report.getFinalApprovalDate().toLocalDate().toString());
+        } else if (report.getReportDate() != null) {
             cell.setCellValue(report.getReportDate().toString());
         } else {
             cell.setCellValue("");
@@ -2331,7 +2480,7 @@ public class ExpenseService {
         cell = row.createCell(col++);
         String description = detail != null && detail.getDescription() != null && !detail.getDescription().isEmpty()
                 ? detail.getDescription() + " 추가 지급"
-                : (report.getTitle() != null ? report.getTitle() + " 추가 지급" : "추가 지급");
+                : "추가 지급";
         cell.setCellValue(description);
         cell.setCellStyle(dataStyle);
         

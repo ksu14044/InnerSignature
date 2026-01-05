@@ -160,10 +160,53 @@ export const InputGroup = styled.div`
   gap: 8px;
 `;
 
+export const FormRow = styled.div`
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 12px;
+  }
+`;
+
+export const FormGroup = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  @media (max-width: 480px) {
+    width: 100%;
+  }
+`;
+
 export const Label = styled.label`
   font-weight: 600;
   font-size: 14px;
   color: var(--dark-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+  }
+`;
+
+export const HelpText = styled.small`
+  font-size: 12px;
+  color: var(--secondary-color);
+  margin-top: 4px;
+  line-height: 1.5;
 `;
 
 export const Value = styled.span`

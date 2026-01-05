@@ -2,8 +2,13 @@
 export const DEFAULT_VALUES = {
   EXPENSE_DETAIL: {
     category: '식대',
+    merchantName: '',
     description: '',
+    paymentReqDate: '',
     amount: '',
+    paymentMethod: '',
+    cardNumber: '',
+    isPreApproval: false,
     note: '',
   },
 

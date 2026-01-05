@@ -391,8 +391,8 @@ const DashboardPage = () => {
                         formatter={(value) => value.toLocaleString()}
                       />
                       <Legend />
-                      <Bar yAxisId="left" dataKey="건수" fill="#8884d8" name="건수" />
-                      <Bar yAxisId="right" dataKey="금액" fill="#82ca9d" name="금액" />
+                      <Bar yAxisId="left" dataKey="건수" fill="#82ca9d" name="건수" />
+                      <Bar yAxisId="right" dataKey="금액" fill="#8884d8" name="금액" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (

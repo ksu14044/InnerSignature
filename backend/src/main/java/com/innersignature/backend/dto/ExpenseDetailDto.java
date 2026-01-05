@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import java.time.LocalDate;
 
 @Data
 public class ExpenseDetailDto {
@@ -14,6 +15,9 @@ public class ExpenseDetailDto {
     @NotBlank(message = "항목은 필수입니다.")
     @Size(max = 50, message = "항목은 50자 이하여야 합니다.")
     private String category;      // 항목 (식대, 교통비)
+    
+    @Size(max = 200, message = "상호명은 200자 이하여야 합니다.")
+    private String merchantName;  // 상호명/업체명
     
     @Size(max = 500, message = "적요는 500자 이하여야 합니다.")
     private String description;   // 적요
@@ -26,6 +30,13 @@ public class ExpenseDetailDto {
     
     @Size(max = 50, message = "결제수단은 50자 이하여야 합니다.")
     private String paymentMethod; // 결제수단 (CASH, BANK_TRANSFER, CARD, CHECK 등)
+    
+    private LocalDate paymentReqDate; // 지급 요청일 (상세 항목별)
+    
+    @Size(max = 500, message = "카드번호는 500자 이하여야 합니다.")
+    private String cardNumber;    // 카드번호 (암호화 저장)
+    
+    private Boolean isPreApproval; // 가승인 요청 여부
     
     @Size(max = 1000, message = "비고는 1000자 이하여야 합니다.")
     private String note;          // 비고

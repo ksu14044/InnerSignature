@@ -25,10 +25,10 @@ const ExpenseCreatePage = () => {
 
   // 1. 문서 기본 정보 상태
   const [report, setReport] = useState({
-    title: '',
     paymentReqDate: new Date().toISOString().split('T')[0], // 오늘 날짜로 디폴트 설정
     reportDate: new Date().toISOString().split('T')[0],
     isSecret: false, // 비밀글 여부
+    isPreApproval: false, // 가승인 요청 여부 (결의서 단위)
   });
 
   // 2. 상세 내역 리스트 상태
@@ -69,11 +69,28 @@ const ExpenseCreatePage = () => {
     return getCategoriesByRole(user?.role);
   }, [user?.role]);
 
-  // 결재자 목록 불러오기
+  // 담당 결재자 목록 불러오기
   useEffect(() => {
     const loadApprovers = async () => {
       try {
         setLoadingApprovers(true);
+        // 먼저 담당 결재자 조회 시도
+        try {
+          const { getActiveApprovers } = await import('../../api/userApproverApi');
+          const approversResponse = await getActiveApprovers(user?.userId);
+          if (approversResponse.success && approversResponse.data && approversResponse.data.length > 0) {
+            setAdminUsers(approversResponse.data);
+            // 담당 결재자가 1명이면 자동 선택
+            if (approversResponse.data.length === 1) {
+              setSelectedApprovers([approversResponse.data[0].userId]);
+            }
+            return;
+          }
+        } catch (error) {
+          console.warn('담당 결재자 조회 실패, 전체 결재자 목록 조회:', error);
+        }
+        
+        // 담당 결재자가 없으면 전체 결재자 목록 조회
         const response = await fetchApprovers();
         if (response.success) {
           setAdminUsers(response.data);
@@ -86,8 +103,10 @@ const ExpenseCreatePage = () => {
       }
     };
 
-    loadApprovers();
-  }, []);
+    if (user?.userId) {
+      loadApprovers();
+    }
+  }, [user]);
 
   // 수정 모드일 때 기존 데이터 불러오기
   useEffect(() => {
@@ -119,6 +138,7 @@ const ExpenseCreatePage = () => {
               paymentReqDate: expense.paymentReqDate || '',
               reportDate: expense.reportDate || new Date().toISOString().split('T')[0],
               isSecret: expense.isSecret || false,
+              isPreApproval: expense.isPreApproval || false,
             });
 
             // 상세 내역 설정
@@ -257,23 +277,7 @@ const ExpenseCreatePage = () => {
     let firstMissingField = null;
     const missingFields = [];
     
-    // 1. 제목 확인
-    if (!report.title || report.title.trim() === '') {
-      missingFields.push('제목');
-      if (!firstMissingField) {
-        firstMissingField = { type: 'title', ref: titleInputRef };
-      }
-    }
-    
-    // 2. 지급 요청일 확인
-    if (!report.paymentReqDate || report.paymentReqDate.trim() === '') {
-      missingFields.push('지급 요청일');
-      if (!firstMissingField) {
-        firstMissingField = { type: 'paymentReqDate', ref: paymentReqDateInputRef };
-      }
-    }
-    
-    // 3. 상세 내역 확인
+    // 1. 상세 내역 확인
     if (!details || details.length === 0) {
       missingFields.push('지출 상세 내역 (최소 1개 이상 필요)');
       if (!firstMissingField) {
@@ -308,10 +312,33 @@ const ExpenseCreatePage = () => {
             };
           }
         }
+        
+        // 결제수단 확인
+        if (!detail.paymentMethod || detail.paymentMethod.trim() === '') {
+          missingFields.push(`상세 내역 ${rowNumber}행: 결제수단`);
+          if (!firstMissingField) {
+            firstMissingField = { 
+              type: 'paymentMethod', 
+              index 
+            };
+          }
+        }
+        
+        // 카드 결제인 경우 카드번호 확인
+        if ((detail.paymentMethod === 'CARD' || detail.paymentMethod === 'COMPANY_CARD') && 
+            (!detail.cardNumber || detail.cardNumber.trim() === '')) {
+          missingFields.push(`상세 내역 ${rowNumber}행: 카드번호`);
+          if (!firstMissingField) {
+            firstMissingField = { 
+              type: 'cardNumber', 
+              index 
+            };
+          }
+        }
       }
     }
     
-    // 4. 결재자 선택 확인 (비밀글이거나 급여가 아닌 경우)
+    // 2. 결재자 선택 확인 (비밀글이거나 급여가 아닌 경우)
     if (!isSecretOrSalary && (!selectedApprovers || selectedApprovers.length === 0)) {
       missingFields.push('결재자 선택');
       if (!firstMissingField) {
@@ -352,17 +379,45 @@ const ExpenseCreatePage = () => {
       amount: detail.amount ? Number(parseFormattedNumber(detail.amount)) : 0
     }));
 
+    // 담당 결재자 자동 설정 (비밀글이거나 급여가 아닌 경우)
+    let finalApprovers = selectedApprovers;
+    if (!isSecretOrSalary && (!selectedApprovers || selectedApprovers.length === 0)) {
+      try {
+        const { getActiveApprovers } = await import('../../api/userApproverApi');
+        const approversResponse = await getActiveApprovers(user.userId);
+        if (approversResponse.success && approversResponse.data && approversResponse.data.length > 0) {
+          // 담당 결재자가 1명이면 자동 설정
+          if (approversResponse.data.length === 1) {
+            finalApprovers = [approversResponse.data[0].userId];
+          } else {
+            // 2명 이상이면 선택하도록 (이미 결재자 선택 모달이 열려있을 수 있음)
+            // 여기서는 첫 번째 담당 결재자를 기본값으로 설정
+            finalApprovers = [approversResponse.data[0].userId];
+          }
+        }
+      } catch (error) {
+        console.error('담당 결재자 조회 실패:', error);
+        // 담당 결재자 조회 실패 시 계속 진행 (수동 선택 가능)
+      }
+    }
+
+    // 상세 항목에서 paymentReqDate와 isPreApproval 제거 (결의서 단위로만 사용)
+    const cleanedDetails = formattedDetails.map(detail => {
+      const { paymentReqDate, isPreApproval, ...rest } = detail;
+      return rest;
+    });
+
     const payload = {
       drafterId: user.userId,
       drafterName: user.koreanName,
-      title: report.title,
       reportDate: report.reportDate,
       paymentReqDate: report.paymentReqDate,
+      isPreApproval: report.isPreApproval || false,
       status: isSecretOrSalary ? EXPENSE_STATUS.PAID : EXPENSE_STATUS.WAIT,
       totalAmount: totalAmount,
-      details: formattedDetails,
+      details: cleanedDetails,
       isSecret: report.isSecret || false,
-      approvalLines: !isSecretOrSalary ? selectedApprovers.map(userId => {
+      approvalLines: !isSecretOrSalary ? finalApprovers.map(userId => {
         const adminUser = adminUsers.find(user => user.userId === userId);
         return {
           approverId: userId,
@@ -452,57 +507,35 @@ const ExpenseCreatePage = () => {
         </div>
       </S.Header>
 
-      {/* 1. 기본 정보 입력 섹션 */}
-      <S.Section data-tourid="tour-basic-info">
-        <S.SectionTitle>기본 정보</S.SectionTitle>
-        <S.FormGrid>
-          <S.InputGroup>
-            <S.Label>제목</S.Label>
+      {/* 기본 정보 섹션 */}
+      <S.Section>
+        <S.SectionHeader>
+          <S.SectionTitle>기본 정보</S.SectionTitle>
+        </S.SectionHeader>
+        <S.FormRow>
+          <S.FormGroup>
+            <S.Label>지급 요청일 *</S.Label>
             <S.Input
-              ref={titleInputRef}
-              type="text"
-              name="title"
-              value={report.title}
-              onChange={handleReportChange}
-              placeholder="예: 12월 회식비 지출"
-            />
-          </S.InputGroup>
-
-          <S.InputGroup>
-            <S.Label>지급 요청일</S.Label>
-            <S.Input
-              ref={paymentReqDateInputRef}
               type="date"
               name="paymentReqDate"
               value={report.paymentReqDate}
               onChange={handleReportChange}
+              required
             />
-          </S.InputGroup>
-
-          <S.InputGroup>
-            <S.Label>작성자</S.Label>
-            <S.Value>{user?.koreanName || '로딩중...'}</S.Value>
-          </S.InputGroup>
-
-          {/* CEO, ADMIN 또는 ACCOUNTANT만 비밀글 설정 가능 */}
-          {(user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT') && (
-            <S.InputGroup>
-              <S.Label>
-                <input
-                  type="checkbox"
-                  name="isSecret"
-                  checked={report.isSecret}
-                  onChange={(e) => setReport({ ...report, isSecret: e.target.checked })}
-                  style={{ marginRight: '8px' }}
-                />
-                비밀글 설정
-              </S.Label>
-              <S.InfoText>
-                비밀글로 설정된 결의서는 작성자와 세무사만 조회할 수 있으며, 결재 없이 바로 지급완료 처리됩니다.
-              </S.InfoText>
-            </S.InputGroup>
-          )}
-        </S.FormGrid>
+          </S.FormGroup>
+          <S.FormGroup>
+            <S.Label>
+              <input
+                type="checkbox"
+                name="isPreApproval"
+                checked={report.isPreApproval || false}
+                onChange={(e) => setReport({ ...report, isPreApproval: e.target.checked })}
+              />
+              가승인 요청
+            </S.Label>
+            <S.HelpText>영수증이 아직 없는 경우 가승인을 요청할 수 있습니다.</S.HelpText>
+          </S.FormGroup>
+        </S.FormRow>
       </S.Section>
 
       {/* 2. 결재자 선택 섹션 - 비밀글이거나 급여가 아닌 경우에만 표시 */}
@@ -576,10 +609,12 @@ const ExpenseCreatePage = () => {
             <thead>
               <tr>
                 <S.Th width="15%">항목</S.Th>
-                <S.Th width="30%">적요 (내용)</S.Th>
-                <S.Th width="20%">금액</S.Th>
-                <S.Th width="25%">비고</S.Th>
-                <S.Th width="10%">관리</S.Th>
+                <S.Th width="15%">상호명</S.Th>
+                <S.Th width="25%">적요 (내용)</S.Th>
+                <S.Th width="15%">금액</S.Th>
+                <S.Th width="12%">결제수단</S.Th>
+                <S.Th width="10%">카드번호</S.Th>
+                <S.Th width="8%">관리</S.Th>
               </tr>
             </thead>
             <tbody>
@@ -596,10 +631,28 @@ const ExpenseCreatePage = () => {
                   </S.Td>
                   <S.Td>
                     <S.Input
+                      type="text"
+                      name="merchantName"
+                      value={detail.merchantName || ''}
+                      onChange={(e) => handleDetailChange(index, e)}
+                      placeholder="상호명/업체명"
+                      maxLength={200}
+                    />
+                  </S.Td>
+                  <S.Td>
+                    <S.Input
                       ref={(el) => (descriptionInputRefs.current[index] = el)}
                       type="text"
                       name="description"
                       value={detail.description}
+                      onChange={(e) => handleDetailChange(index, e)}
+                    />
+                  </S.Td>
+                  <S.Td>
+                    <S.Input
+                      type="date"
+                      name="paymentReqDate"
+                      value={detail.paymentReqDate || ''}
                       onChange={(e) => handleDetailChange(index, e)}
                     />
                   </S.Td>
@@ -615,12 +668,32 @@ const ExpenseCreatePage = () => {
                     />
                   </S.Td>
                   <S.Td>
-                    <S.Input
-                      type="text"
-                      name="note"
-                      value={detail.note}
+                    <S.Select 
+                      name="paymentMethod" 
+                      value={detail.paymentMethod || ''} 
                       onChange={(e) => handleDetailChange(index, e)}
-                    />
+                      required
+                    >
+                      <option value="">선택</option>
+                      <option value="CASH">현금</option>
+                      <option value="BANK_TRANSFER">계좌이체</option>
+                      <option value="CARD">개인카드</option>
+                      <option value="COMPANY_CARD">회사카드</option>
+                    </S.Select>
+                  </S.Td>
+                  <S.Td>
+                    {(detail.paymentMethod === 'CARD' || detail.paymentMethod === 'COMPANY_CARD') ? (
+                      <S.Input
+                        type="text"
+                        name="cardNumber"
+                        value={detail.cardNumber || ''}
+                        onChange={(e) => handleDetailChange(index, e)}
+                        placeholder="카드번호"
+                        maxLength={19}
+                      />
+                    ) : (
+                      <span>-</span>
+                      )}
                   </S.Td>
                   <S.Td>
                     <S.DeleteButton onClick={() => removeDetailRow(index)}>

@@ -31,6 +31,10 @@ const ExpenseDetailPage = () => {
   const [deletingReceiptId, setDeletingReceiptId] = useState(null);
   const [editingTaxInfo, setEditingTaxInfo] = useState(null);
   const [taxInfoForm, setTaxInfoForm] = useState({ isTaxDeductible: true, nonDeductibleReason: '' });
+  const [isAddApproverModalOpen, setIsAddApproverModalOpen] = useState(false);
+  const [availableApprovers, setAvailableApprovers] = useState([]);
+  const [selectedAdditionalApprover, setSelectedAdditionalApprover] = useState(null);
+  const [isAddingApprover, setIsAddingApprover] = useState(false);
   const {user} = useAuth();
 
   useEffect(() => {
@@ -75,11 +79,101 @@ const ExpenseDetailPage = () => {
     setRejectionReason('');
   }
 
+  // 추가 결재자 추가 모달 열기
+  const handleOpenAddApproverModal = async () => {
+    if (!user) return;
+    
+    try {
+      // 첫 결재자의 담당 결재자 목록 조회
+      const firstApproverId = detail.approvalLines[0].approverId;
+      const { getActiveApprovers } = await import('../../api/userApproverApi');
+      const response = await getActiveApprovers(firstApproverId);
+      
+      if (response.success && response.data && response.data.length > 0) {
+        setAvailableApprovers(response.data);
+        // 담당 결재자가 1명이면 자동 선택
+        if (response.data.length === 1) {
+          setSelectedAdditionalApprover(response.data[0].userId);
+        }
+        setIsAddApproverModalOpen(true);
+      } else {
+        alert('추가할 수 있는 담당 결재자가 없습니다.');
+      }
+    } catch (error) {
+      console.error('담당 결재자 조회 실패:', error);
+      alert('담당 결재자 조회 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 추가 결재자 추가 모달 닫기
+  const handleCloseAddApproverModal = () => {
+    setIsAddApproverModalOpen(false);
+    setSelectedAdditionalApprover(null);
+    setAvailableApprovers([]);
+  };
+
+  // 추가 결재자 추가 처리
+  const handleAddApprover = async () => {
+    if (!selectedAdditionalApprover) {
+      alert('결재자를 선택해주세요.');
+      return;
+    }
+
+    try {
+      setIsAddingApprover(true);
+      const { addApprovalLine } = await import('../../api/expenseApi');
+      const response = await addApprovalLine(id, {
+        approverId: selectedAdditionalApprover,
+        approverPosition: availableApprovers.find(a => a.userId === selectedAdditionalApprover)?.position || '관리자',
+        approverName: availableApprovers.find(a => a.userId === selectedAdditionalApprover)?.koreanName || '관리자',
+        status: 'WAIT'
+      });
+
+      if (response.success) {
+        alert('추가 결재자가 설정되었습니다.');
+        handleCloseAddApproverModal();
+        window.location.reload();
+      } else {
+        alert('추가 결재자 설정 실패: ' + response.message);
+      }
+    } catch (error) {
+      console.error('추가 결재자 설정 실패:', error);
+      alert('추가 결재자 설정 중 오류가 발생했습니다.');
+    } finally {
+      setIsAddingApprover(false);
+    }
+  };
+
   // 결재 권한이 있는지 확인하는 함수
   const hasApprovalPermission = () => {
     if (!user || !detail?.approvalLines) return false;
 
     return detail.approvalLines.some(line => line.approverId === user.userId);
+  };
+
+  // 결재자 서명 여부 확인 (하나라도 서명이 있으면 true)
+  const hasAnyApprovalSignature = () => {
+    if (!detail?.approvalLines) return false;
+    return detail.approvalLines.some(line => line.signatureData != null && line.signatureData.trim() !== '');
+  };
+
+  // 수정/삭제 가능 여부 확인 (반려인 경우만 가능)
+  const canEditOrDelete = () => {
+    if (!user || !detail) return false;
+    // 작성자 본인이 아니면 불가
+    if (detail.drafterId !== user.userId) return false;
+    // WAIT 상태가 아니면 불가
+    if (detail.status !== 'WAIT' && detail.status !== 'REJECTED') return false;
+    // 결재자 서명이 있으면 반려인 경우만 가능
+    if (hasAnyApprovalSignature() && detail.status !== 'REJECTED') return false;
+    return true;
+  };
+
+  // 첫 결재자인지 확인
+  const isFirstApprover = () => {
+    if (!user || !detail?.approvalLines || detail.approvalLines.length === 0) return false;
+    const firstLine = detail.approvalLines[0];
+    return firstLine.approverId === user.userId && firstLine.signatureData != null && firstLine.signatureData.trim() !== '';
   };
 
   const handleSaveSignature = (signatureData) => {
@@ -579,6 +673,26 @@ const ExpenseDetailPage = () => {
                       </button>
                     </div>
                   )}
+                  {/* 첫 결재자가 결재한 후 추가 결재자 추가 버튼 */}
+                  {isFirstApprover() && detail.approvalLines.indexOf(line) === 0 && detail.status !== 'PAID' && detail.status !== 'REJECTED' && (
+                    <div style={{ marginTop: '8px' }}>
+                      <button
+                        onClick={handleOpenAddApproverModal}
+                        disabled={isAddingApprover}
+                        style={{
+                          fontSize: '11px',
+                          padding: '4px 8px',
+                          backgroundColor: '#17a2b8',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        추가 결재자
+                      </button>
+                    </div>
+                  )}
                   {canCancel && line.status === 'REJECTED' && (
                     <div style={{ marginTop: '8px' }}>
                       <button
@@ -616,7 +730,6 @@ const ExpenseDetailPage = () => {
 
       {/* 2. 본문 내용 */}
       <S.ContentArea>
-        <S.SectionTitle>건명: {detail.title}</S.SectionTitle>
         <S.TotalAmount>
           총 합계: <span>{detail.totalAmount.toLocaleString()}</span> 원
         </S.TotalAmount>
@@ -659,6 +772,7 @@ const ExpenseDetailPage = () => {
           <thead>
             <tr>
               <th>항목</th>
+              <th>상호명</th>
               <th>적요</th>
               <th style={{ textAlign: 'right' }}>금액</th>
               {detail.status === 'PAID' && (
@@ -691,9 +805,20 @@ const ExpenseDetailPage = () => {
                 return labels[method] || method || '-';
               };
 
+              // 상호명 6글자 제한 + 호버 시 풀네임 표시
+              const merchantName = item.merchantName || '-';
+              const displayMerchantName = merchantName.length > 6 ? merchantName.substring(0, 6) + '...' : merchantName;
+
               return (
               <tr key={item.expenseDetailId}>
                 <td style={{ textAlign: 'center' }} data-label="항목">{item.category}</td>
+                <S.MerchantNameCell
+                  data-label="상호명"
+                  title={merchantName !== '-' && merchantName.length > 6 ? merchantName : ''}
+                  hasTooltip={merchantName !== '-' && merchantName.length > 6}
+                >
+                  {displayMerchantName}
+                </S.MerchantNameCell>
                 <td data-label="적요">{item.description}</td>
                 <td style={{ textAlign: 'right' }} data-label="금액">{item.amount.toLocaleString()}원</td>
                 {detail.status === 'PAID' && (
@@ -808,8 +933,8 @@ const ExpenseDetailPage = () => {
       {/* 3. 버튼 */}
       <S.ButtonGroup>
          <button className="back" onClick={() => navigate('/expenses')}>목록으로</button>
-         {/* WAIT 상태이고 작성자 본인일 때만 수정 버튼 표시 */}
-         {detail.status === 'WAIT' && user && detail.drafterId === user.userId && (
+         {/* 수정/삭제 가능한 경우에만 수정 버튼 표시 */}
+         {canEditOrDelete() && (
            <button 
              className="edit" 
              onClick={() => navigate(`/expenses/edit/${id}`)}
@@ -1086,6 +1211,46 @@ const ExpenseDetailPage = () => {
              </S.PaymentModalFooter>
            </S.PaymentModalContent>
          </S.PaymentModal>
+       )}
+
+       {/* 추가 결재자 추가 모달 */}
+       {isAddApproverModalOpen && (
+         <S.RejectModal>
+           <S.RejectModalContent>
+             <S.RejectModalHeader>
+               <h3>추가 결재자 선택</h3>
+               <button onClick={handleCloseAddApproverModal}>×</button>
+             </S.RejectModalHeader>
+             <S.RejectModalBody>
+               <label htmlFor="additionalApprover">결재자 선택:</label>
+               {availableApprovers.length === 1 ? (
+                 <div style={{ padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                   <strong>{availableApprovers[0].koreanName}</strong> ({availableApprovers[0].position}) - 자동 선택됨
+                 </div>
+               ) : (
+                 <select
+                   id="additionalApprover"
+                   value={selectedAdditionalApprover || ''}
+                   onChange={(e) => setSelectedAdditionalApprover(Number(e.target.value))}
+                   style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                 >
+                   <option value="">선택하세요</option>
+                   {availableApprovers.map(approver => (
+                     <option key={approver.userId} value={approver.userId}>
+                       {approver.koreanName} ({approver.position})
+                     </option>
+                   ))}
+                 </select>
+               )}
+             </S.RejectModalBody>
+             <S.RejectModalFooter>
+               <button onClick={handleCloseAddApproverModal} disabled={isAddingApprover}>취소</button>
+               <button onClick={handleAddApprover} disabled={isAddingApprover || !selectedAdditionalApprover}>
+                 {isAddingApprover ? '처리 중...' : '추가'}
+               </button>
+             </S.RejectModalFooter>
+           </S.RejectModalContent>
+         </S.RejectModal>
        )}
 
     </S.Container>

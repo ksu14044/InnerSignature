@@ -237,6 +237,17 @@ export const deleteReceipt = async (receiptId, userId) => {
     }
   };
 
+// 12-1. 추가 결재 라인 추가
+export const addApprovalLine = async (expenseId, approvalLine) => {
+  try {
+    const response = await axiosInstance.post(`${BASE_URL}/${expenseId}/approval-lines/add`, approvalLine);
+    return response.data;
+  } catch (error) {
+    console.error("추가 결재 라인 추가 실패:", error);
+    throw error;
+  }
+};
+
 // 12. 영수증 다운로드
 export const downloadReceipt = async (receiptId, filename) => {
     try {

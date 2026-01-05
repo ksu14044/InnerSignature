@@ -38,8 +38,8 @@ public class TaxReportService {
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
-                null, null, statuses, null, true, null, null, // taxProcessed = true
-                companyId);
+                null, null, statuses, null, true, null, null, // taxProcessed = true, isSecret = null, drafterName = null
+                companyId, null); // paymentMethod = null
         
         // 각 지출결의서의 상세 내역 조회
         List<Long> expenseReportIds = expenseReports.stream()
@@ -145,11 +145,14 @@ public class TaxReportService {
         }
         cell.setCellStyle(dataStyle);
         
-        // 가맹점명 (적요 또는 제목)
+        // 가맹점명 (적요 또는 상세 항목의 첫 번째 description)
         cell = row.createCell(col++);
-        String merchantName = detail != null && detail.getDescription() != null && !detail.getDescription().isEmpty()
-                ? detail.getDescription()
-                : (report.getTitle() != null ? report.getTitle() : "");
+        String merchantName = "";
+        if (detail != null && detail.getDescription() != null && !detail.getDescription().isEmpty()) {
+            merchantName = detail.getDescription();
+        } else if (detail != null && detail.getMerchantName() != null && !detail.getMerchantName().isEmpty()) {
+            merchantName = detail.getMerchantName();
+        }
         cell.setCellValue(merchantName);
         cell.setCellStyle(dataStyle);
         

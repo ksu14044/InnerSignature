@@ -4,7 +4,7 @@ import { getPendingUsers, approveUser, getUserCompanies } from '../../api/userAp
 import * as S from './style';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaUser, FaBuilding, FaChevronDown, FaCheck, FaTimesCircle, FaFileExcel, FaCog } from 'react-icons/fa';
+import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaUser, FaBuilding, FaChevronDown, FaCheck, FaTimesCircle, FaFileExcel, FaCog, FaChartLine } from 'react-icons/fa';
 import { STATUS_KOREAN, EXPENSE_STATUS } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
@@ -33,7 +33,8 @@ const ExpenseListPage = () => {
     category: '',
     taxProcessed: null, // null: 전체, true: 완료, false: 미완료
     isSecret: null, // null: 전체, true: 비밀글만, false: 일반글만
-    drafterName: '' // 작성자(기안자) 이름
+    drafterName: '', // 작성자(기안자) 이름
+    paymentMethod: '' // 결제수단 필터
   });
 
   const pageSize = 10;
@@ -54,19 +55,19 @@ const ExpenseListPage = () => {
   const canDeleteExpense = (expense) => {
     if (!user) return false;
 
-    // 작성자 본인인 경우
-    if (expense.drafterId === user.userId) return true;
+    // 작성자 본인이 아니면 삭제 불가
+    if (expense.drafterId !== user.userId) return false;
 
-    // CEO 권한인 경우
-    if (user.role === 'CEO') return true;
+    // WAIT 상태가 아니고 반려 상태가 아니면 삭제 불가
+    if (expense.status !== 'WAIT' && expense.status !== 'REJECTED') return false;
 
-    // ADMIN 권한인 경우
-    if (user.role === 'ADMIN') return true;
+    // 결재자 서명이 있으면 반려인 경우만 삭제 가능
+    const hasAnyApprovalSignature = expense.approvalLines && expense.approvalLines.some(
+      line => line.signatureData != null && line.signatureData.trim() !== ''
+    );
+    if (hasAnyApprovalSignature && expense.status !== 'REJECTED') return false;
 
-    // ACCOUNTANT 권한인 경우
-    if (user.role === 'ACCOUNTANT') return true;
-
-    return false;
+    return true;
   };
 
   // 목록 조회 함수
@@ -258,7 +259,39 @@ const ExpenseListPage = () => {
       return;
     }
 
-    loadExpenseList(1);
+    // URL 파라미터에서 필터 읽기 및 적용
+    const statusParam = searchParams.get('status');
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+    
+    if (statusParam || startDateParam || endDateParam) {
+      const newFilters = {
+        startDate: startDateParam || '',
+        endDate: endDateParam || '',
+        minAmount: '',
+        maxAmount: '',
+        status: statusParam ? [statusParam] : [],
+        category: '',
+        taxProcessed: null,
+        isSecret: null,
+        drafterName: '',
+        paymentMethod: ''
+      };
+      
+      setFilters(newFilters);
+      setCurrentPage(1);
+      loadExpenseList(1, newFilters);
+      
+      // URL 파라미터 제거 (한 번만 적용되도록)
+      const newSearchParams = new URLSearchParams(searchParams);
+      if (statusParam) newSearchParams.delete('status');
+      if (startDateParam) newSearchParams.delete('startDate');
+      if (endDateParam) newSearchParams.delete('endDate');
+      setSearchParams(newSearchParams, { replace: true });
+    } else {
+      // URL 파라미터가 없을 때 기본 로드
+      loadExpenseList(1);
+    }
 
     // 미서명 건 조회 (알람)
     if (user?.userId) {
@@ -411,14 +444,15 @@ const ExpenseListPage = () => {
               <S.NotificationCount>{pendingUsers.length}</S.NotificationCount>
             </S.NotificationBadge>
           )}
-          {(user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT') && (
-            <S.FilterButton 
-              variant="primary" 
-              onClick={() => navigate('/dashboard')}
-            >
-              <span>대시보드</span>
-            </S.FilterButton>
-          )}
+          {/* 모든 사용자가 대시보드로 이동 가능 */}
+          <S.FilterButton 
+            variant="primary" 
+            onClick={() => navigate('/dashboard/main')}
+            title="대시보드로 이동"
+          >
+            <FaChartLine />
+            <span>대시보드</span>
+          </S.FilterButton>
           {user?.role === 'TAX_ACCOUNTANT' && (
             <S.FilterButton 
               variant="primary" 
@@ -635,6 +669,20 @@ const ExpenseListPage = () => {
                 onChange={(e) => handleFilterChange('drafterName', e.target.value)}
               />
             </S.FilterGroup>
+            {/* 결제수단 필터 */}
+            <S.FilterGroup>
+              <S.FilterLabel>결제수단</S.FilterLabel>
+              <S.FilterSelect
+                value={filters.paymentMethod}
+                onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
+              >
+                <option value="">전체</option>
+                <option value="CASH">현금</option>
+                <option value="BANK_TRANSFER">계좌이체</option>
+                <option value="CARD">개인카드</option>
+                <option value="COMPANY_CARD">회사카드</option>
+              </S.FilterSelect>
+            </S.FilterGroup>
             {/* 비밀글 필터 (USER 역할이 아닌 경우에만 표시) */}
             {user && user.role !== 'USER' && (
               <S.FilterGroup>
@@ -688,69 +736,80 @@ const ExpenseListPage = () => {
         <S.Table>
           <S.Thead>
             <tr>
-              <th>제목</th>
+              <th>지급 요청일</th>
               <th>작성자</th>
-              <th>작성일</th>
+              <th>적요(내용)</th>
               <S.AmountTh>금액</S.AmountTh>
               <th>상태</th>
-              {user && user.role !== 'USER' && <th>세무처리</th>}
               <th>관리</th>
             </tr>
           </S.Thead>
           <tbody>
-            {list.map((item) => (
-              <S.Tr key={item.expenseReportId}>
-                <S.TitleTd>
-                  <S.StyledLink to={`/detail/${item.expenseReportId}`}>
-                    {item.title}
-                    {item.isSecret && (
-                      <S.SecretBadge>비밀</S.SecretBadge>
-                    )}
-                  </S.StyledLink>
-                </S.TitleTd>
-                <td>{item.drafterName}</td>
-                <td>{item.reportDate}</td>
-                <S.AmountTd>{item.totalAmount.toLocaleString()}원</S.AmountTd>
-                <td>
-                  <S.StatusBadge status={item.status}>
-                    {STATUS_KOREAN[item.status] || item.status}
-                  </S.StatusBadge>
-                </td>
-                {user && user.role !== 'USER' && (
+            {list.map((item) => {
+              // 지급 요청일 계산 (상세 항목 중 가장 빠른 날짜)
+              const paymentReqDate = item.details && item.details.length > 0
+                ? item.details
+                    .map(d => d.paymentReqDate)
+                    .filter(d => d)
+                    .sort()[0] || item.paymentReqDate || item.reportDate
+                : item.paymentReqDate || item.reportDate;
+              
+              // 항목 표시 (첫 번째 항목 외 n개)
+              const categoryDisplay = item.details && item.details.length > 0
+                ? item.details.length === 1
+                  ? item.details[0].category
+                  : `${item.details[0].category} 외 ${item.details.length - 1}개`
+                : '-';
+              
+              // 적요(내용) 표시 (첫 번째 항목의 description)
+              const descriptionDisplay = item.details && item.details.length > 0
+                ? item.details[0].description || '-'
+                : '-';
+              
+              return (
+                <S.Tr key={item.expenseReportId}>
                   <td>
-                    {item.taxProcessed !== null && item.taxProcessed !== undefined ? (
-                      item.taxProcessed ? (
-                        <span style={{ color: '#28a745', fontWeight: 'bold', fontSize: '0.9em' }}>
-                          완료
-                        </span>
-                      ) : (
-                        <span style={{ color: '#6c757d', fontSize: '0.9em' }}>
-                          미완료
-                        </span>
-                      )
-                    ) : (
-                      <span style={{ color: '#6c757d', fontSize: '0.9em' }}>-</span>
-                    )}
+                    <S.StyledLink to={`/detail/${item.expenseReportId}`}>
+                      {paymentReqDate}
+                      {item.isSecret && (
+                        <S.SecretBadge>비밀</S.SecretBadge>
+                      )}
+                    </S.StyledLink>
                   </td>
-                )}
-                <td>
-                  <S.ActionButtons>
-                    <S.ViewButton to={`/detail/${item.expenseReportId}`}>
-                      <FaEye />
-                    </S.ViewButton>
-                    {canDeleteExpense(item) && (
-                      <S.DeleteButton 
-                        onClick={() => handleDeleteExpense(item.expenseReportId)}
-                        disabled={deletingExpenseId === item.expenseReportId || deletingExpenseId !== null}
-                        title={deletingExpenseId === item.expenseReportId ? '삭제 중...' : '삭제'}
-                      >
-                        <FaTrash />
-                      </S.DeleteButton>
-                    )}
-                  </S.ActionButtons>
-                </td>
-              </S.Tr>
-            ))}
+                  <td>{item.drafterName}</td>
+                  <td title={descriptionDisplay} style={{ 
+                    maxWidth: '200px', 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis', 
+                    whiteSpace: 'nowrap' 
+                  }}>
+                    {descriptionDisplay}
+                  </td>
+                  <S.AmountTd>{item.totalAmount.toLocaleString()}원</S.AmountTd>
+                  <td>
+                    <S.StatusBadge status={item.status}>
+                      {STATUS_KOREAN[item.status] || item.status}
+                    </S.StatusBadge>
+                  </td>
+                  <td>
+                    <S.ActionButtons>
+                      <S.ViewButton to={`/detail/${item.expenseReportId}`}>
+                        <FaEye />
+                      </S.ViewButton>
+                      {canDeleteExpense(item) && (
+                        <S.DeleteButton 
+                          onClick={() => handleDeleteExpense(item.expenseReportId)}
+                          disabled={deletingExpenseId === item.expenseReportId || deletingExpenseId !== null}
+                          title={deletingExpenseId === item.expenseReportId ? '삭제 중...' : '삭제'}
+                        >
+                          <FaTrash />
+                        </S.DeleteButton>
+                      )}
+                    </S.ActionButtons>
+                  </td>
+                </S.Tr>
+              );
+            })}
           </tbody>
         </S.Table>
       </S.TableContainer>
@@ -789,77 +848,81 @@ const ExpenseListPage = () => {
 
       {/* 모바일용 카드 뷰 */}
       <S.MobileCardContainer>
-        {list.map((item) => (
-          <S.ExpenseCard 
-            key={item.expenseReportId}
-            onClick={(e) => {
-              // 버튼 클릭이 아닌 경우에만 상세 페이지로 이동
-              if (!e.target.closest('button') && !e.target.closest('a')) {
-                navigate(`/detail/${item.expenseReportId}`);
-              }
-            }}
-          >
-            <S.CardHeader>
-              <S.CardTitle>
-                {item.title}
-                {item.isSecret && (
-                  <S.SecretBadge>비밀</S.SecretBadge>
-                )}
-              </S.CardTitle>
-              <S.StatusBadge status={item.status}>
-                {STATUS_KOREAN[item.status] || item.status}
-              </S.StatusBadge>
-            </S.CardHeader>
+        {list.map((item) => {
+          // 지급 요청일 계산
+          const paymentReqDate = item.details && item.details.length > 0
+            ? item.details
+                .map(d => d.paymentReqDate)
+                .filter(d => d)
+                .sort()[0] || item.paymentReqDate || item.reportDate
+            : item.paymentReqDate || item.reportDate;
+          
+          // 적요(내용) 표시
+          const descriptionDisplay = item.details && item.details.length > 0
+            ? item.details[0].description || '-'
+            : '-';
+          
+          return (
+            <S.ExpenseCard 
+              key={item.expenseReportId}
+              onClick={(e) => {
+                // 버튼 클릭이 아닌 경우에만 상세 페이지로 이동
+                if (!e.target.closest('button') && !e.target.closest('a')) {
+                  navigate(`/detail/${item.expenseReportId}`);
+                }
+              }}
+            >
+              <S.CardHeader>
+                <S.CardTitle>
+                  지급 요청일: {paymentReqDate}
+                  {item.isSecret && (
+                    <S.SecretBadge>비밀</S.SecretBadge>
+                  )}
+                </S.CardTitle>
+                <S.StatusBadge status={item.status}>
+                  {STATUS_KOREAN[item.status] || item.status}
+                </S.StatusBadge>
+              </S.CardHeader>
 
-            <S.CardContent>
-              <S.CardRow>
-                <S.CardLabel>작성자</S.CardLabel>
-                <S.CardValue>{item.drafterName}</S.CardValue>
-              </S.CardRow>
-              <S.CardRow>
-                <S.CardLabel>작성일</S.CardLabel>
-                <S.CardValue>{item.reportDate}</S.CardValue>
-              </S.CardRow>
-              <S.CardRow>
-                <S.CardLabel>금액</S.CardLabel>
-                <S.CardValue style={{ fontWeight: '600', color: 'var(--primary-color)', fontSize: '16px' }}>
-                  {item.totalAmount.toLocaleString()}원
-                </S.CardValue>
-              </S.CardRow>
-              {user && user.role !== 'USER' && (
+              <S.CardContent>
                 <S.CardRow>
-                  <S.CardLabel>세무처리</S.CardLabel>
-                  <S.CardValue>
-                    {item.taxProcessed !== null && item.taxProcessed !== undefined ? (
-                      item.taxProcessed ? (
-                        <span style={{ color: '#28a745', fontWeight: 'bold' }}>완료</span>
-                      ) : (
-                        <span style={{ color: '#6c757d' }}>미완료</span>
-                      )
-                    ) : (
-                      <span style={{ color: '#6c757d' }}>-</span>
-                    )}
+                  <S.CardLabel>작성자</S.CardLabel>
+                  <S.CardValue>{item.drafterName}</S.CardValue>
+                </S.CardRow>
+                <S.CardRow>
+                  <S.CardLabel>적요(내용)</S.CardLabel>
+                  <S.CardValue title={descriptionDisplay} style={{ 
+                    maxWidth: '200px', 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis', 
+                    whiteSpace: 'nowrap' 
+                  }}>{descriptionDisplay}</S.CardValue>
+                </S.CardRow>
+                <S.CardRow>
+                  <S.CardLabel>금액</S.CardLabel>
+                  <S.CardValue style={{ fontWeight: '600', color: 'var(--primary-color)', fontSize: '16px' }}>
+                    {item.totalAmount.toLocaleString()}원
                   </S.CardValue>
                 </S.CardRow>
-              )}
-            </S.CardContent>
+              </S.CardContent>
 
-            <S.CardActions>
-              {canDeleteExpense(item) && (
-                <S.DeleteButton 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteExpense(item.expenseReportId);
-                  }}
-                  disabled={deletingExpenseId === item.expenseReportId || deletingExpenseId !== null}
-                  title={deletingExpenseId === item.expenseReportId ? '삭제 중...' : '삭제'}
-                >
-                  <FaTrash />
-                </S.DeleteButton>
-              )}
-            </S.CardActions>
-          </S.ExpenseCard>
-        ))}
+              <S.CardActions>
+                {canDeleteExpense(item) && (
+                  <S.DeleteButton 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteExpense(item.expenseReportId);
+                    }}
+                    disabled={deletingExpenseId === item.expenseReportId || deletingExpenseId !== null}
+                    title={deletingExpenseId === item.expenseReportId ? '삭제 중...' : '삭제'}
+                  >
+                    <FaTrash />
+                  </S.DeleteButton>
+                )}
+              </S.CardActions>
+            </S.ExpenseCard>
+          );
+        })}
       </S.MobileCardContainer>
 
       {/* 알람 모달 */}

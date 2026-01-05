@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.ExpenseCategoryMapper">
+    <resultMap id="ExpenseCategoryResultMap" type="com.innersignature.backend.dto.ExpenseCategoryDto">
+        <id property="categoryId" column="category_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="displayOrder" column="display_order"/>
+        <result property="isActive" column="is_active"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createdByName" column="created_by_name"/>
+        <result property="isGlobal" column="is_global"/>
+    </resultMap>
+
+    <select id="findById" resultMap="ExpenseCategoryResultMap">
+        SELECT 
+            ec.*,
+            CASE WHEN ec.company_id IS NULL THEN 1 ELSE 0 END AS is_global,
+            u.korean_name AS created_by_name
+        FROM expense_category_tb ec
+        LEFT JOIN user_tb u ON ec.created_by = u.user_id
+        WHERE ec.category_id = #{categoryId}
+          AND (ec.company_id = #{companyId} OR ec.company_id IS NULL)
+    </select>
+
+    <select id="findGlobalCategories" resultMap="ExpenseCategoryResultMap">
+        SELECT 
+            ec.*,
+            1 AS is_global,
+            u.korean_name AS created_by_name
+        FROM expense_category_tb ec
+        LEFT JOIN user_tb u ON ec.created_by = u.user_id
+        WHERE ec.company_id IS NULL
+          AND (ec.is_active IS NULL OR ec.is_active = 1)
+        ORDER BY ec.display_order ASC, ec.category_name ASC
+    </select>
+
+    <select id="findByCompanyId" resultMap="ExpenseCategoryResultMap">
+        SELECT 
+            ec.*,
+            0 AS is_global,
+            u.korean_name AS created_by_name
+        FROM expense_category_tb ec
+        LEFT JOIN user_tb u ON ec.created_by = u.user_id
+        WHERE ec.company_id = #{companyId}
+          AND (ec.is_active IS NULL OR ec.is_active = 1)
+        ORDER BY ec.display_order ASC, ec.category_name ASC
+    </select>
+
+    <!-- 전역 기본값 상속 + 회사별 오버라이드 병합 조회 -->
+    <select id="findMergedCategories" resultMap="ExpenseCategoryResultMap">
+        SELECT 
+            COALESCE(ec_company.category_id, ec_global.category_id) AS category_id,
+            COALESCE(ec_company.company_id, ec_global.company_id) AS company_id,
+            COALESCE(ec_company.category_name, ec_global.category_name) AS category_name,
+            COALESCE(ec_company.display_order, ec_global.display_order) AS display_order,
+            COALESCE(ec_company.is_active, ec_global.is_active) AS is_active,
+            COALESCE(ec_company.created_by, ec_global.created_by) AS created_by,
+            COALESCE(ec_company.created_at, ec_global.created_at) AS created_at,
+            COALESCE(ec_company.updated_at, ec_global.updated_at) AS updated_at,
+            CASE WHEN COALESCE(ec_company.company_id, ec_global.company_id) IS NULL THEN 1 ELSE 0 END AS is_global,
+            u.korean_name AS created_by_name
+        FROM expense_category_tb ec_global
+        LEFT JOIN expense_category_tb ec_company 
+            ON ec_global.category_name = ec_company.category_name 
+            AND ec_company.company_id = #{companyId}
+        LEFT JOIN user_tb u ON COALESCE(ec_company.created_by, ec_global.created_by) = u.user_id
+        WHERE ec_global.company_id IS NULL
+          AND (ec_global.is_active IS NULL OR ec_global.is_active = 1)
+          AND (ec_company.is_active IS NULL OR ec_company.is_active = 1 OR ec_company.is_active IS NULL)
+        ORDER BY COALESCE(ec_company.display_order, ec_global.display_order) ASC, 
+                 COALESCE(ec_company.category_name, ec_global.category_name) ASC
+    </select>
+
+    <select id="existsByName" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM expense_category_tb
+        WHERE category_name = #{categoryName}
+          AND company_id = #{companyId}
+    </select>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.ExpenseCategoryDto" 
+            useGeneratedKeys="true" keyProperty="categoryId">
+        INSERT INTO expense_category_tb (
+            company_id, category_name, display_order, is_active, created_by
+        ) VALUES (
+            #{companyId}, #{categoryName}, 
+            COALESCE(#{displayOrder}, 0), 
+            COALESCE(#{isActive}, 1), 
+            #{createdBy}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.innersignature.backend.dto.ExpenseCategoryDto">
+        UPDATE expense_category_tb
+        SET
+            category_name = #{categoryName},
+            display_order = #{displayOrder},
+            is_active = #{isActive},
+            updated_at = NOW()
+        WHERE category_id = #{categoryId}
+          AND (company_id = #{companyId} OR company_id IS NULL)
+    </update>
+
+    <delete id="delete">
+        UPDATE expense_category_tb
+        SET is_active = 0, updated_at = NOW()
+        WHERE category_id = #{categoryId}
+          AND (company_id = #{companyId} OR company_id IS NULL)
+    </delete>
+
+    <update id="updateDisplayOrder">
+        UPDATE expense_category_tb
+        SET display_order = #{displayOrder}, updated_at = NOW()
+        WHERE category_id = #{categoryId}
+          AND (company_id = #{companyId} OR company_id IS NULL)
+    </update>
+
+    <select id="getMaxDisplayOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(display_order), 0)
+        FROM expense_category_tb
+        WHERE company_id = #{companyId}
+    </select>
+</mapper>
