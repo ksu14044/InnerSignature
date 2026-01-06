@@ -1,6 +1,7 @@
 import axiosInstance from '../utils/axiosInstance';
+import { API_CONFIG } from '../config/api';
 
-const BASE_URL = '/api/users';
+const BASE_URL = API_CONFIG.USERS_BASE_URL;
 
 /**
  * 사용자별 담당 결재자 목록 조회

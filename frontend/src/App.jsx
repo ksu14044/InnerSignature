@@ -24,6 +24,7 @@ import AccountCodeMappingPage from './pages/AccountCodeMappingPage/AccountCodeMa
 import MainDashboardPage from './pages/MainDashboardPage/MainDashboardPage';
 import ExpenseCategoryPage from './pages/ExpenseCategoryPage/ExpenseCategoryPage';
 import MyApproverPage from './pages/MyApproverPage/MyApproverPage';
+import CardManagementPage from './pages/CardManagementPage/CardManagementPage';
 import MobileAppBar from './components/MobileAppBar/MobileAppBar';
 import MobileBottomNav from './components/MobileBottomNav/MobileBottomNav';
 import MobileFAB from './components/MobileFAB/MobileFAB';
@@ -60,6 +61,7 @@ function App() {
         <Route path="/audit-logs" element={<AuditLogPage />} />
         <Route path="/missing-receipts" element={<MissingReceiptPage />} />
         <Route path="/account-codes" element={<AccountCodeMappingPage />} />
+        <Route path="/cards" element={<CardManagementPage />} />
         <Route path="/superadmin/dashboard" element={<SuperAdminDashboardPage />} />
         </Routes>
         <MobileBottomNav />

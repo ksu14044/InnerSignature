@@ -34,18 +34,10 @@ const MainDashboardPage = () => {
   const [statusExpenses, setStatusExpenses] = useState([]); // 선택된 상태의 결의서 목록
   const [loadingStatusExpenses, setLoadingStatusExpenses] = useState(false);
   
-  // 기간 필터 (기본값: 현재 달 1일~말일)
-  const [filters, setFilters] = useState(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    return {
-      startDate: firstDay.toISOString().split('T')[0],
-      endDate: lastDay.toISOString().split('T')[0]
-    };
+  // 기간 필터 (기본값: 전체 기간)
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: ''
   });
 
   const handleLogout = async () => {
@@ -366,6 +358,9 @@ const MainDashboardPage = () => {
                   <S.ManagementMenuItem onClick={() => { navigate('/audit-logs'); setIsManagementDropdownOpen(false); }}>
                     📋 감사 로그
                   </S.ManagementMenuItem>
+                  <S.ManagementMenuItem onClick={() => { navigate('/cards'); setIsManagementDropdownOpen(false); }}>
+                    💳 카드 관리
+                  </S.ManagementMenuItem>
                   {user?.role === 'ACCOUNTANT' && (
                     <S.ManagementMenuItem onClick={() => { navigate('/missing-receipts'); setIsManagementDropdownOpen(false); }}>
                       ⚠️ 증빙 누락 관리
@@ -492,9 +487,11 @@ const MainDashboardPage = () => {
                   : item.paymentReqDate || item.reportDate;
                 
                 // 적요(내용) 표시
-                const descriptionDisplay = item.details && item.details.length > 0
-                  ? item.details[0].description || '-'
-                  : '-';
+                const descriptionDisplay = (item.summaryDescription && item.summaryDescription.trim() !== '') 
+                  ? item.summaryDescription 
+                  : (item.firstDescription && item.firstDescription.trim() !== '') 
+                    ? item.firstDescription 
+                    : '-';
                 
                 return (
                   <S.ExpenseListItem key={item.expenseReportId}>

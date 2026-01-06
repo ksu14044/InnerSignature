@@ -2,9 +2,11 @@ package com.innersignature.backend.service;
 
 import com.innersignature.backend.dto.ApprovalLineDto;
 import com.innersignature.backend.dto.CategoryRatioDto;
+import com.innersignature.backend.dto.CompanyCardDto;
 import com.innersignature.backend.dto.DashboardStatsDto;
 import com.innersignature.backend.dto.ExpenseDetailDto;
 import com.innersignature.backend.dto.ExpenseReportDto;
+import com.innersignature.backend.dto.UserCardDto;
 import com.innersignature.backend.dto.MonthlyTaxSummaryDto;
 import com.innersignature.backend.dto.MonthlyTrendDto;
 import com.innersignature.backend.dto.PagedResponse;
@@ -60,6 +62,8 @@ public class ExpenseService {
     private final TaxReportService taxReportService; // 부가세 신고 서식 서비스
     private final UserApproverService userApproverService; // 담당 결재자 서비스
     private final com.innersignature.backend.util.EncryptionUtil encryptionUtil; // 암호화 유틸리티
+    private final CompanyCardService companyCardService; // 회사 카드 서비스
+    private final UserCardService userCardService; // 개인 카드 서비스
     
     @Value("${file.upload.base-dir:uploads}")
     private String fileUploadBaseDir;
@@ -78,6 +82,10 @@ public class ExpenseService {
         List<ExpenseReportDto> list = expenseMapper.selectExpenseList(companyId);
         filterSalaryExpenses(list, userId);
         filterTaxProcessingInfo(list, userId);
+        // 적요 요약 정보 생성
+        for (ExpenseReportDto report : list) {
+            generateSummaryDescription(report);
+        }
         return list;
     }
 
@@ -108,6 +116,11 @@ public class ExpenseService {
         int fromIndex = Math.min(offset, allContent.size());
         int toIndex = Math.min(offset + size, allContent.size());
         List<ExpenseReportDto> content = allContent.subList(fromIndex, toIndex);
+        
+        // 적요 요약 정보 생성
+        for (ExpenseReportDto report : content) {
+            generateSummaryDescription(report);
+        }
         
         // PagedResponse 객체 생성 및 반환
         return new PagedResponse<>(content, page, size, totalElements, totalPages);
@@ -193,6 +206,11 @@ public class ExpenseService {
         int fromIndex = Math.min(offset, allContent.size());
         int toIndex = Math.min(offset + size, allContent.size());
         List<ExpenseReportDto> content = allContent.subList(fromIndex, toIndex);
+        
+        // 적요 요약 정보 생성
+        for (ExpenseReportDto report : content) {
+            generateSummaryDescription(report);
+        }
         
         // PagedResponse 객체 생성 및 반환
         return new PagedResponse<>(content, page, size, totalElements, totalPages);
@@ -499,11 +517,38 @@ public class ExpenseService {
                     throw new com.innersignature.backend.exception.BusinessException("결제수단은 필수입니다.");
                 }
                 
-                // 카드 결제인 경우 카드번호 암호화
-                if ("CARD".equals(detail.getPaymentMethod()) || "CREDIT_CARD".equals(detail.getPaymentMethod()) || "DEBIT_CARD".equals(detail.getPaymentMethod())) {
-                    if (detail.getCardNumber() != null && !detail.getCardNumber().trim().isEmpty()) {
-                        String encryptedCardNumber = encryptionUtil.encrypt(detail.getCardNumber());
-                        detail.setCardNumber(encryptedCardNumber);
+                // 카드 결제인 경우 카드번호 처리
+                if ("CARD".equals(detail.getPaymentMethod()) || "COMPANY_CARD".equals(detail.getPaymentMethod()) || "CREDIT_CARD".equals(detail.getPaymentMethod()) || "DEBIT_CARD".equals(detail.getPaymentMethod())) {
+                    // 저장된 카드 ID가 있는 경우 해당 카드의 암호화된 카드번호 사용
+                    if (detail.getCardId() != null) {
+                        try {
+                            String encryptedCardNumber = null;
+                            if ("COMPANY_CARD".equals(detail.getPaymentMethod())) {
+                                CompanyCardDto card = companyCardService.getCard(detail.getCardId(), currentUserId);
+                                encryptedCardNumber = card.getCardNumberEncrypted();
+                            } else if ("CARD".equals(detail.getPaymentMethod())) {
+                                UserCardDto card = userCardService.getCard(detail.getCardId(), currentUserId);
+                                encryptedCardNumber = card.getCardNumberEncrypted();
+                            }
+                            
+                            if (encryptedCardNumber != null) {
+                                detail.setCardNumber(encryptedCardNumber);
+                            } else {
+                                throw new com.innersignature.backend.exception.BusinessException("저장된 카드를 찾을 수 없습니다.");
+                            }
+                        } catch (Exception e) {
+                            logger.error("저장된 카드 조회 실패 - paymentMethod: {}, cardId: {}", detail.getPaymentMethod(), detail.getCardId(), e);
+                            throw new com.innersignature.backend.exception.BusinessException("저장된 카드를 조회하는 중 오류가 발생했습니다: " + e.getMessage());
+                        }
+                    } else if (detail.getCardNumber() != null && !detail.getCardNumber().trim().isEmpty()) {
+                        // 직접 입력한 카드번호인 경우 암호화
+                        try {
+                            String encryptedCardNumber = encryptionUtil.encrypt(detail.getCardNumber());
+                            detail.setCardNumber(encryptedCardNumber);
+                        } catch (Exception e) {
+                            logger.error("카드번호 암호화 실패 - paymentMethod: {}, cardNumber: {}", detail.getPaymentMethod(), detail.getCardNumber(), e);
+                            throw new com.innersignature.backend.exception.BusinessException("카드번호 암호화에 실패했습니다: " + e.getMessage());
+                        }
                     }
                 }
                 
@@ -565,6 +610,13 @@ public class ExpenseService {
         // 이 과정이 끝나야 문서 번호(ID)가 생성됩니다.
         Long companyId = SecurityUtil.getCurrentCompanyId();
         request.setCompanyId(companyId);
+        
+        // title이 없으면 자동 생성 (예: "지출결의서 - 2026-01-06")
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            String autoTitle = "지출결의서 - " + request.getReportDate();
+            request.setTitle(autoTitle);
+        }
+        
         expenseMapper.insertExpenseReport(request);
 
         // 방금 DB에 들어가면서 생성된 문서 번호(PK)를 꺼내옵니다.
@@ -676,6 +728,46 @@ public class ExpenseService {
         boolean hasSalary = false;
         if (details != null) {
             for (ExpenseDetailDto detail : details) {
+                // 결제수단 필수 검증
+                if (detail.getPaymentMethod() == null || detail.getPaymentMethod().trim().isEmpty()) {
+                    throw new com.innersignature.backend.exception.BusinessException("결제수단은 필수입니다.");
+                }
+                
+                // 카드 결제인 경우 카드번호 처리
+                if ("CARD".equals(detail.getPaymentMethod()) || "COMPANY_CARD".equals(detail.getPaymentMethod()) || "CREDIT_CARD".equals(detail.getPaymentMethod()) || "DEBIT_CARD".equals(detail.getPaymentMethod())) {
+                    // 저장된 카드 ID가 있는 경우 해당 카드의 암호화된 카드번호 사용
+                    if (detail.getCardId() != null) {
+                        try {
+                            String encryptedCardNumber = null;
+                            if ("COMPANY_CARD".equals(detail.getPaymentMethod())) {
+                                CompanyCardDto card = companyCardService.getCard(detail.getCardId(), currentUserId);
+                                encryptedCardNumber = card.getCardNumberEncrypted();
+                            } else if ("CARD".equals(detail.getPaymentMethod())) {
+                                UserCardDto card = userCardService.getCard(detail.getCardId(), currentUserId);
+                                encryptedCardNumber = card.getCardNumberEncrypted();
+                            }
+                            
+                            if (encryptedCardNumber != null) {
+                                detail.setCardNumber(encryptedCardNumber);
+                            } else {
+                                throw new com.innersignature.backend.exception.BusinessException("저장된 카드를 찾을 수 없습니다.");
+                            }
+                        } catch (Exception e) {
+                            logger.error("저장된 카드 조회 실패 - paymentMethod: {}, cardId: {}", detail.getPaymentMethod(), detail.getCardId(), e);
+                            throw new com.innersignature.backend.exception.BusinessException("저장된 카드를 조회하는 중 오류가 발생했습니다: " + e.getMessage());
+                        }
+                    } else if (detail.getCardNumber() != null && !detail.getCardNumber().trim().isEmpty()) {
+                        // 직접 입력한 카드번호인 경우 암호화
+                        try {
+                            String encryptedCardNumber = encryptionUtil.encrypt(detail.getCardNumber());
+                            detail.setCardNumber(encryptedCardNumber);
+                        } catch (Exception e) {
+                            logger.error("카드번호 암호화 실패 - paymentMethod: {}, cardNumber: {}", detail.getPaymentMethod(), detail.getCardNumber(), e);
+                            throw new com.innersignature.backend.exception.BusinessException("카드번호 암호화에 실패했습니다: " + e.getMessage());
+                        }
+                    }
+                }
+                
                 totalAmount += detail.getAmount();
                 if ("급여".equals(detail.getCategory())) {
                     hasSalary = true;
@@ -974,6 +1066,10 @@ public class ExpenseService {
         List<ExpenseReportDto> list = expenseMapper.selectPendingApprovalsByUserId(userId, companyId);
         filterSalaryExpenses(list, userId);
         filterTaxProcessingInfo(list, userId);
+        // 적요 요약 정보 생성
+        for (ExpenseReportDto report : list) {
+            generateSummaryDescription(report);
+        }
         return list;
     }
 
@@ -991,9 +1087,9 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("해당 문서를 찾을 수 없습니다.");
         }
 
-        // 2. PAID 상태인지 확인
-        if (!"PAID".equals(report.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("PAID 상태의 문서만 영수증을 첨부할 수 있습니다.");
+        // 2. PAID 또는 WAIT 상태인지 확인 (WAIT 상태는 작성자가 생성 시 영수증을 첨부할 수 있도록 허용)
+        if (!"PAID".equals(report.getStatus()) && !"WAIT".equals(report.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("PAID 또는 WAIT 상태의 문서만 영수증을 첨부할 수 있습니다.");
         }
 
         // 3. 권한 체크: 작성자 또는 ACCOUNTANT만 가능
@@ -1402,6 +1498,35 @@ public class ExpenseService {
     }
 
     /**
+     * 적요 요약 정보 생성
+     * expense_detail_tb의 description 필드에서 적요를 가져와서
+     * 적요가 1개면 첫 번째 적요만, 2개 이상이면 "첫번째 적요 외 n개" 형식으로 생성
+     */
+    public void generateSummaryDescription(ExpenseReportDto report) {
+        if (report == null) {
+            return;
+        }
+        
+        Integer count = report.getDescriptionCount();
+        if (count == null || count == 0) {
+            report.setSummaryDescription("");
+            return;
+        }
+        
+        String firstDesc = report.getFirstDescription();
+        if (firstDesc == null || firstDesc.trim().isEmpty()) {
+            report.setSummaryDescription("");
+            return;
+        }
+        
+        if (count == 1) {
+            report.setSummaryDescription(firstDesc);
+        } else {
+            report.setSummaryDescription(firstDesc + " 외 " + (count - 1) + "개");
+        }
+    }
+
+    /**
      * 권한 필터링 후 실제 조회 가능한 전체 개수 계산
      */
     private long calculateFilteredTotalElements(Long userId) {
@@ -1517,7 +1642,12 @@ public class ExpenseService {
      */
     public List<ExpenseReportDto> getTaxPendingReports(LocalDate startDate, LocalDate endDate) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
-        return expenseMapper.selectTaxPendingReports(startDate, endDate, companyId);
+        List<ExpenseReportDto> list = expenseMapper.selectTaxPendingReports(startDate, endDate, companyId);
+        // 적요 요약 정보 생성
+        for (ExpenseReportDto report : list) {
+            generateSummaryDescription(report);
+        }
+        return list;
     }
 
     /**
@@ -1706,6 +1836,11 @@ public class ExpenseService {
                 minAmount, maxAmount,
                 statuses, category, taxProcessed, isSecret,
                 drafterName, companyId);
+        
+        // 적요 요약 정보 생성
+        for (ExpenseReportDto report : content) {
+            generateSummaryDescription(report);
+        }
         
         // PagedResponse 객체 생성 및 반환
         return new PagedResponse<>(content, page, size, totalElements, totalPages);

@@ -9,3 +9,4 @@ UPDATE `account_code_mapping_tb`
 SET `category_order` = `mapping_id`
 WHERE `category_order` = 0;
 
+

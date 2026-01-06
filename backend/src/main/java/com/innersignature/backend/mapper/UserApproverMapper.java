@@ -49,3 +49,4 @@ public interface UserApproverMapper {
     List<UserDto> findActiveApproversByUserId(@Param("userId") Long userId, @Param("companyId") Long companyId);
 }
 
+

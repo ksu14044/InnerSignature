@@ -19,3 +19,4 @@ public class ExpenseCategoryDto {
     private Boolean isGlobal;     // 전역 항목 여부 (companyId가 NULL인지)
 }
 
+

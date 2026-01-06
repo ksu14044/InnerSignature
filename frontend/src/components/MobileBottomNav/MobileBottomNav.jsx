@@ -23,6 +23,12 @@ const MobileBottomNav = () => {
     if (path === '/users') {
       return location.pathname === '/users';
     }
+    if (path === '/cards') {
+      return location.pathname === '/cards';
+    }
+    if (path === '/profile') {
+      return location.pathname === '/profile';
+    }
     return location.pathname === path;
   };
 
@@ -42,8 +48,9 @@ const MobileBottomNav = () => {
         ...(user?.role === 'TAX_ACCOUNTANT' 
           ? [{ path: '/tax/summary', icon: FaChartBar, label: '세무요약' }] 
           : []),
+        { path: '/cards', icon: FaCreditCard, label: '카드' },
         ...(user?.role === 'CEO' || user?.role === 'ADMIN'
-          ? [{ path: '/subscriptions/manage', icon: FaCreditCard, label: '구독' }]
+          ? [{ path: '/subscriptions/manage', icon: FaChartBar, label: '구독' }]
           : []),
         canManageUsers 
           ? { path: '/users', icon: FaUsers, label: '사용자관리' }

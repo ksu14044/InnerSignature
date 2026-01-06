@@ -4,3 +4,4 @@
 ALTER TABLE `expense_detail_tb`
 ADD COLUMN `is_pre_approval` tinyint(1) DEFAULT 0 COMMENT '가승인 요청 여부' AFTER `card_number`;
 
+

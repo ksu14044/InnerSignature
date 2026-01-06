@@ -410,6 +410,51 @@ export const Td = styled.td`
   vertical-align: middle;
 `;
 
+export const TableRow = styled.tr`
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #f8f9fa;
+  }
+`;
+
+export const ActionButtonGroup = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const EditButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  min-width: 40px;
+  min-height: 40px;
+
+  &:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+  }
+
+  @media (max-width: 480px) {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 8px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+`;
+
 export const DeleteButton = styled.button`
   display: flex;
   align-items: center;
@@ -772,10 +817,27 @@ export const DetailCard = styled.div`
   border: 1px solid var(--border-color);
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+  }
 
   @media (max-width: 480px) {
     display: block;
   }
+`;
+
+export const EmptyDetailMessage = styled.div`
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--secondary-color);
+  font-size: 14px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed var(--border-color);
 `;
 
 export const CardHeader = styled.div`
@@ -810,6 +872,27 @@ export const MobileLabel = styled.label`
   font-weight: 600;
   font-size: 14px;
   color: var(--dark-color);
+`;
+
+export const MobileSummaryRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+export const MobileValue = styled.span`
+  font-size: 14px;
+  color: var(--dark-color);
+  text-align: right;
+  flex: 1;
+  margin-left: 12px;
+  word-break: break-word;
 `;
 
 export const MobileInput = styled.input`
@@ -854,6 +937,81 @@ export const MobileSelect = styled.select`
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
   }
+`;
+
+// 영수증 관련 스타일
+export const ReceiptList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+`;
+
+export const ReceiptItem = styled.div`
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  align-items: flex-start;
+`;
+
+export const ReceiptInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: #666;
+
+  strong {
+    color: var(--dark-color);
+    font-size: 15px;
+  }
+`;
+
+export const UploadButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+  min-height: 48px;
+
+  &:hover:not(:disabled) {
+    background-color: #7c3aed;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 14px 16px;
+    justify-content: center;
+  }
+`;
+
+export const EmptyMessage = styled.div`
+  padding: 20px;
+  text-align: center;
+  color: var(--secondary-color);
+  font-size: 14px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed var(--border-color);
 `;
 
 // 토스트 메시지 스타일

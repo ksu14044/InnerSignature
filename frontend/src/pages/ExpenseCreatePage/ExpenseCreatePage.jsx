@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';
-import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck, FaEdit, FaFileUpload, FaFile } from 'react-icons/fa';
 
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
 import * as S from './style';
 import { useAuth } from '../../contexts/AuthContext';
-import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense } from '../../api/expenseApi';
+import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts } from '../../api/expenseApi';
 import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole } from '../../constants/categories';
@@ -14,6 +14,7 @@ import { DEFAULT_VALUES } from '../../constants/defaults';
 import TourButton from '../../components/TourButton/TourButton';
 import ApproverSelectionModal from '../../components/ApproverSelectionModal/ApproverSelectionModal';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import ExpenseDetailModal from '../../components/ExpenseDetailModal/ExpenseDetailModal';
 
 const ExpenseCreatePage = () => {
   const navigate = useNavigate();
@@ -31,10 +32,8 @@ const ExpenseCreatePage = () => {
     isPreApproval: false, // 가승인 요청 여부 (결의서 단위)
   });
 
-  // 2. 상세 내역 리스트 상태
-  const [details, setDetails] = useState([
-    { ...DEFAULT_VALUES.EXPENSE_DETAIL }
-  ]);
+  // 2. 상세 내역 리스트 상태 - 초기값을 빈 배열로 변경
+  const [details, setDetails] = useState([]);
 
   // 3. 결재자 관련 상태
   const [adminUsers, setAdminUsers] = useState([]);
@@ -42,7 +41,16 @@ const ExpenseCreatePage = () => {
   const [loadingApprovers, setLoadingApprovers] = useState(true); // 결재자 목록 로딩 상태
   const [isApproverModalOpen, setIsApproverModalOpen] = useState(false); // 결재자 선택 모달 열림 상태
 
-  // 5. 토스트 메시지 상태
+  // 5. 상세 내역 모달 상태
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [editingDetailIndex, setEditingDetailIndex] = useState(null);
+
+  // 6. 영수증 관련 상태
+  const [receipts, setReceipts] = useState([]); // 서버에 업로드된 영수증 목록 (수정 모드)
+  const [pendingReceipts, setPendingReceipts] = useState([]); // 생성 전에 선택한 영수증 파일들
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+
+  // 7. 토스트 메시지 상태
   const [toastMessage, setToastMessage] = useState(null);
 
   // 4. 필드 참조 (스크롤 이동용)
@@ -52,14 +60,33 @@ const ExpenseCreatePage = () => {
   const amountInputRefs = useRef([]);
   const approverSectionRef = useRef(null);
   const detailsSectionRef = useRef(null);
+  const receiptSectionRef = useRef(null);
+  const receiptFileInputRef = useRef(null);
+  const receiptUploadInputRef = useRef(null);
 
-  // 총 금액 자동 계산
-  const totalAmount = details.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  // 입력이 완료된 항목만 필터링하는 함수
+  const isValidDetail = (detail) => {
+    return detail.category && 
+           detail.description && 
+           detail.description.trim() !== '' &&
+           detail.amount && 
+           Number(detail.amount) > 0 &&
+           detail.paymentMethod &&
+           (detail.paymentMethod !== 'CARD' && detail.paymentMethod !== 'COMPANY_CARD' || detail.cardNumber);
+  };
 
-  // 급여 카테고리 포함 여부 확인
-  const hasSalaryCategory = useMemo(() => {
-    return details.some(detail => detail.category === '급여');
+  // 입력이 완료된 항목만 필터링
+  const completedDetails = useMemo(() => {
+    return details.filter(isValidDetail);
   }, [details]);
+
+  // 총 금액 자동 계산 (완료된 항목만)
+  const totalAmount = completedDetails.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  // 급여 카테고리 포함 여부 확인 (완료된 항목만)
+  const hasSalaryCategory = useMemo(() => {
+    return completedDetails.some(detail => detail.category === '급여');
+  }, [completedDetails]);
 
   // 비밀글이거나 급여인 경우 결재 불필요
   const isSecretOrSalary = report.isSecret || hasSalaryCategory;
@@ -151,6 +178,24 @@ const ExpenseCreatePage = () => {
               const approverIds = expense.approvalLines.map(line => line.approverId);
               setSelectedApprovers(approverIds);
             }
+
+            // 영수증 목록 설정
+            if (expense.receipts && expense.receipts.length > 0) {
+              setReceipts(expense.receipts);
+            } else {
+              // 영수증 목록 별도 조회
+              try {
+                const receiptsResponse = await getReceipts(id);
+                if (receiptsResponse.success) {
+                  setReceipts(receiptsResponse.data || []);
+                }
+              } catch (error) {
+                console.error('영수증 목록 불러오기 실패:', error);
+              }
+            }
+            
+            // 수정 모드에서는 pendingReceipts 초기화
+            setPendingReceipts([]);
           } else {
             alert('문서를 불러올 수 없습니다.');
             navigate('/expenses');
@@ -189,8 +234,13 @@ const ExpenseCreatePage = () => {
 
   // 콤마가 포함된 문자열을 숫자로 변환
   const parseFormattedNumber = (value) => {
-    if (!value) return '';
-    return value.replace(/,/g, '');
+    if (!value && value !== 0) return '';
+    // 숫자인 경우 문자열로 변환
+    if (typeof value === 'number') {
+      return String(value);
+    }
+    // 문자열인 경우 콤마 제거
+    return String(value).replace(/,/g, '');
   };
 
   const handleDetailChange = (index, e) => {
@@ -238,13 +288,139 @@ const ExpenseCreatePage = () => {
   };
 
   const addDetailRow = () => {
-    setDetails([...details, { ...DEFAULT_VALUES.EXPENSE_DETAIL }]);
+    setEditingDetailIndex(null);
+    setIsDetailModalOpen(true);
+  };
+
+  const openEditModal = (index) => {
+    setEditingDetailIndex(index);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleDetailSave = (savedData) => {
+    if (editingDetailIndex !== null) {
+      // 수정 모드
+      const newDetails = [...details];
+      newDetails[editingDetailIndex] = savedData;
+      setDetails(newDetails);
+    } else {
+      // 추가 모드
+      setDetails([...details, savedData]);
+    }
+    setEditingDetailIndex(null);
   };
 
   const removeDetailRow = (index) => {
-    if (details.length === 1) return;
+    if (details.length === 0) return;
     const newDetails = details.filter((_, i) => i !== index);
     setDetails(newDetails);
+  };
+
+  const getPaymentMethodLabel = (method) => {
+    const labels = {
+      'CASH': '현금',
+      'BANK_TRANSFER': '계좌이체',
+      'CARD': '개인카드',
+      'COMPANY_CARD': '회사카드'
+    };
+    return labels[method] || method || '-';
+  };
+
+  // 영수증 파일 선택 처리 (생성 전)
+  const handleReceiptFileSelect = (event) => {
+    if (!user) {
+      alert("로그인 후 진행할 수 있습니다.");
+      return;
+    }
+
+    const files = Array.from(event.target.files);
+    if (files.length === 0) {
+      return;
+    }
+
+    // 각 파일 검증
+    const validFiles = [];
+    for (const file of files) {
+      // 파일 크기 제한 (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`${file.name}: 파일 크기는 10MB를 초과할 수 없습니다.`);
+        continue;
+      }
+
+      // 파일 타입 검증
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        alert(`${file.name}: 지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, pdf만 허용)`);
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    // 유효한 파일들을 pendingReceipts에 추가
+    setPendingReceipts([...pendingReceipts, ...validFiles]);
+    event.target.value = '';
+  };
+
+  // 영수증 파일 제거 (생성 전)
+  const handleRemovePendingReceipt = (index) => {
+    const newPendingReceipts = pendingReceipts.filter((_, i) => i !== index);
+    setPendingReceipts(newPendingReceipts);
+  };
+
+  // 영수증 업로드 처리 (수정 모드)
+  const handleReceiptUpload = async (event) => {
+    if (isUploadingReceipt) return;
+    if (!user) {
+      alert("로그인 후 진행할 수 있습니다.");
+      return;
+    }
+
+    const file = event.target.files[0];
+    if (!file) {
+      return;
+    }
+
+    // 파일 크기 제한 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert("파일 크기는 10MB를 초과할 수 없습니다.");
+      return;
+    }
+
+    // 파일 타입 검증
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      alert("지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, pdf만 허용)");
+      return;
+    }
+
+    // 수정 모드이고 expenseId가 있는 경우에만 업로드 가능
+    if (!isEditMode || !id) {
+      alert("지출결의서를 먼저 저장한 후 영수증을 업로드할 수 있습니다.");
+      return;
+    }
+
+    setIsUploadingReceipt(true);
+    try {
+      const response = await uploadReceipt(id, user.userId, file);
+      if (response.success) {
+        alert("영수증이 업로드되었습니다!");
+        // 영수증 목록 갱신
+        const receiptsResponse = await getReceipts(id);
+        if (receiptsResponse.success) {
+          setReceipts(receiptsResponse.data || []);
+        }
+      } else {
+        alert("영수증 업로드 실패: " + response.message);
+      }
+    } catch (error) {
+      console.error("영수증 업로드 오류:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "영수증 업로드 중 오류가 발생했습니다.";
+      alert(errorMessage);
+    } finally {
+      setIsUploadingReceipt(false);
+      event.target.value = '';
+    }
   };
 
   // 결재자 선택 핸들러 (순서 보장)
@@ -273,68 +449,15 @@ const ExpenseCreatePage = () => {
       return;
     }
 
-    // 유효성 검사: 누락된 항목 확인 및 첫 번째 누락 필드로 스크롤
+    // 유효성 검사: 완료된 상세 내역 확인
     let firstMissingField = null;
     const missingFields = [];
     
-    // 1. 상세 내역 확인
-    if (!details || details.length === 0) {
+    // 1. 완료된 상세 내역 확인
+    if (!completedDetails || completedDetails.length === 0) {
       missingFields.push('지출 상세 내역 (최소 1개 이상 필요)');
       if (!firstMissingField) {
         firstMissingField = { type: 'detailsSection', ref: detailsSectionRef };
-      }
-    } else {
-      // 각 상세 내역 항목 확인
-      for (let index = 0; index < details.length; index++) {
-        const detail = details[index];
-        const rowNumber = index + 1;
-        
-        // 적요(내용) 확인
-        if (!detail.description || detail.description.trim() === '') {
-          missingFields.push(`상세 내역 ${rowNumber}행: 적요(내용)`);
-          if (!firstMissingField) {
-            firstMissingField = { 
-              type: 'description', 
-              ref: descriptionInputRefs.current[index],
-              index 
-            };
-          }
-        }
-        
-        // 금액 확인
-        if (!detail.amount || detail.amount === '' || Number(detail.amount) <= 0) {
-          missingFields.push(`상세 내역 ${rowNumber}행: 금액`);
-          if (!firstMissingField) {
-            firstMissingField = { 
-              type: 'amount', 
-              ref: amountInputRefs.current[index],
-              index 
-            };
-          }
-        }
-        
-        // 결제수단 확인
-        if (!detail.paymentMethod || detail.paymentMethod.trim() === '') {
-          missingFields.push(`상세 내역 ${rowNumber}행: 결제수단`);
-          if (!firstMissingField) {
-            firstMissingField = { 
-              type: 'paymentMethod', 
-              index 
-            };
-          }
-        }
-        
-        // 카드 결제인 경우 카드번호 확인
-        if ((detail.paymentMethod === 'CARD' || detail.paymentMethod === 'COMPANY_CARD') && 
-            (!detail.cardNumber || detail.cardNumber.trim() === '')) {
-          missingFields.push(`상세 내역 ${rowNumber}행: 카드번호`);
-          if (!firstMissingField) {
-            firstMissingField = { 
-              type: 'cardNumber', 
-              index 
-            };
-          }
-        }
       }
     }
     
@@ -343,6 +466,20 @@ const ExpenseCreatePage = () => {
       missingFields.push('결재자 선택');
       if (!firstMissingField) {
         firstMissingField = { type: 'approver', ref: approverSectionRef };
+      }
+    }
+    
+    // 3. 가승인 요청이 체크되지 않은 경우 영수증 첨부 필수 확인
+    if (!report.isPreApproval) {
+      const hasReceipts = isEditMode && id 
+        ? receipts.length > 0  // 수정 모드: 서버에 업로드된 영수증 확인
+        : pendingReceipts.length > 0;  // 생성 모드: 선택한 영수증 파일 확인
+      
+      if (!hasReceipts) {
+        missingFields.push('영수증 첨부 (가승인 요청이 체크되지 않은 경우 필수)');
+        if (!firstMissingField) {
+          firstMissingField = { type: 'receipt', ref: receiptSectionRef };
+        }
       }
     }
     
@@ -369,12 +506,14 @@ const ExpenseCreatePage = () => {
         scrollToField(detailsSectionRef);
       } else if (firstMissingField.type === 'approver') {
         scrollToField(approverSectionRef);
+      } else if (firstMissingField.type === 'receipt') {
+        scrollToField(receiptSectionRef);
       }
       return;
     }
 
-    // 금액을 숫자로 변환하여 제출
-    const formattedDetails = details.map(detail => ({
+    // 완료된 항목만 제출 (금액을 숫자로 변환)
+    const formattedDetails = completedDetails.map(detail => ({
       ...detail,
       amount: detail.amount ? Number(parseFormattedNumber(detail.amount)) : 0
     }));
@@ -464,11 +603,50 @@ const ExpenseCreatePage = () => {
 
               try {
                 await setApprovalLines(expenseId, approvalLines);
-                alert('지출결의서가 작성되고 결재 라인이 설정되었습니다!');
               } catch (approvalError) {
                 console.error('결재 라인 설정 실패:', approvalError);
                 alert('지출결의서는 작성되었으나 결재 라인 설정에 실패했습니다.');
               }
+            }
+
+            // 선택한 영수증 파일들을 자동으로 업로드
+            if (pendingReceipts.length > 0) {
+              setIsUploadingReceipt(true);
+              let uploadSuccessCount = 0;
+              let uploadFailCount = 0;
+
+              for (const file of pendingReceipts) {
+                try {
+                  const uploadResponse = await uploadReceipt(expenseId, user.userId, file);
+                  if (uploadResponse.success) {
+                    uploadSuccessCount++;
+                  } else {
+                    uploadFailCount++;
+                    console.error('영수증 업로드 실패:', uploadResponse.message);
+                  }
+                } catch (error) {
+                  uploadFailCount++;
+                  console.error('영수증 업로드 오류:', error);
+                }
+              }
+
+              setIsUploadingReceipt(false);
+
+              if (uploadSuccessCount > 0) {
+                if (uploadFailCount > 0) {
+                  alert(`${uploadSuccessCount}개의 영수증이 업로드되었습니다. ${uploadFailCount}개의 영수증 업로드에 실패했습니다.`);
+                }
+              } else if (uploadFailCount > 0) {
+                alert('모든 영수증 업로드에 실패했습니다. 상세 페이지에서 다시 업로드해주세요.');
+              }
+
+              // 업로드 완료 후 pendingReceipts 초기화
+              setPendingReceipts([]);
+            }
+
+            // 성공 메시지
+            if (!isSecretOrSalary) {
+              alert('지출결의서가 작성되고 결재 라인이 설정되었습니다!');
             } else {
               alert(report.isSecret ? '비밀글 지출결의서가 작성되었습니다!' : '급여 지출결의서가 작성되었습니다!');
             }
@@ -603,170 +781,223 @@ const ExpenseCreatePage = () => {
           </S.AddButton>
         </S.SectionHeader>
 
-        {/* 데스크톱 테이블 뷰 */}
+        {/* 데스크톱 테이블 뷰 - 간소화된 요약 뷰 */}
         <S.TableContainer>
           <S.Table>
             <thead>
               <tr>
+                <S.Th width="5%">#</S.Th>
                 <S.Th width="15%">항목</S.Th>
-                <S.Th width="15%">상호명</S.Th>
-                <S.Th width="25%">적요 (내용)</S.Th>
+                <S.Th width="10%">상호명</S.Th>
+                <S.Th width="20%">적요 (내용)</S.Th>
                 <S.Th width="15%">금액</S.Th>
-                <S.Th width="12%">결제수단</S.Th>
-                <S.Th width="10%">카드번호</S.Th>
-                <S.Th width="8%">관리</S.Th>
+                <S.Th width="15%">결제수단</S.Th>
+                <S.Th width="20%">관리</S.Th>
               </tr>
             </thead>
             <tbody>
-              {details.map((detail, index) => (
-                <tr key={index}>
-                  <S.Td>
-                    <S.Select name="category" value={detail.category} onChange={(e) => handleDetailChange(index, e)}>
-                      {availableCategories.map(category => (
-                        <option key={category.value} value={category.value}>
-                          {category.label}
-                        </option>
-                      ))}
-                    </S.Select>
-                  </S.Td>
-                  <S.Td>
-                    <S.Input
-                      type="text"
-                      name="merchantName"
-                      value={detail.merchantName || ''}
-                      onChange={(e) => handleDetailChange(index, e)}
-                      placeholder="상호명/업체명"
-                      maxLength={200}
-                    />
-                  </S.Td>
-                  <S.Td>
-                    <S.Input
-                      ref={(el) => (descriptionInputRefs.current[index] = el)}
-                      type="text"
-                      name="description"
-                      value={detail.description}
-                      onChange={(e) => handleDetailChange(index, e)}
-                    />
-                  </S.Td>
-                  <S.Td>
-                    <S.Input
-                      type="date"
-                      name="paymentReqDate"
-                      value={detail.paymentReqDate || ''}
-                      onChange={(e) => handleDetailChange(index, e)}
-                    />
-                  </S.Td>
-                  <S.Td>
-                    <S.Input
-                      ref={(el) => (amountInputRefs.current[index] = el)}
-                      type="text"
-                      name="amount"
-                      value={detail.amount ? formatNumber(detail.amount) : ''}
-                      onChange={(e) => handleDetailChange(index, e)}
-                      onWheel={(e) => e.target.blur()}
-                      placeholder="금액을 입력하세요"
-                    />
-                  </S.Td>
-                  <S.Td>
-                    <S.Select 
-                      name="paymentMethod" 
-                      value={detail.paymentMethod || ''} 
-                      onChange={(e) => handleDetailChange(index, e)}
-                      required
-                    >
-                      <option value="">선택</option>
-                      <option value="CASH">현금</option>
-                      <option value="BANK_TRANSFER">계좌이체</option>
-                      <option value="CARD">개인카드</option>
-                      <option value="COMPANY_CARD">회사카드</option>
-                    </S.Select>
-                  </S.Td>
-                  <S.Td>
-                    {(detail.paymentMethod === 'CARD' || detail.paymentMethod === 'COMPANY_CARD') ? (
-                      <S.Input
-                        type="text"
-                        name="cardNumber"
-                        value={detail.cardNumber || ''}
-                        onChange={(e) => handleDetailChange(index, e)}
-                        placeholder="카드번호"
-                        maxLength={19}
-                      />
-                    ) : (
-                      <span>-</span>
-                      )}
-                  </S.Td>
-                  <S.Td>
-                    <S.DeleteButton onClick={() => removeDetailRow(index)}>
-                      <FaTrash />
-                    </S.DeleteButton>
+              {completedDetails.length === 0 ? (
+                <tr>
+                  <S.Td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+                    지출 상세 내역이 없습니다. "행 추가" 버튼을 클릭하여 추가하세요.
                   </S.Td>
                 </tr>
-              ))}
+              ) : (
+                completedDetails.map((detail, index) => {
+                  // 원본 배열에서의 인덱스 찾기
+                  const originalIndex = details.findIndex(d => d === detail);
+                  return (
+                    <S.TableRow key={originalIndex} onClick={() => openEditModal(originalIndex)}>
+                      <S.Td>{index + 1}</S.Td>
+                      <S.Td>{detail.category || '-'}</S.Td>
+                      <S.Td>{detail.merchantName || '-'}</S.Td>
+                      <S.Td>{detail.description || '-'}</S.Td>
+                      <S.Td style={{ textAlign: 'right', fontWeight: '600' }}>
+                        {detail.amount ? formatNumber(detail.amount) + '원' : '-'}
+                      </S.Td>
+                      <S.Td>{getPaymentMethodLabel(detail.paymentMethod)}</S.Td>
+                      <S.Td onClick={(e) => e.stopPropagation()}>
+                        <S.ActionButtonGroup>
+                          <S.EditButton onClick={() => openEditModal(originalIndex)} title="수정">
+                            <FaEdit />
+                          </S.EditButton>
+                          <S.DeleteButton onClick={() => removeDetailRow(originalIndex)} title="삭제">
+                            <FaTrash />
+                          </S.DeleteButton>
+                        </S.ActionButtonGroup>
+                      </S.Td>
+                    </S.TableRow>
+                  );
+                })
+              )}
             </tbody>
           </S.Table>
         </S.TableContainer>
 
-        {/* 모바일 카드 뷰 */}
+        {/* 모바일 카드 뷰 - 간소화된 요약 뷰 */}
         <S.MobileCardContainer>
-          {details.map((detail, index) => (
-            <S.DetailCard key={index}>
-              <S.CardHeader>
-                <S.CardRowNumber>#{index + 1}</S.CardRowNumber>
-                <S.DeleteButton onClick={() => removeDetailRow(index)}>
-                  <FaTrash />
-                </S.DeleteButton>
-              </S.CardHeader>
-              <S.CardBody>
-                <S.MobileInputGroup>
-                  <S.MobileLabel>항목</S.MobileLabel>
-                  <S.MobileSelect name="category" value={detail.category} onChange={(e) => handleDetailChange(index, e)}>
-                    {availableCategories.map(category => (
-                      <option key={category.value} value={category.value}>
-                        {category.label}
-                      </option>
-                    ))}
-                  </S.MobileSelect>
-                </S.MobileInputGroup>
-                <S.MobileInputGroup>
-                  <S.MobileLabel>적요 (내용)</S.MobileLabel>
-                  <S.MobileInput
-                    ref={(el) => (descriptionInputRefs.current[index] = el)}
-                    type="text"
-                    name="description"
-                    value={detail.description}
-                    onChange={(e) => handleDetailChange(index, e)}
-                    placeholder="지출 내용을 입력하세요"
-                  />
-                </S.MobileInputGroup>
-                <S.MobileInputGroup>
-                  <S.MobileLabel>금액</S.MobileLabel>
-                  <S.MobileInput
-                    ref={(el) => (amountInputRefs.current[index] = el)}
-                    type="text"
-                    name="amount"
-                    value={detail.amount ? formatNumber(detail.amount) : ''}
-                    onChange={(e) => handleDetailChange(index, e)}
-                    onWheel={(e) => e.target.blur()}
-                    placeholder="금액을 입력하세요"
-                  />
-                </S.MobileInputGroup>
-                <S.MobileInputGroup>
-                  <S.MobileLabel>비고</S.MobileLabel>
-                  <S.MobileInput
-                    type="text"
-                    name="note"
-                    value={detail.note}
-                    onChange={(e) => handleDetailChange(index, e)}
-                    placeholder="비고를 입력하세요 (선택사항)"
-                  />
-                </S.MobileInputGroup>
-              </S.CardBody>
-            </S.DetailCard>
-          ))}
+          {completedDetails.length === 0 ? (
+            <S.EmptyDetailMessage>
+              지출 상세 내역이 없습니다. "행 추가" 버튼을 클릭하여 추가하세요.
+            </S.EmptyDetailMessage>
+          ) : (
+            completedDetails.map((detail, index) => {
+              // 원본 배열에서의 인덱스 찾기
+              const originalIndex = details.findIndex(d => d === detail);
+              return (
+                <S.DetailCard key={originalIndex} onClick={() => openEditModal(originalIndex)}>
+                  <S.CardHeader>
+                    <S.CardRowNumber>#{index + 1}</S.CardRowNumber>
+                    <S.ActionButtonGroup>
+                      <S.EditButton onClick={(e) => { e.stopPropagation(); openEditModal(originalIndex); }} title="수정">
+                        <FaEdit />
+                      </S.EditButton>
+                      <S.DeleteButton onClick={(e) => { e.stopPropagation(); removeDetailRow(originalIndex); }} title="삭제">
+                        <FaTrash />
+                      </S.DeleteButton>
+                    </S.ActionButtonGroup>
+                  </S.CardHeader>
+                  <S.CardBody>
+                    <S.MobileSummaryRow>
+                      <S.MobileLabel>항목</S.MobileLabel>
+                      <S.MobileValue>{detail.category || '-'}</S.MobileValue>
+                    </S.MobileSummaryRow>
+                    {detail.merchantName && (
+                      <S.MobileSummaryRow>
+                        <S.MobileLabel>상호명</S.MobileLabel>
+                        <S.MobileValue>{detail.merchantName}</S.MobileValue>
+                      </S.MobileSummaryRow>
+                    )}
+                    <S.MobileSummaryRow>
+                      <S.MobileLabel>적요</S.MobileLabel>
+                      <S.MobileValue>{detail.description || '-'}</S.MobileValue>
+                    </S.MobileSummaryRow>
+                    <S.MobileSummaryRow>
+                      <S.MobileLabel>금액</S.MobileLabel>
+                      <S.MobileValue style={{ fontWeight: '600', color: '#007bff' }}>
+                        {detail.amount ? formatNumber(detail.amount) + '원' : '-'}
+                      </S.MobileValue>
+                    </S.MobileSummaryRow>
+                    <S.MobileSummaryRow>
+                      <S.MobileLabel>결제수단</S.MobileLabel>
+                      <S.MobileValue>{getPaymentMethodLabel(detail.paymentMethod)}</S.MobileValue>
+                    </S.MobileSummaryRow>
+                  </S.CardBody>
+                </S.DetailCard>
+              );
+            })
+          )}
         </S.MobileCardContainer>
       </S.Section>
 
-      {/* 4. 하단 총계 및 버튼 */}
+      {/* 4. 영수증 섹션 */}
+      <S.Section ref={receiptSectionRef}>
+        <S.SectionHeader>
+          <S.SectionTitle>
+            영수증 {!report.isPreApproval && <span style={{ color: 'red' }}>*</span>}
+          </S.SectionTitle>
+        </S.SectionHeader>
+        {!report.isPreApproval && (
+          <S.InfoMessage style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fff3cd', border: '1px solid #ffc107', borderRadius: '8px' }}>
+            가승인 요청이 체크되지 않았으므로 영수증 첨부가 필수입니다.
+          </S.InfoMessage>
+        )}
+        {report.isPreApproval && (
+          <S.InfoMessage style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#d1ecf1', border: '1px solid #bee5eb', borderRadius: '8px' }}>
+            가승인 요청이 체크되었으므로 영수증 첨부는 선택사항입니다.
+          </S.InfoMessage>
+        )}
+        
+        {/* 생성 전: 영수증 파일 선택 */}
+        {!isEditMode || !id ? (
+          <>
+            <input
+              ref={receiptFileInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              multiple
+              onChange={handleReceiptFileSelect}
+              disabled={isSubmitting}
+              style={{ display: 'none' }}
+            />
+            <S.UploadButton 
+              as="div"
+              disabled={isSubmitting} 
+              onClick={() => !isSubmitting && receiptFileInputRef.current?.click()}
+              style={{ marginBottom: '16px', cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+            >
+              <FaFileUpload />
+              <span>영수증 선택</span>
+            </S.UploadButton>
+            {pendingReceipts.length > 0 ? (
+              <S.ReceiptList>
+                {pendingReceipts.map((file, index) => (
+                  <S.ReceiptItem key={index}>
+                    <S.ReceiptInfo>
+                      <div><strong>{file.name}</strong></div>
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        크기: {(file.size / 1024).toFixed(2)} KB
+                      </div>
+                    </S.ReceiptInfo>
+                    <S.DeleteButton 
+                      onClick={() => handleRemovePendingReceipt(index)}
+                      style={{ minWidth: '40px', minHeight: '40px', padding: '8px' }}
+                      title="제거"
+                    >
+                      <FaTrash />
+                    </S.DeleteButton>
+                  </S.ReceiptItem>
+                ))}
+              </S.ReceiptList>
+            ) : (
+              <S.EmptyMessage style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+                선택된 영수증이 없습니다. 위의 "영수증 선택" 버튼을 클릭하여 영수증을 선택하세요.
+              </S.EmptyMessage>
+            )}
+          </>
+        ) : (
+          <>
+            {/* 수정 모드: 영수증 업로드 */}
+            <input
+              ref={receiptUploadInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleReceiptUpload}
+              disabled={isUploadingReceipt || isSubmitting}
+              style={{ display: 'none' }}
+            />
+            <S.UploadButton 
+              as="div"
+              disabled={isUploadingReceipt || isSubmitting} 
+              onClick={() => !(isUploadingReceipt || isSubmitting) && receiptUploadInputRef.current?.click()}
+              style={{ marginBottom: '16px', cursor: (isUploadingReceipt || isSubmitting) ? 'not-allowed' : 'pointer' }}
+            >
+              <FaFileUpload />
+              <span>{isUploadingReceipt ? '업로드 중...' : '영수증 추가'}</span>
+            </S.UploadButton>
+            {receipts.length > 0 ? (
+              <S.ReceiptList>
+                {receipts.map((receipt) => (
+                  <S.ReceiptItem key={receipt.receiptId}>
+                    <S.ReceiptInfo>
+                      <div><strong>{receipt.originalFilename}</strong></div>
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        업로드: {receipt.uploadedByName} ({receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''})
+                      </div>
+                    </S.ReceiptInfo>
+                  </S.ReceiptItem>
+                ))}
+              </S.ReceiptList>
+            ) : (
+              <S.EmptyMessage style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+                첨부된 영수증이 없습니다.
+              </S.EmptyMessage>
+            )}
+          </>
+        )}
+      </S.Section>
+
+      {/* 5. 하단 총계 및 버튼 */}
       <S.TotalSection data-tourid="tour-total-amount">
         <S.TotalCard>
           <S.TotalLabel>총 합계</S.TotalLabel>
@@ -796,6 +1027,20 @@ const ExpenseCreatePage = () => {
           loadingApprovers={loadingApprovers}
         />
       )}
+
+      {/* 상세 내역 입력/수정 모달 */}
+      <ExpenseDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setEditingDetailIndex(null);
+        }}
+        detail={editingDetailIndex !== null ? details[editingDetailIndex] : null}
+        onSave={handleDetailSave}
+        availableCategories={availableCategories}
+        descriptionInputRef={descriptionInputRefs.current[editingDetailIndex || 0]}
+        amountInputRef={amountInputRefs.current[editingDetailIndex || 0]}
+      />
 
       {/* 토스트 메시지 */}
       {toastMessage && (

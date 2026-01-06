@@ -16,8 +16,7 @@ public class ExpenseReportDto {
     
     private LocalDate reportDate; // 작성일 (YYYY-MM-DD)
     
-    // 제목 필드 제거 (더 이상 사용하지 않음)
-    // private String title;         // 제목
+    private String title;         // 제목
     
     @Positive(message = "총 금액은 양수여야 합니다.")
     private Long totalAmount;     // 총 합계 (결재 금액)
@@ -38,6 +37,11 @@ public class ExpenseReportDto {
     // --- 화면 보여주기용 추가 필드 ---
     private String drafterName;   // 작성자 이름 (김신입)
     private String companyName;    // 회사명 (SUPERADMIN용)
+    
+    // 적요 요약 정보 (목록 표시용)
+    private String firstDescription;  // 첫 번째 적요
+    private Integer descriptionCount; // 적요 개수
+    private String summaryDescription; // 가공된 요약 문자열 (예: "첫번째 적요 외 2개")
     
     // --- 1:N 관계 데이터 (상세화면 조회 시 사용) ---
     private List<ExpenseDetailDto> details;      // 상세 내역 리스트 (식대, 간식...)

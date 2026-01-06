@@ -36,6 +36,8 @@ public class ExpenseDetailDto {
     @Size(max = 500, message = "카드번호는 500자 이하여야 합니다.")
     private String cardNumber;    // 카드번호 (암호화 저장)
     
+    private Long cardId;          // 저장된 카드 ID (회사 카드 또는 개인 카드)
+    
     private Boolean isPreApproval; // 가승인 요청 여부
     
     @Size(max = 1000, message = "비고는 1000자 이하여야 합니다.")

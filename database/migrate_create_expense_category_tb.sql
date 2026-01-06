@@ -19,3 +19,4 @@ CREATE TABLE IF NOT EXISTS `expense_category_tb` (
   CONSTRAINT `fk_expense_category_created_by` FOREIGN KEY (`created_by`) REFERENCES `user_tb` (`user_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='지출 항목 관리';
 
+

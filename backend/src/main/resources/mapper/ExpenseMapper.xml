@@ -7,7 +7,21 @@
     <select id="selectExpenseList" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT 
             r.*, 
-            u.korean_name AS drafterName 
+            u.korean_name AS drafterName,
+            (SELECT d.description
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != ''
+             ORDER BY d.expense_detail_id ASC
+             LIMIT 1) AS firstDescription,
+            (SELECT COUNT(*)
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != '') AS descriptionCount
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         WHERE r.company_id = #{companyId}
@@ -17,7 +31,21 @@
     <select id="selectExpenseListWithPagination" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT 
             r.*, 
-            u.korean_name AS drafterName 
+            u.korean_name AS drafterName,
+            (SELECT d.description
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != ''
+             ORDER BY d.expense_detail_id ASC
+             LIMIT 1) AS firstDescription,
+            (SELECT COUNT(*)
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != '') AS descriptionCount
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         WHERE r.company_id = #{companyId}
@@ -45,7 +73,21 @@
              FROM expense_detail_tb d
              WHERE d.expense_report_id = r.expense_report_id
                AND d.company_id = r.company_id
-               AND d.payment_req_date IS NOT NULL) AS minPaymentReqDate
+               AND d.payment_req_date IS NOT NULL) AS minPaymentReqDate,
+            (SELECT d.description
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != ''
+             ORDER BY d.expense_detail_id ASC
+             LIMIT 1) AS firstDescription,
+            (SELECT COUNT(*)
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != '') AS descriptionCount
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         <where>
@@ -305,6 +347,7 @@
         INSERT INTO expense_report_tb (
             drafter_id,
             report_date,
+            title,
             total_amount,
             status,
             payment_req_date,
@@ -314,6 +357,7 @@
         ) VALUES (
             #{drafterId},
             #{reportDate},
+            #{title},
             #{totalAmount},
             #{status, jdbcType=VARCHAR},
             #{paymentReqDate},
@@ -409,7 +453,21 @@
     <select id="selectPendingApprovalsByUserId" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT DISTINCT
             r.*,
-            u.korean_name AS drafterName
+            u.korean_name AS drafterName,
+            (SELECT d.description
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != ''
+             ORDER BY d.expense_detail_id ASC
+             LIMIT 1) AS firstDescription,
+            (SELECT COUNT(*)
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != '') AS descriptionCount
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         JOIN approval_line_tb al ON r.expense_report_id = al.expense_report_id
@@ -566,7 +624,21 @@
     <select id="selectTaxPendingReports" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT 
             r.*, 
-            u.korean_name AS drafterName 
+            u.korean_name AS drafterName,
+            (SELECT d.description
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != ''
+             ORDER BY d.expense_detail_id ASC
+             LIMIT 1) AS firstDescription,
+            (SELECT COUNT(*)
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != '') AS descriptionCount
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         WHERE r.status = 'PAID' 
@@ -631,7 +703,21 @@
         SELECT 
             r.*, 
             u.korean_name AS drafterName,
-            c.company_name AS companyName
+            c.company_name AS companyName,
+            (SELECT d.description
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != ''
+             ORDER BY d.expense_detail_id ASC
+             LIMIT 1) AS firstDescription,
+            (SELECT COUNT(*)
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != '') AS descriptionCount
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         LEFT JOIN company_tb c ON r.company_id = c.company_id
@@ -770,7 +856,21 @@
     <select id="selectMissingReceipts" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT 
             r.*, 
-            u.korean_name AS drafterName 
+            u.korean_name AS drafterName,
+            (SELECT d.description
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != ''
+             ORDER BY d.expense_detail_id ASC
+             LIMIT 1) AS firstDescription,
+            (SELECT COUNT(*)
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != '') AS descriptionCount
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         LEFT JOIN receipt_tb rec ON r.expense_report_id = rec.expense_report_id

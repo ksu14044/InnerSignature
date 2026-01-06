@@ -4,3 +4,4 @@
 ALTER TABLE `expense_detail_tb`
 ADD COLUMN `merchant_name` varchar(200) DEFAULT NULL COMMENT '상호명/업체명' AFTER `category`;
 
+

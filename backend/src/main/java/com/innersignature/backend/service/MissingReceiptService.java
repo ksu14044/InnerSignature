@@ -16,6 +16,7 @@ import java.util.Map;
 public class MissingReceiptService {
     
     private final ExpenseMapper expenseMapper;
+    private final ExpenseService expenseService;
     
     /**
      * 증빙 누락 건 조회 (일정 기간 내에 결의서가 작성되지 않은 건)
@@ -28,7 +29,14 @@ public class MissingReceiptService {
         // 법인카드 사용 후 결의서가 작성되지 않은 건 조회
         // 실제로는 법인카드 사용 내역 테이블이 필요하지만, 여기서는 예시로 구현
         // 현재는 APPROVED 상태이지만 영수증이 없는 건을 조회
-        return expenseMapper.selectMissingReceipts(companyId, cutoffDate);
+        List<ExpenseReportDto> list = expenseMapper.selectMissingReceipts(companyId, cutoffDate);
+        
+        // 적요 요약 정보 생성
+        for (ExpenseReportDto report : list) {
+            expenseService.generateSummaryDescription(report);
+        }
+        
+        return list;
     }
     
     /**

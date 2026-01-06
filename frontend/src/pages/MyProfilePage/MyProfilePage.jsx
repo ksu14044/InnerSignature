@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCurrentUser, updateCurrentUser, changePassword, getUserCompanies, getPendingCompanies, applyToCompany, removeUserFromCompany, setPrimaryCompany } from '../../api/userApi';
-import { FaSignOutAlt, FaArrowLeft, FaSearch, FaTimes, FaCheck, FaTrash } from 'react-icons/fa';
+import { FaSignOutAlt, FaArrowLeft, FaSearch, FaTimes, FaCheck, FaTrash, FaUserCheck, FaCreditCard } from 'react-icons/fa';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import CompanySearchModal from '../../components/CompanySearchModal/CompanySearchModal';
 import TourButton from '../../components/TourButton/TourButton';
@@ -566,6 +566,42 @@ const MyProfilePage = () => {
               소속된 회사가 없습니다. 위에서 회사를 검색하여 지원해주세요.
             </div>
           )}
+        </div>
+      </S.ProfileCard>
+
+      {/* 담당 결재자 설정 섹션 */}
+      <S.ProfileCard>
+        <S.CardTitle>담당 결재자 설정</S.CardTitle>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <p style={{ margin: '0 0 12px 0', color: '#666', fontSize: '14px' }}>
+            담당 결재자를 설정하면 지출결의서 작성 시 자동으로 결재자가 선택됩니다.
+          </p>
+          <S.Button 
+            primary 
+            onClick={() => navigate('/my-approvers')}
+            style={{ width: '100%', padding: '12px', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+          >
+            <FaUserCheck />
+            담당 결재자 관리
+          </S.Button>
+        </div>
+      </S.ProfileCard>
+
+      {/* 카드 관리 섹션 */}
+      <S.ProfileCard>
+        <S.CardTitle>카드 관리</S.CardTitle>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <p style={{ margin: '0 0 12px 0', color: '#666', fontSize: '14px' }}>
+            개인 카드와 회사 카드를 등록하고 관리할 수 있습니다. 등록한 카드는 지출결의서 작성 시 빠르게 선택할 수 있습니다.
+          </p>
+          <S.Button 
+            primary 
+            onClick={() => navigate('/cards')}
+            style={{ width: '100%', padding: '12px', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+          >
+            <FaCreditCard />
+            카드 관리
+          </S.Button>
         </div>
       </S.ProfileCard>
 

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Base64;
 
 /**
@@ -21,6 +22,20 @@ public class EncryptionUtil {
     private String secretKey;
     
     /**
+     * 키를 AES에 맞는 길이(32바이트)로 변환
+     * SHA-256 해시를 사용하여 32바이트 키 생성
+     */
+    private SecretKeySpec getSecretKeySpec() {
+        try {
+            MessageDigest sha = MessageDigest.getInstance("SHA-256");
+            byte[] key = sha.digest(secretKey.getBytes(StandardCharsets.UTF_8));
+            return new SecretKeySpec(key, ALGORITHM);
+        } catch (Exception e) {
+            throw new RuntimeException("키 생성 실패", e);
+        }
+    }
+    
+    /**
      * 문자열 암호화
      * @param plainText 평문
      * @return 암호화된 문자열 (Base64 인코딩)
@@ -31,10 +46,7 @@ public class EncryptionUtil {
         }
         
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(
-                secretKey.getBytes(StandardCharsets.UTF_8), 
-                ALGORITHM
-            );
+            SecretKeySpec keySpec = getSecretKeySpec();
             
             Cipher cipher = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, keySpec);
@@ -57,10 +69,7 @@ public class EncryptionUtil {
         }
         
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(
-                secretKey.getBytes(StandardCharsets.UTF_8), 
-                ALGORITHM
-            );
+            SecretKeySpec keySpec = getSecretKeySpec();
             
             Cipher cipher = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, keySpec);

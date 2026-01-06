@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.UserCardMapper">
+    <resultMap id="UserCardResultMap" type="com.innersignature.backend.dto.UserCardDto">
+        <id property="cardId" column="card_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="cardName" column="card_name"/>
+        <result property="cardNumberEncrypted" column="card_number_encrypted"/>
+        <result property="cardLastFour" column="card_last_four"/>
+        <result property="isActive" column="is_active"/>
+        <result property="isDefault" column="is_default"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="userName" column="user_name"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.UserCardDto" 
+            useGeneratedKeys="true" keyProperty="cardId">
+        INSERT INTO user_card_tb (user_id, card_name, card_number_encrypted, card_last_four, is_active, is_default, created_at, updated_at)
+        VALUES (#{userId}, #{cardName}, #{cardNumberEncrypted}, #{cardLastFour}, 
+                COALESCE(#{isActive}, 1), COALESCE(#{isDefault}, 0), NOW(), NOW())
+    </insert>
+
+    <select id="findById" resultMap="UserCardResultMap">
+        SELECT 
+            uc.*,
+            u.korean_name AS user_name
+        FROM user_card_tb uc
+        LEFT JOIN user_tb u ON uc.user_id = u.user_id
+        WHERE uc.card_id = #{cardId}
+        LIMIT 1
+    </select>
+
+    <select id="findByUserId" resultMap="UserCardResultMap">
+        SELECT 
+            uc.*,
+            u.korean_name AS user_name
+        FROM user_card_tb uc
+        LEFT JOIN user_tb u ON uc.user_id = u.user_id
+        WHERE uc.user_id = #{userId}
+        ORDER BY uc.is_default DESC, uc.created_at DESC
+    </select>
+
+    <select id="findActiveByUserId" resultMap="UserCardResultMap">
+        SELECT 
+            uc.*,
+            u.korean_name AS user_name
+        FROM user_card_tb uc
+        LEFT JOIN user_tb u ON uc.user_id = u.user_id
+        WHERE uc.user_id = #{userId}
+          AND uc.is_active = 1
+        ORDER BY uc.is_default DESC, uc.created_at DESC
+    </select>
+
+    <select id="findDefaultByUserId" resultMap="UserCardResultMap">
+        SELECT 
+            uc.*,
+            u.korean_name AS user_name
+        FROM user_card_tb uc
+        LEFT JOIN user_tb u ON uc.user_id = u.user_id
+        WHERE uc.user_id = #{userId}
+          AND uc.is_default = 1
+          AND uc.is_active = 1
+        LIMIT 1
+    </select>
+
+    <update id="update" parameterType="com.innersignature.backend.dto.UserCardDto">
+        UPDATE user_card_tb
+        SET card_name = #{cardName},
+            card_number_encrypted = #{cardNumberEncrypted},
+            card_last_four = #{cardLastFour},
+            is_active = #{isActive},
+            is_default = #{isDefault},
+            updated_at = NOW()
+        WHERE card_id = #{cardId}
+    </update>
+
+    <update id="delete">
+        UPDATE user_card_tb
+        SET is_active = 0,
+            updated_at = NOW()
+        WHERE card_id = #{cardId}
+    </update>
+
+    <update id="deactivate">
+        UPDATE user_card_tb
+        SET is_active = 0,
+            updated_at = NOW()
+        WHERE card_id = #{cardId}
+    </update>
+
+    <update id="clearDefaultByUserId">
+        UPDATE user_card_tb
+        SET is_default = 0,
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+          AND is_default = 1
+    </update>
+</mapper>

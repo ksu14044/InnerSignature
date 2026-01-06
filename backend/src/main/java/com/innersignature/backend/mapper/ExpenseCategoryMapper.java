@@ -59,3 +59,4 @@ public interface ExpenseCategoryMapper {
     Integer getMaxDisplayOrder(@Param("companyId") Long companyId);
 }
 
+

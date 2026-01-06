@@ -20,3 +20,4 @@ CREATE TABLE IF NOT EXISTS `user_approver_mapping_tb` (
   CONSTRAINT `fk_user_approver_mapping_company` FOREIGN KEY (`company_id`) REFERENCES `company_tb` (`company_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='사용자별 담당 결재자 매핑';
 
+

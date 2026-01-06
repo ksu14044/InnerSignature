@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.CompanyCardMapper">
+    <resultMap id="CompanyCardResultMap" type="com.innersignature.backend.dto.CompanyCardDto">
+        <id property="cardId" column="card_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="cardName" column="card_name"/>
+        <result property="cardNumberEncrypted" column="card_number_encrypted"/>
+        <result property="cardLastFour" column="card_last_four"/>
+        <result property="isActive" column="is_active"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createdByName" column="created_by_name"/>
+        <result property="companyName" column="company_name"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.CompanyCardDto" 
+            useGeneratedKeys="true" keyProperty="cardId">
+        INSERT INTO company_card_tb (company_id, card_name, card_number_encrypted, card_last_four, is_active, created_by, created_at, updated_at)
+        VALUES (#{companyId}, #{cardName}, #{cardNumberEncrypted}, #{cardLastFour}, 
+                COALESCE(#{isActive}, 1), #{createdBy}, NOW(), NOW())
+    </insert>
+
+    <select id="findById" resultMap="CompanyCardResultMap">
+        SELECT 
+            cc.*,
+            u.korean_name AS created_by_name,
+            c.company_name AS company_name
+        FROM company_card_tb cc
+        LEFT JOIN user_tb u ON cc.created_by = u.user_id
+        LEFT JOIN company_tb c ON cc.company_id = c.company_id
+        WHERE cc.card_id = #{cardId}
+        LIMIT 1
+    </select>
+
+    <select id="findByCompanyId" resultMap="CompanyCardResultMap">
+        SELECT 
+            cc.*,
+            u.korean_name AS created_by_name,
+            c.company_name AS company_name
+        FROM company_card_tb cc
+        LEFT JOIN user_tb u ON cc.created_by = u.user_id
+        LEFT JOIN company_tb c ON cc.company_id = c.company_id
+        WHERE cc.company_id = #{companyId}
+        ORDER BY cc.created_at DESC
+    </select>
+
+    <select id="findActiveByCompanyId" resultMap="CompanyCardResultMap">
+        SELECT 
+            cc.*,
+            u.korean_name AS created_by_name,
+            c.company_name AS company_name
+        FROM company_card_tb cc
+        LEFT JOIN user_tb u ON cc.created_by = u.user_id
+        LEFT JOIN company_tb c ON cc.company_id = c.company_id
+        WHERE cc.company_id = #{companyId}
+          AND cc.is_active = 1
+        ORDER BY cc.created_at DESC
+    </select>
+
+    <update id="update" parameterType="com.innersignature.backend.dto.CompanyCardDto">
+        UPDATE company_card_tb
+        SET card_name = #{cardName},
+            card_number_encrypted = #{cardNumberEncrypted},
+            card_last_four = #{cardLastFour},
+            is_active = #{isActive},
+            updated_at = NOW()
+        WHERE card_id = #{cardId}
+    </update>
+
+    <update id="delete">
+        UPDATE company_card_tb
+        SET is_active = 0,
+            updated_at = NOW()
+        WHERE card_id = #{cardId}
+    </update>
+
+    <update id="deactivate">
+        UPDATE company_card_tb
+        SET is_active = 0,
+            updated_at = NOW()
+        WHERE card_id = #{cardId}
+    </update>
+</mapper>
