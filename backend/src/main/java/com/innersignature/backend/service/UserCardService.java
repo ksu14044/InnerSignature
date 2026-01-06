@@ -118,6 +118,25 @@ public class UserCardService {
     }
     
     /**
+     * 개인 카드 조회 (내부용 - 암호화된 카드번호 포함)
+     * ExpenseService 등 내부에서 암호화된 카드번호가 필요할 때 사용
+     */
+    public UserCardDto getCardForInternalUse(Long cardId, Long currentUserId) {
+        UserCardDto card = userCardMapper.findById(cardId);
+        if (card == null) {
+            throw new ResourceNotFoundException("카드를 찾을 수 없습니다.");
+        }
+        
+        // 본인 카드만 조회 가능
+        if (!card.getUserId().equals(currentUserId)) {
+            throw new BusinessException("권한이 없습니다.");
+        }
+        
+        // 마스킹하지 않고 암호화된 카드번호 그대로 반환
+        return card;
+    }
+    
+    /**
      * 개인 카드 수정
      */
     @Transactional

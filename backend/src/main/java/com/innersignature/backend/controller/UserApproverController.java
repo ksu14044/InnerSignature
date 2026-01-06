@@ -59,7 +59,7 @@ public class UserApproverController {
     
     @Operation(summary = "담당 결재자 추가", description = "사용자에게 담당 결재자를 추가합니다.")
     @PostMapping("/{userId}/approvers")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CEO')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CEO', 'ACCOUNTANT')")
     public ResponseEntity<ApiResponse<UserApproverMappingDto>> createMapping(
             @PathVariable Long userId,
             @RequestBody UserApproverMappingDto mapping) {
@@ -77,7 +77,7 @@ public class UserApproverController {
     
     @Operation(summary = "담당 결재자 수정", description = "담당 결재자 매핑을 수정합니다.")
     @PutMapping("/{userId}/approvers/{mappingId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CEO')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CEO', 'ACCOUNTANT')")
     public ResponseEntity<ApiResponse<UserApproverMappingDto>> updateMapping(
             @PathVariable Long userId,
             @PathVariable Long mappingId,
@@ -97,7 +97,7 @@ public class UserApproverController {
     
     @Operation(summary = "담당 결재자 삭제", description = "담당 결재자 매핑을 삭제(비활성화)합니다.")
     @DeleteMapping("/{userId}/approvers/{mappingId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CEO')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CEO', 'ACCOUNTANT')")
     public ResponseEntity<ApiResponse<Void>> deleteMapping(
             @PathVariable Long userId,
             @PathVariable Long mappingId) {

@@ -524,10 +524,10 @@ public class ExpenseService {
                         try {
                             String encryptedCardNumber = null;
                             if ("COMPANY_CARD".equals(detail.getPaymentMethod())) {
-                                CompanyCardDto card = companyCardService.getCard(detail.getCardId(), currentUserId);
+                                CompanyCardDto card = companyCardService.getCardForInternalUse(detail.getCardId(), currentUserId);
                                 encryptedCardNumber = card.getCardNumberEncrypted();
                             } else if ("CARD".equals(detail.getPaymentMethod())) {
-                                UserCardDto card = userCardService.getCard(detail.getCardId(), currentUserId);
+                                UserCardDto card = userCardService.getCardForInternalUse(detail.getCardId(), currentUserId);
                                 encryptedCardNumber = card.getCardNumberEncrypted();
                             }
                             
@@ -740,10 +740,10 @@ public class ExpenseService {
                         try {
                             String encryptedCardNumber = null;
                             if ("COMPANY_CARD".equals(detail.getPaymentMethod())) {
-                                CompanyCardDto card = companyCardService.getCard(detail.getCardId(), currentUserId);
+                                CompanyCardDto card = companyCardService.getCardForInternalUse(detail.getCardId(), currentUserId);
                                 encryptedCardNumber = card.getCardNumberEncrypted();
                             } else if ("CARD".equals(detail.getPaymentMethod())) {
-                                UserCardDto card = userCardService.getCard(detail.getCardId(), currentUserId);
+                                UserCardDto card = userCardService.getCardForInternalUse(detail.getCardId(), currentUserId);
                                 encryptedCardNumber = card.getCardNumberEncrypted();
                             }
                             
@@ -920,6 +920,13 @@ public class ExpenseService {
         approvalLine.setCompanyId(companyId);
         
         expenseMapper.insertApprovalLine(approvalLine);
+        
+        // 7. 추가 결재자를 추가했으므로 문서 상태가 APPROVED인 경우 WAIT로 변경
+        if ("APPROVED".equals(report.getStatus())) {
+            expenseMapper.updateExpenseReportStatus(expenseReportId, "WAIT", companyId);
+            logger.info("추가 결재자 추가로 인해 문서 상태를 WAIT로 변경 - expenseReportId: {}", expenseReportId);
+        }
+        
         logger.info("추가 결재 라인 추가 완료 - expenseReportId: {}, approverId: {}", expenseReportId, approvalLine.getApproverId());
     }
 

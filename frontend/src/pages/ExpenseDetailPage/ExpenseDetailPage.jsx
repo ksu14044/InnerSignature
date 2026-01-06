@@ -90,12 +90,24 @@ const ExpenseDetailPage = () => {
       const response = await getActiveApprovers(firstApproverId);
       
       if (response.success && response.data && response.data.length > 0) {
-        setAvailableApprovers(response.data);
-        // 담당 결재자가 1명이면 자동 선택
-        if (response.data.length === 1) {
-          setSelectedAdditionalApprover(response.data[0].userId);
+        // 이미 추가된 결재자 ID 목록
+        const existingApproverIds = detail.approvalLines.map(line => line.approverId);
+        
+        // 이미 추가된 결재자 제외
+        const filteredApprovers = response.data.filter(
+          approver => !existingApproverIds.includes(approver.userId)
+        );
+        
+        if (filteredApprovers.length > 0) {
+          setAvailableApprovers(filteredApprovers);
+          // 담당 결재자가 1명이면 자동 선택
+          if (filteredApprovers.length === 1) {
+            setSelectedAdditionalApprover(filteredApprovers[0].userId);
+          }
+          setIsAddApproverModalOpen(true);
+        } else {
+          alert('추가할 수 있는 담당 결재자가 없습니다.');
         }
-        setIsAddApproverModalOpen(true);
       } else {
         alert('추가할 수 있는 담당 결재자가 없습니다.');
       }

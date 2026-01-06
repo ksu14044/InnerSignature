@@ -146,6 +146,26 @@ public class CompanyCardService {
     }
     
     /**
+     * 회사 카드 조회 (내부용 - 암호화된 카드번호 포함)
+     * ExpenseService 등 내부에서 암호화된 카드번호가 필요할 때 사용
+     */
+    public CompanyCardDto getCardForInternalUse(Long cardId, Long currentUserId) {
+        CompanyCardDto card = companyCardMapper.findById(cardId);
+        if (card == null) {
+            throw new ResourceNotFoundException("카드를 찾을 수 없습니다.");
+        }
+        
+        // 권한 검증: 같은 회사 소속이어야 함
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (!card.getCompanyId().equals(companyId)) {
+            throw new BusinessException("권한이 없습니다.");
+        }
+        
+        // 마스킹하지 않고 암호화된 카드번호 그대로 반환
+        return card;
+    }
+    
+    /**
      * 회사 카드 수정
      */
     @Transactional
