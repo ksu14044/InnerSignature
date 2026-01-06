@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, completeTaxProcessing, updateExpenseDetailTaxInfo } from '../../api/expenseApi';
+import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, requestTaxRevision } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
 import * as S from './style'; // 스타일 가져오기
 import SignatureModal from '../../components/SignatureModal/SignatureModal';
@@ -178,6 +178,10 @@ const ExpenseDetailPage = () => {
     if (detail.status !== 'WAIT' && detail.status !== 'REJECTED') return false;
     // 결재자 서명이 있으면 반려인 경우만 가능
     if (hasAnyApprovalSignature() && detail.status !== 'REJECTED') return false;
+    // 세무 수집된 문서는 수정 요청이 없으면 수정/삭제 불가
+    if (detail.taxCollectedAt && !detail.taxRevisionRequested) {
+      return false;
+    }
     return true;
   };
 
@@ -205,7 +209,8 @@ const ExpenseDetailPage = () => {
         if(res.success) {
             alert("결제가 완료되었습니다!");
             setIsModalOpen(false);
-            window.location.reload();
+            // 결재 완료 후 내 결재함 탭으로 이동하여 목록에서 해당 문서가 사라진 것을 바로 확인할 수 있게 함
+            navigate('/expenses?tab=MY_APPROVALS');
         } else {
             alert("결제 실패: " + res.message);
         }
@@ -237,7 +242,8 @@ const ExpenseDetailPage = () => {
         if(res.success) {
             alert("결제가 반려되었습니다!");
             handleCloseRejectModal();
-            window.location.reload();
+            // 반려 후에도 내 결재함 탭으로 이동 (해당 문서는 더 이상 결재 대기 목록에 나타나지 않음)
+            navigate('/expenses?tab=MY_APPROVALS');
         } else {
             alert("반려 실패: " + res.message);
         }
@@ -447,36 +453,50 @@ const ExpenseDetailPage = () => {
     }));
   };
 
-  // 세무처리 완료 처리 (TAX_ACCOUNTANT 전용)
-  const handleCompleteTaxProcessing = () => {
-    if(isCompletingTax) return;
+  // 세무 수정 요청 처리 (TAX_ACCOUNTANT 전용)
+  const handleRequestTaxRevision = () => {
     if(!user) {
         alert("로그인 후 진행할 수 있습니다.");
         return;
     }
 
     if(user.role !== 'TAX_ACCOUNTANT') {
-        alert("TAX_ACCOUNTANT 권한만 세무처리 완료가 가능합니다.");
+        alert("TAX_ACCOUNTANT 권한만 수정 요청이 가능합니다.");
         return;
     }
 
-    if(window.confirm("정말로 세무처리를 완료 처리하시겠습니까?")) {
-        setIsCompletingTax(true);
-        completeTaxProcessing(id)
-        .then((res) => {
-            if(res.success) {
-                alert("세무처리가 완료되었습니다!");
-                window.location.reload();
-            } else {
-                alert("세무처리 완료 실패: " + res.message);
-            }
-        })
-        .catch((error) => {
-            const errorMessage = error?.response?.data?.message || error?.message || "오류가 발생했습니다.";
-            alert(errorMessage);
-        })
-        .finally(() => setIsCompletingTax(false));
+    if(!detail || !detail.taxCollectedAt) {
+        alert("세무 수집된 문서만 수정 요청할 수 있습니다.");
+        return;
     }
+
+    if(detail.taxRevisionRequested) {
+        alert("이미 수정 요청이 된 문서입니다.");
+        return;
+    }
+
+    const reason = prompt('수정 요청 사유를 입력해주세요.\n(예: 영수증과 작성 금액 불일치)');
+    if (!reason || !reason.trim()) {
+        return;
+    }
+
+    if(!window.confirm("정말로 수정 요청을 보내시겠습니까?")) {
+        return;
+    }
+
+    requestTaxRevision(id, reason)
+    .then((res) => {
+        if(res.success) {
+            alert("수정 요청이 전송되었습니다.");
+            window.location.reload();
+        } else {
+            alert("수정 요청 실패: " + res.message);
+        }
+    })
+    .catch((error) => {
+        const errorMessage = error?.response?.data?.message || error?.message || "오류가 발생했습니다.";
+        alert(errorMessage);
+    });
   };
 
   // 영수증 업로드 처리
@@ -955,6 +975,34 @@ const ExpenseDetailPage = () => {
              수정하기
            </button>
          )}
+         {/* 세무 수집된 문서이지만 수정 요청이 없는 경우 안내 메시지 */}
+         {detail && detail.taxCollectedAt && !detail.taxRevisionRequested && user && detail.drafterId === user.userId && detail.status === 'WAIT' && (
+           <span style={{ 
+             color: '#dc3545', 
+             fontSize: '14px', 
+             marginLeft: '12px',
+             padding: '8px 12px',
+             backgroundColor: '#fff3cd',
+             border: '1px solid #ffc107',
+             borderRadius: '4px'
+           }}>
+             ⚠️ 세무 수집된 문서는 수정할 수 없습니다. 세무사가 수정 요청을 보낸 경우에만 수정 가능합니다.
+           </span>
+         )}
+         {/* 수정 요청이 있는 경우 안내 메시지 */}
+         {detail && detail.taxRevisionRequested && detail.taxRevisionRequestReason && (
+           <span style={{ 
+             color: '#856404', 
+             fontSize: '14px', 
+             marginLeft: '12px',
+             padding: '8px 12px',
+             backgroundColor: '#fff3cd',
+             border: '1px solid #ffc107',
+             borderRadius: '4px'
+           }}>
+             📝 세무사 수정 요청: {detail.taxRevisionRequestReason}
+           </span>
+         )}
          {/* 결재 권한이 있고, 문서가 반려되지 않고 결제가 완료되지 않은 경우에만 결재하기/반려하기 버튼 표시 */}
          {hasApprovalPermission() && detail.status !== 'REJECTED' && detail.status !== 'PAID' && (
            <>
@@ -972,10 +1020,15 @@ const ExpenseDetailPage = () => {
              {isMarkingAsPaid ? '처리 중...' : '결제 완료'}
            </button>
          )}
-         {/* TAX_ACCOUNTANT 권한을 가진 사용자가 PAID 상태의 문서를 세무처리 완료 가능 */}
-         {user && user.role === 'TAX_ACCOUNTANT' && detail.status === 'PAID' && !detail.taxProcessed && (
-           <button className="tax" onClick={handleCompleteTaxProcessing} disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax} style={{ backgroundColor: '#17a2b8', color: 'white' }}>
-             {isCompletingTax ? '처리 중...' : '세무처리 완료'}
+         {/* TAX_ACCOUNTANT 권한을 가진 사용자가 세무 수집된 문서에 대해 수정 요청 가능 */}
+         {user && user.role === 'TAX_ACCOUNTANT' && detail.status === 'PAID' && detail.taxCollectedAt && !detail.taxRevisionRequested && (
+           <button 
+             className="edit" 
+             onClick={handleRequestTaxRevision} 
+             disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
+             style={{ backgroundColor: '#ffc107', color: 'white' }}
+           >
+             수정 요청 보내기
            </button>
          )}
        </S.ButtonGroup>

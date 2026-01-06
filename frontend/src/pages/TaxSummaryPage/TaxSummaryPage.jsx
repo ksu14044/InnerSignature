@@ -5,9 +5,7 @@ import {
   fetchTaxPendingReports,
   fetchTaxStatus,
   fetchMonthlyTaxSummary,
-  batchCompleteTaxProcessing,
-  completeTaxProcessing,
-  downloadTaxReport
+  collectTaxData
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
 import * as S from './style';
@@ -28,9 +26,6 @@ const TaxSummaryPage = () => {
   const [summary, setSummary] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(new Set());
-  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
-  const [processingExpenseId, setProcessingExpenseId] = useState(null);
   const debounceTimer = useRef(null);
 
   const isTaxAccountant = user?.role === 'TAX_ACCOUNTANT';
@@ -119,74 +114,27 @@ const TaxSummaryPage = () => {
     return [...summary].sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0));
   }, [summary]);
 
-  // 일괄 처리 핸들러
-  const handleBatchComplete = async () => {
-    if (isBatchProcessing || processingExpenseId !== null) return;
-    if (selectedIds.size === 0) {
-      alert('처리할 건을 선택해주세요.');
+  // 기간별 자료 수집 및 전표 다운로드 핸들러
+  const handleCollectTaxData = async () => {
+    if (!filters.startDate || !filters.endDate) {
+      alert('시작일과 종료일을 선택해주세요.');
       return;
     }
 
-    if (!confirm(`선택한 ${selectedIds.size}건을 세무처리 완료 처리하시겠습니까?`)) {
-      return;
-    }
-
-    try {
-      setIsBatchProcessing(true);
-      const ids = Array.from(selectedIds);
-      const res = await batchCompleteTaxProcessing(ids);
-      if (res.success) {
-        alert('세무처리 완료 처리되었습니다.');
-        setSelectedIds(new Set());
-        loadTaxData();
-      }
-    } catch (e) {
-      console.error(e);
-      alert(e?.response?.data?.message || '세무처리 일괄 완료 중 오류가 발생했습니다.');
-    } finally {
-      setIsBatchProcessing(false);
-    }
-  };
-
-  // 개별 처리 핸들러
-  const handleSingleComplete = async (expenseId) => {
-    if (processingExpenseId === expenseId || isBatchProcessing) return;
-    if (!confirm('이 건을 세무처리 완료 처리하시겠습니까?')) {
+    if (!confirm(`선택한 기간(${filters.startDate} ~ ${filters.endDate})의 자료를 수집하고 전표를 다운로드하시겠습니까?\n수집된 자료는 수정/삭제가 불가능합니다.`)) {
       return;
     }
 
     try {
-      setProcessingExpenseId(expenseId);
-      const res = await completeTaxProcessing(expenseId);
-      if (res.success) {
-        alert('세무처리 완료 처리되었습니다.');
-        loadTaxData();
-      }
+      setLoading(true);
+      await collectTaxData(filters.startDate, filters.endDate);
+      alert('세무 자료가 수집되었고 전표가 다운로드되었습니다.');
+      loadTaxData();
     } catch (e) {
-      console.error(e);
-      alert(e?.response?.data?.message || '세무처리 완료 중 오류가 발생했습니다.');
+      console.error('세무 자료 수집 에러:', e);
+      alert(e?.userMessage || e?.response?.data?.message || e?.message || '세무 자료 수집 중 오류가 발생했습니다.');
     } finally {
-      setProcessingExpenseId(null);
-    }
-  };
-
-  // 체크박스 토글
-  const toggleSelection = (expenseId) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(expenseId)) {
-      newSelected.delete(expenseId);
-    } else {
-      newSelected.add(expenseId);
-    }
-    setSelectedIds(newSelected);
-  };
-
-  // 전체 선택/해제
-  const toggleSelectAll = () => {
-    if (selectedIds.size === pendingReports.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(pendingReports.map(r => r.expenseReportId)));
+      setLoading(false);
     }
   };
 
@@ -213,7 +161,7 @@ const TaxSummaryPage = () => {
       <S.Header data-tourid="tour-tax-header">
         <div>
           <S.Title>세무사 전용 요약</S.Title>
-          <S.SubTitle>세무처리 현황 및 집계 데이터</S.SubTitle>
+          <S.SubTitle>기간별 자료 수집 및 세무처리 현황</S.SubTitle>
         </div>
         <S.ButtonRow>
           <TourButton />
@@ -262,10 +210,22 @@ const TaxSummaryPage = () => {
         </S.FilterGrid>
         <S.ButtonRow style={{ marginTop: 12 }}>
           <S.Button onClick={loadTaxData}>수동 새로고침</S.Button>
+          <S.Button 
+            variant="primary" 
+            onClick={handleCollectTaxData} 
+            disabled={!filters.startDate || !filters.endDate || loading}
+            style={{ fontSize: '16px', padding: '10px 20px', fontWeight: 'bold' }}
+          >
+            {loading ? '처리 중...' : '기간별 자료 수집 및 전표 다운로드'}
+          </S.Button>
           <S.Button variant="secondary" onClick={() => setFilters({ startDate: '', endDate: '', taxProcessed: null })}>
             필터 초기화
           </S.Button>
         </S.ButtonRow>
+        <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#e7f3ff', borderRadius: '4px', fontSize: '14px', color: '#0066cc' }}>
+          💡 <strong>안내:</strong> 기간별 자료 수집 버튼을 클릭하면 해당 기간의 PAID 상태 문서들이 수집 처리되고, 세무사 전용 전표가 자동으로 다운로드됩니다. 
+          이미 수집된 자료도 포함되어 전표에 포함됩니다.
+        </div>
       </S.FilterCard>
 
       {/* 세무처리 현황 통계 카드 */}
@@ -298,75 +258,61 @@ const TaxSummaryPage = () => {
         </S.StatCard>
       )}
 
-      {/* 세무처리 대기 건 목록 */}
+      {/* PAID 상태 문서 목록 (참고용) */}
       <S.Card>
         <S.CardTitle data-tourid="tour-tax-pending">
-          세무처리 대기 건 ({pendingReports.length}건)
-          {pendingReports.length > 0 && (
-            <S.Button 
-              variant="primary" 
-              onClick={handleBatchComplete}
-              disabled={isBatchProcessing || processingExpenseId !== null}
-              style={{ marginLeft: '12px', fontSize: '14px', padding: '6px 12px' }}
-            >
-              {isBatchProcessing ? '처리 중...' : `선택한 건 일괄 처리 (${selectedIds.size})`}
-            </S.Button>
-          )}
+          PAID 상태 문서 목록 ({pendingReports.length}건)
+          <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666', marginLeft: '12px' }}>
+            (기간별 자료 수집 대상)
+          </span>
         </S.CardTitle>
         {loading ? (
           <S.Empty>불러오는 중...</S.Empty>
         ) : pendingReports.length === 0 ? (
-          <S.Empty>세무처리 대기 건이 없습니다.</S.Empty>
+          <S.Empty>PAID 상태 문서가 없습니다.</S.Empty>
         ) : (
           <>
             <S.SummaryTable>
               <thead>
                 <tr>
-                  <S.Th>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.size === pendingReports.length && pendingReports.length > 0}
-                      onChange={toggleSelectAll}
-                    />
-                    제목
-                  </S.Th>
+                  <S.Th>적요(내용)</S.Th>
                   <S.Th>작성자</S.Th>
                   <S.Th>작성일</S.Th>
                   <S.Th>금액</S.Th>
-                  <S.Th>처리</S.Th>
+                  <S.Th>세무 수집</S.Th>
                 </tr>
               </thead>
               <tbody>
-                {pendingReports.map((item, index) => (
-                  <S.Tr key={item.expenseReportId} even={index % 2 === 1}>
-                    <S.Td data-label="제목">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(item.expenseReportId)}
-                          onChange={() => toggleSelection(item.expenseReportId)}
-                          style={{ margin: 0, flexShrink: 0 }}
-                        />
+                {pendingReports.map((item, index) => {
+                  const descriptionDisplay =
+                    item.summaryDescription && item.summaryDescription.trim() !== ''
+                      ? item.summaryDescription
+                      : item.firstDescription && item.firstDescription.trim() !== ''
+                        ? item.firstDescription
+                        : '-';
+
+                  return (
+                    <S.Tr key={item.expenseReportId} even={index % 2 === 1}>
+                      <S.Td data-label="적요(내용)">
                         <S.LinkButton onClick={() => navigate(`/detail/${item.expenseReportId}`)}>
-                          {item.title}
+                          {descriptionDisplay}
                         </S.LinkButton>
-                      </div>
-                    </S.Td>
-                    <S.Td data-label="작성자">{item.drafterName}</S.Td>
-                    <S.Td data-label="작성일">{item.reportDate}</S.Td>
-                    <S.Td align="right" data-label="금액">{item.totalAmount?.toLocaleString()}원</S.Td>
-                    <S.Td data-label="처리">
-                      <S.Button
-                        variant="secondary"
-                        onClick={() => handleSingleComplete(item.expenseReportId)}
-                        disabled={isBatchProcessing || processingExpenseId === item.expenseReportId || processingExpenseId !== null}
-                        style={{ fontSize: '12px', padding: '4px 8px' }}
-                      >
-                        {processingExpenseId === item.expenseReportId ? '처리 중...' : '처리'}
-                      </S.Button>
-                    </S.Td>
-                  </S.Tr>
-                ))}
+                      </S.Td>
+                      <S.Td data-label="작성자">{item.drafterName}</S.Td>
+                      <S.Td data-label="작성일">{item.reportDate}</S.Td>
+                      <S.Td align="right" data-label="금액">{item.totalAmount?.toLocaleString()}원</S.Td>
+                      <S.Td data-label="세무 수집">
+                        {item.taxCollectedAt ? (
+                          <span style={{ color: '#28a745', fontSize: '12px' }}>
+                            수집됨 ({new Date(item.taxCollectedAt).toLocaleDateString('ko-KR')})
+                          </span>
+                        ) : (
+                          <span style={{ color: '#dc3545', fontSize: '12px' }}>미수집</span>
+                        )}
+                      </S.Td>
+                    </S.Tr>
+                  );
+                })}
               </tbody>
             </S.SummaryTable>
           </>

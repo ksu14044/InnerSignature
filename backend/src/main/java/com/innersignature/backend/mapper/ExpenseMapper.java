@@ -118,6 +118,29 @@ public interface ExpenseMapper {
         @Param("companyId") Long companyId
     );
 
+    // 세무 수집 대기 건 조회 (PAID 상태이지만 tax_collected_at이 NULL)
+    List<ExpenseReportDto> selectTaxPendingCollection(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("companyId") Long companyId
+    );
+
+    // 세무 수집 업데이트
+    void updateTaxCollected(
+            @Param("expenseReportId") Long expenseReportId,
+            @Param("taxCollectedAt") LocalDateTime taxCollectedAt,
+            @Param("taxCollectedBy") Long taxCollectedBy,
+            @Param("companyId") Long companyId
+    );
+
+    // 세무 수정 요청 업데이트
+    void updateTaxRevisionRequest(
+            @Param("expenseReportId") Long expenseReportId,
+            @Param("taxRevisionRequested") Boolean taxRevisionRequested,
+            @Param("taxRevisionRequestReason") String taxRevisionRequestReason,
+            @Param("companyId") Long companyId
+    );
+
     // 1. 메인 문서 저장
     void insertExpenseReport(ExpenseReportDto expenseReportDto);
 
@@ -136,11 +159,20 @@ public interface ExpenseMapper {
     // 3-1. 결재 라인 삭제
     void deleteApprovalLines(@Param("expenseReportId") Long expenseReportId, @Param("companyId") Long companyId);
 
+    // 3-2. 결재 라인 전체 초기화 (세무 수정 요청 시 사용)
+    void resetApprovalLinesForReport(@Param("expenseReportId") Long expenseReportId, @Param("companyId") Long companyId);
+
     // 지출결의서 삭제 (작성자 또는 ADMIN 권한 필요)
     void deleteExpenseReport(@Param("expenseReportId") Long expenseReportId, @Param("companyId") Long companyId);
 
     // 미서명 건 조회: 현재 사용자가 서명해야 할 미완료 건 조회
     List<ExpenseReportDto> selectPendingApprovalsByUserId(@Param("userId") Long userId, @Param("companyId") Long companyId);
+
+    // 내가 결재했던 문서 조회: 현재 사용자가 APPROVED/REJECTED 한 문서 이력 조회
+    List<ExpenseReportDto> selectMyApprovedReportsByUserId(@Param("userId") Long userId, @Param("companyId") Long companyId);
+
+    // 세무 수정 요청 건 조회: 작성자 기준
+    List<ExpenseReportDto> selectTaxRevisionRequestsByDrafter(@Param("userId") Long userId, @Param("companyId") Long companyId);
 
     // 영수증 목록 조회
     List<ReceiptDto> selectReceiptsByExpenseReportId(@Param("expenseReportId") Long expenseReportId, @Param("companyId") Long companyId);

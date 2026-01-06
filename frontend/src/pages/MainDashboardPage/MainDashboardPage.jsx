@@ -563,7 +563,13 @@ const MainDashboardPage = () => {
                         setIsNotificationModalOpen(false);
                       }}
                     >
-                      <S.NotificationItemTitle>{item.title}</S.NotificationItemTitle>
+                      <S.NotificationItemTitle>
+                        {(item.summaryDescription && item.summaryDescription.trim() !== '')
+                          ? item.summaryDescription
+                          : (item.firstDescription && item.firstDescription.trim() !== '')
+                            ? item.firstDescription
+                            : '-'}
+                      </S.NotificationItemTitle>
                       <S.NotificationItemInfo>
                         <span>문서번호: {item.expenseReportId}</span>
                         <span>작성자: {item.drafterName}</span>

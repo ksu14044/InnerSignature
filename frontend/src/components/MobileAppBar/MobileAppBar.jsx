@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaBars, FaBell, FaUser, FaSignOutAlt, FaBuilding, FaChevronDown, FaCheck } from 'react-icons/fa';
-import { fetchPendingApprovals } from '../../api/expenseApi';
+import { FaBars, FaBell, FaUser, FaSignOutAlt, FaBuilding, FaChevronDown, FaCheck, FaEdit } from 'react-icons/fa';
+import { fetchPendingApprovals, fetchTaxRevisionRequestsForDrafter } from '../../api/expenseApi';
 import { getPendingUsers } from '../../api/userApi';
 import * as S from './style';
 
@@ -12,6 +12,7 @@ const MobileAppBar = ({ title, onMenuClick }) => {
   const { user, logout, companies, switchCompany } = useAuth();
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [taxRevisionRequests, setTaxRevisionRequests] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const companyDropdownRef = useRef(null);
   const isLoginPage = location.pathname === '/' || location.pathname.startsWith('/find-') || location.pathname.startsWith('/reset-password');
@@ -67,6 +68,20 @@ const MobileAppBar = ({ title, onMenuClick }) => {
           setPendingUsers([]);
         });
     }
+
+    // 세무 수정 요청 알림 (작성자용)
+    fetchTaxRevisionRequestsForDrafter()
+      .then((response) => {
+        if (response.success) {
+          setTaxRevisionRequests(response.data || []);
+        } else {
+          setTaxRevisionRequests([]);
+        }
+      })
+      .catch((error) => {
+        console.error('세무 수정 요청 알림 조회 실패:', error);
+        setTaxRevisionRequests([]);
+      });
   }, [user, isLoginPage, location.pathname]);
 
   if (isLoginPage) {
@@ -152,6 +167,26 @@ const MobileAppBar = ({ title, onMenuClick }) => {
               >
                 <FaBell />
                 <S.NotificationCount>{pendingApprovals.length}</S.NotificationCount>
+              </S.NotificationBadge>
+            )}
+            {/* 세무 수정 요청 알림 배지 (작성자용) */}
+            {taxRevisionRequests.length > 0 && (
+              <S.NotificationBadge
+                onClick={() => {
+                  if (location.pathname === '/expenses') {
+                    navigate('/expenses?openTaxRevisions=true', { replace: true });
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('openTaxRevisionModal'));
+                    }, 100);
+                  } else {
+                    navigate('/expenses?openTaxRevisions=true');
+                  }
+                }}
+                title={`세무 수정 요청: ${taxRevisionRequests.length}건`}
+                style={{ backgroundColor: '#ffc107', marginRight: '4px' }}
+              >
+                <FaEdit />
+                <S.NotificationCount>{taxRevisionRequests.length}</S.NotificationCount>
               </S.NotificationBadge>
             )}
             {/* 승인 대기 배지 (CEO, ADMIN만 표시) */}

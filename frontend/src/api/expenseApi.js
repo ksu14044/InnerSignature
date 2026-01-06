@@ -188,13 +188,37 @@ export const deleteExpense = async (expenseId, userId) => {
 // 8. 미서명 건 조회 (알람)
 export const fetchPendingApprovals = async (userId) => {
     try {
-      const response = await axiosInstance.get(`${BASE_URL}/pending-approvals?userId=${userId}`);
+    // userId는 서버에서 SecurityContext로 판단하므로 쿼리 파라미터는 사용하지 않지만,
+    // 기존 시그니처 유지를 위해 인자를 받기만 합니다.
+    const response = await axiosInstance.get(`${BASE_URL}/pending-approvals`);
       return response.data;
     } catch (error) {
       console.error("미서명 건 조회 실패:", error);
       throw error;
     }
   };
+
+// 8-2. 내가 결재했던 문서 이력 조회
+export const fetchMyApprovedReports = async () => {
+  try {
+    const response = await axiosInstance.get(`${BASE_URL}/my-approvals`);
+    return response.data;
+  } catch (error) {
+    console.error("내 결재 문서 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 8-1. 세무 수정 요청 알림 (작성자용)
+export const fetchTaxRevisionRequestsForDrafter = async () => {
+  try {
+    const response = await axiosInstance.get(`${BASE_URL}/tax/revision-requests`);
+    return response.data;
+  } catch (error) {
+    console.error("세무 수정 요청 알림 조회 실패:", error);
+    throw error;
+  }
+};
 
 // 9. 영수증 업로드
 export const uploadReceipt = async (expenseId, userId, file) => {
@@ -315,17 +339,6 @@ export const fetchCategorySummary = async (filters = {}) => {
   }
 };
 
-// 14. 세무처리 완료 (TAX_ACCOUNTANT 전용)
-export const completeTaxProcessing = async (expenseId) => {
-  try {
-    const response = await axiosInstance.put(`${BASE_URL}/${expenseId}/tax-processing/complete`);
-    return response.data;
-  } catch (error) {
-    console.error("세무처리 완료 실패:", error);
-    throw error;
-  }
-};
-
 // 15. 대시보드 전체 요약 통계 조회 (ADMIN/ACCOUNTANT 전용)
 export const fetchDashboardStats = async (startDate = null, endDate = null) => {
   try {
@@ -424,29 +437,16 @@ export const fetchMonthlyTaxSummary = async (startDate = null, endDate = null) =
   }
 };
 
-// 22. 세무처리 일괄 완료 처리 (TAX_ACCOUNTANT 전용)
-export const batchCompleteTaxProcessing = async (expenseReportIds) => {
-  try {
-    const response = await axiosInstance.post(`${BASE_URL}/tax/batch-complete`, {
-      expenseReportIds
-    });
-    return response.data;
-  } catch (error) {
-    console.error("세무처리 일괄 완료 실패:", error);
-    throw error;
-  }
-};
-
-// 23. 지출 엑셀 다운로드 (ADMIN/ACCOUNTANT/CEO/TAX_ACCOUNTANT 전용)
-export const downloadExpensesExcel = async (startDate = null, endDate = null) => {
+// 22-1. 기간별 세무 자료 일괄 수집 및 전표 다운로드 (TAX_ACCOUNTANT 전용)
+export const collectTaxData = async (startDate = null, endDate = null) => {
   try {
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     
-    const response = await axiosInstance.get(`${BASE_URL}/export/excel`, {
+    const response = await axiosInstance.post(`${BASE_URL}/tax/collect`, null, { 
       params,
-      responseType: 'blob', // 파일 다운로드를 위해 blob으로 받기
+      responseType: 'blob' // 파일 다운로드를 위해 blob으로 받기
     });
     
     // Blob을 다운로드 링크로 변환
@@ -455,7 +455,7 @@ export const downloadExpensesExcel = async (startDate = null, endDate = null) =>
     link.href = url;
     
     // 파일명 생성
-    const filename = `지출내역_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    const filename = `세무전표_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
@@ -464,29 +464,37 @@ export const downloadExpensesExcel = async (startDate = null, endDate = null) =>
     
     return { success: true };
   } catch (error) {
-    console.error("엑셀 다운로드 실패:", error);
-    let message = "엑셀 다운로드 중 오류가 발생했습니다.";
-    const data = error?.response?.data;
-    try {
-      if (data instanceof Blob) {
-        const text = await data.text();
-        try {
-          const parsed = JSON.parse(text);
-          if (parsed?.message) message = parsed.message;
-        } catch {
-          if (text) message = text;
-        }
-      } else if (typeof data === 'string' && data) {
-        message = data;
-      } else if (data?.message) {
-        message = data.message;
+    console.error("세무 자료 수집 실패:", error);
+    
+    // Blob 응답인 경우 에러 메시지 파싱
+    if (error.response?.data instanceof Blob) {
+      try {
+        const text = await error.response.data.text();
+        const parsed = JSON.parse(text);
+        const err = new Error(parsed.message || '세무 자료 수집 중 오류가 발생했습니다.');
+        err.userMessage = parsed.message;
+        throw err;
+      } catch (e) {
+        const err = new Error('세무 자료 수집 중 오류가 발생했습니다.');
+        err.userMessage = '세무 자료 수집 중 오류가 발생했습니다.';
+        throw err;
       }
-    } catch (e) {
-      // ignore parsing errors
     }
-    const err = new Error(message);
-    err.userMessage = message;
-    throw err;
+    
+    throw error;
+  }
+};
+
+// 22-2. 세무 수정 요청 (TAX_ACCOUNTANT 전용)
+export const requestTaxRevision = async (expenseReportId, reason) => {
+  try {
+    const response = await axiosInstance.post(`${BASE_URL}/${expenseReportId}/tax/revision-request`, {
+      reason
+    });
+    return response.data;
+  } catch (error) {
+    console.error("세무 수정 요청 실패:", error);
+    throw error;
   }
 };
 

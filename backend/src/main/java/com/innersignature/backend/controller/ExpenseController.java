@@ -29,6 +29,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -332,6 +333,31 @@ public class ExpenseController {
         Long currentUserId = SecurityUtil.getCurrentUserId();
         List<ExpenseReportDto> pendingList = expenseService.getPendingApprovals(currentUserId);
         return new ApiResponse<>(true, "미서명 건 조회 성공", pendingList);
+    }
+
+    /**
+     * 8-1. 내가 결재했던 문서 이력 조회 API
+     * GET /api/expenses/my-approvals
+     * 설명: 현재 사용자가 APPROVED/REJECTED 한 결재 문서 목록을 반환합니다.
+     */
+    @Operation(summary = "내 결재 문서 이력 조회", description = "현재 사용자가 결재(승인/반려)했던 결의서 목록을 조회합니다.")
+    @GetMapping("/my-approvals")
+    public ApiResponse<List<ExpenseReportDto>> getMyApprovals() {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        List<ExpenseReportDto> myApprovals = expenseService.getMyApprovedReports(currentUserId);
+        return new ApiResponse<>(true, "내 결재 문서 조회 성공", myApprovals);
+    }
+
+    /**
+     * 세무 수정 요청 목록 (작성자용)
+     * TAX_ACCOUNTANT가 수정 요청한 결의서들을 작성자 기준으로 조회합니다.
+     */
+    @Operation(summary = "세무 수정 요청 목록(작성자용)", description = "세무사가 수정 요청한 결의서 목록을 작성자 기준으로 조회합니다.")
+    @GetMapping("/tax/revision-requests")
+    public ApiResponse<List<ExpenseReportDto>> getTaxRevisionRequestsForDrafter() {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        List<ExpenseReportDto> list = expenseService.getTaxRevisionRequestsForDrafter(currentUserId);
+        return new ApiResponse<>(true, "세무 수정 요청 목록 조회 성공", list);
     }
 
     /**
@@ -742,6 +768,82 @@ public class ExpenseController {
     }
 
     /**
+     * 기간별 세무 자료 일괄 수집 및 전표 다운로드
+     * POST /api/expenses/tax/collect?startDate=2024-01-01&endDate=2024-12-31
+     * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
+     */
+    @PostMapping("/tax/collect")
+    @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
+    @Operation(summary = "기간별 세무 자료 일괄 수집 및 전표 다운로드", description = "TAX_ACCOUNTANT가 기간별로 PAID 상태의 자료를 수집하고 세무사 전용 전표를 다운로드합니다.")
+    public ResponseEntity<?> collectTaxData(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        logger.info("세무 자료 일괄 수집 및 전표 다운로드 요청 - startDate: {}, endDate: {}, userId: {}", startDate, endDate, currentUserId);
+        
+        try {
+            // 1. 자료 수집 처리
+            expenseService.collectTaxData(startDate, endDate, currentUserId);
+            
+            // 2. 세무사 전용 전표 엑셀 파일 생성 및 다운로드
+            File excelFile = expenseService.exportTaxJournalEntriesToExcel(startDate, endDate, currentUserId);
+            Resource resource = new FileSystemResource(excelFile);
+            
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            String filename = String.format("세무전표_%s_%s.xlsx",
+                    startDate != null ? startDate.format(formatter) : "전체",
+                    endDate != null ? endDate.format(formatter) : "전체");
+            
+            logger.info("세무 자료 일괄 수집 및 전표 다운로드 완료 - userId: {}", currentUserId);
+            
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (com.innersignature.backend.exception.BusinessException e) {
+            logger.warn("세무 자료 일괄 수집 실패 - userId: {}, error: {}", currentUserId, e.getMessage());
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            logger.error("세무 자료 일괄 수집 중 예상치 못한 오류 발생 - userId: {}", currentUserId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "세무 자료 수집 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
+    }
+
+    /**
+     * 세무 수정 요청
+     * POST /api/expenses/{expenseReportId}/tax/revision-request
+     * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
+     */
+    @PostMapping("/{expenseReportId}/tax/revision-request")
+    @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
+    @Operation(summary = "세무 수정 요청", description = "TAX_ACCOUNTANT가 세무 수집된 문서에 대해 수정 요청을 보냅니다.")
+    public ApiResponse<Void> requestTaxRevision(
+            @PathVariable Long expenseReportId,
+            @RequestBody java.util.Map<String, String> request) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        String reason = request.get("reason");
+        
+        if (reason == null || reason.trim().isEmpty()) {
+            return new ApiResponse<>(false, "수정 요청 사유를 입력해주세요.", null);
+        }
+        
+        logger.info("세무 수정 요청 - expenseId: {}, userId: {}, reason: {}", expenseReportId, currentUserId, reason);
+        
+        try {
+            expenseService.requestTaxRevision(expenseReportId, reason, currentUserId);
+            logger.info("세무 수정 요청 완료 - expenseId: {}, userId: {}", expenseReportId, currentUserId);
+            return new ApiResponse<>(true, "수정 요청이 전송되었습니다.", null);
+        } catch (com.innersignature.backend.exception.BusinessException | com.innersignature.backend.exception.ResourceNotFoundException e) {
+            logger.warn("세무 수정 요청 실패 - expenseId: {}, userId: {}, error: {}", expenseReportId, currentUserId, e.getMessage());
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    /**
      * 23. 지출 엑셀 다운로드 API
      * GET /api/expenses/export/excel?startDate=2024-01-01&endDate=2024-12-31
      * 설명: ADMIN, ACCOUNTANT, CEO, TAX_ACCOUNTANT 권한 사용자만 접근 가능
@@ -799,10 +901,10 @@ public class ExpenseController {
     /**
      * 24. 전표 다운로드 API
      * GET /api/expenses/export/journal?startDate=2024-01-01&endDate=2024-12-31
-     * 설명: ACCOUNTANT 권한 사용자만 접근 가능
+     * 설명: ACCOUNTANT 또는 TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
-    @PreAuthorize("hasRole('ACCOUNTANT')")
-    @Operation(summary = "전표 다운로드", description = "승인된 지출결의서를 회계 전표 형식으로 엑셀 파일로 다운로드합니다. (ACCOUNTANT)")
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'TAX_ACCOUNTANT')")
+    @Operation(summary = "전표 다운로드", description = "승인된 지출결의서를 회계 전표 형식으로 엑셀 파일로 다운로드합니다. (ACCOUNTANT/TAX_ACCOUNTANT)")
     @GetMapping("/export/journal")
     public ResponseEntity<?> exportJournalEntries(
             @RequestParam(required = false) String startDate,

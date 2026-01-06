@@ -444,6 +444,18 @@
         AND company_id = #{companyId}
     </delete>
 
+    <!-- 결재 라인 전체 초기화 (세무 수정 요청 시 사용) -->
+    <update id="resetApprovalLinesForReport">
+        UPDATE approval_line_tb
+        SET
+            status = 'WAIT',
+            signature_data = NULL,
+            approval_date = NULL,
+            rejection_reason = NULL
+        WHERE expense_report_id = #{expenseReportId}
+          AND company_id = #{companyId}
+    </update>
+
     <delete id="deleteExpenseReport">
         DELETE FROM expense_report_tb
         WHERE expense_report_id = #{expenseReportId}
@@ -474,6 +486,34 @@
         WHERE al.approver_id = #{userId}
           AND al.status = 'WAIT'
           AND r.status != 'REJECTED'
+          AND r.company_id = #{companyId}
+        ORDER BY r.expense_report_id DESC
+    </select>
+
+    <!-- 내가 결재했던 문서 조회: APPROVED/REJECTED 이력 -->
+    <select id="selectMyApprovedReportsByUserId" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT DISTINCT
+            r.*,
+            u.korean_name AS drafterName,
+            (SELECT d.description
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != ''
+             ORDER BY d.expense_detail_id ASC
+             LIMIT 1) AS firstDescription,
+            (SELECT COUNT(*)
+             FROM expense_detail_tb d
+             WHERE d.expense_report_id = r.expense_report_id
+               AND d.company_id = r.company_id
+               AND d.description IS NOT NULL
+               AND TRIM(d.description) != '') AS descriptionCount
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        JOIN approval_line_tb al ON r.expense_report_id = al.expense_report_id
+        WHERE al.approver_id = #{userId}
+          AND al.status IN ('APPROVED', 'REJECTED')
           AND r.company_id = #{companyId}
         ORDER BY r.expense_report_id DESC
     </select>
@@ -536,6 +576,51 @@
             tax_processed_at = #{taxProcessedAt}
         WHERE expense_report_id = #{expenseReportId}
         AND company_id = #{companyId}
+    </update>
+
+    <!-- 세무 수집 대상 건 조회 (PAID 상태의 모든 문서, 수집 여부와 관계없이) -->
+    <select id="selectTaxPendingCollection" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT 
+            r.expense_report_id,
+            r.drafter_id,
+            r.report_date,
+            r.title,
+            r.total_amount,
+            r.status,
+            r.tax_collected_at,
+            r.tax_collected_by,
+            r.tax_revision_requested,
+            r.tax_revision_request_reason,
+            u.korean_name AS drafter_name
+        FROM expense_report_tb r
+        LEFT JOIN user_tb u ON r.drafter_id = u.user_id
+        WHERE r.company_id = #{companyId}
+            AND r.status = 'PAID'
+        <if test="startDate != null">
+            AND r.report_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND r.report_date &lt;= #{endDate}
+        </if>
+        ORDER BY r.report_date DESC, r.expense_report_id DESC
+    </select>
+
+    <!-- 세무 수집 업데이트 -->
+    <update id="updateTaxCollected">
+        UPDATE expense_report_tb
+        SET tax_collected_at = #{taxCollectedAt},
+            tax_collected_by = #{taxCollectedBy}
+        WHERE expense_report_id = #{expenseReportId}
+            AND company_id = #{companyId}
+    </update>
+
+    <!-- 세무 수정 요청 업데이트 -->
+    <update id="updateTaxRevisionRequest">
+        UPDATE expense_report_tb
+        SET tax_revision_requested = #{taxRevisionRequested},
+            tax_revision_request_reason = #{taxRevisionRequestReason}
+        WHERE expense_report_id = #{expenseReportId}
+            AND company_id = #{companyId}
     </update>
 
     <!-- 대시보드 전체 요약 통계 조회 -->
@@ -908,5 +993,18 @@
         WHERE expense_detail_id = #{expenseDetailId}
           AND company_id = #{companyId}
     </update>
+
+    <!-- 세무 수정 요청 건 조회: 작성자 기준 -->
+    <select id="selectTaxRevisionRequestsByDrafter" resultType="com.innersignature.backend.dto.ExpenseReportDto">
+        SELECT
+            r.*,
+            u.korean_name AS drafterName
+        FROM expense_report_tb r
+        JOIN user_tb u ON r.drafter_id = u.user_id
+        WHERE r.company_id = #{companyId}
+          AND r.drafter_id = #{userId}
+          AND r.tax_revision_requested = 1
+        ORDER BY r.expense_report_id DESC
+    </select>
 
 </mapper>

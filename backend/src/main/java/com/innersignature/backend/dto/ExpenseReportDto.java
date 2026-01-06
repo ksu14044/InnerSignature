@@ -31,6 +31,10 @@ public class ExpenseReportDto {
     private LocalDateTime finalApprovalDate; // 최종 승인 완료일 (모든 결재자 승인 완료 시점)
     private Boolean taxProcessed;      // 세무처리 완료 여부
     private LocalDateTime taxProcessedAt; // 세무처리 완료 일시
+    private LocalDateTime taxCollectedAt; // 세무사가 자료를 수집한 일시
+    private Long taxCollectedBy; // 세무사가 자료를 수집한 사용자 ID
+    private Boolean taxRevisionRequested; // 세무사가 수정 요청을 보냈는지 여부
+    private String taxRevisionRequestReason; // 수정 요청 사유
     private Boolean isSecret;           // 비밀글 여부
     private Long companyId;            // 회사 ID
 

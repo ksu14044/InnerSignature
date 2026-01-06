@@ -918,7 +918,7 @@ const SuperAdminDashboardPage = () => {
                 <thead>
                   <tr>
                     <th>회사명</th>
-                    <th>제목</th>
+                    <th>적요(내용)</th>
                     <th>작성자</th>
                     <th>작성일</th>
                     <th>총액</th>
@@ -927,30 +927,39 @@ const SuperAdminDashboardPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {expenses.map((expense) => (
-                    <tr key={expense.expenseReportId}>
-                      <td data-label="회사명">{expense.companyName || '-'}</td>
-                      <td data-label="제목">
-                        {expense.title}
-                        {expense.isSecret && (
-                          <S.SecretBadge>비밀</S.SecretBadge>
-                        )}
-                      </td>
-                      <td data-label="작성자">{expense.drafterName || '-'}</td>
-                      <td data-label="작성일">{expense.reportDate ? new Date(expense.reportDate).toLocaleDateString() : '-'}</td>
-                      <td data-label="총액">{formatCurrency(expense.totalAmount)}</td>
-                      <td data-label="상태">
-                        <S.StatusBadge active={expense.status === 'PAID' || expense.status === 'APPROVED'}>
-                          {STATUS_KOREAN[expense.status] || expense.status}
-                        </S.StatusBadge>
-                      </td>
-                      <td data-label="작업">
-                        <S.Button onClick={() => handleExpenseDetailClick(expense.expenseReportId)}>
-                          상세보기
-                        </S.Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {expenses.map((expense) => {
+                    const descriptionDisplay =
+                      expense.summaryDescription && expense.summaryDescription.trim() !== ''
+                        ? expense.summaryDescription
+                        : expense.firstDescription && expense.firstDescription.trim() !== ''
+                          ? expense.firstDescription
+                          : '-';
+
+                    return (
+                      <tr key={expense.expenseReportId}>
+                        <td data-label="회사명">{expense.companyName || '-'}</td>
+                        <td data-label="적요(내용)">
+                          {descriptionDisplay}
+                          {expense.isSecret && (
+                            <S.SecretBadge>비밀</S.SecretBadge>
+                          )}
+                        </td>
+                        <td data-label="작성자">{expense.drafterName || '-'}</td>
+                        <td data-label="작성일">{expense.reportDate ? new Date(expense.reportDate).toLocaleDateString() : '-'}</td>
+                        <td data-label="총액">{formatCurrency(expense.totalAmount)}</td>
+                        <td data-label="상태">
+                          <S.StatusBadge active={expense.status === 'PAID' || expense.status === 'APPROVED'}>
+                            {STATUS_KOREAN[expense.status] || expense.status}
+                          </S.StatusBadge>
+                        </td>
+                        <td data-label="작업">
+                          <S.Button onClick={() => handleExpenseDetailClick(expense.expenseReportId)}>
+                            상세보기
+                          </S.Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </S.Table>
               

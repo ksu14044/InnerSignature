@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
-import { fetchExpenseList, deleteExpense, fetchPendingApprovals, downloadExpensesExcel, downloadJournalEntries } from '../../api/expenseApi';
+import { fetchExpenseList, deleteExpense, fetchPendingApprovals, downloadJournalEntries, fetchTaxRevisionRequestsForDrafter, fetchMyApprovedReports } from '../../api/expenseApi';
 import { getPendingUsers, approveUser, getUserCompanies } from '../../api/userApi';
 import * as S from './style';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaUser, FaBuilding, FaChevronDown, FaCheck, FaTimesCircle, FaFileExcel, FaCog, FaChartLine } from 'react-icons/fa';
+import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaUser, FaBuilding, FaChevronDown, FaCheck, FaTimesCircle, FaFileExcel, FaCog, FaChartLine, FaEdit } from 'react-icons/fa';
 import { STATUS_KOREAN, EXPENSE_STATUS } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
@@ -17,11 +17,14 @@ const ExpenseListPage = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+  const [taxRevisionRequests, setTaxRevisionRequests] = useState([]);
+  const [isTaxRevisionModalOpen, setIsTaxRevisionModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [deletingExpenseId, setDeletingExpenseId] = useState(null);
+  const [myApprovedList, setMyApprovedList] = useState([]);
   
   // 필터 상태
   const [filters, setFilters] = useState({
@@ -45,6 +48,7 @@ const ExpenseListPage = () => {
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [isManagementDropdownOpen, setIsManagementDropdownOpen] = useState(false);
   const checkedCompanyModalRef = useRef(false);
+  const [activeTab, setActiveTab] = useState('MY_REPORTS'); // MY_REPORTS | MY_APPROVALS | MY_APPROVAL_HISTORY
 
   const handleLogout = async () => {
     navigate('/');  // 먼저 로그인 페이지로 이동
@@ -85,6 +89,21 @@ const ExpenseListPage = () => {
     } catch (error) {
       console.error('목록 조회 실패:', error);
       setLoading(false);
+    }
+  };
+
+  // 내가 결재한 문서 이력 조회 함수
+  const loadMyApprovedReports = async () => {
+    try {
+      const response = await fetchMyApprovedReports();
+      if (response.success && response.data) {
+        setMyApprovedList(response.data || []);
+      } else {
+        setMyApprovedList([]);
+      }
+    } catch (error) {
+      console.error('내 결재 문서 조회 실패:', error);
+      setMyApprovedList([]);
     }
   };
 
@@ -214,29 +233,13 @@ const ExpenseListPage = () => {
     }
   };
 
-  // 엑셀 다운로드 핸들러
-  const handleExportExcel = async () => {
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'ACCOUNTANT' && user.role !== 'CEO' && user.role !== 'TAX_ACCOUNTANT')) {
-      alert('엑셀 다운로드는 ADMIN, ACCOUNTANT, CEO, TAX_ACCOUNTANT 권한만 가능합니다.');
-      return;
-    }
-
-    try {
-      // 현재 필터 조건의 기간을 사용
-      const startDate = filters.startDate || null;
-      const endDate = filters.endDate || null;
-      
-      await downloadExpensesExcel(startDate, endDate);
-      alert('엑셀 파일 다운로드가 시작되었습니다.');
-    } catch (error) {
-      alert(error.userMessage || '엑셀 다운로드 중 오류가 발생했습니다.');
-    }
-  };
-
   // 전표 다운로드 핸들러
   const handleExportJournal = async () => {
-    if (!user || user.role !== 'ACCOUNTANT') {
-      alert('전표 다운로드는 ACCOUNTANT 권한만 가능합니다.');
+    if (
+      !user ||
+      (user.role !== 'ACCOUNTANT' && user.role !== 'TAX_ACCOUNTANT')
+    ) {
+      alert('전표 다운로드는 ACCOUNTANT 또는 TAX_ACCOUNTANT 권한만 가능합니다.');
       return;
     }
 
@@ -257,6 +260,14 @@ const ExpenseListPage = () => {
     if (user?.role === 'SUPERADMIN') {
       navigate('/superadmin/dashboard');
       return;
+    }
+
+    // URL 파라미터에서 탭 및 필터 읽기 및 적용
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'MY_APPROVALS' || tabParam === 'MY_APPROVAL_HISTORY') {
+      setActiveTab(tabParam);
+    } else {
+      setActiveTab('MY_REPORTS');
     }
 
     // URL 파라미터에서 필터 읽기 및 적용
@@ -304,6 +315,9 @@ const ExpenseListPage = () => {
         .catch((error) => {
           console.error('미서명 건 조회 실패:', error);
         });
+
+      // 내가 결재한 문서 이력도 함께 로드
+      loadMyApprovedReports();
     }
 
     // 승인 대기 사용자 조회 (CEO, ADMIN만)
@@ -363,6 +377,7 @@ const ExpenseListPage = () => {
   useEffect(() => {
     const openNotifications = searchParams.get('openNotifications');
     const openApprovals = searchParams.get('openApprovals');
+    const openTaxRevisions = searchParams.get('openTaxRevisions');
     
     if (openNotifications === 'true') {
       setIsNotificationModalOpen(true);
@@ -379,21 +394,52 @@ const ExpenseListPage = () => {
       newSearchParams.delete('openApprovals');
       setSearchParams(newSearchParams, { replace: true });
     }
+
+    if (openTaxRevisions === 'true') {
+      setIsTaxRevisionModalOpen(true);
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('openTaxRevisions');
+      setSearchParams(newSearchParams, { replace: true });
+    }
   }, [searchParams, setSearchParams]);
 
   // 커스텀 이벤트로 모달 열기 (이미 expenses 페이지에 있을 때)
   useEffect(() => {
     const handleOpenNotificationModal = () => setIsNotificationModalOpen(true);
     const handleOpenApprovalModal = () => setIsApprovalModalOpen(true);
+    const handleOpenTaxRevisionModal = () => setIsTaxRevisionModalOpen(true);
 
     window.addEventListener('openNotificationModal', handleOpenNotificationModal);
     window.addEventListener('openApprovalModal', handleOpenApprovalModal);
+    window.addEventListener('openTaxRevisionModal', handleOpenTaxRevisionModal);
 
     return () => {
       window.removeEventListener('openNotificationModal', handleOpenNotificationModal);
       window.removeEventListener('openApprovalModal', handleOpenApprovalModal);
+      window.removeEventListener('openTaxRevisionModal', handleOpenTaxRevisionModal);
     };
   }, []);
+
+  // 세무 수정 요청 알림 데이터 로드
+  useEffect(() => {
+    if (!user?.userId) {
+      setTaxRevisionRequests([]);
+      return;
+    }
+
+    fetchTaxRevisionRequestsForDrafter()
+      .then((response) => {
+        if (response.success) {
+          setTaxRevisionRequests(response.data || []);
+        } else {
+          setTaxRevisionRequests([]);
+        }
+      })
+      .catch((error) => {
+        console.error('세무 수정 요청 알림 조회 실패:', error);
+        setTaxRevisionRequests([]);
+      });
+  }, [user?.userId]);
 
   // 관리 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
@@ -414,6 +460,14 @@ const ExpenseListPage = () => {
 
   if (loading) return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
 
+  const displayedList =
+    activeTab === 'MY_REPORTS'
+      ? list
+      : activeTab === 'MY_APPROVALS'
+        ? pendingApprovals
+        : myApprovedList;
+  const isMyReportsTab = activeTab === 'MY_REPORTS';
+
   return (
     <S.Container>
       <S.Header data-tourid="tour-header">
@@ -431,6 +485,17 @@ const ExpenseListPage = () => {
             >
               <FaBell />
               <S.NotificationCount>{pendingApprovals.length}</S.NotificationCount>
+            </S.NotificationBadge>
+          )}
+          {/* 세무 수정 요청 알림 배지 (작성자용) */}
+          {taxRevisionRequests.length > 0 && (
+            <S.NotificationBadge 
+              onClick={() => setIsTaxRevisionModalOpen(true)}
+              title={`세무 수정 요청: ${taxRevisionRequests.length}건`}
+              style={{ backgroundColor: '#ffc107', marginRight: '12px' }}
+            >
+              <FaEdit />
+              <S.NotificationCount>{taxRevisionRequests.length}</S.NotificationCount>
             </S.NotificationBadge>
           )}
           {/* 승인 대기 배지 (CEO, ADMIN만 표시) */}
@@ -553,30 +618,51 @@ const ExpenseListPage = () => {
           <span>새 결의서 작성</span>
         </S.CreateButton>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <S.ToggleContainer data-tourid="tour-my-posts-toggle">
-            <S.ToggleLabel>
-              <S.ToggleSwitch
-                active={filters.drafterName === user?.koreanName}
-                onClick={handleMyPostsToggle}
-              />
-              <span>내가 쓴 글만 보기</span>
-            </S.ToggleLabel>
-          </S.ToggleContainer>
-          <S.FilterButton 
-            data-tourid="tour-filter-button"
-            variant="secondary" 
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-          >
-            <FaFilter />
-            <span>필터</span>
-          </S.FilterButton>
-          {user && (user.role === 'ADMIN' || user.role === 'ACCOUNTANT' || user.role === 'CEO' || user.role === 'TAX_ACCOUNTANT') && (
-            <S.ExportButton onClick={handleExportExcel}>
-              <FaFileExcel />
-              <span>엑셀 다운로드</span>
-            </S.ExportButton>
+          <S.TabContainer>
+            <S.TabButton
+              type="button"
+              active={isMyReportsTab}
+              onClick={() => setActiveTab('MY_REPORTS')}
+            >
+              내 결의서
+            </S.TabButton>
+            <S.TabButton
+              type="button"
+              active={activeTab === 'MY_APPROVALS'}
+              onClick={() => setActiveTab('MY_APPROVALS')}
+            >
+              내 결재함
+            </S.TabButton>
+            <S.TabButton
+              type="button"
+              active={activeTab === 'MY_APPROVAL_HISTORY'}
+              onClick={() => setActiveTab('MY_APPROVAL_HISTORY')}
+            >
+              내가 결재한 문서
+            </S.TabButton>
+          </S.TabContainer>
+          {isMyReportsTab && (
+            <>
+              <S.ToggleContainer data-tourid="tour-my-posts-toggle">
+                <S.ToggleLabel>
+                  <S.ToggleSwitch
+                    active={filters.drafterName === user?.koreanName}
+                    onClick={handleMyPostsToggle}
+                  />
+                  <span>내가 쓴 글만 보기</span>
+                </S.ToggleLabel>
+              </S.ToggleContainer>
+              <S.FilterButton 
+                data-tourid="tour-filter-button"
+                variant="secondary" 
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+              >
+                <FaFilter />
+                <span>필터</span>
+              </S.FilterButton>
+            </>
           )}
-          {user && user.role === 'ACCOUNTANT' && (
+          {user && (user.role === 'ACCOUNTANT' || user.role === 'TAX_ACCOUNTANT') && (
             <S.ExportButton onClick={handleExportJournal}>
               <FaFileExcel />
               <span>전표 다운로드</span>
@@ -586,7 +672,7 @@ const ExpenseListPage = () => {
       </S.ActionBar>
 
       {/* 필터 UI */}
-      {isFilterOpen && (
+      {isMyReportsTab && isFilterOpen && (
         <S.FilterContainer>
           <S.FilterTitle>
             <FaFilter />
@@ -643,23 +729,7 @@ const ExpenseListPage = () => {
                 <option value="기타">기타</option>
               </S.FilterSelect>
             </S.FilterGroup>
-            {/* 세무처리 필터 (USER 역할이 아닌 경우에만 표시) */}
-            {user && user.role !== 'USER' && (
-              <S.FilterGroup>
-                <S.FilterLabel>세무처리</S.FilterLabel>
-                <S.FilterSelect
-                  value={filters.taxProcessed === null ? '' : filters.taxProcessed ? 'true' : 'false'}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? null : e.target.value === 'true';
-                    handleFilterChange('taxProcessed', value);
-                  }}
-                >
-                  <option value="">전체</option>
-                  <option value="true">완료</option>
-                  <option value="false">미완료</option>
-                </S.FilterSelect>
-              </S.FilterGroup>
-            )}
+            {/* 세무처리 필터는 더 이상 사용하지 않으므로 UI에서 제거 */}
             {/* 작성자(기안자) 필터 (모든 사용자 사용 가능) */}
             <S.FilterGroup>
               <S.FilterLabel>작성자(기안자)</S.FilterLabel>
@@ -745,7 +815,7 @@ const ExpenseListPage = () => {
             </tr>
           </S.Thead>
           <tbody>
-            {list.map((item) => {
+            {displayedList.map((item) => {
               // 지급 요청일 계산 (상세 항목 중 가장 빠른 날짜)
               const paymentReqDate = item.details && item.details.length > 0
                 ? item.details
@@ -761,10 +831,13 @@ const ExpenseListPage = () => {
                   : `${item.details[0].category} 외 ${item.details.length - 1}개`
                 : '-';
               
-              // 적요(내용) 표시 (첫 번째 항목의 description)
-              const descriptionDisplay = item.details && item.details.length > 0
-                ? item.details[0].description || '-'
-                : '-';
+              // 적요(내용) 표시 - 목록 응답의 요약 필드 사용
+              const descriptionDisplay =
+                item.summaryDescription && item.summaryDescription.trim() !== ''
+                  ? item.summaryDescription
+                  : item.firstDescription && item.firstDescription.trim() !== ''
+                    ? item.firstDescription
+                    : '-';
               
               return (
                 <S.Tr key={item.expenseReportId}>
@@ -815,7 +888,7 @@ const ExpenseListPage = () => {
       </S.TableContainer>
 
       {/* 페이지네이션 */}
-      {totalPages > 1 && (
+      {isMyReportsTab && totalPages > 1 && (
         <S.PaginationContainer>
           <S.PaginationInfo>
             전체 {totalElements}개 중 {((currentPage - 1) * pageSize + 1)}-{Math.min(currentPage * pageSize, totalElements)}개 표시
@@ -848,7 +921,7 @@ const ExpenseListPage = () => {
 
       {/* 모바일용 카드 뷰 */}
       <S.MobileCardContainer>
-        {list.map((item) => {
+        {displayedList.map((item) => {
           // 지급 요청일 계산
           const paymentReqDate = item.details && item.details.length > 0
             ? item.details
@@ -946,12 +1019,63 @@ const ExpenseListPage = () => {
                         setIsNotificationModalOpen(false);
                       }}
                     >
-                      <S.NotificationItemTitle>{item.title}</S.NotificationItemTitle>
+                      <S.NotificationItemTitle>
+                        {(item.summaryDescription && item.summaryDescription.trim() !== '')
+                          ? item.summaryDescription
+                          : (item.firstDescription && item.firstDescription.trim() !== '')
+                            ? item.firstDescription
+                            : '-'}
+                      </S.NotificationItemTitle>
                       <S.NotificationItemInfo>
                         <span>문서번호: {item.expenseReportId}</span>
                         <span>작성자: {item.drafterName}</span>
                         <span>작성일: {item.reportDate}</span>
                         <span>금액: {item.totalAmount.toLocaleString()}원</span>
+                      </S.NotificationItemInfo>
+                    </S.NotificationItem>
+                  ))}
+                </S.NotificationList>
+              )}
+            </S.NotificationModalBody>
+          </S.NotificationModalContent>
+        </S.NotificationModal>
+      )}
+
+      {/* 세무 수정 요청 모달 (작성자용) */}
+      {isTaxRevisionModalOpen && (
+        <S.NotificationModal onClick={() => setIsTaxRevisionModalOpen(false)}>
+          <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
+            <S.NotificationModalHeader>
+              <h3>세무 수정 요청 건 ({taxRevisionRequests.length}건)</h3>
+              <button onClick={() => setIsTaxRevisionModalOpen(false)}>×</button>
+            </S.NotificationModalHeader>
+            <S.NotificationModalBody>
+              {taxRevisionRequests.length === 0 ? (
+                <p>세무 수정 요청이 들어온 결의서가 없습니다.</p>
+              ) : (
+                <S.NotificationList>
+                  {taxRevisionRequests.map((item) => (
+                    <S.NotificationItem
+                      key={item.expenseReportId}
+                      onClick={() => {
+                        navigate(`/detail/${item.expenseReportId}`);
+                        setIsTaxRevisionModalOpen(false);
+                      }}
+                    >
+                      <S.NotificationItemTitle>
+                        {(item.summaryDescription && item.summaryDescription.trim() !== '')
+                          ? item.summaryDescription
+                          : (item.firstDescription && item.firstDescription.trim() !== '')
+                            ? item.firstDescription
+                            : '-'}
+                      </S.NotificationItemTitle>
+                      <S.NotificationItemInfo>
+                        <span>문서번호: {item.expenseReportId}</span>
+                        <span>작성일: {item.reportDate}</span>
+                        <span>금액: {item.totalAmount.toLocaleString()}원</span>
+                        {item.taxRevisionRequestReason && (
+                          <span>요청 사유: {item.taxRevisionRequestReason}</span>
+                        )}
                       </S.NotificationItemInfo>
                     </S.NotificationItem>
                   ))}

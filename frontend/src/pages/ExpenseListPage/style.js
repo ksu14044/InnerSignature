@@ -493,6 +493,44 @@ export const ToggleContainer = styled.div`
   margin-right: 12px;
 `;
 
+export const TabContainer = styled.div`
+  display: inline-flex;
+  align-items: center;
+  background-color: #f1f3f5;
+  border-radius: 999px;
+  padding: 4px;
+  margin-right: 16px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+`;
+
+export const TabButton = styled.button`
+  border: none;
+  background-color: ${props => (props.active ? 'white' : 'transparent')};
+  color: ${props => (props.active ? 'var(--primary-color)' : '#6c757d')};
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+
+  &:hover {
+    background-color: ${props => (props.active ? 'white' : '#e9ecef')};
+  }
+
+  @media (max-width: 480px) {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+`;
+
 export const ToggleLabel = styled.label`
   font-size: 14px;
   font-weight: 500;

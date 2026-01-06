@@ -14,7 +14,7 @@ public class UserCardDto {
     @Size(max = 100, message = "카드 별칭은 100자 이하여야 합니다.")
     private String cardName;                // 카드 별칭 (예: 개인신용카드)
     
-    @NotBlank(message = "카드번호는 필수입니다.")
+    // @NotBlank 제거 - 수정 시에는 카드번호가 선택사항
     @Size(max = 19, message = "카드번호는 19자 이하여야 합니다.")
     private String cardNumber;              // 카드번호 (평문, 저장 시 암호화됨)
     
