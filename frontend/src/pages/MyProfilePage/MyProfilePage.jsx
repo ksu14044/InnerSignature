@@ -5,7 +5,6 @@ import { getCurrentUser, updateCurrentUser, changePassword, getUserCompanies, ge
 import { FaSignOutAlt, FaArrowLeft, FaSearch, FaTimes, FaCheck, FaTrash } from 'react-icons/fa';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import CompanySearchModal from '../../components/CompanySearchModal/CompanySearchModal';
-import TourButton from '../../components/TourButton/TourButton';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 
@@ -279,7 +278,6 @@ const MyProfilePage = () => {
           <S.WelcomeText>{authUser.koreanName}님 환영합니다</S.WelcomeText>
         </S.HeaderLeft>
         <S.HeaderRight>
-          <TourButton />
           <S.Button onClick={() => navigate('/expenses')}>
             <FaArrowLeft /> 지출결의서 목록
           </S.Button>

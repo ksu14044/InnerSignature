@@ -8,7 +8,6 @@ import { FaPlus, FaSignOutAlt, FaTrash, FaEye, FaBell, FaChevronLeft, FaChevronR
 import { STATUS_KOREAN, EXPENSE_STATUS } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
-import TourButton from '../../components/TourButton/TourButton';
 
 const ExpenseListPage = () => {
   const [list, setList] = useState([]);
@@ -510,7 +509,6 @@ const ExpenseListPage = () => {
           <S.WelcomeText>환영합니다, {user?.koreanName}님</S.WelcomeText>
         </S.HeaderLeft>
         <S.HeaderRight>
-          <TourButton />
           {pendingApprovals.length > 0 && (
             <S.NotificationBadge 
               data-tourid="tour-notification-badge"

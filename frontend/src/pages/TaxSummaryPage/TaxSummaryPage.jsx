@@ -9,7 +9,6 @@ import {
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
 import * as S from './style';
-import TourButton from '../../components/TourButton/TourButton';
 
 const TaxSummaryPage = () => {
   const { user, logout } = useAuth();
@@ -164,7 +163,6 @@ const TaxSummaryPage = () => {
           <S.SubTitle>기간별 자료 수집 및 세무처리 현황</S.SubTitle>
         </div>
         <S.ButtonRow>
-          <TourButton />
           <S.Button onClick={() => navigate('/expenses')}>목록으로</S.Button>
           <S.Button variant="danger" onClick={async () => { await logout(); navigate('/'); }}>
             로그아웃

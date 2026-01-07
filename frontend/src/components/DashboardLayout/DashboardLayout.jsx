@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import TourButton from '../TourButton/TourButton';
 import * as S from './style';
 
 const DashboardLayout = ({ 
@@ -19,7 +18,6 @@ const DashboardLayout = ({
           <S.Title>{title}</S.Title>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <TourButton />
           {showBackButton && (
             <S.Button variant="secondary" onClick={() => navigate('/expenses')}>
               목록으로

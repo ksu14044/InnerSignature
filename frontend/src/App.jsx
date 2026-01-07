@@ -25,14 +25,12 @@ import SignatureManagementPage from './pages/SignatureManagementPage/SignatureMa
 import MobileAppBar from './components/MobileAppBar/MobileAppBar';
 import MobileBottomNav from './components/MobileBottomNav/MobileBottomNav';
 import MobileFAB from './components/MobileFAB/MobileFAB';
-import { TourProvider } from './contexts/TourContext';
 
 function App() {
   return (
     <BrowserRouter>
-      <TourProvider>
-        <MobileAppBar />
-        <Routes>
+      <MobileAppBar />
+      <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/find-id" element={<FindIdPage />} />
         <Route path="/find-password" element={<FindPasswordPage />} />
@@ -61,10 +59,9 @@ function App() {
         <Route path="/cards" element={<CardManagementPage />} />
         <Route path="/signatures" element={<SignatureManagementPage />} />
         <Route path="/superadmin/dashboard" element={<SuperAdminDashboardPage />} />
-        </Routes>
-        <MobileBottomNav />
-        <MobileFAB />
-      </TourProvider>
+      </Routes>
+      <MobileBottomNav />
+      <MobileFAB />
     </BrowserRouter>
   );
 }

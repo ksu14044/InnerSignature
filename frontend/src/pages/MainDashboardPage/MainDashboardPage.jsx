@@ -8,7 +8,6 @@ import { getTotalAvailableAmount } from '../../api/creditApi';
 import { STATUS_KOREAN } from '../../constants/status';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import TourButton from '../../components/TourButton/TourButton';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import UserDashboardSection from '../../components/DashboardSections/UserDashboardSection';
 import AccountantDashboardSection from '../../components/DashboardSections/AccountantDashboardSection';
@@ -284,7 +283,6 @@ const MainDashboardPage = () => {
           <S.WelcomeText>환영합니다, {user.koreanName}님</S.WelcomeText>
         </S.HeaderLeft>
         <S.HeaderRight>
-          <TourButton />
           {pendingApprovals.length > 0 && (
             <S.NotificationBadge 
               data-tourid="tour-notification-badge"

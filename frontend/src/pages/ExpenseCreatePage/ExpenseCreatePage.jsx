@@ -11,7 +11,6 @@ import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole } from '../../constants/categories';
 import { DEFAULT_VALUES } from '../../constants/defaults';
-import TourButton from '../../components/TourButton/TourButton';
 import ApproverSelectionModal from '../../components/ApproverSelectionModal/ApproverSelectionModal';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import ExpenseDetailModal from '../../components/ExpenseDetailModal/ExpenseDetailModal';
@@ -680,9 +679,6 @@ const ExpenseCreatePage = () => {
           <FaArrowLeft />
         </S.BackButton>
         <S.Title>{isEditMode ? '지출결의서 수정' : '지출결의서 작성'}</S.Title>
-        <div style={{ marginLeft: 'auto' }}>
-          <TourButton />
-        </div>
       </S.Header>
 
       {/* 기본 정보 섹션 */}
