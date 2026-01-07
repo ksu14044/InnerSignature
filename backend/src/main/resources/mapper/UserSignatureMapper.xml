@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.innersignature.backend.mapper.UserSignatureMapper">
+    <resultMap id="UserSignatureResultMap" type="com.innersignature.backend.dto.UserSignatureDto">
+        <id property="signatureId" column="signature_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="signatureName" column="signature_name"/>
+        <result property="signatureType" column="signature_type"/>
+        <result property="signatureData" column="signature_data"/>
+        <result property="isDefault" column="is_default"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="companyId" column="company_id"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.innersignature.backend.dto.UserSignatureDto" 
+            useGeneratedKeys="true" keyProperty="signatureId">
+        INSERT INTO user_signature_tb (user_id, signature_name, signature_type, signature_data, is_default, company_id, created_at, updated_at)
+        VALUES (#{userId}, #{signatureName}, #{signatureType}, #{signatureData}, 
+                COALESCE(#{isDefault}, 0), #{companyId}, NOW(), NOW())
+    </insert>
+
+    <select id="findById" resultMap="UserSignatureResultMap">
+        SELECT *
+        FROM user_signature_tb
+        WHERE signature_id = #{signatureId}
+          AND company_id = #{companyId}
+        LIMIT 1
+    </select>
+
+    <select id="findByUserId" resultMap="UserSignatureResultMap">
+        SELECT *
+        FROM user_signature_tb
+        WHERE user_id = #{userId}
+          AND company_id = #{companyId}
+        ORDER BY is_default DESC, created_at DESC
+    </select>
+
+    <select id="findDefaultByUserId" resultMap="UserSignatureResultMap">
+        SELECT *
+        FROM user_signature_tb
+        WHERE user_id = #{userId}
+          AND company_id = #{companyId}
+          AND is_default = 1
+        LIMIT 1
+    </select>
+
+    <update id="update" parameterType="com.innersignature.backend.dto.UserSignatureDto">
+        UPDATE user_signature_tb
+        SET signature_name = #{signatureName},
+            signature_type = #{signatureType},
+            signature_data = #{signatureData},
+            is_default = #{isDefault},
+            updated_at = NOW()
+        WHERE signature_id = #{signatureId}
+          AND company_id = #{companyId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM user_signature_tb
+        WHERE signature_id = #{signatureId}
+          AND company_id = #{companyId}
+    </delete>
+
+    <update id="clearDefaultByUserId">
+        UPDATE user_signature_tb
+        SET is_default = 0,
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+          AND company_id = #{companyId}
+          AND is_default = 1
+    </update>
+</mapper>

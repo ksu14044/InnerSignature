@@ -7,3 +7,4 @@ ADD COLUMN `tax_collected_by` BIGINT NULL COMMENT '세무사가 자료를 수집
 ADD COLUMN `tax_revision_requested` TINYINT(1) DEFAULT 0 COMMENT '세무사가 수정 요청을 보냈는지 여부' AFTER `tax_collected_by`,
 ADD COLUMN `tax_revision_request_reason` VARCHAR(500) NULL COMMENT '수정 요청 사유' AFTER `tax_revision_requested`;
 
+

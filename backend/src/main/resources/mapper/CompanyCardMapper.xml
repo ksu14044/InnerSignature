@@ -85,3 +85,4 @@
         WHERE card_id = #{cardId}
     </update>
 </mapper>
+

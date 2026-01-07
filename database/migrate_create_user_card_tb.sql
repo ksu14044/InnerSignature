@@ -18,3 +18,4 @@ CREATE TABLE IF NOT EXISTS `user_card_tb` (
   CONSTRAINT `fk_user_card_user` FOREIGN KEY (`user_id`) REFERENCES `user_tb` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='개인 카드 정보 테이블';
 
+

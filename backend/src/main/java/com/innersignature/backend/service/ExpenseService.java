@@ -854,6 +854,12 @@ public class ExpenseService {
             logger.debug("급여 또는 비밀글 문서는 결재 라인이 생성되지 않습니다.");
         }
 
+        // 15. 세무 수정 요청이 있었던 경우, 수정 완료 후 플래그 초기화
+        if (existingReport.getTaxRevisionRequested() != null && existingReport.getTaxRevisionRequested()) {
+            expenseMapper.updateTaxRevisionRequest(expenseId, false, null, companyId);
+            logger.debug("세무 수정 요청 플래그 초기화 - expenseReportId: {}", expenseId);
+        }
+
         logger.info("지출결의서 수정 완료 - expenseReportId: {}", expenseId);
         return expenseId;
     }
@@ -1757,15 +1763,14 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("세무 수집된 문서만 수정 요청할 수 있습니다.");
         }
 
-        // 지급 완료(PAID) 상태의 문서만 수정 요청 가능
-        if (!"PAID".equals(report.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("지급 완료(PAID) 상태의 문서만 수정 요청할 수 있습니다.");
+        // PAID 또는 WAIT 상태의 문서만 수정 요청 가능
+        // - PAID: 처음 수정 요청하는 경우
+        // - WAIT: 이전 수정 요청이 처리되어 재요청하는 경우
+        if (!"PAID".equals(report.getStatus()) && !"WAIT".equals(report.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("지급 완료(PAID) 또는 대기(WAIT) 상태의 문서만 수정 요청할 수 있습니다.");
         }
         
-        // 이미 수정 요청된 경우 체크
-        if (Boolean.TRUE.equals(report.getTaxRevisionRequested())) {
-            throw new com.innersignature.backend.exception.BusinessException("이미 수정 요청이 된 문서입니다.");
-        }
+        // 이미 수정 요청된 경우에도 재요청 허용 (작성자가 수정 완료 후 다시 요청 가능하도록)
 
         // 1. 결재 라인 전체 초기화 (모든 서명/반려 정보 제거 후 WAIT 상태로 복원)
         expenseMapper.resetApprovalLinesForReport(expenseReportId, companyId);

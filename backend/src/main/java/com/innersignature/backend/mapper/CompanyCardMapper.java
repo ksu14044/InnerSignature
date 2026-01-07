@@ -30,3 +30,4 @@ public interface CompanyCardMapper {
     int deactivate(@Param("cardId") Long cardId);
 }
 
+

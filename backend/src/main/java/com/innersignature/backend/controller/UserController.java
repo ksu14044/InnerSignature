@@ -10,6 +10,8 @@ import com.innersignature.backend.service.CompanyService;
 import com.innersignature.backend.service.EmailService;
 import com.innersignature.backend.service.PasswordResetService;
 import com.innersignature.backend.service.UserService;
+import com.innersignature.backend.service.UserSignatureService;
+import com.innersignature.backend.dto.UserSignatureDto;
 import com.innersignature.backend.util.JwtUtil;
 import com.innersignature.backend.util.SecurityLogger;
 import com.innersignature.backend.util.SecurityUtil;
@@ -40,6 +42,7 @@ public class UserController {
     private final JwtBlacklistService jwtBlacklistService;
     private final EmailService emailService;
     private final PasswordResetService passwordResetService;
+    private final UserSignatureService userSignatureService;
 
     @Operation(summary = "로그인", description = "JWT와 Refresh 토큰을 발급합니다.")
     @PostMapping("/login")
@@ -1257,5 +1260,119 @@ public class UserController {
         
         private String role;
         private String position;
+    }
+    
+    // ========== 서명/도장 관리 API ==========
+    
+    /**
+     * 내 서명/도장 목록 조회
+     * GET /api/users/me/signatures
+     */
+    @Operation(summary = "내 서명/도장 목록 조회", description = "현재 로그인한 사용자의 서명/도장 목록을 조회합니다.")
+    @GetMapping("/users/me/signatures")
+    public ApiResponse<List<UserSignatureDto>> getMySignatures() {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (companyId == null) {
+            return new ApiResponse<>(false, "회사 정보를 찾을 수 없습니다.", null);
+        }
+        logger.info("내 서명/도장 목록 조회 요청 - userId: {}, companyId: {}", currentUserId, companyId);
+        List<UserSignatureDto> signatures = userSignatureService.getSignatures(currentUserId, companyId);
+        return new ApiResponse<>(true, "서명/도장 목록 조회 성공", signatures);
+    }
+    
+    /**
+     * 서명/도장 생성
+     * POST /api/users/me/signatures
+     */
+    @Operation(summary = "서명/도장 생성", description = "새로운 서명/도장을 생성합니다.")
+    @PostMapping("/users/me/signatures")
+    public ApiResponse<UserSignatureDto> createSignature(@Valid @RequestBody UserSignatureDto signatureDto) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (companyId == null) {
+            return new ApiResponse<>(false, "회사 정보를 찾을 수 없습니다.", null);
+        }
+        logger.info("서명/도장 생성 요청 - userId: {}, companyId: {}, signatureName: {}", 
+            currentUserId, companyId, signatureDto.getSignatureName());
+        try {
+            UserSignatureDto createdSignature = userSignatureService.createSignature(signatureDto, currentUserId, companyId);
+            logger.info("서명/도장 생성 완료 - signatureId: {}", createdSignature.getSignatureId());
+            return new ApiResponse<>(true, "서명/도장이 생성되었습니다.", createdSignature);
+        } catch (BusinessException e) {
+            logger.warn("서명/도장 생성 실패 - userId: {}, reason: {}", currentUserId, e.getMessage());
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    /**
+     * 서명/도장 수정
+     * PUT /api/users/me/signatures/{signatureId}
+     */
+    @Operation(summary = "서명/도장 수정", description = "서명/도장을 수정합니다.")
+    @PutMapping("/users/me/signatures/{signatureId}")
+    public ApiResponse<UserSignatureDto> updateSignature(
+            @PathVariable Long signatureId,
+            @Valid @RequestBody UserSignatureDto signatureDto) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (companyId == null) {
+            return new ApiResponse<>(false, "회사 정보를 찾을 수 없습니다.", null);
+        }
+        logger.info("서명/도장 수정 요청 - signatureId: {}, userId: {}", signatureId, currentUserId);
+        try {
+            UserSignatureDto updatedSignature = userSignatureService.updateSignature(signatureId, signatureDto, currentUserId, companyId);
+            logger.info("서명/도장 수정 완료 - signatureId: {}", signatureId);
+            return new ApiResponse<>(true, "서명/도장이 수정되었습니다.", updatedSignature);
+        } catch (BusinessException | com.innersignature.backend.exception.ResourceNotFoundException e) {
+            logger.warn("서명/도장 수정 실패 - signatureId: {}, reason: {}", signatureId, e.getMessage());
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    /**
+     * 서명/도장 삭제
+     * DELETE /api/users/me/signatures/{signatureId}
+     */
+    @Operation(summary = "서명/도장 삭제", description = "서명/도장을 삭제합니다.")
+    @DeleteMapping("/users/me/signatures/{signatureId}")
+    public ApiResponse<Void> deleteSignature(@PathVariable Long signatureId) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (companyId == null) {
+            return new ApiResponse<>(false, "회사 정보를 찾을 수 없습니다.", null);
+        }
+        logger.info("서명/도장 삭제 요청 - signatureId: {}, userId: {}", signatureId, currentUserId);
+        try {
+            userSignatureService.deleteSignature(signatureId, currentUserId, companyId);
+            logger.info("서명/도장 삭제 완료 - signatureId: {}", signatureId);
+            return new ApiResponse<>(true, "서명/도장이 삭제되었습니다.", null);
+        } catch (BusinessException | com.innersignature.backend.exception.ResourceNotFoundException e) {
+            logger.warn("서명/도장 삭제 실패 - signatureId: {}, reason: {}", signatureId, e.getMessage());
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+    
+    /**
+     * 기본 서명/도장 설정
+     * PUT /api/users/me/signatures/{signatureId}/set-default
+     */
+    @Operation(summary = "기본 서명/도장 설정", description = "서명/도장을 기본으로 설정합니다.")
+    @PutMapping("/users/me/signatures/{signatureId}/set-default")
+    public ApiResponse<UserSignatureDto> setDefaultSignature(@PathVariable Long signatureId) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        if (companyId == null) {
+            return new ApiResponse<>(false, "회사 정보를 찾을 수 없습니다.", null);
+        }
+        logger.info("기본 서명/도장 설정 요청 - signatureId: {}, userId: {}", signatureId, currentUserId);
+        try {
+            UserSignatureDto updatedSignature = userSignatureService.setDefaultSignature(signatureId, currentUserId, companyId);
+            logger.info("기본 서명/도장 설정 완료 - signatureId: {}", signatureId);
+            return new ApiResponse<>(true, "기본 서명/도장이 설정되었습니다.", updatedSignature);
+        } catch (BusinessException | com.innersignature.backend.exception.ResourceNotFoundException e) {
+            logger.warn("기본 서명/도장 설정 실패 - signatureId: {}, reason: {}", signatureId, e.getMessage());
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
     }
 }

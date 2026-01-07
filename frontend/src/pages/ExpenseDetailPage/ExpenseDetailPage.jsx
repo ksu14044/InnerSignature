@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, requestTaxRevision } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
+import { getMySignatures } from '../../api/signatureApi';
 import * as S from './style'; // 스타일 가져오기
 import SignatureModal from '../../components/SignatureModal/SignatureModal';
 import { useAuth } from '../../contexts/AuthContext';
@@ -35,6 +36,7 @@ const ExpenseDetailPage = () => {
   const [availableApprovers, setAvailableApprovers] = useState([]);
   const [selectedAdditionalApprover, setSelectedAdditionalApprover] = useState(null);
   const [isAddingApprover, setIsAddingApprover] = useState(false);
+  const [savedSignatures, setSavedSignatures] = useState([]);
   const {user} = useAuth();
 
   useEffect(() => {
@@ -58,6 +60,21 @@ const ExpenseDetailPage = () => {
       .catch(() => navigate('/'));
   }, [id, navigate, user]);
 
+  // 저장된 서명/도장 조회
+  useEffect(() => {
+    if (user) {
+      getMySignatures()
+        .then((res) => {
+          if (res.success) {
+            setSavedSignatures(res.data || []);
+          }
+        })
+        .catch((error) => {
+          console.error('서명/도장 조회 실패:', error);
+        });
+    }
+  }, [user]);
+
   if (!detail) return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
 
   // 급여 카테고리 포함 여부 확인
@@ -67,6 +84,15 @@ const ExpenseDetailPage = () => {
   const isSecretOrSalary = detail.isSecret || hasSalaryCategory;
 
   const handleOpenModal = () => {
+    // 저장된 서명이 있고 기본 서명이 있으면 바로 결재할지 물어봄
+    const defaultSignature = savedSignatures.find(sig => sig.isDefault);
+    if (defaultSignature) {
+      if (confirm('저장된 기본 서명/도장을 사용하여 결재하시겠습니까?\n(취소를 누르면 서명을 선택하거나 새로 그릴 수 있습니다.)')) {
+        handleSaveSignature(defaultSignature.signatureData);
+        return;
+      }
+    }
+    // 그렇지 않으면 모달 열기
     setIsModalOpen(true);
   }
 
@@ -176,12 +202,20 @@ const ExpenseDetailPage = () => {
     if (detail.drafterId !== user.userId) return false;
     // WAIT 상태가 아니면 불가
     if (detail.status !== 'WAIT' && detail.status !== 'REJECTED') return false;
-    // 결재자 서명이 있으면 반려인 경우만 가능
-    if (hasAnyApprovalSignature() && detail.status !== 'REJECTED') return false;
+    
+    // 세무 수정 요청이 있는 경우는 수정 가능 (서명 여부와 관계없이)
+    if (detail.taxCollectedAt && detail.taxRevisionRequested) {
+      return true;
+    }
+    
     // 세무 수집된 문서는 수정 요청이 없으면 수정/삭제 불가
     if (detail.taxCollectedAt && !detail.taxRevisionRequested) {
       return false;
     }
+    
+    // 결재자 서명이 있으면 반려인 경우만 가능
+    if (hasAnyApprovalSignature() && detail.status !== 'REJECTED') return false;
+    
     return true;
   };
 
@@ -470,12 +504,12 @@ const ExpenseDetailPage = () => {
         return;
     }
 
-    if(detail.taxRevisionRequested) {
-        alert("이미 수정 요청이 된 문서입니다.");
-        return;
-    }
-
-    const reason = prompt('수정 요청 사유를 입력해주세요.\n(예: 영수증과 작성 금액 불일치)');
+    // 재요청 가능하므로 이미 수정 요청된 경우 체크 제거
+    const promptMessage = detail.taxRevisionRequested 
+      ? '수정 요청 사유를 입력해주세요.\n(재요청: 이전 요청 사유를 덮어씁니다)\n(예: 영수증과 작성 금액 불일치)'
+      : '수정 요청 사유를 입력해주세요.\n(예: 영수증과 작성 금액 불일치)';
+    
+    const reason = prompt(promptMessage);
     if (!reason || !reason.trim()) {
         return;
     }
@@ -1021,14 +1055,15 @@ const ExpenseDetailPage = () => {
            </button>
          )}
          {/* TAX_ACCOUNTANT 권한을 가진 사용자가 세무 수집된 문서에 대해 수정 요청 가능 */}
-         {user && user.role === 'TAX_ACCOUNTANT' && detail.status === 'PAID' && detail.taxCollectedAt && !detail.taxRevisionRequested && (
+         {/* PAID 상태(처음 요청) 또는 WAIT 상태(재요청)에서 가능 */}
+         {user && user.role === 'TAX_ACCOUNTANT' && detail.taxCollectedAt && (detail.status === 'PAID' || detail.status === 'WAIT') && (
            <button 
              className="edit" 
              onClick={handleRequestTaxRevision} 
              disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
              style={{ backgroundColor: '#ffc107', color: 'white' }}
            >
-             수정 요청 보내기
+             {detail.taxRevisionRequested ? '수정 요청 재전송' : '수정 요청 보내기'}
            </button>
          )}
        </S.ButtonGroup>
@@ -1088,6 +1123,7 @@ const ExpenseDetailPage = () => {
          onClose={() => setIsModalOpen(false)}
          onSave={handleSaveSignature}
          isSaving={isApproving}
+         savedSignatures={savedSignatures}
        />
 
        {/* 반려 모달 */}
