@@ -30,27 +30,41 @@ export const NavItem = styled.button`
   padding: 8px;
   cursor: pointer;
   min-height: 64px;
-  transition: all 0.2s;
-  color: ${props => props.active ? 'var(--primary-color)' : '#666'};
+  transition: all var(--transition-base);
+  color: ${props => props.active ? 'var(--primary-color)' : 'var(--text-secondary)'};
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: ${props => props.active ? 'var(--primary-color)' : 'transparent'};
+    border-radius: 0 0 3px 3px;
+    transition: all var(--transition-base);
+  }
   
   &:active {
-    background-color: rgba(0, 123, 255, 0.05);
+    background-color: ${props => props.active ? 'var(--primary-light)' : 'var(--bg-hover)'};
   }
 `;
 
 export const IconWrapper = styled.div`
-  font-size: 20px;
-  color: ${props => props.active ? 'var(--primary-color)' : '#666'};
-  transition: all 0.2s;
+  font-size: 22px;
+  color: ${props => props.active ? 'var(--primary-color)' : 'var(--text-secondary)'};
+  transition: all var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
+  transform: ${props => props.active ? 'scale(1.1)' : 'scale(1)'};
 `;
 
 export const Label = styled.span`
-  font-size: 11px;
-  font-weight: ${props => props.active ? '600' : '400'};
-  color: ${props => props.active ? 'var(--primary-color)' : '#666'};
-  transition: all 0.2s;
+  font-size: var(--font-size-xs);
+  font-weight: ${props => props.active ? 'var(--font-weight-semibold)' : 'var(--font-weight-normal)'};
+  color: ${props => props.active ? 'var(--primary-color)' : 'var(--text-secondary)'};
+  transition: all var(--transition-base);
 `;
 

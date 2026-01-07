@@ -17,6 +17,9 @@ const MobileBottomNav = () => {
     if (path === '/expenses') {
       return location.pathname === '/expenses' || location.pathname.startsWith('/detail/') || location.pathname.startsWith('/expenses/create');
     }
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard' || location.pathname === '/dashboard/main';
+    }
     if (path === '/subscriptions/manage') {
       return location.pathname.startsWith('/subscriptions');
     }
@@ -42,12 +45,8 @@ const MobileBottomNav = () => {
       ]
     : [
         { path: '/expenses', icon: FaHome, label: '목록' },
-        ...(user?.role === 'CEO' || user?.role === 'ADMIN' || user?.role === 'ACCOUNTANT' 
-          ? [{ path: '/dashboard', icon: FaChartBar, label: '대시보드' }] 
-          : []),
-        ...(user?.role === 'TAX_ACCOUNTANT' 
-          ? [{ path: '/tax/summary', icon: FaChartBar, label: '세무요약' }] 
-          : []),
+        // 모든 사용자가 대시보드 접근 가능 (권한별로 다른 내용 표시)
+        { path: '/dashboard', icon: FaChartBar, label: '대시보드' },
         { path: '/cards', icon: FaCreditCard, label: '카드' },
         ...(user?.role === 'CEO' || user?.role === 'ADMIN'
           ? [{ path: '/subscriptions/manage', icon: FaChartBar, label: '구독' }]

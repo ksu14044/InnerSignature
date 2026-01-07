@@ -426,49 +426,86 @@ export const DetailTable = styled.table`
 
 export const ButtonGroup = styled.div`
   text-align: center;
-  margin-top: 40px;
+  margin-top: var(--spacing-xl);
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--spacing-sm);
   justify-content: center;
   
   button {
-    padding: 12px 24px;
+    padding: var(--spacing-md) var(--spacing-lg);
     margin: 0;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-    transition: background 0.2s;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    transition: all var(--transition-base);
     min-height: 48px;
-    min-width: 100px;
+    min-width: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: var(--spacing-sm);
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
     
     &.back {
-      background-color: #e5e7eb;
-      color: #374151;
-      &:hover { background-color: #d1d5db; }
+      background-color: var(--bg-hover);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      &:hover:not(:disabled) { 
+        background-color: var(--border-light);
+        transform: translateY(-1px);
+      }
     }
     
     &.approve {
-      background-color: #10b981;
+      background-color: var(--primary-color);
       color: white;
-      &:hover { background-color: #059669; }
+      box-shadow: var(--shadow-sm);
+      &:hover:not(:disabled) { 
+        background-color: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+      }
     }
 
     &.reject {
-      background-color: #ef4444;
+      background-color: var(--danger-color);
       color: white;
-      &:hover { background-color: #dc2626; }
+      box-shadow: var(--shadow-sm);
+      &:hover:not(:disabled) { 
+        background-color: var(--danger-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+      }
     }
 
     &.paid {
-      background-color: #8b5cf6;
+      background-color: var(--success-color);
       color: white;
-      &:hover { background-color: #7c3aed; }
+      box-shadow: var(--shadow-sm);
+      &:hover:not(:disabled) { 
+        background-color: var(--success-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+      }
+    }
+
+    &.edit {
+      background-color: var(--warning-color);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+      &:hover:not(:disabled) { 
+        background-color: var(--warning-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+      }
     }
   }
 
@@ -478,20 +515,21 @@ export const ButtonGroup = styled.div`
     left: 0;
     right: 0;
     background: white;
-    padding: 12px 16px;
+    padding: var(--spacing-md);
     margin: 0;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
     flex-direction: column;
-    gap: 8px;
-    z-index: 998;
+    gap: var(--spacing-sm);
+    z-index: var(--z-fixed);
+    border-top: 1px solid var(--border-light);
     
     button {
       width: 100%;
-      padding: 16px;
-      font-size: 16px;
+      padding: var(--spacing-md);
+      font-size: var(--font-size-base);
       min-width: 0;
-      border-radius: 12px;
-      font-weight: 600;
+      border-radius: var(--radius-md);
+      font-weight: var(--font-weight-semibold);
       display: flex;
       align-items: center;
       justify-content: center;

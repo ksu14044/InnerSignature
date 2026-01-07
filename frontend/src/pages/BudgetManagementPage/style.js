@@ -317,3 +317,154 @@ export const Alert = styled.div`
   text-align: center;
 `;
 
+export const TabSection = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 0;
+`;
+
+export const TabButton = styled.button`
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid ${props => props.active ? '#007bff' : 'transparent'};
+  color: ${props => props.active ? '#007bff' : '#6b7280'};
+  font-weight: ${props => props.active ? '600' : '500'};
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #007bff;
+  }
+`;
+
+export const ClosingTabContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+`;
+
+export const ClosingHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+`;
+
+export const SectionTitle = styled.h2`
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin: 0;
+`;
+
+export const CloseMonthSection = styled.div`
+  flex: 1;
+  min-width: 300px;
+`;
+
+export const ClosingControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+
+export const ClosingList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+export const ClosingCard = styled.div`
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+export const ClosingCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+export const ClosingTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin: 0;
+  display: flex;
+  align-items: center;
+`;
+
+export const ClosingStatus = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+export const LockedBadge = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+`;
+
+export const UnlockedBadge = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #28a745;
+  color: white;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+`;
+
+export const ClosingInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+export const ReopenButton = styled.button`
+  padding: 8px 16px;
+  background-color: #ffc107;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: #e0a800;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+

@@ -382,3 +382,200 @@ export const InfoText = styled.div`
   line-height: 1.5;
 `;
 
+export const TabSection = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 0;
+`;
+
+export const TabButton = styled.button`
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid ${props => props.active ? '#007bff' : 'transparent'};
+  color: ${props => props.active ? '#007bff' : '#6b7280'};
+  font-weight: ${props => props.active ? '600' : '500'};
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #007bff;
+  }
+`;
+
+export const LogsTabContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+`;
+
+export const FilterSection = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+`;
+
+export const FilterGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+`;
+
+export const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const LogList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+export const LogCard = styled.div`
+  background: white;
+  border-left: 4px solid ${props => {
+    if (props.resolved) return '#6c757d';
+    if (props.severity === 'HIGH') return '#dc3545';
+    if (props.severity === 'MEDIUM') return '#ffc107';
+    return '#17a2b8';
+  }};
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+export const LogHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+export const LogTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dark-color);
+`;
+
+export const LogStatus = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+export const ResolvedBadge = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #28a745;
+  color: white;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+`;
+
+export const UnresolvedBadge = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+`;
+
+export const LogContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+export const LogInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const LinkButton = styled.button`
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 14px;
+  padding: 0;
+  font-weight: 600;
+
+  &:hover {
+    color: #0056b3;
+  }
+`;
+
+export const ResolveButton = styled.button`
+  align-self: flex-start;
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &:hover {
+    background-color: #218838;
+  }
+`;
+
+export const Pagination = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 20px;
+`;
+
+export const PaginationButton = styled.button`
+  padding: 8px 16px;
+  background-color: ${props => props.disabled ? '#e5e7eb' : '#007bff'};
+  color: ${props => props.disabled ? '#9ca3af' : 'white'};
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: #0056b3;
+  }
+`;
+
+export const PaginationInfo = styled.span`
+  font-size: 14px;
+  color: var(--dark-color);
+`;
+

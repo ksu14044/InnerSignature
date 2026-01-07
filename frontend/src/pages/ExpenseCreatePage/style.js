@@ -3,11 +3,13 @@ import styled from '@emotion/styled';
 export const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: var(--spacing-lg);
   min-height: 100vh;
+  padding-bottom: 120px; /* 하단 고정 버튼 공간 확보 */
 
   @media (max-width: 768px) {
-    padding: 15px;
+    padding: var(--spacing-md);
+    padding-bottom: 100px;
   }
 
   @media (max-width: 480px) {
@@ -15,9 +17,9 @@ export const Container = styled.div`
     width: 100%;
     max-width: 100%;
     min-height: auto;
-    background: #f5f5f5;
+    background: var(--bg-light);
     padding-top: 56px;
-    padding-bottom: 64px;
+    padding-bottom: 140px; /* 하단 네비게이션 + 고정 버튼 공간 */
   }
 `;
 
@@ -83,24 +85,30 @@ export const Title = styled.h1`
 
 export const Section = styled.div`
   background-color: white;
-  border-radius: 12px;
-  padding: 32px;
-  margin-bottom: 24px;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  position: relative;
+  transition: all var(--transition-base);
+
+  &:hover {
+    box-shadow: var(--shadow);
+  }
 
   @media (max-width: 768px) {
-    padding: 20px;
-    margin-bottom: 20px;
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
   }
 
   @media (max-width: 480px) {
-    padding: 16px;
-    margin-bottom: 8px;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
     border-radius: 0;
     box-shadow: none;
     border: none;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border-light);
   }
 `;
 
@@ -187,13 +195,14 @@ export const FormGroup = styled.div`
 `;
 
 export const Label = styled.label`
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--dark-color);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   cursor: pointer;
+  margin-bottom: var(--spacing-sm);
 
   input[type="checkbox"] {
     cursor: pointer;
@@ -543,14 +552,16 @@ export const TotalAmount = styled.span`
 
 export const ButtonGroup = styled.div`
   display: flex;
-  gap: 16px;
+  gap: var(--spacing-md);
   justify-content: flex-end;
-  margin-top: 32px;
+  margin-top: var(--spacing-xl);
+  padding-bottom: var(--spacing-2xl);
 
   @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 24px;
+    flex-direction: row;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+    padding-bottom: var(--spacing-xl);
   }
 
   @media (max-width: 480px) {
@@ -559,12 +570,13 @@ export const ButtonGroup = styled.div`
     left: 0;
     right: 0;
     background: white;
-    padding: 12px 16px;
+    padding: var(--spacing-md);
     margin: 0;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-    flex-direction: column;
-    gap: 8px;
-    z-index: 998;
+    box-shadow: var(--shadow-lg);
+    flex-direction: row;
+    gap: var(--spacing-sm);
+    z-index: var(--z-fixed);
+    border-top: 1px solid var(--border-light);
   }
 `;
 
@@ -572,33 +584,42 @@ export const CancelButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 14px 24px;
-  background-color: var(--light-color);
-  color: var(--dark-color);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: white;
+  color: var(--text-primary);
   border: 2px solid var(--border-color);
-  border-radius: 10px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   min-height: 48px;
+  flex: 1;
+  max-width: 200px;
 
-  &:hover {
-    background-color: #e9ecef;
+  &:hover:not(:disabled) {
+    background-color: var(--bg-hover);
     border-color: var(--secondary-color);
   }
 
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   @media (max-width: 768px) {
-    padding: 16px 24px;
+    padding: var(--spacing-md) var(--spacing-lg);
+    max-width: none;
   }
 
   @media (max-width: 480px) {
-    width: 100%;
-    padding: 14px 16px;
-    font-size: 14px;
+    flex: 1;
+    padding: var(--spacing-md);
+    font-size: var(--font-size-sm);
     
     span {
-      display: none;
+      display: inline;
     }
   }
 `;
@@ -607,38 +628,48 @@ export const SubmitButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 14px 24px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 10px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   min-height: 48px;
+  flex: 2;
+  max-width: 300px;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: var(--primary-hover);
     transform: translateY(-2px);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-lg);
   }
 
-  &:active {
+  &:active:not(:disabled) {
     transform: translateY(0);
   }
 
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
   @media (max-width: 768px) {
-    padding: 16px 24px;
+    padding: var(--spacing-md) var(--spacing-lg);
+    max-width: none;
   }
 
   @media (max-width: 480px) {
-    width: 100%;
-    padding: 14px 16px;
-    font-size: 14px;
+    flex: 2;
+    padding: var(--spacing-md);
+    font-size: var(--font-size-sm);
     
     span {
-      font-size: 14px;
+      font-size: var(--font-size-sm);
     }
   }
 `;

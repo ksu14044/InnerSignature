@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getBudgetList, createBudget, updateBudget, deleteBudget } from '../../api/budgetApi';
+import { getClosingList, closeMonth, reopenMonth } from '../../api/monthlyClosingApi';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import { FaPlus, FaEdit, FaTrash, FaChartLine } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaChartLine, FaLock, FaUnlock, FaCalendarAlt } from 'react-icons/fa';
 
 const BudgetManagementPage = () => {
   const { user, logout } = useAuth();
@@ -23,6 +24,12 @@ const BudgetManagementPage = () => {
     alertThreshold: '80',
     isBlocking: false
   });
+  const [activeTab, setActiveTab] = useState('budget'); // 'budget' 또는 'closing'
+  const [closingList, setClosingList] = useState([]);
+  const [closingYear, setClosingYear] = useState(new Date().getFullYear());
+  const [closingMonth, setClosingMonth] = useState(new Date().getMonth() + 1);
+  const [isClosing, setIsClosing] = useState(false);
+  const [reopeningId, setReopeningId] = useState(null);
 
   useEffect(() => {
     if (!user || (user.role !== 'ADMIN' && user.role !== 'CEO' && user.role !== 'ACCOUNTANT')) {
@@ -30,8 +37,12 @@ const BudgetManagementPage = () => {
       navigate('/expenses');
       return;
     }
-    loadBudgetList();
-  }, [user, navigate, selectedYear, selectedMonth]);
+    if (activeTab === 'budget') {
+      loadBudgetList();
+    } else if (activeTab === 'closing') {
+      loadClosingList();
+    }
+  }, [user, navigate, selectedYear, selectedMonth, activeTab]);
 
   const loadBudgetList = async () => {
     try {
@@ -129,7 +140,85 @@ const BudgetManagementPage = () => {
     }
   };
 
+  const loadClosingList = async () => {
+    try {
+      setLoading(true);
+      const response = await getClosingList();
+      if (response.success) {
+        setClosingList(response.data || []);
+      }
+    } catch (error) {
+      console.error('마감 목록 조회 실패:', error);
+      alert(error?.response?.data?.message || '마감 목록 조회 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseMonth = async () => {
+    if (isClosing) return;
+    
+    if (!window.confirm(`${closingYear}년 ${closingMonth}월을 마감 처리하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      setIsClosing(true);
+      const response = await closeMonth(closingYear, closingMonth);
+      if (response.success) {
+        alert('월 마감이 완료되었습니다.');
+        loadClosingList();
+      } else {
+        alert('월 마감 실패: ' + response.message);
+      }
+    } catch (error) {
+      console.error('월 마감 실패:', error);
+      alert(error?.response?.data?.message || '월 마감 중 오류가 발생했습니다.');
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
+  const handleReopenMonth = async (closingId) => {
+    if (reopeningId === closingId) return;
+    
+    if (!window.confirm('마감을 해제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      setReopeningId(closingId);
+      const response = await reopenMonth(closingId);
+      if (response.success) {
+        alert('월 마감이 해제되었습니다.');
+        loadClosingList();
+      } else {
+        alert('월 마감 해제 실패: ' + response.message);
+      }
+    } catch (error) {
+      console.error('월 마감 해제 실패:', error);
+      alert(error?.response?.data?.message || '월 마감 해제 중 오류가 발생했습니다.');
+    } finally {
+      setReopeningId(null);
+    }
+  };
+
+  const isMonthClosed = (year, month) => {
+    return closingList.some(
+      closing => closing.closingYear === year && 
+                 closing.closingMonth === month && 
+                 closing.isClosed
+    );
+  };
+
+  const getClosingInfo = (year, month) => {
+    return closingList.find(
+      closing => closing.closingYear === year && closing.closingMonth === month
+    );
+  };
+
   const canEdit = user?.role === 'ADMIN' || user?.role === 'CEO';
+  const canClose = user?.role === 'ADMIN' || user?.role === 'CEO';
 
   if (!user) {
     return (
@@ -154,10 +243,10 @@ const BudgetManagementPage = () => {
       <S.Header>
         <S.Title>
           <FaChartLine />
-          예산 관리
+          재무 관리
         </S.Title>
         <S.ButtonRow>
-          {canEdit && (
+          {activeTab === 'budget' && canEdit && (
             <S.Button onClick={() => handleOpenModal()}>
               <FaPlus /> 예산 추가
             </S.Button>
@@ -166,9 +255,22 @@ const BudgetManagementPage = () => {
         </S.ButtonRow>
       </S.Header>
 
+      {/* 탭 버튼 */}
+      <S.TabSection>
+        <S.TabButton active={activeTab === 'budget'} onClick={() => setActiveTab('budget')}>
+          예산 관리
+        </S.TabButton>
+        <S.TabButton active={activeTab === 'closing'} onClick={() => setActiveTab('closing')}>
+          월 마감
+        </S.TabButton>
+      </S.TabSection>
+
       {loading && <LoadingOverlay fullScreen={false} message="로딩 중..." />}
 
-      <S.FilterCard>
+      {/* 예산 관리 탭 */}
+      {activeTab === 'budget' && (
+        <>
+          <S.FilterCard>
         <S.FilterGrid>
           <S.FilterGroup>
             <S.Label>년도</S.Label>
@@ -265,6 +367,97 @@ const BudgetManagementPage = () => {
           })
         )}
       </S.BudgetList>
+        </>
+      )}
+
+      {/* 월 마감 탭 */}
+      {activeTab === 'closing' && (
+        <S.ClosingTabContent>
+          <S.ClosingHeader>
+            <S.SectionTitle>월 마감 관리</S.SectionTitle>
+            {canClose && (
+              <S.CloseMonthSection>
+                <S.ClosingControls>
+                  <S.Select
+                    value={closingYear}
+                    onChange={(e) => setClosingYear(parseInt(e.target.value))}
+                    style={{ marginRight: '8px' }}
+                  >
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
+                      <option key={year} value={year}>{year}년</option>
+                    ))}
+                  </S.Select>
+                  <S.Select
+                    value={closingMonth}
+                    onChange={(e) => setClosingMonth(parseInt(e.target.value))}
+                    style={{ marginRight: '8px' }}
+                  >
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                      <option key={month} value={month}>{month}월</option>
+                    ))}
+                  </S.Select>
+                  <S.CloseButton 
+                    onClick={handleCloseMonth}
+                    disabled={isClosing || isMonthClosed(closingYear, closingMonth)}
+                  >
+                    {isClosing ? '처리 중...' : '마감 처리'}
+                  </S.CloseButton>
+                </S.ClosingControls>
+              </S.CloseMonthSection>
+            )}
+          </S.ClosingHeader>
+
+          <S.ClosingList>
+            {closingList.length === 0 ? (
+              <S.EmptyMessage>마감 내역이 없습니다.</S.EmptyMessage>
+            ) : (
+              closingList.map(closing => (
+                <S.ClosingCard key={closing.closingId}>
+                  <S.ClosingCardHeader>
+                    <S.ClosingTitle>
+                      <FaCalendarAlt style={{ marginRight: '8px' }} />
+                      {closing.closingYear}년 {closing.closingMonth}월
+                    </S.ClosingTitle>
+                    <S.ClosingStatus>
+                      {closing.isClosed ? (
+                        <S.LockedBadge>
+                          <FaLock /> 마감됨
+                        </S.LockedBadge>
+                      ) : (
+                        <S.UnlockedBadge>
+                          <FaUnlock /> 미마감
+                        </S.UnlockedBadge>
+                      )}
+                    </S.ClosingStatus>
+                  </S.ClosingCardHeader>
+                  <S.ClosingInfo>
+                    <S.InfoRow>
+                      <S.InfoLabel>마감일:</S.InfoLabel>
+                      <S.InfoValue>
+                        {closing.closedAt ? new Date(closing.closedAt).toLocaleDateString('ko-KR') : '-'}
+                      </S.InfoValue>
+                    </S.InfoRow>
+                    {closing.closedBy && (
+                      <S.InfoRow>
+                        <S.InfoLabel>마감 처리자:</S.InfoLabel>
+                        <S.InfoValue>{closing.closedBy}</S.InfoValue>
+                      </S.InfoRow>
+                    )}
+                  </S.ClosingInfo>
+                  {canClose && closing.isClosed && (
+                    <S.ReopenButton 
+                      onClick={() => handleReopenMonth(closing.closingId)}
+                      disabled={reopeningId === closing.closingId}
+                    >
+                      {reopeningId === closing.closingId ? '처리 중...' : '마감 해제'}
+                    </S.ReopenButton>
+                  )}
+                </S.ClosingCard>
+              ))
+            )}
+          </S.ClosingList>
+        </S.ClosingTabContent>
+      )}
 
       {isModalOpen && (
         <S.ModalOverlay onClick={handleCloseModal}>

@@ -75,38 +75,54 @@ export const Toolbar = styled.div`
   margin-bottom: 24px;
 
   @media (max-width: 480px) {
-    padding: 0 8px;
-    margin-bottom: 16px;
+    display: none;
+  }
+`;
+
+export const MobileToolbar = styled.div`
+  display: none;
+
+  @media (max-width: 480px) {
+    display: flex;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    background: white;
+    border-bottom: 1px solid var(--border-light);
   }
 `;
 
 export const Button = styled.button`
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: ${props => props.primary || props.danger ? 'none' : '2px solid var(--border-color)'};
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-  background-color: ${props => props.primary ? 'var(--primary-color)' : props.danger ? '#dc3545' : '#f8f9fa'};
-  color: ${props => props.primary || props.danger ? '#fff' : 'var(--dark-color)'};
+  justify-content: center;
+  gap: var(--spacing-sm);
+  transition: all var(--transition-base);
+  background-color: ${props => props.primary ? 'var(--primary-color)' : props.danger ? 'var(--danger-color)' : 'white'};
+  color: ${props => props.primary || props.danger ? 'white' : 'var(--text-primary)'};
+  min-height: 48px;
 
   &:hover:not(:disabled) {
-    opacity: 0.9;
+    background-color: ${props => props.primary ? 'var(--primary-hover)' : props.danger ? 'var(--danger-hover)' : 'var(--bg-hover)'};
     transform: translateY(-1px);
+    box-shadow: ${props => props.primary || props.danger ? 'var(--shadow)' : 'var(--shadow-sm)'};
+    border-color: ${props => props.primary || props.danger ? 'transparent' : 'var(--primary-color)'};
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
   }
 
   @media (max-width: 480px) {
-    padding: 12px 16px;
-    font-size: 13px;
+    padding: var(--spacing-md);
+    font-size: var(--font-size-base);
     width: 100%;
     justify-content: center;
     min-height: 48px;

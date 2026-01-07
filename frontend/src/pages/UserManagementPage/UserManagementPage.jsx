@@ -341,20 +341,18 @@ const UserManagementPage = () => {
           <S.WelcomeText>{user.koreanName}님 환영합니다</S.WelcomeText>
         </S.HeaderLeft>
         <S.HeaderRight>
-          <S.Button onClick={() => navigate('/expenses')}>
-            지출결의서 목록
-          </S.Button>
-          <S.Button onClick={handleLogout}>
-            <FaSignOutAlt /> 로그아웃
+          <S.Button primary onClick={handleCreate} aria-label="새 사용자 추가">
+            <FaPlus /> 사용자 생성
           </S.Button>
         </S.HeaderRight>
       </S.Header>
 
-      <S.Toolbar>
-        <S.Button primary onClick={handleCreate}>
+      {/* 모바일용 새 사용자 추가 버튼 */}
+      <S.MobileToolbar>
+        <S.Button primary onClick={handleCreate} aria-label="새 사용자 추가">
           <FaPlus /> 사용자 생성
         </S.Button>
-      </S.Toolbar>
+      </S.MobileToolbar>
 
       {/* 회사 선택 (CEO/ADMIN만) */}
       {(isAdmin || isCEO) && userCompanies.length > 0 && (

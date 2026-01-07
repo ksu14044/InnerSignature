@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAuditRuleList, createAuditRule, updateAuditRule, deleteAuditRule } from '../../api/auditApi';
+import { getAuditRuleList, createAuditRule, updateAuditRule, deleteAuditRule, getAuditLogList, resolveAuditLog } from '../../api/auditApi';
 import { EXPENSE_CATEGORIES } from '../../constants/categories';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import { FaPlus, FaEdit, FaTrash, FaShieldAlt } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaShieldAlt, FaCheck, FaExclamationTriangle, FaInfoCircle, FaList } from 'react-icons/fa';
 
 const AuditRuleManagementPage = () => {
   const { user, logout } = useAuth();
@@ -20,6 +20,18 @@ const AuditRuleManagementPage = () => {
     ruleConfig: {},
     isActive: true
   });
+  const [activeTab, setActiveTab] = useState('rules'); // 'rules' 또는 'logs'
+  const [logList, setLogList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+  const [filters, setFilters] = useState({
+    severity: '',
+    isResolved: '',
+    startDate: '',
+    endDate: ''
+  });
+  const pageSize = 10;
 
   const ruleTypes = [
     { value: 'NIGHT_TIME', label: '심야 시간대 사용' },
@@ -34,8 +46,12 @@ const AuditRuleManagementPage = () => {
       navigate('/expenses');
       return;
     }
-    loadRuleList();
-  }, [user, navigate]);
+    if (activeTab === 'rules') {
+      loadRuleList();
+    } else if (activeTab === 'logs') {
+      loadLogList();
+    }
+  }, [user, navigate, activeTab, currentPage, filters]);
 
   const loadRuleList = async () => {
     try {
@@ -156,6 +172,60 @@ const AuditRuleManagementPage = () => {
     }
   };
 
+  const loadLogList = async () => {
+    try {
+      setLoading(true);
+      const filterParams = {};
+      if (filters.severity) filterParams.severity = filters.severity;
+      if (filters.isResolved !== '') filterParams.isResolved = filters.isResolved === 'true';
+      if (filters.startDate) filterParams.startDate = filters.startDate;
+      if (filters.endDate) filterParams.endDate = filters.endDate;
+      
+      const response = await getAuditLogList(filterParams, currentPage, pageSize);
+      if (response.success && response.data) {
+        setLogList(response.data.content || []);
+        setCurrentPage(response.data.page || 1);
+        setTotalPages(response.data.totalPages || 1);
+        setTotalElements(response.data.totalElements || 0);
+      }
+    } catch (error) {
+      console.error('감사 로그 목록 조회 실패:', error);
+      alert(error?.response?.data?.message || '감사 로그 목록 조회 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResolve = async (auditLogId) => {
+    if (!window.confirm('이 감사 로그를 해결 처리하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      const response = await resolveAuditLog(auditLogId);
+      if (response.success) {
+        alert('감사 로그가 해결 처리되었습니다.');
+        loadLogList();
+      }
+    } catch (error) {
+      console.error('감사 로그 해결 처리 실패:', error);
+      alert(error?.response?.data?.message || '감사 로그 해결 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  const getSeverityIcon = (severity) => {
+    switch (severity) {
+      case 'HIGH':
+        return <FaExclamationTriangle style={{ color: '#dc3545' }} />;
+      case 'MEDIUM':
+        return <FaInfoCircle style={{ color: '#ffc107' }} />;
+      case 'LOW':
+        return <FaInfoCircle style={{ color: '#17a2b8' }} />;
+      default:
+        return <FaInfoCircle style={{ color: '#6c757d' }} />;
+    }
+  };
+
   const canEdit = user?.role === 'ADMIN' || user?.role === 'CEO';
 
   if (!user) {
@@ -181,10 +251,10 @@ const AuditRuleManagementPage = () => {
       <S.Header>
         <S.Title>
           <FaShieldAlt />
-          감사 규칙 관리
+          감사 관리
         </S.Title>
         <S.ButtonRow>
-          {canEdit && (
+          {activeTab === 'rules' && canEdit && (
             <S.Button onClick={() => handleOpenModal()}>
               <FaPlus /> 규칙 추가
             </S.Button>
@@ -193,9 +263,21 @@ const AuditRuleManagementPage = () => {
         </S.ButtonRow>
       </S.Header>
 
+      {/* 탭 버튼 */}
+      <S.TabSection>
+        <S.TabButton active={activeTab === 'rules'} onClick={() => setActiveTab('rules')}>
+          감사 규칙
+        </S.TabButton>
+        <S.TabButton active={activeTab === 'logs'} onClick={() => setActiveTab('logs')}>
+          감사 로그
+        </S.TabButton>
+      </S.TabSection>
+
       {loading && <LoadingOverlay fullScreen={false} message="로딩 중..." />}
 
-      <S.RuleList>
+      {/* 감사 규칙 탭 */}
+      {activeTab === 'rules' && (
+        <S.RuleList>
         {ruleList.length === 0 ? (
           <S.EmptyMessage>감사 규칙이 없습니다.</S.EmptyMessage>
         ) : (
@@ -245,6 +327,132 @@ const AuditRuleManagementPage = () => {
           ))
         )}
       </S.RuleList>
+      )}
+
+      {/* 감사 로그 탭 */}
+      {activeTab === 'logs' && (
+        <S.LogsTabContent>
+          <S.FilterSection>
+            <S.FilterGrid>
+              <S.FilterGroup>
+                <S.Label>심각도</S.Label>
+                <S.Select
+                  value={filters.severity}
+                  onChange={(e) => setFilters(prev => ({ ...prev, severity: e.target.value, currentPage: 1 }))}
+                >
+                  <option value="">전체</option>
+                  <option value="HIGH">높음</option>
+                  <option value="MEDIUM">중간</option>
+                  <option value="LOW">낮음</option>
+                </S.Select>
+              </S.FilterGroup>
+              <S.FilterGroup>
+                <S.Label>해결 상태</S.Label>
+                <S.Select
+                  value={filters.isResolved}
+                  onChange={(e) => setFilters(prev => ({ ...prev, isResolved: e.target.value, currentPage: 1 }))}
+                >
+                  <option value="">전체</option>
+                  <option value="false">미해결</option>
+                  <option value="true">해결됨</option>
+                </S.Select>
+              </S.FilterGroup>
+              <S.FilterGroup>
+                <S.Label>시작일</S.Label>
+                <S.Input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value, currentPage: 1 }))}
+                />
+              </S.FilterGroup>
+              <S.FilterGroup>
+                <S.Label>종료일</S.Label>
+                <S.Input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value, currentPage: 1 }))}
+                />
+              </S.FilterGroup>
+            </S.FilterGrid>
+          </S.FilterSection>
+
+          <S.LogList>
+            {logList.length === 0 ? (
+              <S.EmptyMessage>감사 로그가 없습니다.</S.EmptyMessage>
+            ) : (
+              <>
+                {logList.map(log => (
+                  <S.LogCard key={log.auditLogId} severity={log.severity} resolved={log.isResolved}>
+                    <S.LogHeader>
+                      <S.LogTitle>
+                        {getSeverityIcon(log.severity)}
+                        <span>{log.ruleName || '알 수 없음'}</span>
+                      </S.LogTitle>
+                      <S.LogStatus>
+                        {log.isResolved ? (
+                          <S.ResolvedBadge>
+                            <FaCheck /> 해결됨
+                          </S.ResolvedBadge>
+                        ) : (
+                          <S.UnresolvedBadge>
+                            <FaExclamationTriangle /> 미해결
+                          </S.UnresolvedBadge>
+                        )}
+                      </S.LogStatus>
+                    </S.LogHeader>
+                    <S.LogContent>
+                      <S.LogInfo>
+                        <S.InfoRow>
+                          <S.InfoLabel>심각도:</S.InfoLabel>
+                          <S.InfoValue>{log.severity === 'HIGH' ? '높음' : log.severity === 'MEDIUM' ? '중간' : '낮음'}</S.InfoValue>
+                        </S.InfoRow>
+                        <S.InfoRow>
+                          <S.InfoLabel>발생일시:</S.InfoLabel>
+                          <S.InfoValue>{new Date(log.createdAt).toLocaleString('ko-KR')}</S.InfoValue>
+                        </S.InfoRow>
+                        {log.expenseReportId && (
+                          <S.InfoRow>
+                            <S.InfoLabel>결의서 ID:</S.InfoLabel>
+                            <S.LinkButton onClick={() => navigate(`/detail/${log.expenseReportId}`)}>
+                              {log.expenseReportId}
+                            </S.LinkButton>
+                          </S.InfoRow>
+                        )}
+                        <S.InfoRow>
+                          <S.InfoLabel>설명:</S.InfoLabel>
+                          <S.InfoValue>{log.description || '-'}</S.InfoValue>
+                        </S.InfoRow>
+                      </S.LogInfo>
+                      {!log.isResolved && (
+                        <S.ResolveButton onClick={() => handleResolve(log.auditLogId)}>
+                          <FaCheck /> 해결 처리
+                        </S.ResolveButton>
+                      )}
+                    </S.LogContent>
+                  </S.LogCard>
+                ))}
+                <S.Pagination>
+                  <S.PaginationButton 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    이전
+                  </S.PaginationButton>
+                  <S.PaginationInfo>
+                    {currentPage} / {totalPages} (총 {totalElements}건)
+                  </S.PaginationInfo>
+                  <S.PaginationButton 
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    다음
+                  </S.PaginationButton>
+                </S.Pagination>
+              </>
+            )}
+          </S.LogList>
+        </S.LogsTabContent>
+      )}
 
       {isModalOpen && (
         <S.ModalOverlay onClick={handleCloseModal}>

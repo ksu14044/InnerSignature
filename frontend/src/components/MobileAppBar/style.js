@@ -84,6 +84,12 @@ export const IconButton = styled.button`
   }
 `;
 
+// 알림 컨테이너
+export const NotificationContainer = styled.div`
+  position: relative;
+  margin-right: 4px;
+`;
+
 // 알림 배지 스타일
 export const NotificationBadge = styled.div`
   position: relative;
@@ -92,16 +98,15 @@ export const NotificationBadge = styled.div`
   justify-content: center;
   width: 40px;
   height: 40px;
-  background-color: #ff6b6b;
+  background-color: var(--primary-color);
   color: white;
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   font-size: 16px;
-  margin-right: 4px;
 
   &:active {
-    background-color: #ff5252;
+    background-color: var(--primary-hover);
     transform: scale(0.95);
   }
 `;
@@ -110,7 +115,7 @@ export const NotificationCount = styled.span`
   position: absolute;
   top: -4px;
   right: -4px;
-  background-color: #ff1744;
+  background-color: var(--danger-color);
   color: white;
   border-radius: 50%;
   width: 18px;
@@ -121,6 +126,73 @@ export const NotificationCount = styled.span`
   font-size: 10px;
   font-weight: bold;
   border: 2px solid white;
+  min-width: 18px;
+  padding: 0 2px;
+`;
+
+// 알림 드롭다운
+export const NotificationDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 240px;
+  max-width: 320px;
+  z-index: var(--z-dropdown);
+  overflow: hidden;
+`;
+
+export const NotificationDropdownItem = styled.div`
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  &:hover {
+    background-color: var(--bg-hover);
+  }
+  
+  &:active {
+    background-color: var(--border-light);
+  }
+  
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--border-light);
+  }
+`;
+
+export const NotificationIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  flex-shrink: 0;
+`;
+
+export const NotificationText = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+export const NotificationTitle = styled.div`
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: 2px;
+`;
+
+export const NotificationSubtitle = styled.div`
+  font-size: 12px;
+  color: var(--text-secondary);
 `;
 
 export const CompanySelector = styled.div`

@@ -3,11 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchExpenseList, fetchPendingApprovals } from '../../api/expenseApi';
 import { getPendingUsers, getUserCompanies, approveUser } from '../../api/userApi';
+import { getCurrentSubscription } from '../../api/subscriptionApi';
+import { getTotalAvailableAmount } from '../../api/creditApi';
 import { STATUS_KOREAN } from '../../constants/status';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import TourButton from '../../components/TourButton/TourButton';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
+import UserDashboardSection from '../../components/DashboardSections/UserDashboardSection';
+import AccountantDashboardSection from '../../components/DashboardSections/AccountantDashboardSection';
+import TaxAccountantDashboardSection from '../../components/DashboardSections/TaxAccountantDashboardSection';
+import AdminDashboardSection from '../../components/DashboardSections/AdminDashboardSection';
+import CEODashboardSection from '../../components/DashboardSections/CEODashboardSection';
 import { FaBell, FaUser, FaSignOutAlt, FaBuilding, FaChevronDown, FaCheck, FaCog, FaTimesCircle, FaList, FaPlus, FaChartLine, FaEye, FaChevronUp } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
@@ -33,6 +40,9 @@ const MainDashboardPage = () => {
   const [selectedStatus, setSelectedStatus] = useState(null); // 선택된 상태
   const [statusExpenses, setStatusExpenses] = useState([]); // 선택된 상태의 결의서 목록
   const [loadingStatusExpenses, setLoadingStatusExpenses] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' 또는 'detailed'
+  const [subscription, setSubscription] = useState(null);
+  const [totalCredit, setTotalCredit] = useState(0);
   
   // 기간 필터 (기본값: 전체 기간)
   const [filters, setFilters] = useState({
@@ -128,6 +138,31 @@ const MainDashboardPage = () => {
         });
     }
   }, [user?.userId]);
+
+  // 구독 및 크레딧 정보 로드
+  useEffect(() => {
+    const loadCommonData = async () => {
+      try {
+        const [subscriptionRes, creditRes] = await Promise.all([
+          getCurrentSubscription().catch(() => ({ success: false, data: null })),
+          getTotalAvailableAmount().catch(() => ({ success: false, data: null }))
+        ]);
+
+        if (subscriptionRes.success && subscriptionRes.data) {
+          setSubscription(subscriptionRes.data);
+        }
+        if (creditRes.success && creditRes.data) {
+          setTotalCredit(creditRes.data.totalAmount || 0);
+        }
+      } catch (err) {
+        console.error('공통 데이터 로드 실패:', err);
+      }
+    };
+
+    if (user) {
+      loadCommonData();
+    }
+  }, [user]);
 
   // CEO이고 회사가 하나도 없으면 회사 등록 여부를 먼저 확인 후 모달 표시
   useEffect(() => {
@@ -325,57 +360,52 @@ const MainDashboardPage = () => {
             <FaUser />
             <span>내 정보</span>
           </S.ProfileButton>
-          {(user?.role === 'SUPERADMIN' || user?.role === 'CEO' || user?.role === 'ADMIN') && (
-            <S.AdminButton onClick={() => navigate('/users')}>
-              사용자 관리
-            </S.AdminButton>
-          )}
-          {(user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'ACCOUNTANT') && (
-            <S.ManagementDropdown data-management-dropdown>
-              <S.ManagementButton onClick={() => setIsManagementDropdownOpen(!isManagementDropdownOpen)}>
-                <FaCog />
-                <span>관리</span>
-                <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />
-              </S.ManagementButton>
-              {isManagementDropdownOpen && (
-                <S.ManagementMenu>
-                  {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
-                    <>
-                      <S.ManagementMenuItem onClick={() => { navigate('/budget'); setIsManagementDropdownOpen(false); }}>
-                        💰 예산 관리
-                      </S.ManagementMenuItem>
-                      <S.ManagementMenuItem onClick={() => { navigate('/audit-rules'); setIsManagementDropdownOpen(false); }}>
-                        🛡️ 감사 규칙
-                      </S.ManagementMenuItem>
-                      <S.ManagementMenuItem onClick={() => { navigate('/account-codes'); setIsManagementDropdownOpen(false); }}>
-                        📊 계정 과목 매핑
-                      </S.ManagementMenuItem>
-                      <S.ManagementMenuItem onClick={() => { navigate('/monthly-closing'); setIsManagementDropdownOpen(false); }}>
-                        📅 월 마감 관리
-                      </S.ManagementMenuItem>
-                    </>
-                  )}
-                  <S.ManagementMenuItem onClick={() => { navigate('/audit-logs'); setIsManagementDropdownOpen(false); }}>
-                    📋 감사 로그
+          <S.ManagementDropdown data-management-dropdown>
+            <S.ManagementButton onClick={() => setIsManagementDropdownOpen(!isManagementDropdownOpen)}>
+              <FaCog />
+              <span>설정</span>
+              <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />
+            </S.ManagementButton>
+            {isManagementDropdownOpen && (
+              <S.ManagementMenu>
+                {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
+                  <S.ManagementMenuItem onClick={() => { navigate('/users'); setIsManagementDropdownOpen(false); }}>
+                    👥 사용자 관리
                   </S.ManagementMenuItem>
-                  <S.ManagementMenuItem onClick={() => { navigate('/cards'); setIsManagementDropdownOpen(false); }}>
-                    💳 카드 관리
+                )}
+                <S.ManagementMenuItem onClick={() => { navigate('/signatures'); setIsManagementDropdownOpen(false); }}>
+                  ✍️ 도장/서명 관리
+                </S.ManagementMenuItem>
+                <S.ManagementMenuItem onClick={() => { navigate('/cards'); setIsManagementDropdownOpen(false); }}>
+                  💳 카드 관리
+                </S.ManagementMenuItem>
+                <S.ManagementMenuItem onClick={() => { navigate('/my-approvers'); setIsManagementDropdownOpen(false); }}>
+                  👤 담당 결재자 설정
+                </S.ManagementMenuItem>
+                {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
+                  <S.ManagementMenuItem onClick={() => { navigate('/subscriptions/manage'); setIsManagementDropdownOpen(false); }}>
+                    📦 구독 관리
                   </S.ManagementMenuItem>
-                  {user?.role === 'ACCOUNTANT' && (
-                    <S.ManagementMenuItem onClick={() => { navigate('/missing-receipts'); setIsManagementDropdownOpen(false); }}>
-                      ⚠️ 증빙 누락 관리
-                    </S.ManagementMenuItem>
-                  )}
-                </S.ManagementMenu>
-              )}
-            </S.ManagementDropdown>
-          )}
+                )}
+              </S.ManagementMenu>
+            )}
+          </S.ManagementDropdown>
           <S.LogoutButton onClick={handleLogout}>
             <FaSignOutAlt />
             <span>로그아웃</span>
           </S.LogoutButton>
         </S.HeaderRight>
       </S.Header>
+
+      {/* 탭 버튼 */}
+      <S.TabSection>
+        <S.TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
+          개요
+        </S.TabButton>
+        <S.TabButton active={activeTab === 'detailed'} onClick={() => setActiveTab('detailed')}>
+          상세 분석
+        </S.TabButton>
+      </S.TabSection>
 
       {/* 기간 필터 */}
       <S.FilterSection>
@@ -397,8 +427,44 @@ const MainDashboardPage = () => {
         </S.FilterGroup>
       </S.FilterSection>
 
-      {/* 통계 카드 */}
-      <S.StatsGrid>
+      {/* 구독 및 크레딧 카드 */}
+      {(subscription || totalCredit > 0) && (
+        <S.InfoCardsSection>
+          {subscription && (
+            <S.SubscriptionCard onClick={() => navigate('/subscriptions/manage')}>
+              <S.SubscriptionCardHeader>
+                <S.SubscriptionCardTitle>구독 상태</S.SubscriptionCardTitle>
+                {subscription.status === 'ACTIVE' && (
+                  <S.SubscriptionStatusBadge status={subscription.status}>활성</S.SubscriptionStatusBadge>
+                )}
+              </S.SubscriptionCardHeader>
+              <S.SubscriptionPlanName>{subscription.plan?.planName || '알 수 없음'} 플랜</S.SubscriptionPlanName>
+              {subscription.endDate && (
+                <S.SubscriptionExpiry>
+                  <S.SubscriptionExpiryLabel>만료일:</S.SubscriptionExpiryLabel>
+                  <S.SubscriptionExpiryDate>{subscription.endDate}</S.SubscriptionExpiryDate>
+                </S.SubscriptionExpiry>
+              )}
+              <S.SubscriptionCardFooter>구독 관리로 이동 →</S.SubscriptionCardFooter>
+            </S.SubscriptionCard>
+          )}
+          {totalCredit > 0 && (
+            <S.CreditCard onClick={() => navigate('/credits')}>
+              <S.CreditCardHeader>
+                <S.CreditCardTitle>사용 가능한 크레딧</S.CreditCardTitle>
+              </S.CreditCardHeader>
+              <S.CreditAmount>{totalCredit.toLocaleString()}원</S.CreditAmount>
+              <S.CreditCardFooter>크레딧 내역 보기 →</S.CreditCardFooter>
+            </S.CreditCard>
+          )}
+        </S.InfoCardsSection>
+      )}
+
+      {/* 개요 탭 */}
+      {activeTab === 'overview' && (
+        <>
+          {/* 통계 카드 */}
+          <S.StatsGrid>
         <S.StatCard>
           <S.StatLabel>합계 금액</S.StatLabel>
           <S.StatValue>{stats.totalAmount.toLocaleString()}원</S.StatValue>
@@ -530,17 +596,30 @@ const MainDashboardPage = () => {
         </S.StatusExpenseSection>
       )}
 
-      {/* 빠른 액션 */}
-      <S.ActionSection>
-        <S.ActionButton onClick={() => navigate('/expenses/create')}>
-          <FaPlus />
-          <span>새 결의서 작성</span>
-        </S.ActionButton>
-        <S.ActionButton onClick={() => navigate('/expenses')} variant="secondary">
-          <FaList />
-          <span>결의서 목록</span>
-        </S.ActionButton>
-      </S.ActionSection>
+          {/* 빠른 액션 */}
+          <S.ActionSection>
+            <S.ActionButton onClick={() => navigate('/expenses/create')}>
+              <FaPlus />
+              <span>새 결의서 작성</span>
+            </S.ActionButton>
+            <S.ActionButton onClick={() => navigate('/expenses')} variant="secondary">
+              <FaList />
+              <span>결의서 목록</span>
+            </S.ActionButton>
+          </S.ActionSection>
+        </>
+      )}
+
+      {/* 상세 분석 탭 - 권한별 섹션 */}
+      {activeTab === 'detailed' && (
+        <>
+          {user?.role === 'USER' && <UserDashboardSection filters={filters} />}
+          {user?.role === 'ACCOUNTANT' && <AccountantDashboardSection filters={filters} />}
+          {user?.role === 'TAX_ACCOUNTANT' && <TaxAccountantDashboardSection filters={filters} />}
+          {user?.role === 'ADMIN' && <AdminDashboardSection filters={filters} />}
+          {user?.role === 'CEO' && <CEODashboardSection filters={filters} />}
+        </>
+      )}
 
       {/* 알람 모달 */}
       {isNotificationModalOpen && (

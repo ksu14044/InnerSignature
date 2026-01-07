@@ -996,6 +996,12 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("APPROVED 상태의 문서만 PAID로 변경할 수 있습니다.");
         }
 
+        // 4-1. 영수증 첨부 필수 체크
+        List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseReportId(expenseReportId, companyId);
+        if (receipts == null || receipts.isEmpty()) {
+            throw new com.innersignature.backend.exception.BusinessException("결제 완료 처리를 위해서는 영수증을 반드시 첨부해야 합니다.");
+        }
+
         // 5. 상세 항목별 실제 지급 금액 저장
         if (detailActualPaidAmounts != null && !detailActualPaidAmounts.isEmpty()) {
             // 모든 상세 항목 조회
@@ -1139,9 +1145,12 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("해당 문서를 찾을 수 없습니다.");
         }
 
-        // 2. PAID 또는 WAIT 상태인지 확인 (WAIT 상태는 작성자가 생성 시 영수증을 첨부할 수 있도록 허용)
-        if (!"PAID".equals(report.getStatus()) && !"WAIT".equals(report.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("PAID 또는 WAIT 상태의 문서만 영수증을 첨부할 수 있습니다.");
+        // 2. PAID, WAIT, 또는 APPROVED 상태인지 확인 
+        // - WAIT: 작성자가 생성 시 영수증을 첨부할 수 있도록 허용
+        // - APPROVED: ACCOUNTANT가 결제 완료 전 영수증을 첨부할 수 있도록 허용
+        // - PAID: 결제 완료 후 영수증을 첨부할 수 있도록 허용
+        if (!"PAID".equals(report.getStatus()) && !"WAIT".equals(report.getStatus()) && !"APPROVED".equals(report.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("PAID, WAIT, 또는 APPROVED 상태의 문서만 영수증을 첨부할 수 있습니다.");
         }
 
         // 3. 권한 체크: 작성자 또는 ACCOUNTANT만 가능

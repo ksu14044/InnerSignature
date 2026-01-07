@@ -741,51 +741,93 @@ export const StatValue = styled.div`
 `;
 
 export const ActionSection = styled.div`
-  display: flex;
-  gap: 16px;
-  margin-top: 32px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-sm);
+  }
 
   @media (max-width: 480px) {
-    flex-direction: column;
-    gap: 12px;
-    margin: 8px;
-    margin-top: 24px;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+    margin: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
   }
 `;
 
 export const ActionButton = styled.button`
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: ${props => props.variant === 'secondary' ? 'var(--secondary-color)' : 'var(--primary-color)'};
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  background: ${props => props.variant === 'secondary' ? 'white' : 'var(--primary-color)'};
+  color: ${props => props.variant === 'secondary' ? 'var(--text-primary)' : 'white'};
+  border: ${props => props.variant === 'secondary' ? '2px solid var(--border-color)' : 'none'};
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 48px;
+  transition: all var(--transition-base);
+  min-height: 120px;
+  box-shadow: var(--shadow-sm);
   
   svg {
-    font-size: 16px;
+    font-size: 32px;
+    margin-bottom: var(--spacing-xs);
   }
   
-  &:hover {
-    background: ${props => props.variant === 'secondary' ? '#5a6268' : 'var(--primary-hover)'};
-    transform: translateY(-1px);
-    box-shadow: var(--shadow);
+  span {
+    font-size: var(--font-size-base);
+    text-align: center;
+  }
+  
+  &:hover:not(:disabled) {
+    background: ${props => props.variant === 'secondary' ? 'var(--bg-hover)' : 'var(--primary-hover)'};
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: ${props => props.variant === 'secondary' ? 'var(--primary-color)' : 'transparent'};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    min-height: 100px;
+    padding: var(--spacing-md);
+    
+    svg {
+      font-size: 28px;
+    }
+    
+    span {
+      font-size: var(--font-size-sm);
+    }
   }
 
   @media (max-width: 480px) {
     width: 100%;
-    padding: 14px 20px;
-    font-size: 14px;
+    min-height: 80px;
+    padding: var(--spacing-md);
+    flex-direction: row;
+    justify-content: flex-start;
     
     svg {
-      font-size: 14px;
+      font-size: 24px;
+      margin-bottom: 0;
+      margin-right: var(--spacing-sm);
+    }
+    
+    span {
+      font-size: var(--font-size-base);
+      text-align: left;
     }
   }
 `;
@@ -1032,4 +1074,189 @@ export const ViewMoreButton = styled.button`
     background-color: #e5e7eb;
     border-color: var(--primary-color);
   }
+`;
+
+export const TabSection = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--border-color);
+  padding: 0 20px;
+
+  @media (max-width: 480px) {
+    margin: 8px;
+    padding: 0;
+  }
+`;
+
+export const TabButton = styled.button`
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid ${props => props.active ? 'var(--primary-color)' : 'transparent'};
+  color: ${props => props.active ? 'var(--primary-color)' : 'var(--secondary-color)'};
+  font-weight: ${props => props.active ? '600' : '500'};
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+`;
+
+export const InfoCardsSection = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    margin: 8px;
+    margin-bottom: 24px;
+    gap: 12px;
+  }
+`;
+
+export const SubscriptionCard = styled.div`
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    border-radius: 8px;
+  }
+`;
+
+export const SubscriptionCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+`;
+
+export const SubscriptionCardTitle = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--secondary-color);
+`;
+
+export const SubscriptionStatusBadge = styled.span`
+  padding: 4px 12px;
+  background-color: ${props => props.status === 'ACTIVE' ? '#28a745' : '#6c757d'};
+  color: white;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+`;
+
+export const SubscriptionPlanName = styled.div`
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dark-color);
+  margin-bottom: 12px;
+`;
+
+export const SubscriptionExpiry = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--secondary-color);
+  margin-bottom: 12px;
+`;
+
+export const SubscriptionExpiryLabel = styled.span`
+  font-weight: 500;
+`;
+
+export const SubscriptionExpiryDate = styled.span`
+  font-weight: 600;
+  color: var(--dark-color);
+`;
+
+export const SubscriptionExpiryWarning = styled.span`
+  color: ${props => props.danger ? '#dc3545' : '#ffc107'};
+  font-weight: 600;
+  font-size: 12px;
+`;
+
+export const SubscriptionExpiryInfo = styled.span`
+  color: var(--secondary-color);
+  font-size: 12px;
+`;
+
+export const SubscriptionCardFooter = styled.div`
+  font-size: 14px;
+  color: var(--primary-color);
+  font-weight: 600;
+  text-align: right;
+  margin-top: 12px;
+`;
+
+export const CreditCard = styled.div`
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    border-radius: 8px;
+  }
+`;
+
+export const CreditCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+`;
+
+export const CreditCardTitle = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+`;
+
+export const CreditAmount = styled.div`
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 12px;
+`;
+
+export const CreditCardFooter = styled.div`
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  text-align: right;
 `;

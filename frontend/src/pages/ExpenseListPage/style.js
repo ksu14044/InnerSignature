@@ -326,12 +326,18 @@ export const ActionBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  gap: 16px;
+  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
 
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
+    gap: var(--spacing-sm);
   }
 
   @media (max-width: 480px) {
@@ -496,38 +502,56 @@ export const ToggleContainer = styled.div`
 export const TabContainer = styled.div`
   display: inline-flex;
   align-items: center;
-  background-color: #f1f3f5;
-  border-radius: 999px;
+  background-color: var(--bg-light);
+  border-radius: var(--radius-lg);
   padding: 4px;
-  margin-right: 16px;
+  margin-right: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
 
   @media (max-width: 768px) {
     width: 100%;
     justify-content: center;
-    margin-bottom: 8px;
+    margin-bottom: var(--spacing-sm);
+    margin-right: 0;
   }
 `;
 
 export const TabButton = styled.button`
   border: none;
   background-color: ${props => (props.active ? 'white' : 'transparent')};
-  color: ${props => (props.active ? 'var(--primary-color)' : '#6c757d')};
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
+  color: ${props => (props.active ? 'var(--primary-color)' : 'var(--text-secondary)')};
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: ${props => (props.active ? 'var(--font-weight-semibold)' : 'var(--font-weight-medium)')};
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   min-width: 100px;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: ${props => (props.active ? '60%' : '0')};
+    height: 2px;
+    background-color: var(--primary-color);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-base);
+  }
 
   &:hover {
-    background-color: ${props => (props.active ? 'white' : '#e9ecef')};
+    background-color: ${props => (props.active ? 'white' : 'var(--bg-hover)')};
+    color: ${props => (props.active ? 'var(--primary-color)' : 'var(--text-primary)')};
   }
 
   @media (max-width: 480px) {
     flex: 1;
-    padding: 8px 10px;
-    font-size: 13px;
+    padding: var(--spacing-sm) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    min-width: auto;
   }
 `;
 

@@ -25,6 +25,10 @@ const ExpenseListPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [deletingExpenseId, setDeletingExpenseId] = useState(null);
   const [myApprovedList, setMyApprovedList] = useState([]);
+  const [paymentPendingList, setPaymentPendingList] = useState([]);
+  const [paymentPendingPage, setPaymentPendingPage] = useState(1);
+  const [paymentPendingTotalPages, setPaymentPendingTotalPages] = useState(1);
+  const [paymentPendingTotalElements, setPaymentPendingTotalElements] = useState(0);
   
   // 필터 상태
   const [filters, setFilters] = useState({
@@ -48,7 +52,7 @@ const ExpenseListPage = () => {
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [isManagementDropdownOpen, setIsManagementDropdownOpen] = useState(false);
   const checkedCompanyModalRef = useRef(false);
-  const [activeTab, setActiveTab] = useState('MY_REPORTS'); // MY_REPORTS | MY_APPROVALS | MY_APPROVAL_HISTORY
+  const [activeTab, setActiveTab] = useState('MY_REPORTS'); // MY_REPORTS | MY_APPROVALS | MY_APPROVAL_HISTORY | PAYMENT_PENDING
 
   const handleLogout = async () => {
     navigate('/');  // 먼저 로그인 페이지로 이동
@@ -104,6 +108,24 @@ const ExpenseListPage = () => {
     } catch (error) {
       console.error('내 결재 문서 조회 실패:', error);
       setMyApprovedList([]);
+    }
+  };
+
+  // 결제 대기 건 조회 함수 (ACCOUNTANT용)
+  const loadPaymentPendingList = async (page = 1) => {
+    try {
+      setLoading(true);
+      const response = await fetchExpenseList(page, pageSize, { status: ['APPROVED'] });
+      if (response.success && response.data) {
+        setPaymentPendingList(response.data.content || []);
+        setPaymentPendingPage(response.data.page || 1);
+        setPaymentPendingTotalPages(response.data.totalPages || 1);
+        setPaymentPendingTotalElements(response.data.totalElements || 0);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('결제 대기 건 조회 실패:', error);
+      setLoading(false);
     }
   };
 
@@ -264,8 +286,12 @@ const ExpenseListPage = () => {
 
     // URL 파라미터에서 탭 및 필터 읽기 및 적용
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'MY_APPROVALS' || tabParam === 'MY_APPROVAL_HISTORY') {
+    if (tabParam === 'MY_APPROVALS' || tabParam === 'MY_APPROVAL_HISTORY' || tabParam === 'PAYMENT_PENDING') {
       setActiveTab(tabParam);
+      // 결제 대기 탭인 경우 데이터 로드
+      if (tabParam === 'PAYMENT_PENDING' && user?.role === 'ACCOUNTANT') {
+        loadPaymentPendingList(1);
+      }
     } else {
       setActiveTab('MY_REPORTS');
     }
@@ -318,6 +344,11 @@ const ExpenseListPage = () => {
 
       // 내가 결재한 문서 이력도 함께 로드
       loadMyApprovedReports();
+
+      // ACCOUNTANT인 경우 결제 대기 건도 함께 로드
+      if (user?.role === 'ACCOUNTANT') {
+        loadPaymentPendingList(1);
+      }
     }
 
     // 승인 대기 사용자 조회 (CEO, ADMIN만)
@@ -465,8 +496,11 @@ const ExpenseListPage = () => {
       ? list
       : activeTab === 'MY_APPROVALS'
         ? pendingApprovals
-        : myApprovedList;
+        : activeTab === 'PAYMENT_PENDING'
+          ? paymentPendingList
+          : myApprovedList;
   const isMyReportsTab = activeTab === 'MY_REPORTS';
+  const isPaymentPendingTab = activeTab === 'PAYMENT_PENDING';
 
   return (
     <S.Container>
@@ -563,48 +597,36 @@ const ExpenseListPage = () => {
             <FaUser />
             <span>내 정보</span>
           </S.ProfileButton>
-          {(user?.role === 'SUPERADMIN' || user?.role === 'CEO' || user?.role === 'ADMIN') && (
-            <S.AdminButton onClick={() => navigate('/users')}>
-              사용자 관리
-            </S.AdminButton>
-          )}
-          {(user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'ACCOUNTANT') && (
-            <S.ManagementDropdown data-management-dropdown>
-              <S.ManagementButton onClick={() => setIsManagementDropdownOpen(!isManagementDropdownOpen)}>
-                <FaCog />
-                <span>관리</span>
-                <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />
-              </S.ManagementButton>
-              {isManagementDropdownOpen && (
-                <S.ManagementMenu>
-                  {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
-                    <>
-                      <S.ManagementMenuItem onClick={() => { navigate('/budget'); setIsManagementDropdownOpen(false); }}>
-                        💰 예산 관리
-                      </S.ManagementMenuItem>
-                      <S.ManagementMenuItem onClick={() => { navigate('/audit-rules'); setIsManagementDropdownOpen(false); }}>
-                        🛡️ 감사 규칙
-                      </S.ManagementMenuItem>
-                      <S.ManagementMenuItem onClick={() => { navigate('/account-codes'); setIsManagementDropdownOpen(false); }}>
-                        📊 계정 과목 매핑
-                      </S.ManagementMenuItem>
-                      <S.ManagementMenuItem onClick={() => { navigate('/monthly-closing'); setIsManagementDropdownOpen(false); }}>
-                        📅 월 마감 관리
-                      </S.ManagementMenuItem>
-                    </>
-                  )}
-                  <S.ManagementMenuItem onClick={() => { navigate('/audit-logs'); setIsManagementDropdownOpen(false); }}>
-                    📋 감사 로그
+          <S.ManagementDropdown data-management-dropdown>
+            <S.ManagementButton onClick={() => setIsManagementDropdownOpen(!isManagementDropdownOpen)}>
+              <FaCog />
+              <span>설정</span>
+              <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />
+            </S.ManagementButton>
+            {isManagementDropdownOpen && (
+              <S.ManagementMenu>
+                {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
+                  <S.ManagementMenuItem onClick={() => { navigate('/users'); setIsManagementDropdownOpen(false); }}>
+                    👥 사용자 관리
                   </S.ManagementMenuItem>
-                  {user?.role === 'ACCOUNTANT' && (
-                    <S.ManagementMenuItem onClick={() => { navigate('/missing-receipts'); setIsManagementDropdownOpen(false); }}>
-                      ⚠️ 증빙 누락 관리
-                    </S.ManagementMenuItem>
-                  )}
-                </S.ManagementMenu>
-              )}
-            </S.ManagementDropdown>
-          )}
+                )}
+                <S.ManagementMenuItem onClick={() => { navigate('/signatures'); setIsManagementDropdownOpen(false); }}>
+                  ✍️ 도장/서명 관리
+                </S.ManagementMenuItem>
+                <S.ManagementMenuItem onClick={() => { navigate('/cards'); setIsManagementDropdownOpen(false); }}>
+                  💳 카드 관리
+                </S.ManagementMenuItem>
+                <S.ManagementMenuItem onClick={() => { navigate('/my-approvers'); setIsManagementDropdownOpen(false); }}>
+                  👤 담당 결재자 설정
+                </S.ManagementMenuItem>
+                {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
+                  <S.ManagementMenuItem onClick={() => { navigate('/subscriptions/manage'); setIsManagementDropdownOpen(false); }}>
+                    📦 구독 관리
+                  </S.ManagementMenuItem>
+                )}
+              </S.ManagementMenu>
+            )}
+          </S.ManagementDropdown>
           <S.LogoutButton onClick={handleLogout}>
             <FaSignOutAlt />
             <span>로그아웃</span>
@@ -613,49 +635,70 @@ const ExpenseListPage = () => {
       </S.Header>
 
       <S.ActionBar>
-        <S.CreateButton data-tourid="tour-create-button" onClick={() => navigate('/expenses/create')}>
-          <FaPlus />
-          <span>새 결의서 작성</span>
-        </S.CreateButton>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <S.TabContainer>
+        <S.TabContainer>
+          <S.TabButton
+            type="button"
+            active={isMyReportsTab}
+            onClick={() => setActiveTab('MY_REPORTS')}
+            aria-label="내 결의서"
+          >
+            내 결의서
+          </S.TabButton>
+          <S.TabButton
+            type="button"
+            active={activeTab === 'MY_APPROVALS'}
+            onClick={() => setActiveTab('MY_APPROVALS')}
+            aria-label="내 결재함"
+          >
+            내 결재함
+          </S.TabButton>
+          <S.TabButton
+            type="button"
+            active={activeTab === 'MY_APPROVAL_HISTORY'}
+            onClick={() => setActiveTab('MY_APPROVAL_HISTORY')}
+            aria-label="내가 결재한 문서"
+          >
+            내가 결재한 문서
+          </S.TabButton>
+          {user?.role === 'ACCOUNTANT' && (
             <S.TabButton
               type="button"
-              active={isMyReportsTab}
-              onClick={() => setActiveTab('MY_REPORTS')}
+              active={activeTab === 'PAYMENT_PENDING'}
+              onClick={() => {
+                setActiveTab('PAYMENT_PENDING');
+                loadPaymentPendingList(1);
+              }}
+              aria-label="결제 대기"
             >
-              내 결의서
+              결제 대기
             </S.TabButton>
-            <S.TabButton
-              type="button"
-              active={activeTab === 'MY_APPROVALS'}
-              onClick={() => setActiveTab('MY_APPROVALS')}
-            >
-              내 결재함
-            </S.TabButton>
-            <S.TabButton
-              type="button"
-              active={activeTab === 'MY_APPROVAL_HISTORY'}
-              onClick={() => setActiveTab('MY_APPROVAL_HISTORY')}
-            >
-              내가 결재한 문서
-            </S.TabButton>
-          </S.TabContainer>
+          )}
+        </S.TabContainer>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           {isMyReportsTab && (
             <>
+              <S.CreateButton onClick={() => navigate('/expenses/create')}>
+                <FaPlus />
+                <span>결의서 작성</span>
+              </S.CreateButton>
               <S.ToggleContainer data-tourid="tour-my-posts-toggle">
                 <S.ToggleLabel>
                   <S.ToggleSwitch
                     active={filters.drafterName === user?.koreanName}
                     onClick={handleMyPostsToggle}
+                    role="switch"
+                    aria-checked={filters.drafterName === user?.koreanName}
+                    aria-label="내가 쓴 글만 보기"
                   />
                   <span>내가 쓴 글만 보기</span>
                 </S.ToggleLabel>
               </S.ToggleContainer>
               <S.FilterButton 
                 data-tourid="tour-filter-button"
-                variant="secondary" 
+                variant={isFilterOpen ? 'primary' : 'secondary'}
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
+                aria-label="필터"
+                aria-pressed={isFilterOpen}
               >
                 <FaFilter />
                 <span>필터</span>
@@ -663,7 +706,7 @@ const ExpenseListPage = () => {
             </>
           )}
           {user && (user.role === 'ACCOUNTANT' || user.role === 'TAX_ACCOUNTANT') && (
-            <S.ExportButton onClick={handleExportJournal}>
+            <S.ExportButton onClick={handleExportJournal} aria-label="전표 다운로드">
               <FaFileExcel />
               <span>전표 다운로드</span>
             </S.ExportButton>
@@ -912,6 +955,66 @@ const ExpenseListPage = () => {
             <S.PaginationButton
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
+            >
+              <FaChevronRight />
+            </S.PaginationButton>
+          </S.Pagination>
+        </S.PaginationContainer>
+      )}
+
+      {/* 결제 대기 탭 페이지네이션 */}
+      {isPaymentPendingTab && paymentPendingTotalPages > 1 && (
+        <S.PaginationContainer>
+          <S.PaginationInfo>
+            전체 {paymentPendingTotalElements}개 중 {((paymentPendingPage - 1) * pageSize + 1)}-{Math.min(paymentPendingPage * pageSize, paymentPendingTotalElements)}개 표시
+          </S.PaginationInfo>
+          <S.Pagination>
+            <S.PaginationButton
+              onClick={() => {
+                if (paymentPendingPage > 1) {
+                  loadPaymentPendingList(paymentPendingPage - 1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              disabled={paymentPendingPage === 1}
+            >
+              <FaChevronLeft />
+            </S.PaginationButton>
+            {(() => {
+              const pages = [];
+              const maxPages = 5;
+              let startPage = Math.max(1, paymentPendingPage - Math.floor(maxPages / 2));
+              let endPage = Math.min(paymentPendingTotalPages, startPage + maxPages - 1);
+              
+              if (endPage - startPage < maxPages - 1) {
+                startPage = Math.max(1, endPage - maxPages + 1);
+              }
+              
+              for (let i = startPage; i <= endPage; i++) {
+                pages.push(i);
+              }
+              
+              return pages.map((pageNum) => (
+                <S.PaginationButton
+                  key={pageNum}
+                  onClick={() => {
+                    loadPaymentPendingList(pageNum);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  active={pageNum === paymentPendingPage}
+                >
+                  {pageNum}
+                </S.PaginationButton>
+              ));
+            })()}
+            <S.PaginationButton
+              onClick={() => {
+                if (paymentPendingPage < paymentPendingTotalPages) {
+                  loadPaymentPendingList(paymentPendingPage + 1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              disabled={paymentPendingPage === paymentPendingTotalPages}
             >
               <FaChevronRight />
             </S.PaginationButton>

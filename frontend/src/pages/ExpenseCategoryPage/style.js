@@ -474,3 +474,76 @@ export const ModalButton = styled.button`
   }
 `;
 
+export const TabSection = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 0;
+`;
+
+export const TabButton = styled.button`
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid ${props => props.active ? '#007bff' : 'transparent'};
+  color: ${props => props.active ? '#007bff' : '#6b7280'};
+  font-weight: ${props => props.active ? '600' : '500'};
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #007bff;
+  }
+`;
+
+export const MappingTabContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+`;
+
+export const MappingList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+`;
+
+export const MappingItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
+  }
+`;
+
+export const MappingInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const MappingTitle = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dark-color);
+`;
+
+export const MappingMeta = styled.div`
+  font-size: 14px;
+  color: var(--secondary-color);
+`;
+

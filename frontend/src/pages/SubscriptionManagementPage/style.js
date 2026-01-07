@@ -126,38 +126,6 @@ export const SectionTitle = styled.h2`
   margin-bottom: 16px;
 `;
 
-export const PlanCard = styled.div`
-  border: 2px solid ${props => props.selected ? '#007bff' : '#ddd'};
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-  cursor: ${props => props.selected ? 'default' : 'pointer'};
-  background-color: ${props => props.selected ? '#f0f8ff' : 'white'};
-  transition: all 0.2s;
-  
-  &:hover {
-    border-color: ${props => props.selected ? '#007bff' : '#007bff'};
-    background-color: ${props => props.selected ? '#f0f8ff' : '#f8f9fa'};
-  }
-`;
-
-export const PlanName = styled.div`
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 8px;
-`;
-
-export const PlanPrice = styled.div`
-  font-size: 16px;
-  color: #007bff;
-  font-weight: 600;
-  margin-bottom: 4px;
-`;
-
-export const PlanUsers = styled.div`
-  font-size: 14px;
-  color: #666;
-`;
 
 export const CancelButton = styled.button`
   background-color: #dc3545;
@@ -299,5 +267,327 @@ export const CreditLink = styled.button`
   &:hover {
     color: #0056b3;
   }
+`;
+
+export const TabSection = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 0;
+
+  @media (max-width: 480px) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 8px;
+    padding: 0;
+  }
+`;
+
+export const TabButton = styled.button`
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid ${props => props.active ? '#007bff' : 'transparent'};
+  color: ${props => props.active ? '#007bff' : '#6b7280'};
+  font-weight: ${props => props.active ? '600' : '500'};
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    color: #007bff;
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+`;
+
+export const PlansTabContent = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 480px) {
+    margin: 8px;
+    padding: 16px;
+  }
+`;
+
+export const PlansGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PlanCard = styled.div`
+  position: relative;
+  padding: 24px;
+  border: 2px solid ${props => props.selected ? '#007bff' : props.featured ? '#28a745' : '#e5e7eb'};
+  border-radius: 12px;
+  background: white;
+  transition: all 0.2s;
+  cursor: ${props => props.selected ? 'default' : 'pointer'};
+
+  &:hover {
+    border-color: ${props => props.selected ? '#007bff' : '#007bff'};
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  ${props => props.featured && `
+    border-color: #28a745;
+    background: linear-gradient(135deg, #f8fff9 0%, #ffffff 100%);
+  `}
+`;
+
+export const FeaturedBadge = styled.div`
+  position: absolute;
+  top: -10px;
+  right: 20px;
+  background: #28a745;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+`;
+
+export const PlanHeader = styled.div`
+  margin-bottom: 16px;
+`;
+
+export const PlanName = styled.h3`
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #1f2937;
+`;
+
+export const PlanPrice = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #007bff;
+  font-weight: 600;
+`;
+
+export const PlanUsers = styled.div`
+  font-size: 14px;
+  color: #666;
+`;
+
+export const PriceAmount = styled.span`
+  font-size: 32px;
+  font-weight: 700;
+  color: #1f2937;
+`;
+
+export const PriceUnit = styled.span`
+  font-size: 16px;
+  color: #6b7280;
+`;
+
+export const FreePrice = styled.span`
+  font-size: 32px;
+  font-weight: 700;
+  color: #28a745;
+`;
+
+export const PlanFeatures = styled.div`
+  margin-bottom: 20px;
+`;
+
+export const Feature = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #374151;
+`;
+
+export const FeatureIcon = styled.span`
+  color: #28a745;
+  font-weight: 700;
+`;
+
+export const FeatureText = styled.span`
+  flex: 1;
+`;
+
+export const PlanAction = styled.div`
+  margin-top: 20px;
+`;
+
+export const SelectButton = styled.button`
+  width: 100%;
+  padding: 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #0056b3;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+export const CurrentButton = styled.button`
+  width: 100%;
+  padding: 12px;
+  background: #e5e7eb;
+  color: #6b7280;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: default;
+`;
+
+export const PaymentsTabContent = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 480px) {
+    margin: 8px;
+    padding: 16px;
+  }
+`;
+
+export const PaymentsTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+`;
+
+export const TableHeader = styled.thead`
+  background: #f9fafb;
+`;
+
+export const TableRow = styled.tr`
+  border-bottom: 1px solid #e5e7eb;
+`;
+
+export const TableHeaderCell = styled.th`
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+`;
+
+export const TableBody = styled.tbody``;
+
+export const TableCell = styled.td`
+  padding: 12px;
+  color: #1f2937;
+  font-size: 14px;
+`;
+
+export const PaymentMethod = styled.span`
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  background: ${props => props.color || '#e5e7eb'};
+  color: white;
+`;
+
+export const CreditsTabContent = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 480px) {
+    margin: 8px;
+    padding: 16px;
+  }
+`;
+
+export const TotalCreditCard = styled.div`
+  padding: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  color: white;
+`;
+
+export const TotalCreditLabel = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 8px;
+`;
+
+export const TotalCreditAmount = styled.div`
+  font-size: 36px;
+  font-weight: 700;
+  color: white;
+`;
+
+export const CreditsTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+`;
+
+export const AvailableAmount = styled.span`
+  font-weight: 600;
+  color: ${props => props.available ? '#28a745' : '#6b7280'};
+`;
+
+export const ExpiryDate = styled.span`
+  color: ${props => props.expired ? '#dc3545' : props.expiringSoon ? '#ffc107' : '#1f2937'};
+  font-weight: ${props => (props.expired || props.expiringSoon) ? '600' : 'normal'};
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+export const ExpiryWarning = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #ffc107;
+  margin-left: 4px;
+`;
+
+export const EmptyState = styled.div`
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+export const EmptyText = styled.div`
+  font-size: 18px;
+  color: #666;
 `;
 

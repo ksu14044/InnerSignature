@@ -2,12 +2,10 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCurrentUser, updateCurrentUser, changePassword, getUserCompanies, getPendingCompanies, applyToCompany, removeUserFromCompany, setPrimaryCompany } from '../../api/userApi';
-import { getMySignatures, createSignature, updateSignature, deleteSignature, setDefaultSignature } from '../../api/signatureApi';
-import { FaSignOutAlt, FaArrowLeft, FaSearch, FaTimes, FaCheck, FaTrash, FaUserCheck, FaCreditCard, FaPen, FaStar, FaStamp } from 'react-icons/fa';
+import { FaSignOutAlt, FaArrowLeft, FaSearch, FaTimes, FaCheck, FaTrash } from 'react-icons/fa';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import CompanySearchModal from '../../components/CompanySearchModal/CompanySearchModal';
 import TourButton from '../../components/TourButton/TourButton';
-import SignatureModal from '../../components/SignatureModal/SignatureModal';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 
@@ -37,13 +35,6 @@ const MyProfilePage = () => {
     position: ''
   });
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
-  const [savedSignatures, setSavedSignatures] = useState([]);
-  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const [isSavingSignature, setIsSavingSignature] = useState(false);
-  const [editingSignature, setEditingSignature] = useState(null);
-  const [isTypeSelectModalOpen, setIsTypeSelectModalOpen] = useState(false);
-  const [selectedSignatureType, setSelectedSignatureType] = useState(null);
-  const fileInputRef = useRef(null);
 
   const navigate = useNavigate();
   const { logout, user: authUser, companies: authCompanies, switchCompany } = useAuth();
@@ -82,20 +73,8 @@ const MyProfilePage = () => {
     }
     loadUserInfo();
     loadCompanies();
-    loadSignatures();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser?.userId, loadCompanies]); // navigate 제거, authUser.userId만 체크
-
-  const loadSignatures = async () => {
-    try {
-      const response = await getMySignatures();
-      if (response.success) {
-        setSavedSignatures(response.data || []);
-      }
-    } catch (error) {
-      console.error('서명/도장 목록 조회 실패:', error);
-    }
-  };
 
   const loadUserInfo = async () => {
     try {
@@ -277,152 +256,6 @@ const MyProfilePage = () => {
       'CEO': '대표'
     };
     return roleMap[role] || role;
-  };
-
-  // 타입 선택 핸들러
-  const handleSelectSignatureType = (type) => {
-    setSelectedSignatureType(type);
-    setIsTypeSelectModalOpen(false);
-    
-    if (type === 'SIGNATURE') {
-      // 서명 모달 열기
-      setIsSignatureModalOpen(true);
-    } else if (type === 'STAMP') {
-      // 이미지 업로드 열기
-      if (fileInputRef.current) {
-        fileInputRef.current.click();
-      }
-    }
-  };
-
-  // 이미지 업로드 핸들러
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // 이미지 파일 검증
-    if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 업로드 가능합니다.');
-      return;
-    }
-
-    // 파일 크기 검증 (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('파일 크기는 5MB 이하여야 합니다.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64Data = reader.result;
-      handleSaveSignatureData(base64Data, 'STAMP');
-    };
-    reader.readAsDataURL(file);
-    
-    // 파일 입력 초기화
-    event.target.value = '';
-  };
-
-  // 서명/도장 데이터 저장 핸들러 (타입 선택 후)
-  const handleSaveSignatureData = async (signatureData, signatureType) => {
-    if (isSavingSignature) return;
-    
-    try {
-      setIsSavingSignature(true);
-      const signatureName = prompt('서명/도장 이름을 입력해주세요:', editingSignature?.signatureName || (signatureType === 'STAMP' ? '기본 도장' : '기본 서명'));
-      if (!signatureName) {
-        setIsSavingSignature(false);
-        return;
-      }
-
-      const isDefault = savedSignatures.length === 0 || confirm('기본 서명/도장으로 설정하시겠습니까?');
-
-      if (editingSignature) {
-        // 수정
-        const response = await updateSignature(editingSignature.signatureId, {
-          signatureName,
-          signatureType,
-          signatureData,
-          isDefault
-        });
-        if (response.success) {
-          alert('서명/도장이 수정되었습니다.');
-          setIsSignatureModalOpen(false);
-          setEditingSignature(null);
-          setSelectedSignatureType(null);
-          loadSignatures();
-        } else {
-          alert('서명/도장 수정 실패: ' + response.message);
-        }
-      } else {
-        // 생성
-        const response = await createSignature({
-          signatureName,
-          signatureType,
-          signatureData,
-          isDefault
-        });
-        if (response.success) {
-          alert('서명/도장이 저장되었습니다.');
-          setIsSignatureModalOpen(false);
-          setSelectedSignatureType(null);
-          loadSignatures();
-        } else {
-          alert('서명/도장 저장 실패: ' + response.message);
-        }
-      }
-    } catch (error) {
-      console.error('서명/도장 저장 실패:', error);
-      alert('서명/도장 저장 중 오류가 발생했습니다.');
-    } finally {
-      setIsSavingSignature(false);
-    }
-  };
-
-  // 서명 모달에서 호출되는 핸들러
-  const handleSaveSignature = async (signatureData) => {
-    await handleSaveSignatureData(signatureData, selectedSignatureType || 'SIGNATURE');
-  };
-
-  // 새 서명/도장 추가 버튼 클릭 핸들러
-  const handleAddNewSignature = () => {
-    setEditingSignature(null);
-    setSelectedSignatureType(null);
-    setIsTypeSelectModalOpen(true);
-  };
-
-  // 서명/도장 삭제 핸들러
-  const handleDeleteSignature = async (signatureId) => {
-    if (!confirm('정말 삭제하시겠습니까?')) return;
-
-    try {
-      const response = await deleteSignature(signatureId);
-      if (response.success) {
-        alert('서명/도장이 삭제되었습니다.');
-        loadSignatures();
-      } else {
-        alert('서명/도장 삭제 실패: ' + response.message);
-      }
-    } catch (error) {
-      console.error('서명/도장 삭제 실패:', error);
-      alert('서명/도장 삭제 중 오류가 발생했습니다.');
-    }
-  };
-
-  // 기본 서명/도장 설정 핸들러
-  const handleSetDefaultSignature = async (signatureId) => {
-    try {
-      const response = await setDefaultSignature(signatureId);
-      if (response.success) {
-        alert('기본 서명/도장이 설정되었습니다.');
-        loadSignatures();
-      } else {
-        alert('기본 서명/도장 설정 실패: ' + response.message);
-      }
-    } catch (error) {
-      console.error('기본 서명/도장 설정 실패:', error);
-      alert('기본 서명/도장 설정 중 오류가 발생했습니다.');
-    }
   };
 
   if (!authUser) {
@@ -736,174 +569,6 @@ const MyProfilePage = () => {
         </div>
       </S.ProfileCard>
 
-      {/* 담당 결재자 설정 섹션 */}
-      <S.ProfileCard>
-        <S.CardTitle>담당 결재자 설정</S.CardTitle>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p style={{ margin: '0 0 12px 0', color: '#666', fontSize: '14px' }}>
-            담당 결재자를 설정하면 지출결의서 작성 시 자동으로 결재자가 선택됩니다.
-          </p>
-          <S.Button 
-            primary 
-            onClick={() => navigate('/my-approvers')}
-            style={{ width: '100%', padding: '12px', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-          >
-            <FaUserCheck />
-            담당 결재자 관리
-          </S.Button>
-        </div>
-      </S.ProfileCard>
-
-      {/* 카드 관리 섹션 */}
-      <S.ProfileCard>
-        <S.CardTitle>카드 관리</S.CardTitle>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p style={{ margin: '0 0 12px 0', color: '#666', fontSize: '14px' }}>
-            개인 카드와 회사 카드를 등록하고 관리할 수 있습니다. 등록한 카드는 지출결의서 작성 시 빠르게 선택할 수 있습니다.
-          </p>
-          <S.Button 
-            primary 
-            onClick={() => navigate('/cards')}
-            style={{ width: '100%', padding: '12px', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-          >
-            <FaCreditCard />
-            카드 관리
-          </S.Button>
-        </div>
-      </S.ProfileCard>
-
-      {/* 서명/도장 관리 섹션 */}
-      <S.ProfileCard>
-        <S.CardTitle>서명/도장 관리</S.CardTitle>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <S.Button 
-            primary 
-            onClick={handleAddNewSignature}
-            style={{ width: '100%', padding: '12px', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-          >
-            <FaPen />
-            새 서명/도장 추가
-          </S.Button>
-          
-          {savedSignatures.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {savedSignatures.map(sig => (
-                <div key={sig.signatureId} style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '16px', 
-                  padding: '16px', 
-                  border: '1px solid #e0e0e0', 
-                  borderRadius: '8px',
-                  backgroundColor: sig.isDefault ? '#f0f7ff' : 'white'
-                }}>
-                  <div style={{ 
-                    width: '100px', 
-                    height: '60px', 
-                    border: '1px solid #e0e0e0', 
-                    borderRadius: '4px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    backgroundColor: '#fafafa',
-                    overflow: 'hidden'
-                  }}>
-                    <img src={sig.signatureData} alt={sig.signatureName} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <strong>{sig.signatureName}</strong>
-                      {sig.isDefault && (
-                        <span style={{ 
-                          padding: '2px 8px', 
-                          backgroundColor: '#28a745', 
-                          color: 'white', 
-                          borderRadius: '4px', 
-                          fontSize: '11px',
-                          fontWeight: '600'
-                        }}>
-                          기본
-                        </span>
-                      )}
-                      <span style={{ fontSize: '12px', color: '#666' }}>
-                        ({sig.signatureType === 'STAMP' ? '도장' : '서명'})
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                      {!sig.isDefault && (
-                        <button
-                          onClick={() => handleSetDefaultSignature(sig.signatureId)}
-                          style={{
-                            padding: '6px 12px',
-                            fontSize: '12px',
-                            border: '1px solid #007bff',
-                            borderRadius: '4px',
-                            backgroundColor: 'white',
-                            color: '#007bff',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <FaStar style={{ marginRight: '4px' }} />
-                          기본으로 설정
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDeleteSignature(sig.signatureId)}
-                        style={{
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          border: '1px solid #dc3545',
-                          borderRadius: '4px',
-                          backgroundColor: 'white',
-                          color: '#dc3545',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <FaTrash style={{ marginRight: '4px' }} />
-                        삭제
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-              저장된 서명/도장이 없습니다.
-            </div>
-          )}
-        </div>
-      </S.ProfileCard>
-
-      {/* 구독 관리 섹션 (CEO/ADMIN만) */}
-      {isAdminOrCEO && (
-        <S.ProfileCard data-tourid="tour-subscription-section">
-          <S.CardTitle>구독 관리</S.CardTitle>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <S.Button 
-              primary 
-              onClick={() => navigate('/subscriptions/manage')}
-              style={{ width: '100%', padding: '12px', fontSize: '15px' }}
-              data-tourid="tour-subscription-manage-button"
-            >
-              구독 관리
-            </S.Button>
-            <S.Button 
-              onClick={() => navigate('/subscriptions/plans')}
-              style={{ width: '100%', padding: '12px', fontSize: '15px' }}
-            >
-              플랜 선택
-            </S.Button>
-            <S.Button 
-              onClick={() => navigate('/subscriptions/payments')}
-              style={{ width: '100%', padding: '12px', fontSize: '15px' }}
-            >
-              결제 내역
-            </S.Button>
-          </div>
-        </S.ProfileCard>
-      )}
-
       <CompanyRegistrationModal
         isOpen={isCompanyModalOpen}
         onClose={() => setIsCompanyModalOpen(false)}
@@ -914,55 +579,6 @@ const MyProfilePage = () => {
         isOpen={isCompanySearchModalOpen}
         onClose={() => setIsCompanySearchModalOpen(false)}
         onSelect={handleCompanySelect}
-      />
-
-      {/* 타입 선택 모달 */}
-      {isTypeSelectModalOpen && (
-        <S.ModalOverlay onClick={() => setIsTypeSelectModalOpen(false)}>
-          <S.ModalContent onClick={(e) => e.stopPropagation()}>
-            <S.ModalHeader>
-              <h3>서명/도장 타입 선택</h3>
-              <button onClick={() => setIsTypeSelectModalOpen(false)}>×</button>
-            </S.ModalHeader>
-            <S.ModalBody>
-              <S.TypeSelectButton onClick={() => handleSelectSignatureType('SIGNATURE')}>
-                <FaPen style={{ fontSize: '32px', marginBottom: '8px', color: 'var(--primary-color)' }} />
-                <div>
-                  <strong>서명</strong>
-                  <p>터치스크린이나 마우스로 직접 서명합니다</p>
-                </div>
-              </S.TypeSelectButton>
-              <S.TypeSelectButton onClick={() => handleSelectSignatureType('STAMP')}>
-                <FaStamp style={{ fontSize: '32px', marginBottom: '8px', color: 'var(--primary-color)' }} />
-                <div>
-                  <strong>도장</strong>
-                  <p>이미지 파일을 업로드합니다</p>
-                </div>
-              </S.TypeSelectButton>
-            </S.ModalBody>
-          </S.ModalContent>
-        </S.ModalOverlay>
-      )}
-
-      {/* 이미지 업로드 (숨김) */}
-      <input
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        ref={fileInputRef}
-        onChange={handleImageUpload}
-      />
-
-      <SignatureModal
-        isOpen={isSignatureModalOpen}
-        onClose={() => {
-          setIsSignatureModalOpen(false);
-          setEditingSignature(null);
-          setSelectedSignatureType(null);
-        }}
-        onSave={handleSaveSignature}
-        isSaving={isSavingSignature}
-        savedSignatures={[]} // 새로 추가할 때는 저장된 서명 목록을 보여주지 않음
       />
     </S.Container>
   );

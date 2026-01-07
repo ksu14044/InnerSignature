@@ -11,21 +11,29 @@ const MobileAppBar = ({ title, onMenuClick }) => {
   const location = useLocation();
   const { user, logout, companies, switchCompany } = useAuth();
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [taxRevisionRequests, setTaxRevisionRequests] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const companyDropdownRef = useRef(null);
+  const notificationDropdownRef = useRef(null);
   const isLoginPage = location.pathname === '/' || location.pathname.startsWith('/find-') || location.pathname.startsWith('/reset-password');
+  
+  // 총 알림 개수 계산
+  const totalNotifications = pendingApprovals.length + taxRevisionRequests.length + pendingUsers.length;
 
-  // 외부 클릭 시 드롭다운 닫기 - early return 전에 모든 Hooks 호출
+  // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
         setIsCompanyDropdownOpen(false);
       }
+      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target)) {
+        setIsNotificationDropdownOpen(false);
+      }
     };
 
-    if (isCompanyDropdownOpen) {
+    if (isCompanyDropdownOpen || isNotificationDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('touchstart', handleClickOutside);
     }
@@ -34,7 +42,7 @@ const MobileAppBar = ({ title, onMenuClick }) => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [isCompanyDropdownOpen]);
+  }, [isCompanyDropdownOpen, isNotificationDropdownOpen]);
 
   // 알림 데이터 가져오기
   useEffect(() => {
@@ -105,11 +113,8 @@ const MobileAppBar = ({ title, onMenuClick }) => {
   };
 
   const handleBack = () => {
-    if (location.pathname.startsWith('/detail/') || location.pathname === '/expenses/create') {
-      navigate('/expenses');
-    } else {
-      navigate(-1);
-    }
+    // 일관된 네비게이션 패턴: 이전 페이지로 이동
+    navigate(-1);
   };
 
   const handleLogout = async () => {
@@ -117,13 +122,26 @@ const MobileAppBar = ({ title, onMenuClick }) => {
     await logout();
   };
 
+  // 뒤로가기 버튼 표시 규칙: 상세/작성/수정 페이지에서만 표시
   const showBackButton = location.pathname.startsWith('/detail/') || 
                          location.pathname === '/expenses/create' ||
+                         location.pathname.startsWith('/expenses/edit/') ||
                          location.pathname === '/users' ||
                          location.pathname === '/profile' ||
                          location.pathname === '/dashboard' ||
+                         location.pathname === '/dashboard/main' ||
                          location.pathname === '/tax/summary' ||
-                         location.pathname.startsWith('/subscriptions');
+                         location.pathname.startsWith('/subscriptions') ||
+                         location.pathname === '/cards' ||
+                         location.pathname === '/my-approvers' ||
+                         location.pathname === '/expense-categories' ||
+                         location.pathname === '/budget' ||
+                         location.pathname === '/audit-rules' ||
+                         location.pathname === '/audit-logs' ||
+                         location.pathname === '/missing-receipts' ||
+                         location.pathname === '/account-codes' ||
+                         location.pathname === '/monthly-closing' ||
+                         location.pathname === '/credits';
 
   const handleCompanySwitch = async (companyId) => {
     try {
@@ -148,70 +166,106 @@ const MobileAppBar = ({ title, onMenuClick }) => {
       <S.RightSection>
         {user && (
           <>
-            {/* 알림 배지 */}
-            {pendingApprovals.length > 0 && (
-              <S.NotificationBadge 
-                onClick={() => {
-                  if (location.pathname === '/expenses') {
-                    // 이미 expenses 페이지에 있으면 쿼리 파라미터만 추가
-                    navigate('/expenses?openNotifications=true', { replace: true });
-                    // 페이지 새로고침 없이 모달 열기 위해 약간의 지연
-                    setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('openNotificationModal'));
-                    }, 100);
-                  } else {
-                    navigate('/expenses?openNotifications=true');
-                  }
-                }}
-                title={`서명 대기: ${pendingApprovals.length}건`}
-              >
-                <FaBell />
-                <S.NotificationCount>{pendingApprovals.length}</S.NotificationCount>
-              </S.NotificationBadge>
+            {/* 통합 알림 배지 */}
+            {totalNotifications > 0 && (
+              <S.NotificationContainer ref={notificationDropdownRef}>
+                <S.NotificationBadge 
+                  onClick={() => setIsNotificationDropdownOpen(!isNotificationDropdownOpen)}
+                  title={`알림 ${totalNotifications}건`}
+                >
+                  <FaBell />
+                  {totalNotifications > 0 && (
+                    <S.NotificationCount>{totalNotifications}</S.NotificationCount>
+                  )}
+                </S.NotificationBadge>
+                {isNotificationDropdownOpen && (
+                  <S.NotificationDropdown>
+                    {pendingApprovals.length > 0 && (
+                      <S.NotificationDropdownItem
+                        onClick={() => {
+                          setIsNotificationDropdownOpen(false);
+                          if (location.pathname === '/expenses') {
+                            navigate('/expenses?openNotifications=true', { replace: true });
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('openNotificationModal'));
+                            }, 100);
+                          } else {
+                            navigate('/expenses?openNotifications=true');
+                          }
+                        }}
+                      >
+                        <S.NotificationIcon style={{ backgroundColor: 'var(--primary-color)' }}>
+                          <FaBell />
+                        </S.NotificationIcon>
+                        <S.NotificationText>
+                          <S.NotificationTitle>서명 대기</S.NotificationTitle>
+                          <S.NotificationSubtitle>{pendingApprovals.length}건</S.NotificationSubtitle>
+                        </S.NotificationText>
+                      </S.NotificationDropdownItem>
+                    )}
+                    {taxRevisionRequests.length > 0 && (
+                      <S.NotificationDropdownItem
+                        onClick={() => {
+                          setIsNotificationDropdownOpen(false);
+                          if (location.pathname === '/expenses') {
+                            navigate('/expenses?openTaxRevisions=true', { replace: true });
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('openTaxRevisionModal'));
+                            }, 100);
+                          } else {
+                            navigate('/expenses?openTaxRevisions=true');
+                          }
+                        }}
+                      >
+                        <S.NotificationIcon style={{ backgroundColor: 'var(--warning-color)' }}>
+                          <FaEdit />
+                        </S.NotificationIcon>
+                        <S.NotificationText>
+                          <S.NotificationTitle>세무 수정 요청</S.NotificationTitle>
+                          <S.NotificationSubtitle>{taxRevisionRequests.length}건</S.NotificationSubtitle>
+                        </S.NotificationText>
+                      </S.NotificationDropdownItem>
+                    )}
+                    {(user.role === 'CEO' || user.role === 'ADMIN') && pendingUsers.length > 0 && (
+                      <S.NotificationDropdownItem
+                        onClick={() => {
+                          setIsNotificationDropdownOpen(false);
+                          if (location.pathname === '/expenses') {
+                            navigate('/expenses?openApprovals=true', { replace: true });
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('openApprovalModal'));
+                            }, 100);
+                          } else {
+                            navigate('/expenses?openApprovals=true');
+                          }
+                        }}
+                      >
+                        <S.NotificationIcon style={{ backgroundColor: 'var(--success-color)' }}>
+                          <FaUser />
+                        </S.NotificationIcon>
+                        <S.NotificationText>
+                          <S.NotificationTitle>승인 대기</S.NotificationTitle>
+                          <S.NotificationSubtitle>{pendingUsers.length}건</S.NotificationSubtitle>
+                        </S.NotificationText>
+                      </S.NotificationDropdownItem>
+                    )}
+                  </S.NotificationDropdown>
+                )}
+              </S.NotificationContainer>
             )}
-            {/* 세무 수정 요청 알림 배지 (작성자용) */}
-            {taxRevisionRequests.length > 0 && (
-              <S.NotificationBadge
-                onClick={() => {
-                  if (location.pathname === '/expenses') {
-                    navigate('/expenses?openTaxRevisions=true', { replace: true });
-                    setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('openTaxRevisionModal'));
-                    }, 100);
-                  } else {
-                    navigate('/expenses?openTaxRevisions=true');
-                  }
-                }}
-                title={`세무 수정 요청: ${taxRevisionRequests.length}건`}
-                style={{ backgroundColor: '#ffc107', marginRight: '4px' }}
-              >
-                <FaEdit />
-                <S.NotificationCount>{taxRevisionRequests.length}</S.NotificationCount>
-              </S.NotificationBadge>
-            )}
-            {/* 승인 대기 배지 (CEO, ADMIN만 표시) */}
-            {(user.role === 'CEO' || user.role === 'ADMIN') && pendingUsers.length > 0 && (
-              <S.NotificationBadge 
-                onClick={() => {
-                  if (location.pathname === '/expenses') {
-                    navigate('/expenses?openApprovals=true', { replace: true });
-                    setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('openApprovalModal'));
-                    }, 100);
-                  } else {
-                    navigate('/expenses?openApprovals=true');
-                  }
-                }}
-                title={`승인 대기: ${pendingUsers.length}건`}
-                style={{ backgroundColor: '#4caf50', marginRight: '4px' }}
-              >
+            {/* 프로필 버튼 */}
+            {location.pathname !== '/profile' && (
+              <S.IconButton onClick={() => navigate('/profile')} aria-label="프로필">
                 <FaUser />
-                <S.NotificationCount>{pendingUsers.length}</S.NotificationCount>
-              </S.NotificationBadge>
+              </S.IconButton>
             )}
+            {/* 회사 선택 */}
             {companies && companies.length > 1 && (
               <S.CompanySelector ref={companyDropdownRef}>
-                <S.CompanyButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>
+                <S.CompanyButton 
+                  onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}
+                  aria-label="회사 선택"
+                >
                   <FaBuilding />
                 </S.CompanyButton>
                 {isCompanyDropdownOpen && (
@@ -230,12 +284,8 @@ const MobileAppBar = ({ title, onMenuClick }) => {
                 )}
               </S.CompanySelector>
             )}
-            {location.pathname !== '/profile' && (
-              <S.IconButton onClick={() => navigate('/profile')}>
-                <FaUser />
-              </S.IconButton>
-            )}
-            <S.IconButton onClick={handleLogout}>
+            {/* 로그아웃 버튼 */}
+            <S.IconButton onClick={handleLogout} aria-label="로그아웃">
               <FaSignOutAlt />
             </S.IconButton>
           </>

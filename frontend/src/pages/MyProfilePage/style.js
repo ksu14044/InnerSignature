@@ -57,17 +57,24 @@ export const HeaderRight = styled.div`
 
 export const ProfileCard = styled.div`
   background: white;
-  border-radius: 8px;
-  padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 24px;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  margin-bottom: var(--spacing-lg);
+  transition: all var(--transition-base);
+
+  &:hover {
+    box-shadow: var(--shadow);
+  }
 
   @media (max-width: 480px) {
     border-radius: 0;
-    padding: 16px;
-    margin-bottom: 8px;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
     box-shadow: none;
-    border-bottom: 1px solid #f0f0f0;
+    border: none;
+    border-bottom: 1px solid var(--border-light);
     
     &:last-child {
       margin-bottom: 0;
@@ -159,65 +166,69 @@ export const HelpText = styled.p`
 export const ButtonGroup = styled.div`
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid #e9ecef;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-light);
 
   @media (max-width: 480px) {
     position: relative;
-    margin-top: 24px;
-    padding-top: 20px;
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
     justify-content: stretch;
-    gap: 8px;
-    border-top: 1px solid #e9ecef;
+    gap: var(--spacing-sm);
+    border-top: 1px solid var(--border-light);
   }
 `;
 
 export const Button = styled.button`
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: ${props => props.primary ? 'none' : '2px solid var(--border-color)'};
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-  background-color: ${props => props.primary ? 'var(--primary-color)' : '#f8f9fa'};
-  color: ${props => props.primary ? '#fff' : 'var(--dark-color)'};
+  justify-content: center;
+  gap: var(--spacing-sm);
+  transition: all var(--transition-base);
+  background-color: ${props => props.primary ? 'var(--primary-color)' : 'white'};
+  color: ${props => props.primary ? 'white' : 'var(--text-primary)'};
   min-height: 48px;
   white-space: nowrap;
 
   &:hover:not(:disabled) {
-    opacity: 0.9;
+    background-color: ${props => props.primary ? 'var(--primary-hover)' : 'var(--bg-hover)'};
     transform: translateY(-1px);
+    box-shadow: ${props => props.primary ? 'var(--shadow)' : 'var(--shadow-sm)'};
+    border-color: ${props => props.primary ? 'transparent' : 'var(--primary-color)'};
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
   }
 
   @media (max-width: 480px) {
     flex: 1;
     justify-content: center;
-    padding: 16px;
-    font-size: 16px;
-    border-radius: 12px;
+    padding: var(--spacing-md);
+    font-size: var(--font-size-base);
+    border-radius: var(--radius-md);
     min-height: 52px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     
     span {
       display: inline;
     }
     
     svg {
-      display: none;
+      display: inline;
     }
     
-    &:active {
+    &:active:not(:disabled) {
       transform: scale(0.98);
     }
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, requestTaxRevision } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
@@ -37,6 +37,7 @@ const ExpenseDetailPage = () => {
   const [selectedAdditionalApprover, setSelectedAdditionalApprover] = useState(null);
   const [isAddingApprover, setIsAddingApprover] = useState(false);
   const [savedSignatures, setSavedSignatures] = useState([]);
+  const paymentModalReceiptInputRef = useRef(null);
   const {user} = useAuth();
 
   useEffect(() => {
@@ -380,6 +381,12 @@ const ExpenseDetailPage = () => {
         return;
     }
 
+    // 영수증 첨부 필수 체크
+    if (!receipts || receipts.length === 0) {
+      alert("결제 완료 처리를 위해서는 영수증을 반드시 첨부해야 합니다.");
+      return;
+    }
+
     // 상세 항목별 실제 지급 금액 검증 및 변환
     const detailActualPaidAmountList = [];
     let totalDetailAmount = 0;
@@ -648,6 +655,28 @@ const ExpenseDetailPage = () => {
     const isAccountant = user.role === 'ACCOUNTANT';
     
     return isOwner || isAccountant;
+  };
+
+  // 영수증 조회 권한 체크 (작성자, 결재자, ACCOUNTANT, CEO 등)
+  const canViewReceipt = () => {
+    if (!user || !detail) return false;
+    
+    // 작성자는 항상 볼 수 있음
+    if (detail.drafterId === user.userId) return true;
+    
+    // ACCOUNTANT, CEO, ADMIN은 항상 볼 수 있음
+    if (user.role === 'ACCOUNTANT' || user.role === 'CEO' || user.role === 'ADMIN') return true;
+    
+    // TAX_ACCOUNTANT는 항상 볼 수 있음
+    if (user.role === 'TAX_ACCOUNTANT') return true;
+    
+    // 결재 라인에 있는 결재자는 볼 수 있음 (서명 전후 모두)
+    if (detail.approvalLines && detail.approvalLines.length > 0) {
+      const isApprover = detail.approvalLines.some(line => line.approverId === user.userId);
+      if (isApprover) return true;
+    }
+    
+    return false;
   };
 
   console.log(detail);
@@ -1040,17 +1069,32 @@ const ExpenseDetailPage = () => {
          {/* 결재 권한이 있고, 문서가 반려되지 않고 결제가 완료되지 않은 경우에만 결재하기/반려하기 버튼 표시 */}
          {hasApprovalPermission() && detail.status !== 'REJECTED' && detail.status !== 'PAID' && (
            <>
-             <button className="approve" onClick={handleOpenModal} disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
+             <button 
+               className="approve" 
+               onClick={handleOpenModal} 
+               disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
+               aria-label="결재하기"
+             >
                {isApproving ? '처리 중...' : '결재하기'}
              </button>
-             <button className="reject" onClick={handleOpenRejectModal} disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
+             <button 
+               className="reject" 
+               onClick={handleOpenRejectModal} 
+               disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
+               aria-label="반려하기"
+             >
                {isRejecting ? '처리 중...' : '반려하기'}
              </button>
            </>
          )}
          {/* ACCOUNTANT 권한을 가진 사용자가 APPROVED 상태의 문서를 PAID로 변경 가능 */}
          {user && user.role === 'ACCOUNTANT' && detail.status === 'APPROVED' && (
-           <button className="paid" onClick={handleOpenPaymentModal} disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
+           <button 
+             className="paid" 
+             onClick={handleOpenPaymentModal} 
+             disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
+             aria-label="결제 완료"
+           >
              {isMarkingAsPaid ? '처리 중...' : '결제 완료'}
            </button>
          )}
@@ -1061,16 +1105,16 @@ const ExpenseDetailPage = () => {
              className="edit" 
              onClick={handleRequestTaxRevision} 
              disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
-             style={{ backgroundColor: '#ffc107', color: 'white' }}
+             aria-label={detail.taxRevisionRequested ? '수정 요청 재전송' : '수정 요청 보내기'}
            >
              {detail.taxRevisionRequested ? '수정 요청 재전송' : '수정 요청 보내기'}
            </button>
          )}
        </S.ButtonGroup>
 
-       {/* 4. 영수증 섹션 */}
-       {detail.status === 'PAID' && (
-         <S.ReceiptSection>
+      {/* 4. 영수증 섹션 */}
+      {canViewReceipt() && (
+        <S.ReceiptSection>
            <S.ReceiptSectionHeader>
              <S.SectionTitle>영수증</S.SectionTitle>
              {canUploadReceipt() && (
@@ -1163,6 +1207,92 @@ const ExpenseDetailPage = () => {
                <button onClick={handleClosePaymentModal}>×</button>
              </S.PaymentModalHeader>
             <S.PaymentModalBody>
+              {/* 영수증 첨부 섹션 */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>
+                  영수증 첨부 <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                {(!receipts || receipts.length === 0) && (
+                  <div style={{ 
+                    padding: '12px', 
+                    backgroundColor: '#fff3cd', 
+                    border: '1px solid #ffc107', 
+                    borderRadius: '4px',
+                    marginBottom: '12px',
+                    color: '#856404'
+                  }}>
+                    ⚠️ <strong>영수증을 반드시 첨부해야 결제 완료 처리가 가능합니다.</strong>
+                  </div>
+                )}
+                
+                {/* 영수증 업로드 버튼 */}
+                <div>
+                  <button
+                    type="button"
+                    disabled={isUploadingReceipt || isMarkingAsPaid}
+                    onClick={() => paymentModalReceiptInputRef.current?.click()}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: isUploadingReceipt ? '#ccc' : '#17a2b8',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: isUploadingReceipt ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      marginBottom: '12px'
+                    }}
+                  >
+                    {isUploadingReceipt ? '업로드 중...' : '영수증 추가'}
+                  </button>
+                  <input
+                    ref={paymentModalReceiptInputRef}
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleReceiptUpload}
+                    disabled={isUploadingReceipt || isMarkingAsPaid}
+                    style={{ display: 'none' }}
+                  />
+                </div>
+                
+                {/* 영수증 목록 */}
+                {receipts && receipts.length > 0 && (
+                  <div style={{ 
+                    marginTop: '12px', 
+                    padding: '12px', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '4px',
+                    border: '1px solid #ddd'
+                  }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>
+                      첨부된 영수증 ({receipts.length}개)
+                    </div>
+                    {receipts.map((receipt) => (
+                      <div 
+                        key={receipt.receiptId} 
+                        style={{ 
+                          padding: '8px', 
+                          marginBottom: '4px', 
+                          backgroundColor: 'white', 
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <span>{receipt.originalFilename}</span>
+                        {receipt.fileSize && (
+                          <span style={{ color: '#666', fontSize: '12px' }}>
+                            {(receipt.fileSize / 1024).toFixed(2)} KB
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
               <div className="amount-info">
                 <div className="amount-row">
                   <span>결재 금액:</span>
@@ -1306,7 +1436,7 @@ const ExpenseDetailPage = () => {
             </S.PaymentModalBody>
              <S.PaymentModalFooter>
                <button onClick={handleClosePaymentModal} disabled={isMarkingAsPaid}>취소</button>
-               <button onClick={handleMarkAsPaid} disabled={isMarkingAsPaid}>
+               <button onClick={handleMarkAsPaid} disabled={isMarkingAsPaid || (!receipts || receipts.length === 0)}>
                  {isMarkingAsPaid ? '처리 중...' : '결제 완료'}
                </button>
              </S.PaymentModalFooter>
