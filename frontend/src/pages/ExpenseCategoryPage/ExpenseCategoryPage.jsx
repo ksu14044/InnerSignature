@@ -13,6 +13,7 @@ import {
 import { getAccountCodeMappingList, createAccountCodeMapping, updateAccountCodeMapping, deleteAccountCodeMapping } from '../../api/accountCodeApi';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import AppHeader from '../../components/AppHeader/AppHeader';
 import { FaPlus, FaEdit, FaTrash, FaGripVertical, FaCode } from 'react-icons/fa';
 
 const ExpenseCategoryPage = ({ hideHeader = false }) => {
@@ -348,10 +349,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
     return (
       <S.Container>
         {!hideHeader && (
-          <S.Header>
-            <S.BackButton onClick={() => navigate(-1)}>← 뒤로</S.BackButton>
-            <S.Title>시스템 설정</S.Title>
-          </S.Header>
+          <AppHeader title="시스템 설정" />
         )}
         <S.Alert>
           <strong>지출 항목 관리</strong>
@@ -377,10 +375,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
     return (
       <S.Container>
         {!hideHeader && (
-          <S.Header>
-            <S.BackButton onClick={() => navigate(-1)}>← 뒤로</S.BackButton>
-            <S.Title>시스템 설정</S.Title>
-          </S.Header>
+          <AppHeader title="시스템 설정" />
         )}
         <S.Alert>
           <strong>계정 코드 매핑</strong>
@@ -405,10 +400,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
   return (
     <S.Container>
       {!hideHeader && (
-        <S.Header>
-          <S.BackButton onClick={() => navigate(-1)}>← 뒤로</S.BackButton>
-          <S.Title>시스템 설정</S.Title>
-        </S.Header>
+        <AppHeader title="시스템 설정" />
       )}
 
       {/* 탭 버튼 */}

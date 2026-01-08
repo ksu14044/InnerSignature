@@ -11,6 +11,7 @@ import {
 } from '../../api/signatureApi';
 import SignatureModal from '../../components/SignatureModal/SignatureModal';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import AppHeader from '../../components/AppHeader/AppHeader';
 import * as S from './style';
 
 const SignatureManagementPage = () => {
@@ -185,16 +186,9 @@ const SignatureManagementPage = () => {
 
   return (
     <S.Container>
-      <S.Header>
-        <S.HeaderLeft>
-          <S.Title>도장/서명 관리</S.Title>
-        </S.HeaderLeft>
-        <S.HeaderRight>
-          <S.BackButton onClick={() => navigate(-1)}>
-            뒤로
-          </S.BackButton>
-        </S.HeaderRight>
-      </S.Header>
+      <AppHeader 
+        title="도장/서명 관리"
+      />
 
       <S.SectionHeader>
         <S.SectionTitle>내 서명/도장 목록</S.SectionTitle>

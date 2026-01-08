@@ -13,6 +13,7 @@ import {
 } from '../../api/cardApi';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import AppHeader from '../../components/AppHeader/AppHeader';
 import * as S from './style';
 
 const CardManagementPage = () => {
@@ -233,16 +234,9 @@ const CardManagementPage = () => {
 
   return (
     <S.Container>
-      <S.Header>
-        <S.HeaderLeft>
-          <S.Title>카드 관리</S.Title>
-        </S.HeaderLeft>
-        <S.HeaderRight>
-          <S.BackButton onClick={() => navigate(-1)}>
-            뒤로
-          </S.BackButton>
-        </S.HeaderRight>
-      </S.Header>
+      <AppHeader 
+        title="카드 관리"
+      />
 
       {/* 탭 */}
       <S.Tabs>

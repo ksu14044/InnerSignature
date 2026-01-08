@@ -5,6 +5,7 @@ import { getUserApprovers, createUserApprover, updateUserApprover, deleteUserApp
 import { fetchApprovers } from '../../api/expenseApi';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import AppHeader from '../../components/AppHeader/AppHeader';
 import { FaPlus, FaEdit, FaTrash, FaUserCheck } from 'react-icons/fa';
 
 const MyApproverPage = () => {
@@ -140,10 +141,7 @@ const MyApproverPage = () => {
 
   return (
     <S.Container>
-      <S.Header>
-        <S.BackButton onClick={() => navigate(-1)}>← 뒤로</S.BackButton>
-        <S.Title>담당 결재자 설정</S.Title>
-      </S.Header>
+      <AppHeader title="담당 결재자 설정" />
 
       <S.InfoBox>
         <p>담당 결재자를 설정하면 지출결의서 작성 시 자동으로 결재자가 선택됩니다.</p>

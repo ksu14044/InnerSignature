@@ -1,24 +1,24 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { fetchExpenseList, fetchPendingApprovals } from '../../api/expenseApi';
-import { getPendingUsers, getUserCompanies, approveUser } from '../../api/userApi';
+import { fetchExpenseList } from '../../api/expenseApi';
+import { getUserCompanies } from '../../api/userApi';
 import { getCurrentSubscription } from '../../api/subscriptionApi';
 import { getTotalAvailableAmount } from '../../api/creditApi';
 import { STATUS_KOREAN } from '../../constants/status';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
+import AppHeader from '../../components/AppHeader/AppHeader';
 import UserDashboardSection from '../../components/DashboardSections/UserDashboardSection';
 import AccountantDashboardSection from '../../components/DashboardSections/AccountantDashboardSection';
 import TaxAccountantDashboardSection from '../../components/DashboardSections/TaxAccountantDashboardSection';
 import AdminDashboardSection from '../../components/DashboardSections/AdminDashboardSection';
 import CEODashboardSection from '../../components/DashboardSections/CEODashboardSection';
-import { FaBell, FaUser, FaSignOutAlt, FaBuilding, FaChevronDown, FaCheck, FaCog, FaTimesCircle, FaList, FaPlus, FaChartLine, FaEye, FaChevronUp } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { FaList, FaPlus, FaEye, FaChevronUp } from 'react-icons/fa';
 
 const MainDashboardPage = () => {
-  const { user, logout, companies, switchCompany } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
@@ -28,13 +28,7 @@ const MainDashboardPage = () => {
     approvedCount: 0,
     paidCount: 0
   });
-  const [pendingApprovals, setPendingApprovals] = useState([]);
-  const [pendingUsers, setPendingUsers] = useState([]);
-  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
-  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
-  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
-  const [isManagementDropdownOpen, setIsManagementDropdownOpen] = useState(false);
   const checkedCompanyModalRef = useRef(false);
   const [selectedStatus, setSelectedStatus] = useState(null); // 선택된 상태
   const [statusExpenses, setStatusExpenses] = useState([]); // 선택된 상태의 결의서 목록
@@ -48,11 +42,6 @@ const MainDashboardPage = () => {
     startDate: '',
     endDate: ''
   });
-
-  const handleLogout = async () => {
-    navigate('/');
-    await logout();
-  };
 
   // 대시보드 데이터 로드
   useEffect(() => {
@@ -104,39 +93,6 @@ const MainDashboardPage = () => {
     loadDashboardData();
   }, [user, filters]);
 
-  // 미서명 건 조회 (알람)
-  useEffect(() => {
-    if (user?.userId) {
-      fetchPendingApprovals(user.userId)
-        .then((response) => {
-          if (response.success) {
-            setPendingApprovals(response.data || []);
-          }
-        })
-        .catch((error) => {
-          console.error('미서명 건 조회 실패:', error);
-        });
-    }
-  }, [user?.userId]);
-
-  // 승인 대기 사용자 조회 (CEO, ADMIN만)
-  useEffect(() => {
-    if (user && (user.role === 'CEO' || user.role === 'ADMIN')) {
-      getPendingUsers()
-        .then((response) => {
-          if (response.success) {
-            setPendingUsers(response.data || []);
-          } else {
-            console.error('승인 대기 사용자 조회 실패:', response.message);
-            setPendingUsers([]);
-          }
-        })
-        .catch((error) => {
-          console.error('승인 대기 사용자 조회 실패:', error);
-          setPendingUsers([]);
-        });
-    }
-  }, [user?.userId]);
 
   // 구독 및 크레딧 정보 로드 (CEO, ADMIN만)
   useEffect(() => {
@@ -200,23 +156,6 @@ const MainDashboardPage = () => {
       })();
     }
   }, [user?.userId]);
-
-  // 관리 드롭다운 외부 클릭 시 닫기
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isManagementDropdownOpen && !event.target.closest('[data-management-dropdown]')) {
-        setIsManagementDropdownOpen(false);
-      }
-    };
-
-    if (isManagementDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isManagementDropdownOpen]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({
@@ -282,128 +221,30 @@ const MainDashboardPage = () => {
 
   return (
     <S.Container>
-      <S.Header data-tourid="tour-header">
-        <S.HeaderLeft>
-          <S.Title>대시보드</S.Title>
-          <S.WelcomeText>환영합니다, {user.koreanName}님</S.WelcomeText>
-        </S.HeaderLeft>
-        <S.HeaderRight>
-          {pendingApprovals.length > 0 && (
-            <S.NotificationBadge 
-              data-tourid="tour-notification-badge"
-              onClick={() => setIsNotificationModalOpen(true)}
-              title={`서명 대기: ${pendingApprovals.length}건`}
-            >
-              <FaBell />
-              <S.NotificationCount>{pendingApprovals.length}</S.NotificationCount>
-            </S.NotificationBadge>
-          )}
-          {/* 승인 대기 배지 (CEO, ADMIN만 표시) */}
-          {(user?.role === 'CEO' || user?.role === 'ADMIN') && pendingUsers.length > 0 && (
-            <S.NotificationBadge 
-              onClick={() => setIsApprovalModalOpen(true)}
-              title={`승인 대기: ${pendingUsers.length}건`}
-              style={{ backgroundColor: '#4caf50', marginRight: '12px' }}
-            >
-              <FaUser />
-              <S.NotificationCount>{pendingUsers.length}</S.NotificationCount>
-            </S.NotificationBadge>
-          )}
-          {/* 결의서 목록으로 이동 버튼 - 모든 사용자에게 표시 */}
-          <S.FilterButton 
-            variant="secondary" 
-            onClick={() => navigate('/expenses')}
-            title="결의서 목록으로 이동"
-          >
-            <FaList />
-            <span>결의서 목록</span>
-          </S.FilterButton>
-          {user?.role === 'TAX_ACCOUNTANT' && (
+      <AppHeader 
+        title="대시보드"
+        subtitle={`환영합니다, ${user.koreanName}님`}
+        additionalButtons={
+          <>
             <S.FilterButton 
-              variant="primary" 
-              onClick={() => navigate('/tax/summary')}
+              variant="secondary" 
+              onClick={() => navigate('/expenses')}
+              title="결의서 목록으로 이동"
             >
-              <span>세무사 요약</span>
+              <FaList />
+              <span>결의서 목록</span>
             </S.FilterButton>
-          )}
-          {companies && companies.length > 1 && (
-            <S.CompanySelector>
-              <S.CompanySelectorButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>
-                <FaBuilding />
-                <span>
-                  현재: {companies.find(c => c.companyId === user.companyId)?.companyName || '회사 선택'}
-                </span>
-                <FaChevronDown />
-              </S.CompanySelectorButton>
-              {isCompanyDropdownOpen && (
-                <S.CompanyDropdown>
-                  {companies.map((company) => (
-                    <S.CompanyDropdownItem
-                      key={company.companyId}
-                      selected={company.companyId === user.companyId}
-                      onClick={async () => {
-                        try {
-                          await switchCompany(company.companyId);
-                          setIsCompanyDropdownOpen(false);
-                          window.location.reload();
-                        } catch (error) {
-                          alert('회사 전환에 실패했습니다.');
-                        }
-                      }}
-                    >
-                      {company.companyId === user.companyId && <FaCheck style={{ marginRight: '8px', color: '#007bff' }} />}
-                      {company.companyName}
-                    </S.CompanyDropdownItem>
-                  ))}
-                </S.CompanyDropdown>
-              )}
-            </S.CompanySelector>
-          )}
-          <S.ProfileButton onClick={() => navigate('/profile')}>
-            <FaUser />
-            <span>내 정보</span>
-          </S.ProfileButton>
-          <S.ManagementDropdown data-management-dropdown>
-            <S.ManagementButton onClick={() => setIsManagementDropdownOpen(!isManagementDropdownOpen)}>
-              <FaCog />
-              <span>설정</span>
-              <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />
-            </S.ManagementButton>
-            {isManagementDropdownOpen && (
-              <S.ManagementMenu>
-                {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
-                  <S.ManagementMenuItem onClick={() => { navigate('/users'); setIsManagementDropdownOpen(false); }}>
-                    👥 사용자 관리
-                  </S.ManagementMenuItem>
-                )}
-                <S.ManagementMenuItem onClick={() => { navigate('/signatures'); setIsManagementDropdownOpen(false); }}>
-                  ✍️ 도장/서명 관리
-                </S.ManagementMenuItem>
-                <S.ManagementMenuItem onClick={() => { navigate('/cards'); setIsManagementDropdownOpen(false); }}>
-                  💳 카드 관리
-                </S.ManagementMenuItem>
-                <S.ManagementMenuItem onClick={() => { navigate('/my-approvers'); setIsManagementDropdownOpen(false); }}>
-                  👤 담당 결재자 설정
-                </S.ManagementMenuItem>
-                {(user?.role === 'ACCOUNTANT' || user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'TAX_ACCOUNTANT') && (
-                  <S.ManagementMenuItem onClick={() => { navigate('/expense-categories'); setIsManagementDropdownOpen(false); }}>
-                    🏷️ 지출 항목 관리
-                  </S.ManagementMenuItem>
-                )}
-                {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
-                  <S.ManagementMenuItem onClick={() => { navigate('/subscriptions/manage'); setIsManagementDropdownOpen(false); }}>
-                    📦 구독 관리
-                  </S.ManagementMenuItem>
-                )}
-              </S.ManagementMenu>
+            {user?.role === 'TAX_ACCOUNTANT' && (
+              <S.FilterButton 
+                variant="primary" 
+                onClick={() => navigate('/tax/summary')}
+              >
+                <span>세무사 요약</span>
+              </S.FilterButton>
             )}
-          </S.ManagementDropdown>
-          <S.LogoutButton onClick={handleLogout}>
-            <FaSignOutAlt />
-            <span>로그아웃</span>
-          </S.LogoutButton>
-        </S.HeaderRight>
-      </S.Header>
+          </>
+        }
+      />
 
       {/* 탭 버튼 */}
       <S.TabSection>
@@ -627,150 +468,6 @@ const MainDashboardPage = () => {
           {user?.role === 'ADMIN' && <AdminDashboardSection filters={filters} />}
           {user?.role === 'CEO' && <CEODashboardSection filters={filters} />}
         </>
-      )}
-
-      {/* 알람 모달 */}
-      {isNotificationModalOpen && (
-        <S.NotificationModal onClick={() => setIsNotificationModalOpen(false)}>
-          <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
-            <S.NotificationModalHeader>
-              <h3>서명 대기 건 ({pendingApprovals.length}건)</h3>
-              <button onClick={() => setIsNotificationModalOpen(false)}>×</button>
-            </S.NotificationModalHeader>
-            <S.NotificationModalBody>
-              {pendingApprovals.length === 0 ? (
-                <p>서명 대기 중인 건이 없습니다.</p>
-              ) : (
-                <S.NotificationList>
-                  {pendingApprovals.map((item) => (
-                    <S.NotificationItem
-                      key={item.expenseReportId}
-                      onClick={() => {
-                        navigate(`/detail/${item.expenseReportId}`);
-                        setIsNotificationModalOpen(false);
-                      }}
-                    >
-                      <S.NotificationItemTitle>
-                        {(item.summaryDescription && item.summaryDescription.trim() !== '')
-                          ? item.summaryDescription
-                          : (item.firstDescription && item.firstDescription.trim() !== '')
-                            ? item.firstDescription
-                            : '-'}
-                      </S.NotificationItemTitle>
-                      <S.NotificationItemInfo>
-                        <span>문서번호: {item.expenseReportId}</span>
-                        <span>작성자: {item.drafterName}</span>
-                        <span>작성일: {item.reportDate}</span>
-                        <span>금액: {item.totalAmount.toLocaleString()}원</span>
-                      </S.NotificationItemInfo>
-                    </S.NotificationItem>
-                  ))}
-                </S.NotificationList>
-              )}
-            </S.NotificationModalBody>
-          </S.NotificationModalContent>
-        </S.NotificationModal>
-      )}
-
-      {/* 승인 대기 모달 */}
-      {isApprovalModalOpen && (
-        <S.NotificationModal onClick={() => setIsApprovalModalOpen(false)}>
-          <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
-            <S.NotificationModalHeader>
-              <h3>승인 대기 사용자 ({pendingUsers.length}건)</h3>
-              <button onClick={() => setIsApprovalModalOpen(false)}>×</button>
-            </S.NotificationModalHeader>
-            <S.NotificationModalBody>
-              {pendingUsers.length === 0 ? (
-                <p>승인 대기 중인 사용자가 없습니다.</p>
-              ) : (
-                <S.NotificationList>
-                  {pendingUsers.map((pendingUser) => (
-                    <S.NotificationItem key={pendingUser.userId}>
-                      <S.NotificationItemTitle>{pendingUser.koreanName} ({pendingUser.username})</S.NotificationItemTitle>
-                      <S.NotificationItemInfo>
-                        <span>역할: {pendingUser.role}</span>
-                        <span>직급: {pendingUser.position || '-'}</span>
-                        <span>이메일: {pendingUser.email || '-'}</span>
-                      </S.NotificationItemInfo>
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const response = await approveUser(pendingUser.userId, 'APPROVE');
-                              if (response.success) {
-                                setPendingUsers(pendingUsers.filter(u => u.userId !== pendingUser.userId));
-                                const refreshResponse = await getPendingUsers();
-                                if (refreshResponse.success) {
-                                  setPendingUsers(refreshResponse.data || []);
-                                }
-                                alert('사용자가 승인되었습니다.');
-                              } else {
-                                alert(response.message || '승인에 실패했습니다.');
-                              }
-                            } catch (error) {
-                              console.error('승인 실패:', error);
-                              alert(error?.response?.data?.message || error?.message || '승인에 실패했습니다.');
-                            }
-                          }}
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: '#4caf50',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <FaCheck /> 승인
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (!window.confirm(`${pendingUser.koreanName}(${pendingUser.username}) 사용자를 거부하시겠습니까?`)) {
-                              return;
-                            }
-                            try {
-                              const response = await approveUser(pendingUser.userId, 'REJECT');
-                              if (response.success) {
-                                setPendingUsers(pendingUsers.filter(u => u.userId !== pendingUser.userId));
-                                const refreshResponse = await getPendingUsers();
-                                if (refreshResponse.success) {
-                                  setPendingUsers(refreshResponse.data || []);
-                                }
-                                alert('사용자가 거부되었습니다.');
-                              } else {
-                                alert(response.message || '거부에 실패했습니다.');
-                              }
-                            } catch (error) {
-                              console.error('거부 실패:', error);
-                              alert(error?.response?.data?.message || error?.message || '거부에 실패했습니다.');
-                            }
-                          }}
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: '#f44336',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <FaTimesCircle /> 거부
-                        </button>
-                      </div>
-                    </S.NotificationItem>
-                  ))}
-                </S.NotificationList>
-              )}
-            </S.NotificationModalBody>
-          </S.NotificationModalContent>
-        </S.NotificationModal>
       )}
 
       {/* CEO이면서 소속 회사가 없을 때 회사 등록 모달 */}

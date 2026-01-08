@@ -4,9 +4,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getAllUsers, createUser, updateUser, deleteUser, updateUserRole, getCompanyUsers, getCompanyUsersById, getCompanyApplications, approveUserCompany, rejectUserCompany, updateApproverStatus } from '../../api/userApi';
 import { getUserCompanies } from '../../api/userApi';
 import { USER_ROLES } from '../../constants/status';
-import { FaPlus, FaSignOutAlt, FaEdit, FaTrash, FaTimes, FaCheck, FaBan } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaTimes, FaCheck, FaBan } from 'react-icons/fa';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import AppHeader from '../../components/AppHeader/AppHeader';
 
 const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
@@ -34,7 +35,7 @@ const UserManagementPage = () => {
   });
 
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
 
   // SUPERADMIN, CEO 또는 ADMIN 권한 체크
   useEffect(() => {
@@ -158,10 +159,6 @@ const UserManagementPage = () => {
     }
   };
 
-  const handleLogout = async () => {
-    navigate('/');  // 먼저 로그인 페이지로 이동
-    await logout();  // 그 다음 로그아웃 처리
-  };
 
   const handleCreate = () => {
     setFormData({
@@ -335,17 +332,15 @@ const UserManagementPage = () => {
 
   return (
     <S.Container>
-      <S.Header>
-        <S.HeaderLeft>
-          <S.Title>사용자 관리</S.Title>
-          <S.WelcomeText>{user.koreanName}님 환영합니다</S.WelcomeText>
-        </S.HeaderLeft>
-        <S.HeaderRight>
+      <AppHeader 
+        title="사용자 관리"
+        subtitle={`${user.koreanName}님 환영합니다`}
+        additionalButtons={
           <S.Button primary onClick={handleCreate} aria-label="새 사용자 추가">
             <FaPlus /> 사용자 생성
           </S.Button>
-        </S.HeaderRight>
-      </S.Header>
+        }
+      />
 
       {/* 모바일용 새 사용자 추가 버튼 */}
       <S.MobileToolbar>

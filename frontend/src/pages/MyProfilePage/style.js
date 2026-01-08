@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 
 export const Container = styled.div`
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   min-height: 100vh;
@@ -62,6 +62,9 @@ export const ProfileCard = styled.div`
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-light);
   margin-bottom: var(--spacing-lg);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
   transition: all var(--transition-base);
 
   &:hover {

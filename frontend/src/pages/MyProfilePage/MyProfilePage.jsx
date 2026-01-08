@@ -2,9 +2,10 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCurrentUser, updateCurrentUser, changePassword, getUserCompanies, getPendingCompanies, applyToCompany, removeUserFromCompany, setPrimaryCompany } from '../../api/userApi';
-import { FaSignOutAlt, FaArrowLeft, FaSearch, FaTimes, FaCheck, FaTrash } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaCheck, FaTrash, FaArrowLeft } from 'react-icons/fa';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import CompanySearchModal from '../../components/CompanySearchModal/CompanySearchModal';
+import AppHeader from '../../components/AppHeader/AppHeader';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 
@@ -36,7 +37,7 @@ const MyProfilePage = () => {
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
 
   const navigate = useNavigate();
-  const { logout, user: authUser, companies: authCompanies, switchCompany } = useAuth();
+  const { user: authUser, companies: authCompanies, switchCompany } = useAuth();
   const loadingCompaniesRef = useRef(false); // 중복 요청 방지용
 
   const isAdminOrCEO = authUser?.role === 'CEO' || authUser?.role === 'ADMIN';
@@ -164,10 +165,6 @@ const MyProfilePage = () => {
     }
   };
 
-  const handleLogout = async () => {
-    navigate('/');
-    await logout();
-  };
 
 
   const handleCompanySelect = (company) => {
@@ -272,20 +269,15 @@ const MyProfilePage = () => {
 
   return (
     <S.Container>
-      <S.Header>
-        <S.HeaderLeft>
-          <S.Title data-tourid="tour-profile-header">내 정보 수정</S.Title>
-          <S.WelcomeText>{authUser.koreanName}님 환영합니다</S.WelcomeText>
-        </S.HeaderLeft>
-        <S.HeaderRight>
+      <AppHeader 
+        title="내 정보 수정"
+        subtitle={`${authUser.koreanName}님 환영합니다`}
+        additionalButtons={
           <S.Button onClick={() => navigate('/expenses')}>
             <FaArrowLeft /> 지출결의서 목록
           </S.Button>
-          <S.Button onClick={handleLogout}>
-            <FaSignOutAlt /> 로그아웃
-          </S.Button>
-        </S.HeaderRight>
-      </S.Header>
+        }
+      />
 
       <S.ProfileCard data-tourid="tour-basic-info">
         <S.CardTitle>기본 정보</S.CardTitle>
