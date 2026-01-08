@@ -23,9 +23,9 @@ public class AccountCodeController {
     private static final Logger logger = LoggerFactory.getLogger(AccountCodeController.class);
     private final AccountCodeService accountCodeService;
     
-    @Operation(summary = "계정 과목 매핑 생성", description = "새로운 계정 과목 매핑을 생성합니다. (ADMIN/CEO)")
+    @Operation(summary = "계정 과목 매핑 생성", description = "새로운 계정 과목 매핑을 생성합니다. (SUPERADMIN: 전역 매핑, TAX_ACCOUNTANT: 회사별 매핑)")
     @PostMapping("/create")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CEO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<AccountCodeMappingDto>> createMapping(@RequestBody AccountCodeMappingDto mapping) {
         try {
             AccountCodeMappingDto created = accountCodeService.createMapping(mapping);
@@ -38,9 +38,9 @@ public class AccountCodeController {
         }
     }
     
-    @Operation(summary = "계정 과목 매핑 수정", description = "기존 계정 과목 매핑을 수정합니다. (ADMIN/CEO)")
+    @Operation(summary = "계정 과목 매핑 수정", description = "기존 계정 과목 매핑을 수정합니다. (SUPERADMIN: 전역 매핑, TAX_ACCOUNTANT: 회사별 매핑)")
     @PutMapping("/{mappingId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CEO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<AccountCodeMappingDto>> updateMapping(
             @PathVariable Long mappingId,
             @RequestBody AccountCodeMappingDto mapping) {
@@ -55,9 +55,9 @@ public class AccountCodeController {
         }
     }
     
-    @Operation(summary = "계정 과목 매핑 삭제", description = "계정 과목 매핑을 삭제합니다. (ADMIN/CEO)")
+    @Operation(summary = "계정 과목 매핑 삭제", description = "계정 과목 매핑을 삭제합니다. (SUPERADMIN: 전역 매핑, TAX_ACCOUNTANT: 회사별 매핑)")
     @DeleteMapping("/{mappingId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CEO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<Void>> deleteMapping(@PathVariable Long mappingId) {
         try {
             accountCodeService.deleteMapping(mappingId);
@@ -70,9 +70,9 @@ public class AccountCodeController {
         }
     }
     
-    @Operation(summary = "계정 과목 매핑 목록 조회", description = "계정 과목 매핑 목록을 조회합니다. (ADMIN/CEO/ACCOUNTANT)")
+    @Operation(summary = "계정 과목 매핑 목록 조회", description = "계정 과목 매핑 목록을 조회합니다. (SUPERADMIN: 전체, TAX_ACCOUNTANT: 전역+회사별)")
     @GetMapping("/list")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CEO', 'ACCOUNTANT')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<List<AccountCodeMappingDto>>> getMappingList() {
         try {
             List<AccountCodeMappingDto> mappingList = accountCodeService.getMappingList();

@@ -22,9 +22,14 @@ public interface AccountCodeMappingMapper {
             @Param("merchantKeyword") String merchantKeyword);
     
     /**
-     * 회사별 계정 과목 매핑 목록 조회
+     * 회사별 계정 과목 매핑 목록 조회 (전역 매핑 포함)
      */
     List<AccountCodeMappingDto> findByCompanyId(@Param("companyId") Long companyId);
+    
+    /**
+     * 전체 계정 과목 매핑 목록 조회 (SUPERADMIN 전용)
+     */
+    List<AccountCodeMappingDto> findAll();
     
     /**
      * 계정 과목 매핑 생성

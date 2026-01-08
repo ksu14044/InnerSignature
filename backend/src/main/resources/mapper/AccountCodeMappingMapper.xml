@@ -41,6 +41,11 @@
         ORDER BY company_id DESC, category ASC, account_name ASC
     </select>
 
+    <select id="findAll" resultMap="AccountCodeMappingResultMap">
+        SELECT * FROM account_code_mapping_tb
+        ORDER BY company_id DESC, category ASC, account_name ASC
+    </select>
+
     <insert id="insert" parameterType="com.innersignature.backend.dto.AccountCodeMappingDto" 
             useGeneratedKeys="true" keyProperty="mappingId">
         INSERT INTO account_code_mapping_tb (

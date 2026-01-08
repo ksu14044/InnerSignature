@@ -1116,8 +1116,14 @@ public class ExpenseService {
     public List<ExpenseReportDto> getPendingApprovals(Long userId) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         List<ExpenseReportDto> list = expenseMapper.selectPendingApprovalsByUserId(userId, companyId);
-        filterSalaryExpenses(list, userId);
+        
+        // 결재함에서는 급여/비밀글이라도,
+        // "내가 결재자로 들어간 문서"는 반드시 봐야 하므로 급여/비밀글 필터링은 하지 않는다.
+        // filterSalaryExpenses(list, userId);
+        
+        // 세무 처리 정보는 일반 USER에게는 숨기고, 권한 가진 사람에겐 보여주도록 유지
         filterTaxProcessingInfo(list, userId);
+        
         // 적요 요약 정보 생성
         for (ExpenseReportDto report : list) {
             generateSummaryDescription(report);

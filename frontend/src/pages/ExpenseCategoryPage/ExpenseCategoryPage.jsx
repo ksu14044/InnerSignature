@@ -50,18 +50,8 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
       return;
     }
     
-    // 권한 확인
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ACCOUNTANT' && user.role !== 'ADMIN' && user.role !== 'CEO' && user.role !== 'TAX_ACCOUNTANT') {
-      console.log('[카테고리] 권한 없음 - role:', user.role);
-      if (!hideHeader) {
-        alert('접근 권한이 없습니다. (SUPERADMIN, ACCOUNTANT, ADMIN, CEO, TAX_ACCOUNTANT 권한 필요)');
-        navigate('/expenses');
-      }
-      return;
-    }
-    
-    console.log('[카테고리] 권한 확인 완료 - role:', user.role);
-    
+    // USER도 조회는 가능하도록 변경 (백엔드 API가 USER도 허용)
+    // 권한 체크는 UI에서만 처리
     if (activeTab === 'categories') {
       console.log('[카테고리] categories 탭 활성화 - loadCategories 호출');
       loadCategories();
@@ -342,11 +332,74 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
     }
   };
 
-  const canEdit = user?.role === 'SUPERADMIN' || user?.role === 'ACCOUNTANT' || user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'TAX_ACCOUNTANT';
-  const canEditMapping = user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'TAX_ACCOUNTANT';
+  const canEditCategories = user?.role === 'SUPERADMIN' || user?.role === 'ADMIN' 
+    || user?.role === 'CEO' || user?.role === 'ACCOUNTANT' || user?.role === 'TAX_ACCOUNTANT';
+  const canViewCategories = canEditCategories || user?.role === 'USER';
+  const canEditMapping = user?.role === 'SUPERADMIN' || user?.role === 'TAX_ACCOUNTANT';
+  const canViewMapping = canEditMapping || user?.role === 'ADMIN' || user?.role === 'CEO' 
+    || user?.role === 'ACCOUNTANT' || user?.role === 'USER';
 
   if (loading) {
     return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
+  }
+
+  // 권한이 없는 경우 안내 메시지 표시
+  if (!canViewCategories && activeTab === 'categories') {
+    return (
+      <S.Container>
+        {!hideHeader && (
+          <S.Header>
+            <S.BackButton onClick={() => navigate(-1)}>← 뒤로</S.BackButton>
+            <S.Title>시스템 설정</S.Title>
+          </S.Header>
+        )}
+        <S.Alert>
+          <strong>지출 항목 관리</strong>
+          <p>이 기능은 다음 권한이 필요합니다:</p>
+          <ul>
+            <li>시스템 관리자(SUPERADMIN)</li>
+            <li>회계 담당자(ACCOUNTANT)</li>
+            <li>관리자(ADMIN)</li>
+            <li>대표(CEO)</li>
+            <li>세무 담당자(TAX_ACCOUNTANT)</li>
+            <li>일반 사용자(USER) - 조회만 가능</li>
+          </ul>
+          <p style={{ marginTop: '16px', color: '#666' }}>
+            지출 항목 생성/수정이 필요하시면 <strong>회계 담당자(ACCOUNTANT)</strong>, <strong>관리자(ADMIN)</strong>, <strong>대표(CEO)</strong> 또는 <strong>세무 담당자(TAX_ACCOUNTANT)</strong>에게 문의해주세요.
+          </p>
+        </S.Alert>
+        <S.Button onClick={() => navigate('/expenses')}>목록으로 이동</S.Button>
+      </S.Container>
+    );
+  }
+
+  if (!canViewMapping && activeTab === 'accountCodes') {
+    return (
+      <S.Container>
+        {!hideHeader && (
+          <S.Header>
+            <S.BackButton onClick={() => navigate(-1)}>← 뒤로</S.BackButton>
+            <S.Title>시스템 설정</S.Title>
+          </S.Header>
+        )}
+        <S.Alert>
+          <strong>계정 코드 매핑</strong>
+          <p>이 기능은 다음 권한이 필요합니다:</p>
+          <ul>
+            <li>시스템 관리자(SUPERADMIN)</li>
+            <li>세무 담당자(TAX_ACCOUNTANT)</li>
+            <li>관리자(ADMIN)</li>
+            <li>대표(CEO)</li>
+            <li>회계 담당자(ACCOUNTANT)</li>
+            <li>일반 사용자(USER) - 조회만 가능</li>
+          </ul>
+          <p style={{ marginTop: '16px', color: '#666' }}>
+            계정 코드 매핑 생성/수정이 필요하시면 <strong>세무 담당자(TAX_ACCOUNTANT)</strong> 또는 <strong>시스템 관리자(SUPERADMIN)</strong>에게 문의해주세요.
+          </p>
+        </S.Alert>
+        <S.Button onClick={() => navigate('/expenses')}>목록으로 이동</S.Button>
+      </S.Container>
+    );
   }
 
   return (
@@ -375,11 +428,13 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
         <p>
           {user.role === 'SUPERADMIN' 
             ? 'SUPERADMIN은 전역 기본 항목을 설정할 수 있습니다.'
+            : user.role === 'USER'
+            ? '지출 항목을 조회할 수 있습니다. 항목 생성/수정이 필요하시면 회계 담당자, 관리자, 대표 또는 세무 담당자에게 문의해주세요.'
             : '회사별 항목을 추가, 수정, 삭제(비활성화)할 수 있습니다. 드래그 앤 드롭으로 순서를 변경할 수 있습니다.'}
         </p>
       </S.InfoBox>
 
-      {canEdit && (
+      {canEditCategories && (
         <S.ActionBar>
           <S.AddButton onClick={() => handleOpenModal()}>
             <FaPlus />
@@ -395,13 +450,13 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
           categories.map((category, index) => (
             <S.CategoryItem
               key={category.categoryId}
-              draggable={canEdit}
+              draggable={canEditCategories}
               onDragStart={(e) => handleDragStart(e, index)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
               isActive={category.isActive}
             >
-              {canEdit && (
+              {canEditCategories && (
                 <S.DragHandle>
                   <FaGripVertical />
                 </S.DragHandle>
@@ -414,7 +469,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
                   {category.isActive ? '활성' : '비활성'}
                 </S.CategoryMeta>
               </S.CategoryInfo>
-              {canEdit && (
+              {canEditCategories && (
                 <S.ActionButtons>
                   <S.EditButton onClick={() => handleOpenModal(category)}>
                     <FaEdit />
@@ -499,6 +554,13 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
             </p>
           </S.InfoBox>
 
+          {!canEditMapping && (
+            <div style={{ marginBottom: '16px', padding: '12px', background: '#fff3cd', borderRadius: '4px', color: '#856404' }}>
+              <p style={{ margin: 0 }}>
+                <strong>안내:</strong> 계정 코드 매핑 생성/수정은 <strong>세무 담당자(TAX_ACCOUNTANT)</strong> 또는 <strong>시스템 관리자(SUPERADMIN)</strong> 권한이 필요합니다.
+              </p>
+            </div>
+          )}
           {canEditMapping && (
             <S.ActionBar>
               <S.AddButton onClick={() => handleOpenMappingModal()}>

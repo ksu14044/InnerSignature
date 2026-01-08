@@ -249,6 +249,7 @@ const AuditRuleManagementPage = () => {
   };
 
   const canEdit = user?.role === 'ADMIN' || user?.role === 'CEO';
+  const canView = canEdit || user?.role === 'ACCOUNTANT';
 
   if (!user) {
     return (
@@ -259,10 +260,21 @@ const AuditRuleManagementPage = () => {
     );
   }
 
-  if (user.role !== 'ADMIN' && user.role !== 'CEO' && user.role !== 'ACCOUNTANT') {
+  if (!canView) {
     return (
       <S.Container>
-        <S.Alert>접근 권한이 없습니다. (ADMIN, CEO 또는 ACCOUNTANT 권한 필요)</S.Alert>
+        <S.Alert>
+          <strong>감사 규칙 관리</strong>
+          <p>이 기능은 다음 권한이 필요합니다:</p>
+          <ul>
+            <li>관리자(ADMIN) - 규칙 생성/수정/삭제 가능</li>
+            <li>대표(CEO) - 규칙 생성/수정/삭제 가능</li>
+            <li>회계 담당자(ACCOUNTANT) - 조회만 가능</li>
+          </ul>
+          <p style={{ marginTop: '16px', color: '#666' }}>
+            감사 규칙 생성/수정이 필요하시면 <strong>관리자(ADMIN)</strong> 또는 <strong>대표(CEO)</strong>에게 문의해주세요.
+          </p>
+        </S.Alert>
         <S.Button onClick={() => navigate('/expenses')}>목록으로 이동</S.Button>
       </S.Container>
     );
@@ -296,6 +308,17 @@ const AuditRuleManagementPage = () => {
       </S.TabSection>
 
       {loading && <LoadingOverlay fullScreen={false} message="로딩 중..." />}
+
+      {/* ACCOUNTANT에게 안내 메시지 표시 */}
+      {user.role === 'ACCOUNTANT' && (
+        <div style={{ marginBottom: '16px', padding: '12px', background: '#fff3cd', borderRadius: '4px', color: '#856404' }}>
+          <p style={{ margin: 0 }}>
+            <strong>안내:</strong> 감사 규칙 생성/수정/삭제는 <strong>관리자(ADMIN)</strong> 또는 <strong>대표(CEO)</strong> 권한이 필요합니다.
+            <br />
+            규칙 수정이 필요하시면 관리자 또는 대표에게 문의해주세요.
+          </p>
+        </div>
+      )}
 
       {/* 감사 규칙 탭 */}
       {activeTab === 'rules' && (

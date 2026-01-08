@@ -103,6 +103,17 @@ public class ExpenseCategoryService {
             throw new BusinessException("항목을 찾을 수 없습니다.");
         }
         
+        // null 필드는 기존 값으로 유지
+        if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
+            category.setCategoryName(existing.getCategoryName());
+        }
+        if (category.getDisplayOrder() == null) {
+            category.setDisplayOrder(existing.getDisplayOrder());
+        }
+        if (category.getIsActive() == null) {
+            category.setIsActive(existing.getIsActive());
+        }
+        
         // 항목명 변경 시 중복 확인
         if (!existing.getCategoryName().equals(category.getCategoryName())) {
             boolean exists = expenseCategoryMapper.existsByName(category.getCategoryName(), companyId);

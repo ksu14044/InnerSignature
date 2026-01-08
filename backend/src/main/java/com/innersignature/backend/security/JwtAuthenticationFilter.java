@@ -52,6 +52,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String role = claims.get("role", String.class);
                 Long companyId = jwtUtil.getCompanyIdFromToken(token);
                 
+                // SUPERADMIN은 항상 전역 권한 (companyId = null)
+                if ("SUPERADMIN".equals(role)) {
+                    companyId = null;
+                }
+                
                 // details에 companyId 저장
                 java.util.Map<String, Object> detailsMap = new java.util.HashMap<>();
                 detailsMap.put("companyId", companyId);

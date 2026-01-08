@@ -21,11 +21,13 @@ const AccountCodeMappingPage = () => {
   });
 
   useEffect(() => {
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'CEO' && user.role !== 'ACCOUNTANT')) {
-      alert('접근 권한이 없습니다. (ADMIN, CEO, ACCOUNTANT 권한 필요)');
-      navigate('/expenses');
+    if (!user) {
+      navigate('/');
       return;
     }
+    
+    // 모든 사용자가 조회는 가능하도록 변경
+    // (백엔드에서 추천 기능이 USER도 사용 가능하므로)
     loadMappingList();
   }, [user, navigate]);
 
@@ -119,7 +121,10 @@ const AccountCodeMappingPage = () => {
     }
   };
 
-  const canEdit = user?.role === 'ADMIN' || user?.role === 'CEO';
+  const canEdit = user?.role === 'SUPERADMIN' || user?.role === 'TAX_ACCOUNTANT';
+  const canView = user?.role === 'SUPERADMIN' || user?.role === 'TAX_ACCOUNTANT' 
+    || user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'ACCOUNTANT' 
+    || user?.role === 'USER';
 
   if (!user) {
     return (
@@ -130,10 +135,25 @@ const AccountCodeMappingPage = () => {
     );
   }
 
-  if (user.role !== 'ADMIN' && user.role !== 'CEO' && user.role !== 'ACCOUNTANT') {
+  // 권한이 없는 경우 안내 메시지 표시
+  if (!canView) {
     return (
       <S.Container>
-        <S.Alert>접근 권한이 없습니다. (ADMIN, CEO 또는 ACCOUNTANT 권한 필요)</S.Alert>
+        <S.Alert>
+          <strong>계정 과목 매핑 관리</strong>
+          <p>이 기능은 다음 권한이 필요합니다:</p>
+          <ul>
+            <li>시스템 관리자(SUPERADMIN)</li>
+            <li>세무 담당자(TAX_ACCOUNTANT)</li>
+            <li>관리자(ADMIN)</li>
+            <li>대표(CEO)</li>
+            <li>회계 담당자(ACCOUNTANT)</li>
+            <li>일반 사용자(USER) - 조회만 가능</li>
+          </ul>
+          <p style={{ marginTop: '16px', color: '#666' }}>
+            계정 과목 매핑 생성/수정이 필요하시면 <strong>세무 담당자(TAX_ACCOUNTANT)</strong> 또는 <strong>시스템 관리자(SUPERADMIN)</strong>에게 문의해주세요.
+          </p>
+        </S.Alert>
         <S.Button onClick={() => navigate('/expenses')}>목록으로 이동</S.Button>
       </S.Container>
     );
@@ -146,6 +166,15 @@ const AccountCodeMappingPage = () => {
           <FaCode />
           계정 과목 매핑 관리
         </S.Title>
+        {!canEdit && (
+          <div style={{ marginBottom: '16px', padding: '12px', background: '#fff3cd', borderRadius: '4px', color: '#856404' }}>
+            <p style={{ margin: 0 }}>
+              <strong>안내:</strong> 계정 과목 매핑 생성/수정은 <strong>세무 담당자(TAX_ACCOUNTANT)</strong> 또는 <strong>시스템 관리자(SUPERADMIN)</strong> 권한이 필요합니다.
+              <br />
+              계정 과목 추천 기능은 지출결의서 작성 시 자동으로 사용됩니다.
+            </p>
+          </div>
+        )}
         <S.ButtonRow>
           {canEdit && (
             <S.Button onClick={() => handleOpenModal()}>

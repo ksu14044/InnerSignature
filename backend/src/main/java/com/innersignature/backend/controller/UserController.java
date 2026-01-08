@@ -74,7 +74,11 @@ public class UserController {
             String companyRole = user.getRole(); // 기본값은 전역 role
             Long companyId = user.getCompanyId(); // 기본값은 user_tb의 companyId
             
-            if (primaryCompany != null) {
+            // SUPERADMIN은 항상 전역 권한 (companyId = null)
+            if ("SUPERADMIN".equals(user.getRole())) {
+                companyRole = "SUPERADMIN";
+                companyId = null;
+            } else if (primaryCompany != null) {
                 companyRole = primaryCompany.getRole(); // 기본 회사의 role 사용
                 companyId = primaryCompany.getCompanyId(); // 기본 회사의 ID 사용
             }

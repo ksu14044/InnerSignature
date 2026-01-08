@@ -119,7 +119,7 @@ const AccountantDashboardSection = ({ filters }) => {
       {pendingApprovals.length > 0 && (
         <S.AlertSection>
           <S.AlertTitle>⚠️ 결재 대기 건: {pendingApprovals.length}건</S.AlertTitle>
-          <S.AlertButton onClick={() => navigate('/expenses?status=WAIT')}>
+          <S.AlertButton onClick={() => navigate('/expenses?tab=MY_APPROVALS')}>
             결재 대기 목록 보기 →
           </S.AlertButton>
         </S.AlertSection>
@@ -269,7 +269,7 @@ const AccountantDashboardSection = ({ filters }) => {
             <S.ManagementTitle>증빙 누락 관리</S.ManagementTitle>
             <S.ManagementDesc>영수증 미제출 건 조회 및 관리</S.ManagementDesc>
           </S.ManagementCard>
-          <S.ManagementCard onClick={() => navigate('/expenses?status=WAIT')}>
+          <S.ManagementCard onClick={() => navigate('/expenses?tab=MY_APPROVALS')}>
             <S.ManagementIcon>📋</S.ManagementIcon>
             <S.ManagementTitle>결재 대기 목록</S.ManagementTitle>
             <S.ManagementDesc>결재 대기 중인 문서 확인</S.ManagementDesc>
