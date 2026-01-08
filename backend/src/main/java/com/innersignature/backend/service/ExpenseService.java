@@ -75,6 +75,7 @@ public class ExpenseService {
     private final com.innersignature.backend.util.EncryptionUtil encryptionUtil; // 암호화 유틸리티
     private final CompanyCardService companyCardService; // 회사 카드 서비스
     private final UserCardService userCardService; // 개인 카드 서비스
+    private final AccountCodeService accountCodeService; // 계정 코드 매핑 서비스
     
     @Value("${file.upload.base-dir:uploads}")
     private String fileUploadBaseDir;
@@ -2653,13 +2654,15 @@ public class ExpenseService {
                             // 실제 지급 금액이 결재 금액보다 큰 경우: 추가 비용
                             // 해당 항목의 계정과목으로 처리 (회계 원칙)
                             String category = detail.getCategory() != null ? detail.getCategory() : "";
-                            String accountCode = mapCategoryToAccountCode(category);
+                            String merchantName = detail.getMerchantName();
+                            String accountCode = mapCategoryToAccountCode(category, merchantName);
                             additionalExpenseByAccount.merge(accountCode, Math.abs(itemDifference), Long::sum);
                         } else if (itemDifference > 0) {
                             // 실제 지급 금액이 결재 금액보다 작은 경우: 잔액 정리
                             // 해당 항목의 계정과목으로 차감 처리 (회계 원칙 - 비용 차감, 수익 증가 금지)
                             String category = detail.getCategory() != null ? detail.getCategory() : "";
-                            String accountCode = mapCategoryToAccountCode(category);
+                            String merchantName = detail.getMerchantName();
+                            String accountCode = mapCategoryToAccountCode(category, merchantName);
                             remainingBalanceByAccount.merge(accountCode, itemDifference, Long::sum);
                         }
                     }
@@ -2944,7 +2947,9 @@ public class ExpenseService {
                     long actualPaidAmount = detail.getActualPaidAmount() != null ? detail.getActualPaidAmount() : approvalAmount;
                     long itemDifference = approvalAmount - actualPaidAmount;
                     
-                    String accountCode = mapCategoryToAccountCode(detail.getCategory() != null ? detail.getCategory() : "");
+                    String category = detail.getCategory() != null ? detail.getCategory() : "";
+                    String merchantName = detail.getMerchantName();
+                    String accountCode = mapCategoryToAccountCode(category, merchantName);
                     
                     if (itemDifference > 0) {
                         // 잔액 정리
@@ -3068,7 +3073,8 @@ public class ExpenseService {
         // 차변 계정과목 (카테고리 기반)
         cell = row.createCell(col++);
         String category = detail != null && detail.getCategory() != null ? detail.getCategory() : "";
-        String debitAccount = mapCategoryToAccountCode(category);
+        String merchantName = detail != null ? detail.getMerchantName() : null;
+        String debitAccount = mapCategoryToAccountCode(category, merchantName);
         cell.setCellValue(debitAccount);
         cell.setCellStyle(dataStyle);
         
@@ -3346,28 +3352,39 @@ public class ExpenseService {
     
     /**
      * 카테고리를 계정과목 코드로 매핑
+     * AccountCodeService를 사용하여 데이터베이스의 매핑 정보를 활용
      * @param category 카테고리
      * @return 계정과목명
      */
     private String mapCategoryToAccountCode(String category) {
+        return mapCategoryToAccountCode(category, null);
+    }
+    
+    /**
+     * 카테고리와 가맹점명을 계정과목 코드로 매핑
+     * AccountCodeService를 사용하여 데이터베이스의 매핑 정보를 활용
+     * @param category 카테고리
+     * @param merchantName 가맹점명 (선택사항)
+     * @return 계정과목명
+     */
+    private String mapCategoryToAccountCode(String category, String merchantName) {
         if (category == null || category.isEmpty()) {
             return "기타비용";
         }
         
-        // 카테고리별 계정과목 매핑
-        switch (category) {
-            case "식대":
-                return "식대비";
-            case "교통비":
-                return "여비교통비";
-            case "비품비":
-                return "소모품비";
-            case "급여":
-                return "급여";
-            case "기타":
-            default:
-                return "기타비용";
+        try {
+            // AccountCodeService를 통해 데이터베이스의 매핑 정보 조회
+            var mapping = accountCodeService.recommendAccountCode(category, merchantName);
+            if (mapping != null && mapping.getAccountName() != null && !mapping.getAccountName().isEmpty()) {
+                return mapping.getAccountName();
+            }
+        } catch (Exception e) {
+            logger.warn("계정 코드 매핑 조회 실패 - category: {}, merchantName: {}, error: {}", 
+                category, merchantName, e.getMessage());
         }
+        
+        // 매핑 정보가 없거나 오류 발생 시 기본값 반환
+        return "기타비용";
     }
     
     /**
