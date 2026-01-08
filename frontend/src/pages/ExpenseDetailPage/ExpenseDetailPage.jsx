@@ -242,12 +242,25 @@ const ExpenseDetailPage = () => {
     approveExpense(id, requestData)
     .then((res) => {
         if(res.success) {
-            alert("결제가 완료되었습니다!");
             setIsModalOpen(false);
-            // 결재 완료 후 내 결재함 탭으로 이동하여 목록에서 해당 문서가 사라진 것을 바로 확인할 수 있게 함
-            navigate('/expenses?tab=MY_APPROVALS');
+            // 상세 데이터 다시 불러오기
+            const fetchDetail = user?.role === 'SUPERADMIN' 
+              ? getExpenseDetailForSuperAdmin(id)
+              : fetchExpenseDetail(id);
+            
+            fetchDetail.then((detailRes) => {
+                if (detailRes.success) {
+                    setDetail(detailRes.data);
+                    if (detailRes.data.receipts) {
+                        setReceipts(detailRes.data.receipts || []);
+                    }
+                    alert("✅ 결재가 완료되었습니다!\n서명이 정상적으로 저장되었습니다. 아래에서 확인하세요.");
+                }
+            }).catch(() => {
+                alert("결재는 완료되었으나 데이터를 새로고침하는데 실패했습니다.");
+            });
         } else {
-            alert("결제 실패: " + res.message);
+            alert("결재 실패: " + res.message);
         }
     })
     .catch(() => alert("오류가 발생했습니다."))
@@ -275,10 +288,23 @@ const ExpenseDetailPage = () => {
     rejectExpense(id, requestData)
     .then((res) => {
         if(res.success) {
-            alert("결제가 반려되었습니다!");
             handleCloseRejectModal();
-            // 반려 후에도 내 결재함 탭으로 이동 (해당 문서는 더 이상 결재 대기 목록에 나타나지 않음)
-            navigate('/expenses?tab=MY_APPROVALS');
+            // 상세 데이터 다시 불러오기
+            const fetchDetail = user?.role === 'SUPERADMIN' 
+              ? getExpenseDetailForSuperAdmin(id)
+              : fetchExpenseDetail(id);
+            
+            fetchDetail.then((detailRes) => {
+                if (detailRes.success) {
+                    setDetail(detailRes.data);
+                    if (detailRes.data.receipts) {
+                        setReceipts(detailRes.data.receipts || []);
+                    }
+                    alert("❌ 결재가 반려되었습니다!\n반려 사유가 정상적으로 저장되었습니다.");
+                }
+            }).catch(() => {
+                alert("반려는 완료되었으나 데이터를 새로고침하는데 실패했습니다.");
+            });
         } else {
             alert("반려 실패: " + res.message);
         }

@@ -7,7 +7,8 @@ import {
   fetchStatusStats, 
   fetchCategoryRatio,
   fetchPendingApprovals,
-  fetchExpenseList
+  fetchExpenseList,
+  downloadTaxReviewList
 } from '../../api/expenseApi';
 import { STATUS_KOREAN } from '../../constants/status';
 import { 
@@ -80,6 +81,19 @@ const AccountantDashboardSection = ({ filters }) => {
       setLoading(false);
     }
   }, [user, filters.startDate, filters.endDate]);
+
+  // 세무 검토 자료 다운로드 핸들러
+  const handleExportTaxReview = async (format = 'full') => {
+    try {
+      setLoading(true);
+      await downloadTaxReviewList(filters.startDate, filters.endDate, format);
+      alert('세무 검토 자료 다운로드가 완료되었습니다.');
+    } catch (error) {
+      alert(error.userMessage || '세무 검토 자료 다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (debounceTimer.current) {
@@ -280,6 +294,74 @@ const AccountantDashboardSection = ({ filters }) => {
             <S.ManagementDesc>자동 감사로 탐지된 이슈 확인</S.ManagementDesc>
           </S.ManagementCard>
         </S.ManagementGrid>
+      </S.ManagementSection>
+
+      {/* 세무 검토 자료 다운로드 */}
+      <S.ManagementSection>
+        <S.SectionTitle>세무 검토 자료</S.SectionTitle>
+        <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+          <div style={{ marginBottom: '15px', color: '#666' }}>
+            증빙 및 부가세 검토용 리스트를 다운로드합니다. 더존/위하고 연동을 위한 보조 자료로 활용하세요.
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => handleExportTaxReview('full')}
+              disabled={loading}
+              style={{
+                padding: '12px 20px',
+                backgroundColor: '#1976d2',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              📥 전체 상세 (5 Sheets)
+            </button>
+            <button
+              onClick={() => handleExportTaxReview('simple')}
+              disabled={loading}
+              style={{
+                padding: '12px 20px',
+                backgroundColor: '#43a047',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              📄 간단 요약
+            </button>
+            <button
+              onClick={() => handleExportTaxReview('import')}
+              disabled={loading}
+              style={{
+                padding: '12px 20px',
+                backgroundColor: '#f57c00',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              🔄 더존 Import용
+            </button>
+          </div>
+          <div style={{ marginTop: '15px', fontSize: '13px', color: '#999' }}>
+            ✓ 전체 상세: 증빙 내역, 누락 체크리스트, 부가세 검토, 카테고리 집계, 더존 Import (5개 시트)<br />
+            ✓ 간단 요약: 증빙 내역 + 카테고리 집계 (2개 시트)<br />
+            ✓ 더존 Import: 더존/위하고에 바로 import 가능한 형식 (1개 시트)
+          </div>
+        </div>
       </S.ManagementSection>
     </>
   );

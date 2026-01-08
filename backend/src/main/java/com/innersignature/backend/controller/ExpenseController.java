@@ -1002,12 +1002,69 @@ public class ExpenseController {
             logger.error("부가세 신고 서식 다운로드 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(new ApiResponse<>(false, "부가세 신고 서식 파일 생성 중 오류가 발생했습니다: " + e.getMessage(), null));
+                    .body(new ApiResponse<>(false, "부가세 신고 서식 생성 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
+    }
+    
+    /**
+     * 26. 세무 검토용 증빙 리스트 다운로드 API
+     * GET /api/expenses/export/tax-review?startDate=2024-01-01&endDate=2024-12-31&format=full
+     * 설명: ACCOUNTANT 또는 TAX_ACCOUNTANT 권한 사용자만 접근 가능
+     * format: full(전체 5시트), simple(간단 요약), import(더존 Import)
+     */
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'TAX_ACCOUNTANT')")
+    @Operation(summary = "세무 검토용 증빙 리스트 다운로드", description = "세무사가 검토하기 쉬운 형식의 증빙 리스트를 다운로드합니다. (ACCOUNTANT, TAX_ACCOUNTANT)")
+    @GetMapping("/export/tax-review")
+    public ResponseEntity<?> exportTaxReview(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false, defaultValue = "full") String format) {
+        
+        LocalDate startDateParsed = null;
+        LocalDate endDateParsed = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                startDateParsed = LocalDate.parse(startDate, formatter);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                endDateParsed = LocalDate.parse(endDate, formatter);
+            }
+        } catch (Exception e) {
+            logger.error("날짜 파싱 실패", e);
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "날짜 형식이 올바르지 않습니다. (형식: YYYY-MM-DD)", null));
+        }
+        
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        
+        try {
+            File excelFile = expenseService.exportFullTaxReview(startDateParsed, endDateParsed, currentUserId);
+            Resource resource = new FileSystemResource(excelFile);
+            
+            String filename = String.format("세무검토_%s_%s.xlsx",
+                    startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                    endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            
+            logger.info("세무 검토 자료 다운로드 요청 - userId: {}, startDate: {}, endDate: {}, format: {}", 
+                    currentUserId, startDateParsed, endDateParsed, format);
+            
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            logger.error("세무 검토 자료 다운로드 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "세무 검토 자료 생성 중 오류가 발생했습니다: " + e.getMessage(), null));
         }
     }
 
     /**
-     * 26. 상세 항목 부가세 공제 정보 업데이트 API
+     * 27. 상세 항목 부가세 공제 정보 업데이트 API
      * PUT /api/expenses/details/{expenseDetailId}/tax-info
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
