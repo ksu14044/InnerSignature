@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { fetchExpenseList, deleteExpense, downloadJournalEntries, fetchTaxRevisionRequestsForDrafter, fetchMyApprovedReports, fetchPendingApprovals } from '../../api/expenseApi';
+import { fetchExpenseList, deleteExpense, downloadTaxReviewList, fetchTaxRevisionRequestsForDrafter, fetchMyApprovedReports, fetchPendingApprovals } from '../../api/expenseApi';
 import { getUserCompanies } from '../../api/userApi';
 import * as S from './style';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -245,13 +245,13 @@ const ExpenseListPage = () => {
     }
   };
 
-  // 전표 다운로드 핸들러
-  const handleExportJournal = async () => {
+  // 세무 자료 다운로드 핸들러
+  const handleExportTaxReview = async () => {
     if (
       !user ||
       (user.role !== 'ACCOUNTANT' && user.role !== 'TAX_ACCOUNTANT')
     ) {
-      alert('전표 다운로드는 ACCOUNTANT 또는 TAX_ACCOUNTANT 권한만 가능합니다.');
+      alert('세무 자료 다운로드는 ACCOUNTANT 또는 TAX_ACCOUNTANT 권한만 가능합니다.');
       return;
     }
 
@@ -260,10 +260,10 @@ const ExpenseListPage = () => {
       const startDate = filters.startDate || null;
       const endDate = filters.endDate || null;
       
-      await downloadJournalEntries(startDate, endDate);
-      alert('전표 파일 다운로드가 시작되었습니다.');
+      await downloadTaxReviewList(startDate, endDate, 'full');
+      alert('세무 자료 다운로드가 시작되었습니다.');
     } catch (error) {
-      alert(error.userMessage || '전표 다운로드 중 오류가 발생했습니다.');
+      alert(error.userMessage || '세무 자료 다운로드 중 오류가 발생했습니다.');
     }
   };
 
@@ -569,9 +569,9 @@ const ExpenseListPage = () => {
             </>
           )}
           {user && (user.role === 'ACCOUNTANT' || user.role === 'TAX_ACCOUNTANT') && (
-            <S.ExportButton onClick={handleExportJournal} aria-label="전표 다운로드">
+            <S.ExportButton onClick={handleExportTaxReview} aria-label="세무 자료 다운로드">
               <FaFileExcel />
-              <span>전표 다운로드</span>
+              <span>세무 자료 다운로드</span>
             </S.ExportButton>
           )}
         </div>

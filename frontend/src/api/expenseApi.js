@@ -395,7 +395,7 @@ export const fetchCategoryRatio = async (startDate = null, endDate = null) => {
   }
 };
 
-// 19. 세무처리 대기 건 목록 조회 (TAX_ACCOUNTANT 전용)
+// 19. PAID 상태 결의서 목록 조회 (TAX_ACCOUNTANT 전용)
 export const fetchTaxPendingReports = async (startDate = null, endDate = null) => {
   try {
     const params = {};
@@ -404,12 +404,12 @@ export const fetchTaxPendingReports = async (startDate = null, endDate = null) =
     const response = await axiosInstance.get(`${BASE_URL}/tax/pending`, { params });
     return response.data;
   } catch (error) {
-    console.error("세무처리 대기 건 조회 실패:", error);
+    console.error("PAID 상태 결의서 조회 실패:", error);
     throw error;
   }
 };
 
-// 20. 세무처리 현황 통계 조회 (TAX_ACCOUNTANT 전용)
+// 20. 세무 자료 수집 현황 통계 조회 (TAX_ACCOUNTANT 전용)
 export const fetchTaxStatus = async (startDate = null, endDate = null) => {
   try {
     const params = {};
@@ -418,12 +418,12 @@ export const fetchTaxStatus = async (startDate = null, endDate = null) => {
     const response = await axiosInstance.get(`${BASE_URL}/tax/status`, { params });
     return response.data;
   } catch (error) {
-    console.error("세무처리 현황 통계 조회 실패:", error);
+    console.error("세무 자료 수집 현황 통계 조회 실패:", error);
     throw error;
   }
 };
 
-// 21. 월별 세무처리 집계 조회 (TAX_ACCOUNTANT 전용)
+// 21. 월별 집계 조회 (TAX_ACCOUNTANT 전용)
 export const fetchMonthlyTaxSummary = async (startDate = null, endDate = null) => {
   try {
     const params = {};
@@ -432,7 +432,7 @@ export const fetchMonthlyTaxSummary = async (startDate = null, endDate = null) =
     const response = await axiosInstance.get(`${BASE_URL}/tax/monthly-summary`, { params });
     return response.data;
   } catch (error) {
-    console.error("월별 세무처리 집계 조회 실패:", error);
+    console.error("월별 집계 조회 실패:", error);
     throw error;
   }
 };

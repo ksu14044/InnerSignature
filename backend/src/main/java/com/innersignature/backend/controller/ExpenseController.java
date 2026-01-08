@@ -649,12 +649,12 @@ public class ExpenseController {
     }
 
     /**
-     * 19. 세무처리 대기 건 목록 조회 API
+     * 19. PAID 상태 결의서 목록 조회 API
      * GET /api/expenses/tax/pending?startDate=2024-01-01&endDate=2024-12-31
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
-    @Operation(summary = "세무처리 대기 건 조회", description = "세무사(TAX_ACCOUNTANT)가 처리 대기 문서를 조회합니다.")
+    @Operation(summary = "PAID 상태 결의서 조회", description = "세무사(TAX_ACCOUNTANT)가 PAID 상태 결의서를 조회합니다.")
     @GetMapping("/tax/pending")
     public ApiResponse<List<ExpenseReportDto>> getTaxPendingReports(
             @RequestParam(required = false) String startDate,
@@ -680,12 +680,12 @@ public class ExpenseController {
     }
 
     /**
-     * 20. 세무처리 현황 통계 API
+     * 20. 세무 자료 수집 현황 통계 API
      * GET /api/expenses/tax/status?startDate=2024-01-01&endDate=2024-12-31
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
-    @Operation(summary = "세무처리 현황", description = "세무 처리 상태별 통계를 조회합니다. (TAX_ACCOUNTANT)")
+    @Operation(summary = "세무 자료 수집 현황", description = "세무 자료 수집 상태별 통계를 조회합니다. (TAX_ACCOUNTANT)")
     @GetMapping("/tax/status")
     public ApiResponse<TaxStatusDto> getTaxStatus(
             @RequestParam(required = false) String startDate,
@@ -707,16 +707,16 @@ public class ExpenseController {
         }
 
         TaxStatusDto status = expenseService.getTaxStatus(startDateParsed, endDateParsed);
-        return new ApiResponse<>(true, "세무처리 현황 통계 조회 성공", status);
+        return new ApiResponse<>(true, "세무 자료 수집 현황 통계 조회 성공", status);
     }
 
     /**
-     * 21. 월별 세무처리 집계 API
+     * 21. 월별 집계 API
      * GET /api/expenses/tax/monthly-summary?startDate=2024-01-01&endDate=2024-12-31
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
-    @Operation(summary = "월별 세무처리 집계", description = "월별 세무 처리 집계를 조회합니다. (TAX_ACCOUNTANT)")
+    @Operation(summary = "월별 집계", description = "월별 세무 자료 집계를 조회합니다. (TAX_ACCOUNTANT)")
     @GetMapping("/tax/monthly-summary")
     public ApiResponse<List<MonthlyTaxSummaryDto>> getMonthlyTaxSummary(
             @RequestParam(required = false) String startDate,
@@ -738,7 +738,7 @@ public class ExpenseController {
         }
 
         List<MonthlyTaxSummaryDto> summary = expenseService.getMonthlyTaxSummary(startDateParsed, endDateParsed);
-        return new ApiResponse<>(true, "월별 세무처리 집계 조회 성공", summary);
+        return new ApiResponse<>(true, "월별 집계 조회 성공", summary);
     }
 
     /**
@@ -768,33 +768,34 @@ public class ExpenseController {
     }
 
     /**
-     * 기간별 세무 자료 일괄 수집 및 전표 다운로드
+     * 기간별 세무 자료 일괄 수집 및 다운로드
      * POST /api/expenses/tax/collect?startDate=2024-01-01&endDate=2024-12-31
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
+     * 자료 수집 후 5개 시트로 구성된 종합 검토 자료를 다운로드합니다.
      */
     @PostMapping("/tax/collect")
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
-    @Operation(summary = "기간별 세무 자료 일괄 수집 및 전표 다운로드", description = "TAX_ACCOUNTANT가 기간별로 PAID 상태의 자료를 수집하고 세무사 전용 전표를 다운로드합니다.")
+    @Operation(summary = "기간별 세무 자료 일괄 수집 및 다운로드", description = "TAX_ACCOUNTANT가 기간별로 PAID 상태의 자료를 수집하고 종합 검토 자료(5개 시트)를 다운로드합니다.")
     public ResponseEntity<?> collectTaxData(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
-        logger.info("세무 자료 일괄 수집 및 전표 다운로드 요청 - startDate: {}, endDate: {}, userId: {}", startDate, endDate, currentUserId);
+        logger.info("세무 자료 일괄 수집 및 다운로드 요청 - startDate: {}, endDate: {}, userId: {}", startDate, endDate, currentUserId);
         
         try {
             // 1. 자료 수집 처리
             expenseService.collectTaxData(startDate, endDate, currentUserId);
             
-            // 2. 세무사 전용 전표 엑셀 파일 생성 및 다운로드
-            File excelFile = expenseService.exportTaxJournalEntriesToExcel(startDate, endDate, currentUserId);
+            // 2. 종합 검토 자료 엑셀 파일 생성 및 다운로드 (5개 시트)
+            File excelFile = expenseService.exportFullTaxReview(startDate, endDate, currentUserId);
             Resource resource = new FileSystemResource(excelFile);
             
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            String filename = String.format("세무전표_%s_%s.xlsx",
+            String filename = String.format("세무자료수집_%s_%s.xlsx",
                     startDate != null ? startDate.format(formatter) : "전체",
                     endDate != null ? endDate.format(formatter) : "전체");
             
-            logger.info("세무 자료 일괄 수집 및 전표 다운로드 완료 - userId: {}", currentUserId);
+            logger.info("세무 자료 일괄 수집 및 다운로드 완료 - userId: {}", currentUserId);
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))

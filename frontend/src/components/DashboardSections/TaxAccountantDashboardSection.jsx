@@ -6,7 +6,7 @@ import {
   fetchTaxPendingReports,
   fetchCategorySummary,
   fetchMonthlyTaxSummary,
-  downloadTaxReviewList
+  collectTaxData
 } from '../../api/expenseApi';
 import * as S from './style';
 
@@ -19,6 +19,12 @@ const TaxAccountantDashboardSection = ({ filters }) => {
   const [monthlySummary, setMonthlySummary] = useState([]);
   const [loading, setLoading] = useState(false);
   const debounceTimer = useRef(null);
+  
+  const [collectMode, setCollectMode] = useState('date'); // 'date' 또는 'month'
+  const [monthRange, setMonthRange] = useState({
+    startMonth: '',  // 'YYYY-MM' 형식
+    endMonth: ''     // 'YYYY-MM' 형식
+  });
 
   const loadTaxData = async () => {
     if (!user) return;
@@ -58,14 +64,64 @@ const TaxAccountantDashboardSection = ({ filters }) => {
     }
   };
 
-  // 세무 검토 자료 다운로드 핸들러
-  const handleExportTaxReview = async (format = 'full') => {
+  // 월 범위 계산 (표시용)
+  const calculateMonthRange = (startMonth, endMonth) => {
+    if (!startMonth || !endMonth) return '';
+    
+    const start = new Date(startMonth + '-01');
+    const end = new Date(endMonth + '-01');
+    const endLastDay = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+    
+    return `${startMonth}-01 ~ ${endMonth}-${String(endLastDay).padStart(2, '0')}`;
+  };
+
+  // 기간별 자료 수집 및 전표 다운로드 핸들러 (일별)
+  const handleCollectTaxData = async () => {
+    if (!filters.startDate || !filters.endDate) {
+      alert('대시보드 상단에서 기간을 먼저 선택해주세요.');
+      return;
+    }
+
+    if (!confirm(`선택한 기간의 자료를 수집하시겠습니까?\n\n📅 ${filters.startDate} ~ ${filters.endDate}\n\n⚠️ 주의사항:\n- PAID 상태 결의서가 수집 처리됩니다\n- 수집 후에는 일반 사용자가 수정/삭제 불가능합니다\n- 세무사의 수정 요청이 있을 때만 수정 가능합니다`)) {
+      return;
+    }
+
     try {
       setLoading(true);
-      await downloadTaxReviewList(filters.startDate, filters.endDate, format);
-      alert('세무 검토 자료 다운로드가 완료되었습니다.');
+      await collectTaxData(filters.startDate, filters.endDate);
+      alert('✅ 세무 자료가 수집되었고 전표가 다운로드되었습니다.');
+      loadTaxData();
     } catch (error) {
-      alert(error.userMessage || '세무 검토 자료 다운로드 중 오류가 발생했습니다.');
+      alert(error?.userMessage || error?.response?.data?.message || error?.message || '세무 자료 수집 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 월별 자료 수집 및 전표 다운로드 핸들러
+  const handleMonthCollect = async () => {
+    if (!monthRange.startMonth || !monthRange.endMonth) {
+      alert('수집할 월을 선택해주세요.');
+      return;
+    }
+    
+    // YYYY-MM을 해당 월의 첫날과 마지막날로 변환
+    const startDate = `${monthRange.startMonth}-01`;
+    const endMonthObj = new Date(monthRange.endMonth + '-01');
+    const lastDay = new Date(endMonthObj.getFullYear(), endMonthObj.getMonth() + 1, 0).getDate();
+    const endDate = `${monthRange.endMonth}-${String(lastDay).padStart(2, '0')}`;
+    
+    if (!confirm(`선택한 기간을 수집하시겠습니까?\n\n📅 ${monthRange.startMonth} ~ ${monthRange.endMonth}\n(${startDate} ~ ${endDate})\n\n⚠️ 주의사항:\n- PAID 상태 결의서가 수집 처리됩니다\n- 수집 후에는 일반 사용자가 수정/삭제 불가능합니다\n- 세무사의 수정 요청이 있을 때만 수정 가능합니다`)) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await collectTaxData(startDate, endDate);
+      alert('✅ 세무 자료가 수집되었고 전표가 다운로드되었습니다.');
+      loadTaxData();
+    } catch (error) {
+      alert(error?.userMessage || error?.response?.data?.message || error?.message || '세무 자료 수집 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -108,14 +164,14 @@ const TaxAccountantDashboardSection = ({ filters }) => {
 
   return (
     <>
-      <S.SectionTitle>세무 처리 현황</S.SectionTitle>
+      <S.SectionTitle>세무 자료 현황</S.SectionTitle>
 
-      {/* 세무 처리 대기 건 */}
+      {/* 미수집 결의서 알림 */}
       {pendingReports.length > 0 && (
         <S.AlertSection>
-          <S.AlertTitle>⚠️ 세무 처리 대기: {pendingReports.length}건</S.AlertTitle>
+          <S.AlertTitle>📋 미수집 결의서: {pendingReports.length}건</S.AlertTitle>
           <S.AlertButton onClick={() => navigate('/tax/summary')}>
-            세무 요약 페이지로 이동 →
+            상세 페이지로 이동 →
           </S.AlertButton>
         </S.AlertSection>
       )}
@@ -124,20 +180,16 @@ const TaxAccountantDashboardSection = ({ filters }) => {
       {taxStatus && (
         <S.StatsGrid>
           <S.StatCard>
-            <S.StatLabel>처리 완료</S.StatLabel>
-            <S.StatValue>{taxStatus.processedCount || 0}건</S.StatValue>
+            <S.StatLabel>PAID 상태 결의서</S.StatLabel>
+            <S.StatValue>{taxStatus.totalCount || 0}건</S.StatValue>
           </S.StatCard>
           <S.StatCard>
-            <S.StatLabel>처리 대기</S.StatLabel>
-            <S.StatValue>{taxStatus.pendingCount || 0}건</S.StatValue>
+            <S.StatLabel>미수집</S.StatLabel>
+            <S.StatValue style={{ color: '#dc3545' }}>{taxStatus.pendingCount || 0}건</S.StatValue>
           </S.StatCard>
           <S.StatCard>
-            <S.StatLabel>처리 완료율</S.StatLabel>
-            <S.StatValue>
-              {taxStatus.totalCount > 0 
-                ? Math.round((taxStatus.processedCount / taxStatus.totalCount) * 100) 
-                : 0}%
-            </S.StatValue>
+            <S.StatLabel>수집 완료</S.StatLabel>
+            <S.StatValue style={{ color: '#28a745' }}>{taxStatus.completedCount || 0}건</S.StatValue>
           </S.StatCard>
           <S.StatCard>
             <S.StatLabel>총 금액</S.StatLabel>
@@ -146,10 +198,10 @@ const TaxAccountantDashboardSection = ({ filters }) => {
         </S.StatsGrid>
       )}
 
-      {/* 카테고리별 세무 집계 */}
+      {/* 주요 카테고리 Top 5 */}
       {summary.length > 0 && (
         <S.SummarySection>
-          <S.SectionTitle>카테고리별 세무 집계</S.SectionTitle>
+          <S.SectionTitle>주요 카테고리 (Top 5)</S.SectionTitle>
           <S.SummaryTable>
             <thead>
               <tr>
@@ -159,7 +211,7 @@ const TaxAccountantDashboardSection = ({ filters }) => {
               </tr>
             </thead>
             <tbody>
-              {summary.slice(0, 10).map((item, index) => (
+              {summary.slice(0, 5).map((item, index) => (
                 <tr key={index}>
                   <td>{item.category || '-'}</td>
                   <td>{item.totalAmount?.toLocaleString() || 0}원</td>
@@ -168,7 +220,7 @@ const TaxAccountantDashboardSection = ({ filters }) => {
               ))}
             </tbody>
           </S.SummaryTable>
-          {summary.length > 10 && (
+          {summary.length > 5 && (
             <S.ViewMoreButton onClick={() => navigate('/tax/summary')}>
               전체 보기 ({summary.length}개 카테고리)
             </S.ViewMoreButton>
@@ -182,79 +234,154 @@ const TaxAccountantDashboardSection = ({ filters }) => {
         <S.ManagementGrid>
           <S.ManagementCard onClick={() => navigate('/tax/summary')}>
             <S.ManagementIcon>📊</S.ManagementIcon>
-            <S.ManagementTitle>세무 요약</S.ManagementTitle>
-            <S.ManagementDesc>상세한 세무 처리 현황 및 자료 수집</S.ManagementDesc>
+            <S.ManagementTitle>상세 분석</S.ManagementTitle>
+            <S.ManagementDesc>결의서 목록, 카테고리/월별 집계</S.ManagementDesc>
           </S.ManagementCard>
         </S.ManagementGrid>
       </S.ManagementSection>
 
-      {/* 세무 검토 자료 다운로드 */}
+      {/* 자료 수집 및 전표 다운로드 */}
       <S.ManagementSection>
-        <S.SectionTitle>세무 검토 자료</S.SectionTitle>
-        <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-          <div style={{ marginBottom: '15px', color: '#666' }}>
-            증빙 및 부가세 검토용 리스트를 다운로드합니다. 더존/위하고 연동을 위한 보조 자료로 활용하세요.
+        <S.SectionTitle>기간별 자료 수집</S.SectionTitle>
+        <div style={{ padding: '20px', backgroundColor: '#fff9e6', borderRadius: '8px', border: '2px solid #ffc107' }}>
+          <div style={{ marginBottom: '15px', color: '#e65100', fontWeight: '500' }}>
+            ⚠️ 선택한 기간의 PAID 결의서를 수집하고 세무 전표를 다운로드합니다.
+            <br />수집된 자료는 DB에 기록되며, 일반 사용자는 수정/삭제할 수 없습니다.
           </div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => handleExportTaxReview('full')}
-              disabled={loading}
-              style={{
-                padding: '12px 20px',
-                backgroundColor: '#1976d2',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                opacity: loading ? 0.6 : 1,
-              }}
-            >
-              📥 전체 상세 (5 Sheets)
-            </button>
-            <button
-              onClick={() => handleExportTaxReview('simple')}
-              disabled={loading}
-              style={{
-                padding: '12px 20px',
-                backgroundColor: '#43a047',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                opacity: loading ? 0.6 : 1,
-              }}
-            >
-              📄 간단 요약
-            </button>
-            <button
-              onClick={() => handleExportTaxReview('import')}
-              disabled={loading}
-              style={{
-                padding: '12px 20px',
-                backgroundColor: '#f57c00',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                opacity: loading ? 0.6 : 1,
-              }}
-            >
-              🔄 더존 Import용
-            </button>
+
+          {/* 수집 모드 선택 */}
+          <div style={{ marginBottom: '16px', display: 'flex', gap: '16px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="collectMode"
+                value="date"
+                checked={collectMode === 'date'}
+                onChange={(e) => setCollectMode(e.target.value)}
+                style={{ marginRight: '6px' }}
+              />
+              <span style={{ fontSize: '14px', fontWeight: '500' }}>📆 일별 수집</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="collectMode"
+                value="month"
+                checked={collectMode === 'month'}
+                onChange={(e) => setCollectMode(e.target.value)}
+                style={{ marginRight: '6px' }}
+              />
+              <span style={{ fontSize: '14px', fontWeight: '500' }}>📅 월별 수집</span>
+            </label>
           </div>
-          <div style={{ marginTop: '15px', fontSize: '13px', color: '#999' }}>
-            ✓ 전체 상세: 증빙 내역, 누락 체크리스트, 부가세 검토, 카테고리 집계, 더존 Import (5개 시트)<br />
-            ✓ 간단 요약: 증빙 내역 + 카테고리 집계 (2개 시트)<br />
-            ✓ 더존 Import: 더존/위하고에 바로 import 가능한 형식 (1개 시트)
+
+          {/* 일별 수집 모드 */}
+          {collectMode === 'date' && (
+            <div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleCollectTaxData}
+                  disabled={!filters.startDate || !filters.endDate || loading}
+                  style={{
+                    padding: '14px 24px',
+                    backgroundColor: '#ff6f00',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: (!filters.startDate || !filters.endDate || loading) ? 'not-allowed' : 'pointer',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    opacity: (!filters.startDate || !filters.endDate || loading) ? 0.5 : 1,
+                  }}
+                >
+                  {loading ? '처리 중...' : '📥 일별 자료 수집 및 전표 다운로드'}
+                </button>
+                {(!filters.startDate || !filters.endDate) && (
+                  <span style={{ color: '#d32f2f', fontSize: '13px' }}>
+                    ※ 대시보드 상단에서 기간을 선택해주세요
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 월별 수집 모드 */}
+          {collectMode === 'month' && (
+            <div>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                <div>
+                  <label style={{ fontSize: '13px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                    수집 시작월
+                  </label>
+                  <input
+                    type="month"
+                    value={monthRange.startMonth}
+                    onChange={(e) => setMonthRange(prev => ({ ...prev, startMonth: e.target.value }))}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                      border: '1px solid #ddd',
+                      fontSize: '14px',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '13px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                    수집 종료월
+                  </label>
+                  <input
+                    type="month"
+                    value={monthRange.endMonth}
+                    min={monthRange.startMonth || undefined}
+                    onChange={(e) => setMonthRange(prev => ({ ...prev, endMonth: e.target.value }))}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                      border: '1px solid #ddd',
+                      fontSize: '14px',
+                    }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleMonthCollect}
+                  disabled={!monthRange.startMonth || !monthRange.endMonth || loading}
+                  style={{
+                    padding: '14px 24px',
+                    backgroundColor: '#ff6f00',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: (!monthRange.startMonth || !monthRange.endMonth || loading) ? 'not-allowed' : 'pointer',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    opacity: (!monthRange.startMonth || !monthRange.endMonth || loading) ? 0.5 : 1,
+                  }}
+                >
+                  {loading ? '처리 중...' : '📅 월별 자료 수집 및 전표 다운로드'}
+                </button>
+              </div>
+              {monthRange.startMonth && monthRange.endMonth && (
+                <div style={{ marginTop: '8px', fontSize: '13px', color: '#1976d2' }}>
+                  ✓ {monthRange.startMonth} ~ {monthRange.endMonth} 
+                  {' '}({calculateMonthRange(monthRange.startMonth, monthRange.endMonth)})
+                </div>
+              )}
+              {(!monthRange.startMonth || !monthRange.endMonth) && (
+                <div style={{ marginTop: '8px', fontSize: '13px', color: '#d32f2f' }}>
+                  ※ 수집할 시작월과 종료월을 선택해주세요 (예: 2024-01 ~ 2024-03)
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#e3f2fd', borderRadius: '4px', fontSize: '12px', color: '#1565c0' }}>
+            💡 월별 수집 시: 1월~3월처럼 연속된 여러 달을 한번에 수집 가능
           </div>
         </div>
       </S.ManagementSection>
+
     </>
   );
 };
