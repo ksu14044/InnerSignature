@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';
 import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck, FaEdit, FaFileUpload, FaFile } from 'react-icons/fa';
@@ -12,9 +12,11 @@ import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole, filterCategoriesByRole } from '../../constants/categories';
 import { DEFAULT_VALUES } from '../../constants/defaults';
 import { getMergedCategories } from '../../api/expenseCategoryApi';
-import ApproverSelectionModal from '../../components/ApproverSelectionModal/ApproverSelectionModal';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import ExpenseDetailModal from '../../components/ExpenseDetailModal/ExpenseDetailModal';
+
+// Lazy load 모달 컴포넌트
+const ApproverSelectionModal = lazy(() => import('../../components/ApproverSelectionModal/ApproverSelectionModal'));
+const ExpenseDetailModal = lazy(() => import('../../components/ExpenseDetailModal/ExpenseDetailModal'));
 
 const ExpenseCreatePage = () => {
   const navigate = useNavigate();
@@ -1045,30 +1047,36 @@ const ExpenseCreatePage = () => {
       </S.ButtonGroup>
 
       {/* 결재자 선택 모달 */}
-      {!isSecretOrSalary && (
-        <ApproverSelectionModal
-          isOpen={isApproverModalOpen}
-          onClose={() => setIsApproverModalOpen(false)}
-          adminUsers={adminUsers}
-          selectedApprovers={selectedApprovers}
-          onToggleApprover={handleApproverToggle}
-          loadingApprovers={loadingApprovers}
-        />
+      {!isSecretOrSalary && isApproverModalOpen && (
+        <Suspense fallback={<div>로딩 중...</div>}>
+          <ApproverSelectionModal
+            isOpen={isApproverModalOpen}
+            onClose={() => setIsApproverModalOpen(false)}
+            adminUsers={adminUsers}
+            selectedApprovers={selectedApprovers}
+            onToggleApprover={handleApproverToggle}
+            loadingApprovers={loadingApprovers}
+          />
+        </Suspense>
       )}
 
       {/* 상세 내역 입력/수정 모달 */}
-      <ExpenseDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => {
-          setIsDetailModalOpen(false);
-          setEditingDetailIndex(null);
-        }}
-        detail={editingDetailIndex !== null ? details[editingDetailIndex] : null}
-        onSave={handleDetailSave}
-        availableCategories={availableCategories}
-        descriptionInputRef={descriptionInputRefs.current[editingDetailIndex || 0]}
-        amountInputRef={amountInputRefs.current[editingDetailIndex || 0]}
-      />
+      {isDetailModalOpen && (
+        <Suspense fallback={<div>로딩 중...</div>}>
+          <ExpenseDetailModal
+            isOpen={isDetailModalOpen}
+            onClose={() => {
+              setIsDetailModalOpen(false);
+              setEditingDetailIndex(null);
+            }}
+            detail={editingDetailIndex !== null ? details[editingDetailIndex] : null}
+            onSave={handleDetailSave}
+            availableCategories={availableCategories}
+            descriptionInputRef={descriptionInputRefs.current[editingDetailIndex || 0]}
+            amountInputRef={amountInputRefs.current[editingDetailIndex || 0]}
+          />
+        </Suspense>
+      )}
 
       {/* 토스트 메시지 */}
       {toastMessage && (

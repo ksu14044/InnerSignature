@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -80,9 +80,10 @@ const AdminDashboardSection = ({ filters }) => {
       clearTimeout(debounceTimer.current);
     }
     
+    // 디바운스 딜레이 300ms로 단축
     debounceTimer.current = setTimeout(() => {
       loadDashboardData();
-    }, 500);
+    }, 300);
     
     return () => {
       if (debounceTimer.current) {
@@ -91,17 +92,24 @@ const AdminDashboardSection = ({ filters }) => {
     };
   }, [loadDashboardData]);
 
-  const statusChartData = statusStats.map(item => ({
-    name: STATUS_KOREAN[item.status] || item.status,
-    건수: item.count,
-    금액: item.totalAmount
-  }));
+  // useMemo로 차트 데이터 메모이제이션
+  const statusChartData = useMemo(() => 
+    statusStats.map(item => ({
+      name: STATUS_KOREAN[item.status] || item.status,
+      건수: item.count,
+      금액: item.totalAmount
+    })),
+    [statusStats]
+  );
 
-  const categoryChartData = categoryRatio.map(item => ({
-    name: item.category,
-    value: item.amount,
-    ratio: (item.ratio * 100).toFixed(1)
-  }));
+  const categoryChartData = useMemo(() => 
+    categoryRatio.map(item => ({
+      name: item.category,
+      value: item.amount,
+      ratio: (item.ratio * 100).toFixed(1)
+    })),
+    [categoryRatio]
+  );
 
   if (loading) {
     return <S.LoadingMessage>로딩 중...</S.LoadingMessage>;

@@ -1,13 +1,15 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, requestTaxRevision } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
 import { getMySignatures } from '../../api/signatureApi';
 import * as S from './style'; // 스타일 가져오기
-import SignatureModal from '../../components/SignatureModal/SignatureModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { STATUS_KOREAN } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+
+// Lazy load 모달 컴포넌트
+const SignatureModal = lazy(() => import('../../components/SignatureModal/SignatureModal'));
 
 
 const ExpenseDetailPage = () => {
@@ -1188,13 +1190,17 @@ const ExpenseDetailPage = () => {
          </S.ReceiptSection>
        )}
 
-       <SignatureModal
-         isOpen={isModalOpen}
-         onClose={() => setIsModalOpen(false)}
-         onSave={handleSaveSignature}
-         isSaving={isApproving}
-         savedSignatures={savedSignatures}
-       />
+       {isModalOpen && (
+         <Suspense fallback={<div>로딩 중...</div>}>
+           <SignatureModal
+             isOpen={isModalOpen}
+             onClose={() => setIsModalOpen(false)}
+             onSave={handleSaveSignature}
+             isSaving={isApproving}
+             savedSignatures={savedSignatures}
+           />
+         </Suspense>
+       )}
 
        {/* 반려 모달 */}
        {isRejectModalOpen && (

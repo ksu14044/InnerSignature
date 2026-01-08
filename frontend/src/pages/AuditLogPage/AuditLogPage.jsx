@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAuditLogList, resolveAuditLog } from '../../api/auditApi';
@@ -31,7 +31,8 @@ const AuditLogPage = () => {
     loadLogList();
   }, [user, navigate, currentPage, filters]);
 
-  const loadLogList = async () => {
+  // useCallback으로 최적화
+  const loadLogList = useCallback(async () => {
     try {
       setLoading(true);
       const filterParams = {};
@@ -53,9 +54,9 @@ const AuditLogPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, currentPage, pageSize]);
 
-  const handleResolve = async (auditLogId) => {
+  const handleResolve = useCallback(async (auditLogId) => {
     if (!window.confirm('이 감사 로그를 해결 처리하시겠습니까?')) {
       return;
     }
@@ -70,7 +71,7 @@ const AuditLogPage = () => {
       console.error('감사 로그 해결 처리 실패:', error);
       alert(error?.response?.data?.message || '감사 로그 해결 처리 중 오류가 발생했습니다.');
     }
-  };
+  }, [loadLogList]);
 
   const getSeverityIcon = (severity) => {
     switch (severity) {

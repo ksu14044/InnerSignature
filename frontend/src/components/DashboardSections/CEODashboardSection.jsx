@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -25,8 +25,10 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { useIsMobile } from '../../hooks/useMediaQuery';
-import MobileCEODashboard from '../mobile/MobileCEODashboard';
 import * as S from './style';
+
+// Lazy load 모바일 컴포넌트
+const MobileCEODashboard = lazy(() => import('../mobile/MobileCEODashboard'));
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
@@ -83,9 +85,10 @@ const CEODashboardSection = ({ filters }) => {
       clearTimeout(debounceTimer.current);
     }
     
+    // 디바운스 딜레이 300ms로 단축
     debounceTimer.current = setTimeout(() => {
       loadDashboardData();
-    }, 500);
+    }, 300);
     
     return () => {
       if (debounceTimer.current) {
@@ -94,32 +97,41 @@ const CEODashboardSection = ({ filters }) => {
     };
   }, [loadDashboardData]);
 
-  const statusChartData = statusStats.map(item => ({
-    name: STATUS_KOREAN[item.status] || item.status,
-    건수: item.count,
-    금액: item.totalAmount
-  }));
+  // useMemo로 차트 데이터 메모이제이션
+  const statusChartData = useMemo(() => 
+    statusStats.map(item => ({
+      name: STATUS_KOREAN[item.status] || item.status,
+      건수: item.count,
+      금액: item.totalAmount
+    })),
+    [statusStats]
+  );
 
-  const categoryChartData = categoryRatio.map(item => ({
-    name: item.category,
-    value: item.amount,
-    ratio: (item.ratio * 100).toFixed(1)
-  }));
+  const categoryChartData = useMemo(() => 
+    categoryRatio.map(item => ({
+      name: item.category,
+      value: item.amount,
+      ratio: (item.ratio * 100).toFixed(1)
+    })),
+    [categoryRatio]
+  );
 
   if (loading) {
     return <S.LoadingMessage>로딩 중...</S.LoadingMessage>;
   }
 
-  // 모바일 버전 렌더링
+  // 모바일 버전 렌더링 (Suspense로 래핑)
   if (isMobile) {
     return (
-      <MobileCEODashboard
-        dashboardStats={dashboardStats}
-        statusStats={statusStats}
-        categoryRatio={categoryRatio}
-        pendingUsers={pendingUsers}
-        monthlyTrend={monthlyTrend}
-      />
+      <Suspense fallback={<S.LoadingMessage>로딩 중...</S.LoadingMessage>}>
+        <MobileCEODashboard
+          dashboardStats={dashboardStats}
+          statusStats={statusStats}
+          categoryRatio={categoryRatio}
+          pendingUsers={pendingUsers}
+          monthlyTrend={monthlyTrend}
+        />
+      </Suspense>
     );
   }
 

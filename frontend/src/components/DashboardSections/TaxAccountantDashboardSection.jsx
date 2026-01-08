@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -9,8 +9,10 @@ import {
   collectTaxData
 } from '../../api/expenseApi';
 import { useIsMobile } from '../../hooks/useMediaQuery';
-import MobileTaxAccountantDashboard from '../mobile/MobileTaxAccountantDashboard';
 import * as S from './style';
+
+// Lazy load 모바일 컴포넌트
+const MobileTaxAccountantDashboard = lazy(() => import('../mobile/MobileTaxAccountantDashboard'));
 
 const TaxAccountantDashboardSection = ({ filters }) => {
   const { user } = useAuth();
@@ -165,14 +167,16 @@ const TaxAccountantDashboardSection = ({ filters }) => {
     return <S.LoadingMessage>로딩 중...</S.LoadingMessage>;
   }
 
-  // 모바일 버전 렌더링
+  // 모바일 버전 렌더링 (Suspense로 래핑)
   if (isMobile) {
     return (
-      <MobileTaxAccountantDashboard
-        taxStatus={taxStatus}
-        pendingReports={pendingReports}
-        summary={summary}
-      />
+      <Suspense fallback={<S.LoadingMessage>로딩 중...</S.LoadingMessage>}>
+        <MobileTaxAccountantDashboard
+          taxStatus={taxStatus}
+          pendingReports={pendingReports}
+          summary={summary}
+        />
+      </Suspense>
     );
   }
 

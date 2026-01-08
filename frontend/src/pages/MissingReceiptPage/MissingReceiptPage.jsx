@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMissingReceipts, getMissingReceiptsByUser } from '../../api/missingReceiptApi';
@@ -24,7 +24,8 @@ const MissingReceiptPage = () => {
     loadMissingReceipts();
   }, [user, navigate, days, viewMode]);
 
-  const loadMissingReceipts = async () => {
+  // useCallback으로 최적화
+  const loadMissingReceipts = useCallback(async () => {
     try {
       setLoading(true);
       if (viewMode === 'byUser') {
@@ -44,7 +45,7 @@ const MissingReceiptPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [days, viewMode]);
 
   if (!user) {
     return (

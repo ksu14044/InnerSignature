@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchExpenseList } from '../../api/expenseApi';
 import { FaPlus, FaList, FaEye } from 'react-icons/fa';
 import { useIsMobile } from '../../hooks/useMediaQuery';
-import MobileUserDashboard from '../mobile/MobileUserDashboard';
 import * as S from './style';
+
+// Lazy load 모바일 컴포넌트
+const MobileUserDashboard = lazy(() => import('../mobile/MobileUserDashboard'));
 
 const UserDashboardSection = ({ filters }) => {
   const { user } = useAuth();
@@ -74,13 +76,15 @@ const UserDashboardSection = ({ filters }) => {
     return <S.LoadingMessage>로딩 중...</S.LoadingMessage>;
   }
 
-  // 모바일 버전 렌더링
+  // 모바일 버전 렌더링 (Suspense로 래핑)
   if (isMobile) {
     return (
-      <MobileUserDashboard
-        stats={stats}
-        recentExpenses={recentExpenses}
-      />
+      <Suspense fallback={<S.LoadingMessage>로딩 중...</S.LoadingMessage>}>
+        <MobileUserDashboard
+          stats={stats}
+          recentExpenses={recentExpenses}
+        />
+      </Suspense>
     );
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAllUsers, createUser, updateUser, deleteUser, updateUserRole, getCompanyUsers, getCompanyUsersById, getCompanyApplications, approveUserCompany, rejectUserCompany, updateApproverStatus } from '../../api/userApi';
@@ -128,7 +128,8 @@ const UserManagementPage = () => {
     }
   };
 
-  const loadUsers = async (companyId = null) => {
+  // useCallback으로 최적화
+  const loadUsers = useCallback(async (companyId = null) => {
     try {
       setLoading(true);
       let response;
@@ -157,7 +158,7 @@ const UserManagementPage = () => {
       alert(error?.response?.data?.message || '사용자 목록 조회 중 오류가 발생했습니다.');
       setLoading(false);
     }
-  };
+  }, [user]);
 
 
   const handleCreate = () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getClosingList, closeMonth, reopenMonth } from '../../api/monthlyClosingApi';
@@ -25,7 +25,8 @@ const MonthlyClosingPage = () => {
     loadClosingList();
   }, [user, navigate]);
 
-  const loadClosingList = async () => {
+  // useCallback으로 최적화
+  const loadClosingList = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getClosingList();
@@ -38,7 +39,7 @@ const MonthlyClosingPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleCloseMonth = async () => {
     if (isClosing) return;

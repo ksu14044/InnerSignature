@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { fetchExpenseList, deleteExpense, downloadTaxReviewList, fetchTaxRevisionRequestsForDrafter, fetchMyApprovedReports, fetchPendingApprovals } from '../../api/expenseApi';
 import { getUserCompanies, getPendingUsers, approveUser } from '../../api/userApi';
 import * as S from './style';
@@ -7,8 +7,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { FaPlus, FaTrash, FaEye, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaFileExcel, FaChartLine, FaEdit, FaCheck, FaTimesCircle } from 'react-icons/fa';
 import { STATUS_KOREAN, EXPENSE_STATUS } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import AppHeader from '../../components/AppHeader/AppHeader';
+
+// Lazy load 모달 컴포넌트
+const CompanyRegistrationModal = lazy(() => import('../../components/CompanyRegistrationModal/CompanyRegistrationModal'));
 
 const ExpenseListPage = () => {
   const [list, setList] = useState([]);
@@ -71,8 +73,8 @@ const ExpenseListPage = () => {
     return true;
   };
 
-  // 목록 조회 함수
-  const loadExpenseList = async (page = 1, filterParams = filters) => {
+  // 목록 조회 함수 (useCallback으로 최적화)
+  const loadExpenseList = useCallback(async (page = 1, filterParams = filters) => {
     try {
       setLoading(true);
       const response = await fetchExpenseList(page, pageSize, filterParams);
@@ -87,10 +89,10 @@ const ExpenseListPage = () => {
       console.error('목록 조회 실패:', error);
       setLoading(false);
     }
-  };
+  }, [filters]);
 
-  // 내가 결재한 문서 이력 조회 함수
-  const loadMyApprovedReports = async () => {
+  // 내가 결재한 문서 이력 조회 함수 (useCallback으로 최적화)
+  const loadMyApprovedReports = useCallback(async () => {
     try {
       const response = await fetchMyApprovedReports();
       if (response.success && response.data) {
@@ -102,7 +104,7 @@ const ExpenseListPage = () => {
       console.error('내 결재 문서 조회 실패:', error);
       setMyApprovedList([]);
     }
-  };
+  }, []);
 
   // 결제 대기 건 조회 함수 (ACCOUNTANT용)
   const loadPaymentPendingList = async (page = 1) => {
@@ -489,19 +491,24 @@ const ExpenseListPage = () => {
       });
   }, [user?.userId]);
 
+  // useMemo로 displayedList 메모이제이션 (Hook은 조건문 이전에 호출)
+  const displayedList = useMemo(() => {
+    switch (activeTab) {
+      case 'MY_REPORTS':
+        return list;
+      case 'MY_APPROVALS':
+        return pendingApprovals;
+      case 'PAYMENT_PENDING':
+        return paymentPendingList;
+      default:
+        return myApprovedList;
+    }
+  }, [activeTab, list, pendingApprovals, paymentPendingList, myApprovedList]);
 
-  if (loading) return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
-
-  const displayedList =
-    activeTab === 'MY_REPORTS'
-      ? list
-      : activeTab === 'MY_APPROVALS'
-        ? pendingApprovals
-        : activeTab === 'PAYMENT_PENDING'
-          ? paymentPendingList
-          : myApprovedList;
   const isMyReportsTab = activeTab === 'MY_REPORTS';
   const isPaymentPendingTab = activeTab === 'PAYMENT_PENDING';
+
+  if (loading) return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
 
   return (
     <S.Container>
@@ -1202,14 +1209,18 @@ const ExpenseListPage = () => {
       )}
 
       {/* CEO이면서 소속 회사가 없을 때 회사 등록 모달 */}
-      <CompanyRegistrationModal
-        isOpen={isCompanyModalOpen}
-        onClose={() => setIsCompanyModalOpen(false)}
-        onSuccess={() => {
-          // 모달 내부에서 성공 alert를 이미 보여주므로 여기서는 새로고침만 수행
-          window.location.reload(); // 회사 등록 후 회사/권한 정보 갱신
-        }}
-      />
+      {isCompanyModalOpen && (
+        <Suspense fallback={<div>로딩 중...</div>}>
+          <CompanyRegistrationModal
+            isOpen={isCompanyModalOpen}
+            onClose={() => setIsCompanyModalOpen(false)}
+            onSuccess={() => {
+              // 모달 내부에서 성공 alert를 이미 보여주므로 여기서는 새로고침만 수행
+              window.location.reload(); // 회사 등록 후 회사/권한 정보 갱신
+            }}
+          />
+        </Suspense>
+      )}
     </S.Container>
   );
 };
