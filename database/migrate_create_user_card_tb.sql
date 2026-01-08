@@ -19,3 +19,4 @@ CREATE TABLE IF NOT EXISTS `user_card_tb` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='개인 카드 정보 테이블';
 
 
+

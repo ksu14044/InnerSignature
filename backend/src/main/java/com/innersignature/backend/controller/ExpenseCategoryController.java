@@ -40,7 +40,7 @@ public class ExpenseCategoryController {
     
     @Operation(summary = "회사별 항목 목록 조회", description = "회사별 항목 목록을 조회합니다.")
     @GetMapping("/company")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CEO', 'ACCOUNTANT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CEO', 'ACCOUNTANT', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<List<ExpenseCategoryDto>>> getCompanyCategories() {
         try {
             Long companyId = SecurityUtil.getCurrentCompanyId();
@@ -55,7 +55,7 @@ public class ExpenseCategoryController {
     
     @Operation(summary = "병합된 항목 목록 조회", description = "전역 기본값 + 회사별 오버라이드 병합 항목 목록을 조회합니다.")
     @GetMapping("/merged")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CEO', 'ACCOUNTANT')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CEO', 'ACCOUNTANT', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<List<ExpenseCategoryDto>>> getMergedCategories() {
         try {
             Long companyId = SecurityUtil.getCurrentCompanyId();
@@ -68,9 +68,9 @@ public class ExpenseCategoryController {
         }
     }
     
-    @Operation(summary = "항목 생성", description = "새로운 항목을 생성합니다. (SUPERADMIN: 전역, ACCOUNTANT/ADMIN/CEO: 회사별)")
+    @Operation(summary = "항목 생성", description = "새로운 항목을 생성합니다. (SUPERADMIN: 전역, ACCOUNTANT/ADMIN/CEO/TAX_ACCOUNTANT: 회사별)")
     @PostMapping("/create")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<ExpenseCategoryDto>> createCategory(
             @RequestBody ExpenseCategoryDto category) {
         try {
@@ -86,7 +86,7 @@ public class ExpenseCategoryController {
     
     @Operation(summary = "항목 수정", description = "기존 항목을 수정합니다.")
     @PutMapping("/{categoryId}")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<ExpenseCategoryDto>> updateCategory(
             @PathVariable Long categoryId,
             @RequestBody ExpenseCategoryDto category) {
@@ -104,7 +104,7 @@ public class ExpenseCategoryController {
     
     @Operation(summary = "항목 삭제", description = "항목을 삭제(비활성화)합니다.")
     @DeleteMapping("/{categoryId}")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long categoryId) {
         try {
             expenseCategoryService.deleteCategory(categoryId);
@@ -119,7 +119,7 @@ public class ExpenseCategoryController {
     
     @Operation(summary = "항목 순서 변경", description = "항목의 표시 순서를 변경합니다.")
     @PutMapping("/{categoryId}/order")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<Void>> updateDisplayOrder(
             @PathVariable Long categoryId,
             @RequestParam Integer displayOrder) {
@@ -136,7 +136,7 @@ public class ExpenseCategoryController {
     
     @Operation(summary = "항목 순서 일괄 변경", description = "드래그 앤 드롭으로 항목 순서를 일괄 변경합니다.")
     @PutMapping("/reorder")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT', 'TAX_ACCOUNTANT')")
     public ResponseEntity<ApiResponse<Void>> reorderCategories(
             @RequestBody List<Long> categoryIds) {
         try {

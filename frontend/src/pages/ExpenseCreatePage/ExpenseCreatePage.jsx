@@ -9,8 +9,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts } from '../../api/expenseApi';
 import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
-import { getCategoriesByRole } from '../../constants/categories';
+import { getCategoriesByRole, filterCategoriesByRole } from '../../constants/categories';
 import { DEFAULT_VALUES } from '../../constants/defaults';
+import { getMergedCategories } from '../../api/expenseCategoryApi';
 import ApproverSelectionModal from '../../components/ApproverSelectionModal/ApproverSelectionModal';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import ExpenseDetailModal from '../../components/ExpenseDetailModal/ExpenseDetailModal';
@@ -90,10 +91,41 @@ const ExpenseCreatePage = () => {
   // 비밀글이거나 급여인 경우 결재 불필요
   const isSecretOrSalary = report.isSecret || hasSalaryCategory;
 
-  // 사용자 역할에 따른 카테고리 목록
+  // 카테고리 목록 상태 (API에서 동적으로 불러옴)
+  const [categoryList, setCategoryList] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  // API에서 카테고리 목록 불러오기
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await getMergedCategories();
+        if (response.success && response.data) {
+          const filtered = filterCategoriesByRole(response.data, user?.role);
+          setCategoryList(filtered);
+        } else {
+          // API 실패 시 폴백 카테고리 사용
+          setCategoryList(getCategoriesByRole(user?.role));
+        }
+      } catch (error) {
+        console.error('카테고리 목록 불러오기 실패:', error);
+        // API 실패 시 폴백 카테고리 사용
+        setCategoryList(getCategoriesByRole(user?.role));
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    if (user) {
+      loadCategories();
+    }
+  }, [user]);
+
+  // 사용자 역할에 따른 카테고리 목록 (API에서 불러온 데이터 사용)
   const availableCategories = useMemo(() => {
-    return getCategoriesByRole(user?.role);
-  }, [user?.role]);
+    return categoryList.length > 0 ? categoryList : getCategoriesByRole(user?.role);
+  }, [categoryList, user?.role]);
 
   // 담당 결재자 목록 불러오기
   useEffect(() => {

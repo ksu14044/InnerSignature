@@ -24,7 +24,12 @@
         FROM expense_category_tb ec
         LEFT JOIN user_tb u ON ec.created_by = u.user_id
         WHERE ec.category_id = #{categoryId}
-          AND (ec.company_id = #{companyId} OR ec.company_id IS NULL)
+          AND (
+            <choose>
+              <when test="companyId != null">ec.company_id = #{companyId} OR ec.company_id IS NULL</when>
+              <otherwise>ec.company_id IS NULL</otherwise>
+            </choose>
+          )
     </select>
 
     <select id="findGlobalCategories" resultMap="ExpenseCategoryResultMap">
@@ -80,7 +85,12 @@
         SELECT COUNT(*) > 0
         FROM expense_category_tb
         WHERE category_name = #{categoryName}
-          AND company_id = #{companyId}
+          AND (
+            <choose>
+              <when test="companyId != null">company_id = #{companyId}</when>
+              <otherwise>company_id IS NULL</otherwise>
+            </choose>
+          )
     </select>
 
     <insert id="insert" parameterType="com.innersignature.backend.dto.ExpenseCategoryDto" 
@@ -103,27 +113,45 @@
             is_active = #{isActive},
             updated_at = NOW()
         WHERE category_id = #{categoryId}
-          AND (company_id = #{companyId} OR company_id IS NULL)
+          AND (
+            <choose>
+              <when test="companyId != null">company_id = #{companyId}</when>
+              <otherwise>company_id IS NULL</otherwise>
+            </choose>
+          )
     </update>
 
     <delete id="delete">
         UPDATE expense_category_tb
         SET is_active = 0, updated_at = NOW()
         WHERE category_id = #{categoryId}
-          AND (company_id = #{companyId} OR company_id IS NULL)
+          AND (
+            <choose>
+              <when test="companyId != null">company_id = #{companyId}</when>
+              <otherwise>company_id IS NULL</otherwise>
+            </choose>
+          )
     </delete>
 
     <update id="updateDisplayOrder">
         UPDATE expense_category_tb
         SET display_order = #{displayOrder}, updated_at = NOW()
         WHERE category_id = #{categoryId}
-          AND (company_id = #{companyId} OR company_id IS NULL)
+          AND (
+            <choose>
+              <when test="companyId != null">company_id = #{companyId}</when>
+              <otherwise>company_id IS NULL</otherwise>
+            </choose>
+          )
     </update>
 
     <select id="getMaxDisplayOrder" resultType="java.lang.Integer">
         SELECT COALESCE(MAX(display_order), 0)
         FROM expense_category_tb
-        WHERE company_id = #{companyId}
+        WHERE 
+            <choose>
+              <when test="companyId != null">company_id = #{companyId}</when>
+              <otherwise>company_id IS NULL</otherwise>
+            </choose>
     </select>
 </mapper>
-

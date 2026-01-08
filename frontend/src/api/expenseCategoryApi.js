@@ -1,6 +1,7 @@
 import axiosInstance from '../utils/axiosInstance';
+import { API_CONFIG } from '../config/api';
 
-const BASE_URL = '/api/expense-categories';
+const BASE_URL = `${API_CONFIG.BASE_URL}/expense-categories`;
 
 /**
  * 전역 항목 목록 조회 (SUPERADMIN)

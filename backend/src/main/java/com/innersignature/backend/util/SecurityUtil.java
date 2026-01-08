@@ -79,5 +79,31 @@ public class SecurityUtil {
         
         return null;
     }
+    
+    /**
+     * 현재 인증된 사용자의 Role을 반환합니다.
+     * JWT 필터에서 설정한 Authentication의 authorities에서 role을 추출합니다.
+     * 
+     * @return 현재 인증된 사용자의 Role (예: SUPERADMIN, CEO, ADMIN, ACCOUNTANT, USER 등)
+     */
+    public static String getCurrentRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        
+        // authorities에서 role 추출 (ROLE_ 접두사 제거)
+        return authentication.getAuthorities().stream()
+                .findFirst()
+                .map(authority -> {
+                    String role = authority.getAuthority();
+                    if (role.startsWith("ROLE_")) {
+                        return role.substring(5);
+                    }
+                    return role;
+                })
+                .orElse(null);
+    }
 }
 

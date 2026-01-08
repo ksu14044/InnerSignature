@@ -13,7 +13,8 @@ import {
   downloadExpensesExcelForSuperAdmin
 } from '../../api/superAdminApi';
 import { updateUser, deleteUser } from '../../api/userApi';
-import { FaSignOutAlt, FaUsers, FaBuilding, FaCreditCard, FaChartLine, FaFileInvoice, FaFileExcel, FaEdit, FaChartBar } from 'react-icons/fa';
+import { FaSignOutAlt, FaUsers, FaBuilding, FaCreditCard, FaChartLine, FaFileInvoice, FaFileExcel, FaEdit, FaChartBar, FaTags } from 'react-icons/fa';
+import ExpenseCategoryPage from '../ExpenseCategoryPage/ExpenseCategoryPage';
 import { STATUS_KOREAN } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import { 
@@ -446,6 +447,9 @@ const SuperAdminDashboardPage = () => {
         <S.Tab active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')}>
           <FaChartLine /> 대시보드
         </S.Tab>
+        <S.Tab active={activeTab === 'categories'} onClick={() => setActiveTab('categories')}>
+          <FaTags /> 카테고리
+        </S.Tab>
         <S.Tab active={activeTab === 'users'} onClick={() => setActiveTab('users')}>
           <FaUsers /> 사용자 ({users.length})
         </S.Tab>
@@ -465,6 +469,12 @@ const SuperAdminDashboardPage = () => {
           <FaChartBar /> 리포트
         </S.Tab>
       </S.TabContainer>
+
+      {activeTab === 'categories' && (
+        <div style={{ marginTop: '20px' }}>
+          <ExpenseCategoryPage hideHeader={true} />
+        </div>
+      )}
 
       {activeTab === 'dashboard' && summary && (
         <S.DashboardGrid>

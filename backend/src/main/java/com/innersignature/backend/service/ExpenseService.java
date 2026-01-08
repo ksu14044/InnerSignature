@@ -46,7 +46,18 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.util.IOUtils;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFDrawing;
+import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
+import java.io.FileInputStream;
+import java.io.ByteArrayOutputStream;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.rendering.ImageType;
 
 @Service // 스프링이 "이건 비즈니스 로직 담당이야"라고 인식
 @RequiredArgsConstructor // final이 붙은 변수의 생성자를 자동으로 만들어줌 (의존성 주입)
@@ -1844,9 +1855,23 @@ public class ExpenseService {
                     .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
         }
         
+        // 영수증 데이터 조회
+        Map<Long, List<ReceiptDto>> receiptsMap = new HashMap<>();
+        if (!expenseReportIds.isEmpty()) {
+            for (Long reportId : expenseReportIds) {
+                List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseReportId(reportId, companyId);
+                if (receipts != null && !receipts.isEmpty()) {
+                    receiptsMap.put(reportId, receipts);
+                }
+            }
+        }
+        
         // 엑셀 파일 생성
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("지출내역");
+        
+        // 이미지 삽입을 위한 Drawing 객체 생성
+        XSSFDrawing drawing = (XSSFDrawing) sheet.createDrawingPatriarch();
         
         // 헤더 스타일
         CellStyle headerStyle = workbook.createCellStyle();
@@ -1870,7 +1895,7 @@ public class ExpenseService {
         
         // 헤더 행 생성
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"문서번호", "작성일", "제목", "작성자", "상태", "총액", "항목", "적요", "금액", "비고"};
+        String[] headers = {"문서번호", "작성일", "제목", "작성자", "상태", "총액", "항목", "적요", "금액", "비고", "영수증"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -1879,27 +1904,57 @@ public class ExpenseService {
         
         // 데이터 행 생성
         int rowNum = 1;
+        String projectRoot = System.getProperty("user.dir");
+        int receiptCol = 10; // 영수증 컬럼 인덱스
+        
         for (ExpenseReportDto report : expenseReports) {
             List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
+            List<ReceiptDto> receipts = receiptsMap.get(report.getExpenseReportId());
             
             if (details.isEmpty()) {
                 // 상세 내역이 없는 경우
-                Row row = sheet.createRow(rowNum++);
+                Row row = sheet.createRow(rowNum);
                 createDataRow(row, report, null, 0, dataStyle);
+                // 영수증 셀 추가
+                Cell receiptCell = row.createCell(receiptCol);
+                receiptCell.setCellValue("");
+                receiptCell.setCellStyle(dataStyle);
+                
+                // 영수증 이미지 삽입
+                if (receipts != null && !receipts.isEmpty()) {
+                    insertReceiptImage(sheet, drawing, workbook, row, receiptCol, receipts.get(0), projectRoot);
+                }
+                rowNum++;
             } else {
                 // 상세 내역이 있는 경우
                 for (int i = 0; i < details.size(); i++) {
-                    Row row = sheet.createRow(rowNum++);
+                    Row row = sheet.createRow(rowNum);
                     createDataRow(row, report, details.get(i), i, dataStyle);
+                    // 영수증 셀 추가
+                    Cell receiptCell = row.createCell(receiptCol);
+                    receiptCell.setCellValue("");
+                    receiptCell.setCellStyle(dataStyle);
+                    
+                    // 첫 번째 항목에만 영수증 이미지 삽입
+                    if (i == 0 && receipts != null && !receipts.isEmpty()) {
+                        insertReceiptImage(sheet, drawing, workbook, row, receiptCol, receipts.get(0), projectRoot);
+                    }
+                    rowNum++;
                 }
             }
         }
         
         // 열 너비 자동 조정
         for (int i = 0; i < headers.length; i++) {
-            sheet.autoSizeColumn(i);
-            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            if (i == receiptCol) {
+                // 영수증 컬럼은 더 넓게 설정 (픽셀 단위)
+                sheet.setColumnWidth(i, 6000); // 약 60픽셀
+            } else {
+                sheet.autoSizeColumn(i);
+                sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            }
         }
+        
         
         // 임시 파일로 저장
         File tempFile = File.createTempFile("expense_export_", ".xlsx");
@@ -2244,6 +2299,127 @@ public class ExpenseService {
     }
 
     /**
+     * 영수증 이미지를 Excel에 삽입
+     * @param sheet Excel 시트
+     * @param drawing Drawing 객체
+     * @param workbook Workbook 객체
+     * @param row 이미지를 삽입할 행
+     * @param col 이미지를 삽입할 컬럼 인덱스
+     * @param receipt 영수증 DTO
+     * @param projectRoot 프로젝트 루트 경로
+     */
+    private void insertReceiptImage(Sheet sheet, XSSFDrawing drawing, Workbook workbook, Row row, int col, ReceiptDto receipt, String projectRoot) {
+        try {
+            // 파일 경로 구성
+            String filePath = receipt.getFilePath();
+            File imageFile = new File(projectRoot + File.separator + filePath);
+            
+            if (!imageFile.exists() || !imageFile.isFile()) {
+                logger.warn("영수증 파일을 찾을 수 없습니다: {}", imageFile.getAbsolutePath());
+                return;
+            }
+            
+            // 파일 확장자 확인
+            String fileName = imageFile.getName().toLowerCase();
+            byte[] imageBytes;
+            int pictureType;
+            
+            if (fileName.endsWith(".pdf")) {
+                // PDF를 이미지로 변환
+                try {
+                    imageBytes = convertPdfToImage(imageFile);
+                    if (imageBytes == null || imageBytes.length == 0) {
+                        logger.warn("PDF를 이미지로 변환할 수 없습니다: {}", fileName);
+                        return;
+                    }
+                    pictureType = Workbook.PICTURE_TYPE_PNG; // PDF 변환 결과는 PNG로 저장
+                    logger.debug("PDF를 이미지로 변환 완료: {} ({} bytes)", fileName, imageBytes.length);
+                } catch (Exception e) {
+                    logger.error("PDF를 이미지로 변환 중 오류 발생: {}", fileName, e);
+                    return;
+                }
+            } else if (fileName.endsWith(".png")) {
+                pictureType = Workbook.PICTURE_TYPE_PNG;
+                try (FileInputStream fis = new FileInputStream(imageFile)) {
+                    imageBytes = IOUtils.toByteArray(fis);
+                }
+            } else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+                pictureType = Workbook.PICTURE_TYPE_JPEG;
+                try (FileInputStream fis = new FileInputStream(imageFile)) {
+                    imageBytes = IOUtils.toByteArray(fis);
+                }
+            } else if (fileName.endsWith(".gif")) {
+                // GIF는 Excel에서 직접 지원하지 않으므로 JPEG로 처리 시도
+                pictureType = Workbook.PICTURE_TYPE_JPEG;
+                try (FileInputStream fis = new FileInputStream(imageFile)) {
+                    imageBytes = IOUtils.toByteArray(fis);
+                }
+            } else {
+                logger.debug("지원하지 않는 이미지 형식입니다: {}", fileName);
+                return;
+            }
+            
+            // 이미지 크기 확인 (너무 큰 이미지는 Excel 파일 크기가 커질 수 있음)
+            // 최대 크기 제한: 2MB
+            if (imageBytes.length > 2 * 1024 * 1024) {
+                logger.warn("영수증 이미지가 너무 큽니다 ({} bytes). Excel에 삽입하지 않습니다.", imageBytes.length);
+                return;
+            }
+            
+            // Workbook에 이미지 추가
+            int pictureIdx = workbook.addPicture(imageBytes, pictureType);
+            
+            // 이미지 위치 설정 (클라이언트 앵커)
+            XSSFClientAnchor anchor = new XSSFClientAnchor();
+            anchor.setCol1(col);
+            anchor.setRow1(row.getRowNum());
+            anchor.setCol2(col + 1);
+            anchor.setRow2(row.getRowNum() + 1);
+            
+            // 이미지 삽입
+            drawing.createPicture(anchor, pictureIdx);
+            
+            // 행 높이 조정 (픽셀 단위로 변환, 120포인트 = 약 160픽셀)
+            row.setHeightInPoints(120);
+            
+            logger.debug("영수증 이미지 삽입 완료: {} (행: {})", imageFile.getName(), row.getRowNum());
+        } catch (Exception e) {
+            logger.error("영수증 이미지 삽입 중 오류 발생: {}", receipt.getFilePath(), e);
+            // 이미지 삽입 실패 시에도 Excel 생성은 계속 진행
+        }
+    }
+
+    /**
+     * PDF 파일의 첫 페이지를 이미지로 변환
+     * @param pdfFile PDF 파일
+     * @return 변환된 이미지 바이트 배열 (PNG 형식)
+     * @throws IOException 파일 읽기 또는 변환 실패 시
+     */
+    private byte[] convertPdfToImage(File pdfFile) throws IOException {
+        try (PDDocument document = Loader.loadPDF(pdfFile)) {
+            if (document.getNumberOfPages() == 0) {
+                logger.warn("PDF 파일에 페이지가 없습니다: {}", pdfFile.getName());
+                return null;
+            }
+            
+            // PDF 렌더러 생성
+            PDFRenderer pdfRenderer = new PDFRenderer(document);
+            
+            // 첫 번째 페이지를 이미지로 렌더링 (DPI: 150 - 적절한 해상도)
+            BufferedImage image = pdfRenderer.renderImageWithDPI(0, 150, ImageType.RGB);
+            
+            // BufferedImage를 PNG 바이트 배열로 변환
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                ImageIO.write(image, "PNG", baos);
+                return baos.toByteArray();
+            }
+        } catch (Exception e) {
+            logger.error("PDF를 이미지로 변환하는 중 오류 발생: {}", pdfFile.getName(), e);
+            throw new IOException("PDF를 이미지로 변환할 수 없습니다: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * 전표 생성 및 분개 (회계 전표 형식)
      * APPROVED 상태: 차변(비용) / 대변(미지급금)
      * PAID 상태: 차변(미지급금) / 대변(현금)
@@ -2310,9 +2486,23 @@ public class ExpenseService {
                     .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
         }
         
+        // 영수증 데이터 조회
+        Map<Long, List<ReceiptDto>> receiptsMap = new HashMap<>();
+        if (!expenseReportIds.isEmpty()) {
+            for (Long reportId : expenseReportIds) {
+                List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseReportId(reportId, companyId);
+                if (receipts != null && !receipts.isEmpty()) {
+                    receiptsMap.put(reportId, receipts);
+                }
+            }
+        }
+        
         // 엑셀 파일 생성
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("전표");
+        
+        // 이미지 삽입을 위한 Drawing 객체 생성
+        XSSFDrawing drawing = (XSSFDrawing) sheet.createDrawingPatriarch();
         
         // 헤더 스타일
         CellStyle headerStyle = workbook.createCellStyle();
@@ -2343,7 +2533,7 @@ public class ExpenseService {
         
         // 헤더 행 생성
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"전표일자", "적요", "차변계정과목", "차변금액", "대변계정과목", "대변금액", "문서번호", "비고"};
+        String[] headers = {"전표일자", "적요", "차변계정과목", "차변금액", "대변계정과목", "대변금액", "문서번호", "비고", "영수증"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -2352,8 +2542,14 @@ public class ExpenseService {
         
         // 데이터 행 생성
         int rowNum = 1;
+        String projectRoot = System.getProperty("user.dir");
+        int receiptCol = 8; // 영수증 컬럼 인덱스
+        Map<Long, Integer> firstRowNumMap = new HashMap<>(); // 각 문서별 첫 번째 분개 행 번호
+        
         for (ExpenseReportDto report : expenseReports) {
             List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
+            List<ReceiptDto> receipts = receiptsMap.get(report.getExpenseReportId());
+            int firstRowForReport = rowNum; // 이 문서의 첫 번째 분개 행 번호 저장
             
             if ("PAID".equals(report.getStatus())) {
                 // PAID 상태인 경우 분개 처리:
@@ -2367,10 +2563,22 @@ public class ExpenseService {
                 if (details.isEmpty()) {
                     Row row = sheet.createRow(rowNum++);
                     createJournalEntryRowForApproved(row, report, null, dataStyle, numberStyle);
+                    // 영수증 셀 추가
+                    Cell receiptCell = row.createCell(receiptCol);
+                    receiptCell.setCellValue("");
+                    receiptCell.setCellStyle(dataStyle);
                 } else {
-                    for (ExpenseDetailDto detail : details) {
+                    for (int i = 0; i < details.size(); i++) {
                         Row row = sheet.createRow(rowNum++);
-                        createJournalEntryRowForApproved(row, report, detail, dataStyle, numberStyle);
+                        createJournalEntryRowForApproved(row, report, details.get(i), dataStyle, numberStyle);
+                        // 영수증 셀 추가
+                        Cell receiptCell = row.createCell(receiptCol);
+                        receiptCell.setCellValue("");
+                        receiptCell.setCellStyle(dataStyle);
+                        // 첫 번째 항목에만 영수증 이미지 삽입
+                        if (i == 0 && receipts != null && !receipts.isEmpty()) {
+                            insertReceiptImage(sheet, drawing, workbook, row, receiptCol, receipts.get(0), projectRoot);
+                        }
                     }
                 }
                 
@@ -2378,10 +2586,23 @@ public class ExpenseService {
                 if (details.isEmpty()) {
                     Row row = sheet.createRow(rowNum++);
                     createJournalEntryRowForPaid(row, report, null, dataStyle, numberStyle);
+                    // 영수증 셀 추가
+                    Cell receiptCell = row.createCell(receiptCol);
+                    receiptCell.setCellValue("");
+                    receiptCell.setCellStyle(dataStyle);
+                    // 첫 번째 분개 행이 아니고 영수증이 아직 삽입되지 않았으면 이미지 삽입
+                    if (firstRowForReport != rowNum - 1 && receipts != null && !receipts.isEmpty() && !firstRowNumMap.containsKey(report.getExpenseReportId())) {
+                        insertReceiptImage(sheet, drawing, workbook, row, receiptCol, receipts.get(0), projectRoot);
+                        firstRowNumMap.put(report.getExpenseReportId(), rowNum - 1);
+                    }
                 } else {
                     for (ExpenseDetailDto detail : details) {
                         Row row = sheet.createRow(rowNum++);
                         createJournalEntryRowForPaid(row, report, detail, dataStyle, numberStyle);
+                        // 영수증 셀 추가
+                        Cell receiptCell = row.createCell(receiptCol);
+                        receiptCell.setCellValue("");
+                        receiptCell.setCellStyle(dataStyle);
                     }
                 }
                 
@@ -2397,10 +2618,18 @@ public class ExpenseService {
                         // 상세 항목이 없으므로 기본 계정과목 사용
                         Row row = sheet.createRow(rowNum++);
                         createJournalEntryRowForRemainingBalance(row, report, difference, "기타비용", dataStyle, numberStyle);
+                        // 영수증 셀 추가
+                        Cell receiptCell = row.createCell(receiptCol);
+                        receiptCell.setCellValue("");
+                        receiptCell.setCellStyle(dataStyle);
                     } else if (difference < 0) {
                         // 실제 지급 금액이 결재 금액보다 큰 경우: 추가 비용
                         Row row = sheet.createRow(rowNum++);
                         createJournalEntryRowForAdditionalExpense(row, report, null, Math.abs(difference), "기타비용", dataStyle, numberStyle);
+                        // 영수증 셀 추가
+                        Cell receiptCell = row.createCell(receiptCol);
+                        receiptCell.setCellValue("");
+                        receiptCell.setCellStyle(dataStyle);
                     }
                 } else {
                     // 상세 항목별로 차액 계산 및 처리
@@ -2433,12 +2662,20 @@ public class ExpenseService {
                     for (Map.Entry<String, Long> entry : additionalExpenseByAccount.entrySet()) {
                         Row row = sheet.createRow(rowNum++);
                         createJournalEntryRowForAdditionalExpense(row, report, null, entry.getValue(), entry.getKey(), dataStyle, numberStyle);
+                        // 영수증 셀 추가
+                        Cell receiptCell = row.createCell(receiptCol);
+                        receiptCell.setCellValue("");
+                        receiptCell.setCellStyle(dataStyle);
                     }
                     
                     // 잔액 정리 분개 생성 (계정과목별로 - 비용 차감 처리)
                     for (Map.Entry<String, Long> entry : remainingBalanceByAccount.entrySet()) {
                         Row row = sheet.createRow(rowNum++);
                         createJournalEntryRowForRemainingBalance(row, report, entry.getValue(), entry.getKey(), dataStyle, numberStyle);
+                        // 영수증 셀 추가
+                        Cell receiptCell = row.createCell(receiptCol);
+                        receiptCell.setCellValue("");
+                        receiptCell.setCellStyle(dataStyle);
                     }
                 }
             } else if ("APPROVED".equals(report.getStatus())) {
@@ -2446,19 +2683,42 @@ public class ExpenseService {
                 if (details.isEmpty()) {
                     Row row = sheet.createRow(rowNum++);
                     createJournalEntryRowForApproved(row, report, null, dataStyle, numberStyle);
+                    // 영수증 셀 추가
+                    Cell receiptCell = row.createCell(receiptCol);
+                    receiptCell.setCellValue("");
+                    receiptCell.setCellStyle(dataStyle);
+                    // 영수증 이미지 삽입
+                    if (receipts != null && !receipts.isEmpty()) {
+                        insertReceiptImage(sheet, drawing, workbook, row, receiptCol, receipts.get(0), projectRoot);
+                    }
                 } else {
-                    for (ExpenseDetailDto detail : details) {
+                    for (int i = 0; i < details.size(); i++) {
                         Row row = sheet.createRow(rowNum++);
-                        createJournalEntryRowForApproved(row, report, detail, dataStyle, numberStyle);
+                        createJournalEntryRowForApproved(row, report, details.get(i), dataStyle, numberStyle);
+                        // 영수증 셀 추가
+                        Cell receiptCell = row.createCell(receiptCol);
+                        receiptCell.setCellValue("");
+                        receiptCell.setCellStyle(dataStyle);
+                        // 첫 번째 항목에만 영수증 이미지 삽입
+                        if (i == 0 && receipts != null && !receipts.isEmpty()) {
+                            insertReceiptImage(sheet, drawing, workbook, row, receiptCol, receipts.get(0), projectRoot);
+                        }
                     }
                 }
             }
+            // 첫 번째 분개 행 번호 저장
+            firstRowNumMap.put(report.getExpenseReportId(), firstRowForReport);
         }
         
         // 열 너비 자동 조정
         for (int i = 0; i < headers.length; i++) {
-            sheet.autoSizeColumn(i);
-            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            if (i == receiptCol) {
+                // 영수증 컬럼은 더 넓게 설정
+                sheet.setColumnWidth(i, 6000);
+            } else {
+                sheet.autoSizeColumn(i);
+                sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            }
         }
         
         // 임시 파일로 저장
@@ -2529,9 +2789,23 @@ public class ExpenseService {
                     .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
         }
         
+        // 영수증 데이터 조회
+        Map<Long, List<ReceiptDto>> receiptsMap = new HashMap<>();
+        if (!expenseReportIds.isEmpty()) {
+            for (Long reportId : expenseReportIds) {
+                List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseReportId(reportId, companyId);
+                if (receipts != null && !receipts.isEmpty()) {
+                    receiptsMap.put(reportId, receipts);
+                }
+            }
+        }
+        
         // 엑셀 파일 생성
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("세무전표");
+        
+        // 이미지 삽입을 위한 Drawing 객체 생성
+        XSSFDrawing drawing = (XSSFDrawing) sheet.createDrawingPatriarch();
         
         // 헤더 스타일
         CellStyle headerStyle = workbook.createCellStyle();
@@ -2562,7 +2836,7 @@ public class ExpenseService {
         
         // 헤더 행 생성
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"전표일자", "적요", "차변계정과목", "차변금액", "대변계정과목", "대변금액", "문서번호", "비고"};
+        String[] headers = {"전표일자", "적요", "차변계정과목", "차변금액", "대변계정과목", "대변금액", "문서번호", "비고", "영수증"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -2571,8 +2845,12 @@ public class ExpenseService {
         
         // 데이터 행 생성
         int rowNum = 1;
+        String projectRoot = System.getProperty("user.dir");
+        int receiptCol = 8; // 영수증 컬럼 인덱스
+        
         for (ExpenseReportDto report : expenseReports) {
             List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
+            List<ReceiptDto> receipts = receiptsMap.get(report.getExpenseReportId());
             
             // PAID 상태인 경우 분개 처리:
             // 1. APPROVED 시점의 분개: 차변(비용) / 대변(미지급금) - 결재 금액 기준
@@ -2584,10 +2862,26 @@ public class ExpenseService {
             if (details.isEmpty()) {
                 Row row = sheet.createRow(rowNum++);
                 createJournalEntryRowForApproved(row, report, null, dataStyle, numberStyle);
+                // 영수증 셀 추가
+                Cell receiptCell = row.createCell(receiptCol);
+                receiptCell.setCellValue("");
+                receiptCell.setCellStyle(dataStyle);
+                // 영수증 이미지 삽입
+                if (receipts != null && !receipts.isEmpty()) {
+                    insertReceiptImage(sheet, drawing, workbook, row, receiptCol, receipts.get(0), projectRoot);
+                }
             } else {
-                for (ExpenseDetailDto detail : details) {
+                for (int i = 0; i < details.size(); i++) {
                     Row row = sheet.createRow(rowNum++);
-                    createJournalEntryRowForApproved(row, report, detail, dataStyle, numberStyle);
+                    createJournalEntryRowForApproved(row, report, details.get(i), dataStyle, numberStyle);
+                    // 영수증 셀 추가
+                    Cell receiptCell = row.createCell(receiptCol);
+                    receiptCell.setCellValue("");
+                    receiptCell.setCellStyle(dataStyle);
+                    // 첫 번째 항목에만 영수증 이미지 삽입
+                    if (i == 0 && receipts != null && !receipts.isEmpty()) {
+                        insertReceiptImage(sheet, drawing, workbook, row, receiptCol, receipts.get(0), projectRoot);
+                    }
                 }
             }
             
@@ -2595,10 +2889,18 @@ public class ExpenseService {
             if (details.isEmpty()) {
                 Row row = sheet.createRow(rowNum++);
                 createJournalEntryRowForPaid(row, report, null, dataStyle, numberStyle);
+                // 영수증 셀 추가
+                Cell receiptCell = row.createCell(receiptCol);
+                receiptCell.setCellValue("");
+                receiptCell.setCellStyle(dataStyle);
             } else {
                 for (ExpenseDetailDto detail : details) {
                     Row row = sheet.createRow(rowNum++);
                     createJournalEntryRowForPaid(row, report, detail, dataStyle, numberStyle);
+                    // 영수증 셀 추가
+                    Cell receiptCell = row.createCell(receiptCol);
+                    receiptCell.setCellValue("");
+                    receiptCell.setCellStyle(dataStyle);
                 }
             }
             
@@ -2613,10 +2915,18 @@ public class ExpenseService {
                     // 실제 지급 금액이 결재 금액보다 작은 경우: 잔액 정리
                     Row row = sheet.createRow(rowNum++);
                     createJournalEntryRowForRemainingBalance(row, report, difference, "기타비용", dataStyle, numberStyle);
+                    // 영수증 셀 추가
+                    Cell receiptCell = row.createCell(receiptCol);
+                    receiptCell.setCellValue("");
+                    receiptCell.setCellStyle(dataStyle);
                 } else if (difference < 0) {
                     // 실제 지급 금액이 결재 금액보다 큰 경우: 추가 비용
                     Row row = sheet.createRow(rowNum++);
                     createJournalEntryRowForAdditionalExpense(row, report, null, Math.abs(difference), "기타비용", dataStyle, numberStyle);
+                    // 영수증 셀 추가
+                    Cell receiptCell = row.createCell(receiptCol);
+                    receiptCell.setCellValue("");
+                    receiptCell.setCellStyle(dataStyle);
                 }
             } else {
                 // 상세 항목별로 차액 계산 및 처리
@@ -2643,20 +2953,33 @@ public class ExpenseService {
                 for (Map.Entry<String, Long> entry : additionalExpenseByAccount.entrySet()) {
                     Row row = sheet.createRow(rowNum++);
                     createJournalEntryRowForAdditionalExpense(row, report, null, entry.getValue(), entry.getKey(), dataStyle, numberStyle);
+                    // 영수증 셀 추가
+                    Cell receiptCell = row.createCell(receiptCol);
+                    receiptCell.setCellValue("");
+                    receiptCell.setCellStyle(dataStyle);
                 }
                 
                 // 잔액 정리 분개 생성 (계정과목별로)
                 for (Map.Entry<String, Long> entry : remainingBalanceByAccount.entrySet()) {
                     Row row = sheet.createRow(rowNum++);
                     createJournalEntryRowForRemainingBalance(row, report, entry.getValue(), entry.getKey(), dataStyle, numberStyle);
+                    // 영수증 셀 추가
+                    Cell receiptCell = row.createCell(receiptCol);
+                    receiptCell.setCellValue("");
+                    receiptCell.setCellStyle(dataStyle);
                 }
             }
         }
         
         // 열 너비 자동 조정
         for (int i = 0; i < headers.length; i++) {
-            sheet.autoSizeColumn(i);
-            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            if (i == receiptCol) {
+                // 영수증 컬럼은 더 넓게 설정
+                sheet.setColumnWidth(i, 6000);
+            } else {
+                sheet.autoSizeColumn(i);
+                sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            }
         }
         
         // 임시 파일로 저장

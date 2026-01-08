@@ -138,9 +138,14 @@ const MainDashboardPage = () => {
     }
   }, [user?.userId]);
 
-  // 구독 및 크레딧 정보 로드
+  // 구독 및 크레딧 정보 로드 (CEO, ADMIN만)
   useEffect(() => {
     const loadCommonData = async () => {
+      // CEO 또는 ADMIN 권한이 있는 경우에만 호출
+      if (!user || (user.role !== 'CEO' && user.role !== 'ADMIN')) {
+        return;
+      }
+
       try {
         const [subscriptionRes, creditRes] = await Promise.all([
           getCurrentSubscription().catch(() => ({ success: false, data: null })),

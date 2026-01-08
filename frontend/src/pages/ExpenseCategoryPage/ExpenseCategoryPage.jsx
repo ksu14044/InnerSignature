@@ -15,7 +15,7 @@ import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import { FaPlus, FaEdit, FaTrash, FaGripVertical, FaCode } from 'react-icons/fa';
 
-const ExpenseCategoryPage = () => {
+const ExpenseCategoryPage = ({ hideHeader = false }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -40,24 +40,36 @@ const ExpenseCategoryPage = () => {
   });
 
   useEffect(() => {
+    console.log('[카테고리] useEffect 실행 - user:', user, 'activeTab:', activeTab, 'hideHeader:', hideHeader);
+    
     if (!user) {
-      navigate('/');
+      console.log('[카테고리] user가 없음 - navigate 제거 (대시보드 임베드 모드)');
+      if (!hideHeader) {
+        navigate('/');
+      }
       return;
     }
     
     // 권한 확인
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ACCOUNTANT' && user.role !== 'ADMIN' && user.role !== 'CEO') {
-      alert('접근 권한이 없습니다. (SUPERADMIN, ACCOUNTANT, ADMIN, CEO 권한 필요)');
-      navigate('/expenses');
+    if (user.role !== 'SUPERADMIN' && user.role !== 'ACCOUNTANT' && user.role !== 'ADMIN' && user.role !== 'CEO' && user.role !== 'TAX_ACCOUNTANT') {
+      console.log('[카테고리] 권한 없음 - role:', user.role);
+      if (!hideHeader) {
+        alert('접근 권한이 없습니다. (SUPERADMIN, ACCOUNTANT, ADMIN, CEO, TAX_ACCOUNTANT 권한 필요)');
+        navigate('/expenses');
+      }
       return;
     }
     
+    console.log('[카테고리] 권한 확인 완료 - role:', user.role);
+    
     if (activeTab === 'categories') {
+      console.log('[카테고리] categories 탭 활성화 - loadCategories 호출');
       loadCategories();
     } else if (activeTab === 'accountCodes') {
+      console.log('[카테고리] accountCodes 탭 활성화 - loadMappingList 호출');
       loadMappingList();
     }
-  }, [user, navigate, activeTab]);
+  }, [user, navigate, activeTab, hideHeader]);
 
   const loadCategories = async () => {
     try {
@@ -65,20 +77,43 @@ const ExpenseCategoryPage = () => {
       let response;
       
       if (user.role === 'SUPERADMIN') {
+        console.log('[카테고리] SUPERADMIN: 전역 카테고리 조회 시작');
         response = await getGlobalCategories();
+        console.log('[카테고리] 전역 카테고리 응답:', response);
       } else {
+        console.log('[카테고리] 일반 사용자: 병합 카테고리 조회 시작');
         response = await getMergedCategories();
+        console.log('[카테고리] 병합 카테고리 응답:', response);
       }
       
-      if (response.success) {
-        const sortedCategories = (response.data || []).sort((a, b) => 
+      console.log('[카테고리] 응답 전체:', JSON.stringify(response, null, 2));
+      
+      if (response && response.success) {
+        const data = response.data || [];
+        console.log('[카테고리] 받은 데이터:', data);
+        console.log('[카테고리] 데이터 개수:', data.length);
+        
+        const sortedCategories = data.sort((a, b) => 
           (a.displayOrder || 0) - (b.displayOrder || 0)
         );
+        console.log('[카테고리] 정렬된 카테고리:', sortedCategories);
         setCategories(sortedCategories);
+        
+        if (sortedCategories.length === 0) {
+          console.warn('[카테고리] 경고: 카테고리 데이터가 비어있습니다.');
+        }
+      } else {
+        console.error('[카테고리] 응답 실패:', response);
+        const errorMessage = response?.message || '카테고리 조회에 실패했습니다.';
+        alert('항목 목록 조회 실패: ' + errorMessage);
+        setCategories([]);
       }
     } catch (error) {
-      console.error('항목 목록 조회 실패:', error);
-      alert('항목 목록 조회 중 오류가 발생했습니다.');
+      console.error('[카테고리] 항목 목록 조회 실패:', error);
+      console.error('[카테고리] 에러 상세:', error.response?.data);
+      const errorMessage = error.response?.data?.message || error.message || '알 수 없는 오류';
+      alert('항목 목록 조회 중 오류가 발생했습니다: ' + errorMessage);
+      setCategories([]);
     } finally {
       setLoading(false);
     }
@@ -307,8 +342,8 @@ const ExpenseCategoryPage = () => {
     }
   };
 
-  const canEdit = user?.role === 'SUPERADMIN' || user?.role === 'ACCOUNTANT' || user?.role === 'ADMIN' || user?.role === 'CEO';
-  const canEditMapping = user?.role === 'ADMIN' || user?.role === 'CEO';
+  const canEdit = user?.role === 'SUPERADMIN' || user?.role === 'ACCOUNTANT' || user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'TAX_ACCOUNTANT';
+  const canEditMapping = user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'TAX_ACCOUNTANT';
 
   if (loading) {
     return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
@@ -316,10 +351,12 @@ const ExpenseCategoryPage = () => {
 
   return (
     <S.Container>
-      <S.Header>
-        <S.BackButton onClick={() => navigate(-1)}>← 뒤로</S.BackButton>
-        <S.Title>시스템 설정</S.Title>
-      </S.Header>
+      {!hideHeader && (
+        <S.Header>
+          <S.BackButton onClick={() => navigate(-1)}>← 뒤로</S.BackButton>
+          <S.Title>시스템 설정</S.Title>
+        </S.Header>
+      )}
 
       {/* 탭 버튼 */}
       <S.TabSection>

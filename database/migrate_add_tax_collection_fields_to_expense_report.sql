@@ -8,3 +8,4 @@ ADD COLUMN `tax_revision_requested` TINYINT(1) DEFAULT 0 COMMENT '세무사가 �
 ADD COLUMN `tax_revision_request_reason` VARCHAR(500) NULL COMMENT '수정 요청 사유' AFTER `tax_revision_requested`;
 
 
+

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAuditRuleList, createAuditRule, updateAuditRule, deleteAuditRule, getAuditLogList, resolveAuditLog } from '../../api/auditApi';
 import { EXPENSE_CATEGORIES } from '../../constants/categories';
+import { getMergedCategories } from '../../api/expenseCategoryApi';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import { FaPlus, FaEdit, FaTrash, FaShieldAlt, FaCheck, FaExclamationTriangle, FaInfoCircle, FaList } from 'react-icons/fa';
@@ -21,6 +22,7 @@ const AuditRuleManagementPage = () => {
     isActive: true
   });
   const [activeTab, setActiveTab] = useState('rules'); // 'rules' 또는 'logs'
+  const [categoryList, setCategoryList] = useState(EXPENSE_CATEGORIES); // API에서 불러온 카테고리
   const [logList, setLogList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -39,6 +41,26 @@ const AuditRuleManagementPage = () => {
     { value: 'DUPLICATE_MERCHANT', label: '동일 가맹점 중복 결제' },
     { value: 'FORBIDDEN_CATEGORY', label: '금지 업종 사용' }
   ];
+
+  // 카테고리 목록 불러오기
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await getMergedCategories();
+        if (response.success && response.data) {
+          const formatted = response.data.map(cat => ({
+            value: cat.categoryName,
+            label: cat.categoryName
+          }));
+          setCategoryList(formatted);
+        }
+      } catch (error) {
+        console.error('카테고리 목록 불러오기 실패:', error);
+        // 실패 시 기본 카테고리 유지
+      }
+    };
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     if (!user || (user.role !== 'ADMIN' && user.role !== 'CEO' && user.role !== 'ACCOUNTANT')) {
@@ -509,7 +531,7 @@ const AuditRuleManagementPage = () => {
                   <S.FormGroup>
                     <S.Label>금지 업종 선택</S.Label>
                     <S.CategoryCheckboxGroup>
-                      {EXPENSE_CATEGORIES.map(category => (
+                      {categoryList.map(category => (
                         <S.CategoryCheckbox key={category.value}>
                           <input
                             type="checkbox"
