@@ -8,11 +8,14 @@ import {
   fetchMonthlyTaxSummary,
   collectTaxData
 } from '../../api/expenseApi';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileTaxAccountantDashboard from '../mobile/MobileTaxAccountantDashboard';
 import * as S from './style';
 
 const TaxAccountantDashboardSection = ({ filters }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [taxStatus, setTaxStatus] = useState(null);
   const [pendingReports, setPendingReports] = useState([]);
   const [summary, setSummary] = useState([]);
@@ -162,6 +165,18 @@ const TaxAccountantDashboardSection = ({ filters }) => {
     return <S.LoadingMessage>로딩 중...</S.LoadingMessage>;
   }
 
+  // 모바일 버전 렌더링
+  if (isMobile) {
+    return (
+      <MobileTaxAccountantDashboard
+        taxStatus={taxStatus}
+        pendingReports={pendingReports}
+        summary={summary}
+      />
+    );
+  }
+
+  // 데스크톱 버전
   return (
     <>
       <S.SectionTitle>세무 자료 현황</S.SectionTitle>

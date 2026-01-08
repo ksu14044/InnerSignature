@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchExpenseList } from '../../api/expenseApi';
 import { FaPlus, FaList, FaEye } from 'react-icons/fa';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileUserDashboard from '../mobile/MobileUserDashboard';
 import * as S from './style';
 
 const UserDashboardSection = ({ filters }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [stats, setStats] = useState({
     totalAmount: 0,
     waitCount: 0,
@@ -71,6 +74,17 @@ const UserDashboardSection = ({ filters }) => {
     return <S.LoadingMessage>로딩 중...</S.LoadingMessage>;
   }
 
+  // 모바일 버전 렌더링
+  if (isMobile) {
+    return (
+      <MobileUserDashboard
+        stats={stats}
+        recentExpenses={recentExpenses}
+      />
+    );
+  }
+
+  // 데스크톱 버전
   return (
     <>
       <S.SectionTitle>내 결의서 현황</S.SectionTitle>

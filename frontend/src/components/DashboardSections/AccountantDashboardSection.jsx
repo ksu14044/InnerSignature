@@ -26,6 +26,8 @@ import {
   Legend, 
   ResponsiveContainer 
 } from 'recharts';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import MobileAccountantDashboard from '../mobile/MobileAccountantDashboard';
 import * as S from './style';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
@@ -33,6 +35,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 const AccountantDashboardSection = ({ filters }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [dashboardStats, setDashboardStats] = useState(null);
   const [monthlyTrend, setMonthlyTrend] = useState([]);
   const [statusStats, setStatusStats] = useState([]);
@@ -127,6 +130,20 @@ const AccountantDashboardSection = ({ filters }) => {
     return <S.LoadingMessage>로딩 중...</S.LoadingMessage>;
   }
 
+  // 모바일 버전 렌더링
+  if (isMobile) {
+    return (
+      <MobileAccountantDashboard
+        dashboardStats={dashboardStats}
+        statusStats={statusStats}
+        categoryRatio={categoryRatio}
+        pendingApprovals={pendingApprovals}
+        approvedExpenses={approvedExpenses}
+      />
+    );
+  }
+
+  // 데스크톱 버전
   return (
     <>
       {/* 결재 대기 현황 */}

@@ -19,7 +19,8 @@
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.10.1",
     "react-signature-canvas": "^1.1.0-alpha.2",
-    "recharts": "^3.5.1"
+    "recharts": "^3.5.1",
+    "swiper": "^12.0.3"
   },
   "devDependencies": {
     "@emotion/babel-plugin": "^11.13.5",
