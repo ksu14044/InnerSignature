@@ -183,15 +183,19 @@ const AppHeader = ({
                       👥 사용자 관리
                     </S.ManagementMenuItem>
                   )}
-                  <S.ManagementMenuItem onClick={() => { navigate('/signatures'); setIsManagementDropdownOpen(false); }}>
-                    ✍️ 도장/서명 관리
-                  </S.ManagementMenuItem>
-                  <S.ManagementMenuItem onClick={() => { navigate('/cards'); setIsManagementDropdownOpen(false); }}>
-                    💳 카드 관리
-                  </S.ManagementMenuItem>
-                  <S.ManagementMenuItem onClick={() => { navigate('/my-approvers'); setIsManagementDropdownOpen(false); }}>
-                    👤 담당 결재자 설정
-                  </S.ManagementMenuItem>
+                  {user?.role !== 'TAX_ACCOUNTANT' && (
+                    <>
+                      <S.ManagementMenuItem onClick={() => { navigate('/signatures'); setIsManagementDropdownOpen(false); }}>
+                        ✍️ 도장/서명 관리
+                      </S.ManagementMenuItem>
+                      <S.ManagementMenuItem onClick={() => { navigate('/cards'); setIsManagementDropdownOpen(false); }}>
+                        💳 카드 관리
+                      </S.ManagementMenuItem>
+                      <S.ManagementMenuItem onClick={() => { navigate('/my-approvers'); setIsManagementDropdownOpen(false); }}>
+                        👤 담당 결재자 설정
+                      </S.ManagementMenuItem>
+                    </>
+                  )}
                   {(user?.role === 'ACCOUNTANT' || user?.role === 'ADMIN' || user?.role === 'CEO' || user?.role === 'TAX_ACCOUNTANT') && (
                     <S.ManagementMenuItem onClick={() => { navigate('/expense-categories'); setIsManagementDropdownOpen(false); }}>
                       🏷️ 지출 항목 관리

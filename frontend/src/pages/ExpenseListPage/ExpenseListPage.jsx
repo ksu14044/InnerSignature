@@ -634,10 +634,12 @@ const ExpenseListPage = () => {
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           {isMyReportsTab && (
             <>
-              <S.CreateButton onClick={() => navigate('/expenses/create')}>
-                <FaPlus />
-                <span>결의서 작성</span>
-              </S.CreateButton>
+              {user?.role !== 'TAX_ACCOUNTANT' && (
+                <S.CreateButton onClick={() => navigate('/expenses/create')}>
+                  <FaPlus />
+                  <span>결의서 작성</span>
+                </S.CreateButton>
+              )}
               <S.ToggleContainer data-tourid="tour-my-posts-toggle">
                 <S.ToggleLabel>
                   <S.ToggleSwitch
@@ -650,7 +652,7 @@ const ExpenseListPage = () => {
                   <span>내가 쓴 글만 보기</span>
                 </S.ToggleLabel>
               </S.ToggleContainer>
-              <S.FilterButton 
+              <S.FilterButton
                 data-tourid="tour-filter-button"
                 variant={isFilterOpen ? 'primary' : 'secondary'}
                 onClick={handleFilterToggle}

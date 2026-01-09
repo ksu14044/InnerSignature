@@ -86,7 +86,7 @@ public class TaxReportService {
         
         // 헤더 행 생성 (법정 서식에 맞춤)
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"거래일자", "가맹점명", "사업자등록번호", "승인번호", "금액", "부가세액", "카테고리", "비고"};
+        String[] headers = {"결의서ID", "거래일자", "가맹점명", "사업자등록번호", "승인번호", "금액", "부가세액", "카테고리", "비고"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -114,7 +114,12 @@ public class TaxReportService {
         // 열 너비 자동 조정
         for (int i = 0; i < headers.length; i++) {
             sheet.autoSizeColumn(i);
-            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            // 결의서ID 열은 좀 더 넓게 설정
+            if (i == 0) {
+                sheet.setColumnWidth(i, 3000); // 결의서ID는 넓게
+            } else {
+                sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            }
         }
         
         // 임시 파일로 저장
@@ -132,12 +137,17 @@ public class TaxReportService {
     /**
      * 부가세 신고 서식 행 생성
      */
-    private void createTaxReportRow(Row row, ExpenseReportDto report, ExpenseDetailDto detail, 
+    private void createTaxReportRow(Row row, ExpenseReportDto report, ExpenseDetailDto detail,
                                     CellStyle dataStyle, CellStyle numberStyle) {
         int col = 0;
-        
-        // 거래일자
+
+        // 결의서 ID
         Cell cell = row.createCell(col++);
+        cell.setCellValue(report.getExpenseReportId().toString());
+        cell.setCellStyle(dataStyle);
+
+        // 거래일자
+        cell = row.createCell(col++);
         if (report.getReportDate() != null) {
             cell.setCellValue(report.getReportDate().toString());
         } else {

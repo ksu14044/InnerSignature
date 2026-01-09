@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  fetchCategorySummary, 
+import {
+  fetchCategorySummary,
   fetchTaxPendingReports,
   fetchTaxStatus,
   fetchMonthlyTaxSummary,
-  collectTaxData
+  collectTaxData,
+  getReceipts,
+  downloadReceipt
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
 import * as S from './style';
@@ -32,6 +34,10 @@ const TaxSummaryPage = () => {
   const [monthlySummary, setMonthlySummary] = useState([]);
   const [loading, setLoading] = useState(false);
   const debounceTimer = useRef(null);
+
+  // 영수증 검색 관련 상태
+  const [receiptSearchId, setReceiptSearchId] = useState('');
+  const [searchedReceipts, setSearchedReceipts] = useState([]);
 
   const isTaxAccountant = user?.role === 'TAX_ACCOUNTANT';
 
@@ -181,6 +187,43 @@ const TaxSummaryPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 영수증 검색 핸들러
+  const handleReceiptSearch = async () => {
+    if (!receiptSearchId.trim()) {
+      alert('결의서 ID를 입력해주세요.');
+      return;
+    }
+
+    try {
+      const response = await getReceipts(receiptSearchId.trim());
+      if (response.success) {
+        setSearchedReceipts(response.data || []);
+        if (!response.data || response.data.length === 0) {
+          alert('해당 결의서에 첨부된 영수증이 없습니다.');
+        }
+      } else {
+        alert('영수증을 찾을 수 없습니다.');
+        setSearchedReceipts([]);
+      }
+    } catch (error) {
+      alert('영수증 검색 중 오류가 발생했습니다.');
+      setSearchedReceipts([]);
+    }
+  };
+
+  // 영수증 다운로드 핸들러
+  const handleReceiptDownload = (receiptId, filename) => {
+    if (!receiptId) return;
+    downloadReceipt(receiptId, filename)
+      .then(() => {
+        // 다운로드 성공 (브라우저가 자동으로 다운로드 처리)
+      })
+      .catch((err) => {
+        const msg = err?.userMessage || err?.message || "영수증 다운로드 중 오류가 발생했습니다.";
+        alert(msg);
+      });
   };
 
   if (!user) {
@@ -550,6 +593,94 @@ const TaxSummaryPage = () => {
             </tbody>
           </S.SummaryTable>
         )}
+      </S.Card>
+
+      {/* 영수증 검색 섹션 */}
+      <S.Card style={{ marginTop: '20px', backgroundColor: '#f8f9ff', border: '2px solid #6366f1' }}>
+        <S.CardTitle style={{ color: '#6366f1' }}>
+          🔍 영수증 검색
+          <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666', marginLeft: '12px' }}>
+            (세무 자료 엑셀의 결의서ID로 영수증 찾기)
+          </span>
+        </S.CardTitle>
+
+        <div style={{ marginBottom: '20px' }}>
+          <S.FilterGrid style={{ gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'end' }}>
+            <div>
+              <S.Label>결의서 ID</S.Label>
+              <S.Input
+                type="text"
+                placeholder="예: 12345"
+                value={receiptSearchId}
+                onChange={(e) => setReceiptSearchId(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleReceiptSearch()}
+                style={{ width: '100%' }}
+              />
+            </div>
+            <S.Button
+              onClick={handleReceiptSearch}
+              disabled={!receiptSearchId.trim()}
+              style={{ padding: '10px 20px', backgroundColor: '#6366f1', borderColor: '#6366f1' }}
+            >
+              🔍 검색
+            </S.Button>
+          </S.FilterGrid>
+        </div>
+
+        {searchedReceipts.length > 0 && (
+          <div>
+            <h4 style={{ marginBottom: '12px', color: '#333', fontSize: '16px' }}>
+              결의서 ID {receiptSearchId}의 영수증 목록 ({searchedReceipts.length}개)
+            </h4>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {searchedReceipts.map((receipt) => (
+                <div
+                  key={receipt.receiptId}
+                  style={{
+                    padding: '16px',
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600', marginBottom: '4px', color: '#111827' }}>
+                      {receipt.originalFilename}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                      업로드: {receipt.uploadedByName} |
+                      {receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''}
+                      {receipt.fileSize && ` | ${(receipt.fileSize / 1024).toFixed(2)} KB`}
+                    </div>
+                  </div>
+                  <S.Button
+                    onClick={() => handleReceiptDownload(receipt.receiptId, receipt.originalFilename)}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#10b981',
+                      borderColor: '#10b981',
+                      marginLeft: '16px'
+                    }}
+                  >
+                    📥 다운로드
+                  </S.Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '4px', fontSize: '13px', color: '#92400e' }}>
+          💡 <strong>사용법:</strong>
+          <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+            <li>세무 자료 엑셀에서 확인한 결의서ID를 입력하세요</li>
+            <li>Enter 키 또는 검색 버튼으로 해당 결의서의 영수증을 찾을 수 있습니다</li>
+            <li>영수증이 없으면 "첨부된 영수증이 없습니다" 메시지가 표시됩니다</li>
+          </ul>
+        </div>
       </S.Card>
     </S.Container>
   );
