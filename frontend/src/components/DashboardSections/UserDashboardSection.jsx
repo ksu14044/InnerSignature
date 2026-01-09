@@ -17,8 +17,7 @@ const UserDashboardSection = ({ filters }) => {
     totalAmount: 0,
     waitCount: 0,
     rejectedCount: 0,
-    approvedCount: 0,
-    paidCount: 0
+    approvedCount: 0
   });
   const [recentExpenses, setRecentExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -45,14 +44,11 @@ const UserDashboardSection = ({ filters }) => {
           const waitCount = filteredExpenses.filter(exp => exp.status === 'WAIT').length;
           const rejectedCount = filteredExpenses.filter(exp => exp.status === 'REJECTED').length;
           const approvedCount = filteredExpenses.filter(exp => exp.status === 'APPROVED').length;
-          const paidCount = filteredExpenses.filter(exp => exp.status === 'PAID').length;
-          
           setStats({
             totalAmount,
             waitCount,
             rejectedCount,
-            approvedCount,
-            paidCount
+            approvedCount
           });
 
           // 최근 결의서 (최대 5개)
@@ -109,7 +105,7 @@ const UserDashboardSection = ({ filters }) => {
                     <span>{expense.totalAmount.toLocaleString()}원</span>
                     <span>{expense.status === 'WAIT' ? '대기' : 
                            expense.status === 'APPROVED' ? '승인' :
-                           expense.status === 'PAID' ? '지출완료' : expense.status}</span>
+                           expense.status}</span>
                   </S.ExpenseItemMeta>
                 </S.ExpenseItemContent>
                 <S.ExpenseItemAction>

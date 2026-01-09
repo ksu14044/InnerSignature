@@ -355,10 +355,8 @@ public class ExpenseService {
             // 결의서 정보를 조회하여 가승인 여부에 따라 상태를 분기
             ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseId, companyId);
             
-            // isPreApproval 이 true 인 경우: 사전 승인 플로우 → 최종 승인 상태(APPROVED)로 두고,
-            // isPreApproval 이 false/null 인 경우: 이미 지출이 완료된 건 → 결재 완료 시 바로 지급완료(PAID)로 전환
-            boolean isPreApproval = report != null && Boolean.TRUE.equals(report.getIsPreApproval());
-            String nextStatus = isPreApproval ? "APPROVED" : "PAID";
+            // 승인이 완료되면 APPROVED 상태로 설정 (지출로 간주)
+            String nextStatus = "APPROVED";
             
             expenseMapper.updateExpenseReportStatus(expenseId, nextStatus, companyId);
         }
@@ -428,10 +426,10 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("결재 완료된 결재 라인만 취소할 수 있습니다.");
         }
 
-        // 4. PAID 상태인 문서는 취소 불가
+        // 4. APPROVED 상태인 문서는 취소 불가
         ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseId, companyId);
-        if (report != null && "PAID".equals(report.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("결제 완료된 문서는 결재 취소할 수 없습니다.");
+        if (report != null && "APPROVED".equals(report.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("승인 완료된 문서는 결재 취소할 수 없습니다.");
         }
 
         // 5. 결재 취소 처리 (APPROVED -> WAIT)
@@ -490,10 +488,10 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("반려된 결재 라인만 취소할 수 있습니다.");
         }
 
-        // 4. PAID 상태인 문서는 취소 불가
+        // 4. APPROVED 상태인 문서는 취소 불가
         ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseId, companyId);
-        if (report != null && "PAID".equals(report.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("결제 완료된 문서는 반려 취소할 수 없습니다.");
+        if (report != null && "APPROVED".equals(report.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("승인 완료된 문서는 반려 취소할 수 없습니다.");
         }
 
         // 5. 반려 취소 처리 (REJECTED -> WAIT)
@@ -597,9 +595,9 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
         }
 
-        // (0-5) 급여인 경우 상태를 바로 PAID로 설정 (결재 없이 바로 지급완료)
+        // (0-5) 급여인 경우 상태를 바로 APPROVED로 설정 (결재 없이 바로 승인완료)
         if (hasSalary) {
-            request.setStatus("PAID");
+            request.setStatus("APPROVED");
         }
 
         // (0-6) 예산 체크 (상세 항목별로)
@@ -727,9 +725,9 @@ public class ExpenseService {
             }
         }
 
-        // 3. PAID 상태 체크 (이중 체크)
-        if ("PAID".equals(existingReport.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("결제 완료된 문서는 수정할 수 없습니다.");
+        // 3. APPROVED 상태 체크 (이중 체크)
+        if ("APPROVED".equals(existingReport.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("승인 완료된 문서는 수정할 수 없습니다.");
         }
 
         // 4. 작성자 본인만 수정 가능
@@ -943,112 +941,6 @@ public class ExpenseService {
         logger.info("추가 결재 라인 추가 완료 - expenseReportId: {}, approverId: {}", expenseReportId, approvalLine.getApproverId());
     }
 
-    /**
-     * 지출결의서 상태 변경
-     * ACCOUNTANT 권한을 가진 사용자만 상태를 변경할 수 있습니다.
-     */
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void updateExpenseStatus(Long expenseReportId, Long userId, String status) {
-        updateExpenseStatus(expenseReportId, userId, status, null, null);
-    }
-    
-    /**
-     * 지출결의서 상태 변경 (실제 지급 금액 포함)
-     * ACCOUNTANT 권한을 가진 사용자만 상태를 변경할 수 있습니다.
-     */
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void updateExpenseStatus(Long expenseReportId, Long userId, String status, Long actualPaidAmount, String amountDifferenceReason) {
-        updateExpenseStatus(expenseReportId, userId, status, actualPaidAmount, amountDifferenceReason, null);
-    }
-    
-    /**
-     * 지출결의서 상태 변경 (실제 지급 금액 및 상세 항목별 실제 지급 금액 포함)
-     * ACCOUNTANT 권한을 가진 사용자만 상태를 변경할 수 있습니다.
-     */
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void updateExpenseStatus(Long expenseReportId, Long userId, String status, Long actualPaidAmount, String amountDifferenceReason, List<ExpenseDetailDto> detailActualPaidAmounts) {
-        Long companyId = SecurityUtil.getCurrentCompanyId();
-        
-        // 1. 변경할 문서 정보 조회
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
-        if (report == null) {
-            throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
-        }
-
-        // 2. 권한 체크: ACCOUNTANT 권한자만 상태 변경 가능
-        permissionUtil.checkAccountantPermission(userId);
-
-        // 3. 유효한 상태 값인지 확인
-        if (!"PAID".equals(status)) {
-            throw new com.innersignature.backend.exception.BusinessException("유효하지 않은 상태 값입니다. PAID만 허용됩니다.");
-        }
-
-        // 4. 현재 상태가 APPROVED인 경우에만 PAID로 변경 가능
-        if (!"APPROVED".equals(report.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("APPROVED 상태의 문서만 PAID로 변경할 수 있습니다.");
-        }
-
-        // 4-1. 영수증 첨부 필수 체크
-        List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseReportId(expenseReportId, companyId);
-        if (receipts == null || receipts.isEmpty()) {
-            throw new com.innersignature.backend.exception.BusinessException("결제 완료 처리를 위해서는 영수증을 반드시 첨부해야 합니다.");
-        }
-
-        // 5. 상세 항목별 실제 지급 금액 저장
-        if (detailActualPaidAmounts != null && !detailActualPaidAmounts.isEmpty()) {
-            // 모든 상세 항목 조회
-            List<ExpenseDetailDto> existingDetails = expenseMapper.selectExpenseDetails(expenseReportId, companyId);
-            
-            // 상세 항목별 실제 지급 금액 및 결제수단 업데이트
-            for (ExpenseDetailDto detailUpdate : detailActualPaidAmounts) {
-                // 해당 상세 항목이 존재하는지 확인
-                boolean exists = existingDetails.stream()
-                        .anyMatch(d -> d.getExpenseDetailId().equals(detailUpdate.getExpenseDetailId()));
-                
-                if (exists) {
-                    // 실제 지급 금액 업데이트
-                    if (detailUpdate.getActualPaidAmount() != null) {
-                        expenseMapper.updateExpenseDetailActualPaidAmount(
-                                detailUpdate.getExpenseDetailId(),
-                                detailUpdate.getActualPaidAmount(),
-                                companyId);
-                    }
-                    // 결제수단 업데이트
-                    if (detailUpdate.getPaymentMethod() != null) {
-                        expenseMapper.updateExpenseDetailPaymentMethod(
-                                detailUpdate.getExpenseDetailId(),
-                                detailUpdate.getPaymentMethod(),
-                                companyId);
-                    }
-                }
-            }
-            
-            // 상세 항목별 실제 지급 금액의 합계 계산
-            long totalDetailActualPaidAmount = detailActualPaidAmounts.stream()
-                    .filter(d -> d.getActualPaidAmount() != null)
-                    .mapToLong(ExpenseDetailDto::getActualPaidAmount)
-                    .sum();
-            
-            // 문서 레벨 actualPaidAmount가 없으면 상세 항목 합계로 설정
-            if (actualPaidAmount == null) {
-                actualPaidAmount = totalDetailActualPaidAmount > 0 ? totalDetailActualPaidAmount : report.getTotalAmount();
-            }
-        }
-
-        // 6. 실제 지급 금액 검증
-        // actualPaidAmount가 null이면 결재 금액과 동일한 것으로 간주
-        Long finalPaidAmount = actualPaidAmount != null ? actualPaidAmount : report.getTotalAmount();
-        
-        // 금액 차이가 있는 경우 사유 필수
-        if (!finalPaidAmount.equals(report.getTotalAmount())) {
-            if (amountDifferenceReason == null || amountDifferenceReason.trim().isEmpty()) {
-                throw new com.innersignature.backend.exception.BusinessException("결재 금액과 실제 지급 금액이 다를 경우 차이 사유를 입력해야 합니다.");
-            }
-        }
-        
-        // 7. 상태 및 실제 지급 금액 변경
-        expenseMapper.updateExpenseReportStatusWithPayment(expenseReportId, status, finalPaidAmount, amountDifferenceReason, companyId);
-    }
 
     /**
      * 지출결의서 삭제
@@ -1143,12 +1035,11 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("해당 문서를 찾을 수 없습니다.");
         }
 
-        // 2. PAID, WAIT, 또는 APPROVED 상태인지 확인 
+        // 2. WAIT 또는 APPROVED 상태인지 확인
         // - WAIT: 작성자가 생성 시 영수증을 첨부할 수 있도록 허용
-        // - APPROVED: ACCOUNTANT가 결제 완료 전 영수증을 첨부할 수 있도록 허용
-        // - PAID: 결제 완료 후 영수증을 첨부할 수 있도록 허용
-        if (!"PAID".equals(report.getStatus()) && !"WAIT".equals(report.getStatus()) && !"APPROVED".equals(report.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("PAID, WAIT, 또는 APPROVED 상태의 문서만 영수증을 첨부할 수 있습니다.");
+        // - APPROVED: 승인 완료 후 영수증을 첨부할 수 있도록 허용
+        if (!"WAIT".equals(report.getStatus()) && !"APPROVED".equals(report.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("WAIT 또는 APPROVED 상태의 문서만 영수증을 첨부할 수 있습니다.");
         }
 
         // 3. 권한 체크: 작성자 또는 ACCOUNTANT만 가능
@@ -1421,7 +1312,7 @@ public class ExpenseService {
 
     /**
      * 세무처리 완료 처리
-     * TAX_ACCOUNTANT 권한을 가진 사용자만 처리할 수 있으며, PAID 상태의 문서만 처리 가능합니다.
+     * TAX_ACCOUNTANT 권한을 가진 사용자만 처리할 수 있으며, APPROVED 상태의 문서만 처리 가능합니다.
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void completeTaxProcessing(Long expenseReportId, Long userId) {
@@ -1455,17 +1346,41 @@ public class ExpenseService {
         if (cardNumber == null || cardNumber.isEmpty()) {
             return null;
         }
-        
+
         // 공백과 하이픈 제거
         String cleanNumber = cardNumber.replaceAll("[\\s-]", "");
-        
+
         if (cleanNumber.length() < 4) {
             return "**** " + cleanNumber; // 4자리 미만인 경우
         }
-        
+
         // 마지막 4자리만 표시
         String lastFour = cleanNumber.substring(cleanNumber.length() - 4);
         return "**** " + lastFour;
+    }
+
+    /**
+     * 카드번호 포맷팅 (하이픈 추가)
+     * 예: 1234567812345678 -> 1234-5678-1234-5678
+     */
+    private String formatCardNumber(String cardNumber) {
+        if (cardNumber == null || cardNumber.isEmpty()) {
+            return "";
+        }
+
+        // 공백과 하이픈 제거
+        String cleanNumber = cardNumber.replaceAll("[\\s-]", "");
+
+        // 16자리 카드번호인 경우 포맷팅
+        if (cleanNumber.length() == 16) {
+            return cleanNumber.substring(0, 4) + "-" +
+                   cleanNumber.substring(4, 8) + "-" +
+                   cleanNumber.substring(8, 12) + "-" +
+                   cleanNumber.substring(12, 16);
+        }
+
+        // 그 외의 경우는 그대로 반환
+        return cleanNumber;
     }
 
     /**
@@ -1749,7 +1664,7 @@ public class ExpenseService {
     }
 
     /**
-     * 세무처리 대기 건 조회 (PAID 상태이지만 taxProcessed=false)
+     * 세무처리 대기 건 조회 (APPROVED 상태이지만 taxProcessed=false)
      */
     public List<ExpenseReportDto> getTaxPendingReports(LocalDate startDate, LocalDate endDate) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
@@ -1788,7 +1703,7 @@ public class ExpenseService {
 
     /**
      * 기간별 세무 자료 일괄 수집
-     * TAX_ACCOUNTANT 권한을 가진 사용자만 처리할 수 있으며, PAID 상태의 문서만 수집 가능합니다.
+     * TAX_ACCOUNTANT 권한을 가진 사용자만 처리할 수 있으며, APPROVED 상태의 문서만 수집 가능합니다.
      * 이미 수집된 문서도 포함하여 처리합니다 (중복 수집 허용).
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -1798,18 +1713,18 @@ public class ExpenseService {
         // 권한 체크: TAX_ACCOUNTANT 권한자만 처리 가능
         permissionUtil.checkTaxAccountantPermission(userId);
         
-        // 기간 내 PAID 상태의 모든 문서 조회 (수집 여부와 관계없이)
+        // 기간 내 APPROVED 상태의 모든 문서 조회 (수집 여부와 관계없이)
         List<ExpenseReportDto> reports = expenseMapper.selectTaxPendingCollection(
             startDate, endDate, companyId);
-        
+
         if (reports.isEmpty()) {
             throw new com.innersignature.backend.exception.BusinessException("수집할 자료가 없습니다.");
         }
-        
+
         LocalDateTime now = LocalDateTime.now();
         for (ExpenseReportDto report : reports) {
-            // PAID 상태인 경우 수집 처리 (이미 수집된 것도 다시 수집 처리)
-            if ("PAID".equals(report.getStatus())) {
+            // APPROVED 상태인 경우 수집 처리 (이미 수집된 것도 다시 수집 처리)
+            if ("APPROVED".equals(report.getStatus())) {
                 expenseMapper.updateTaxCollected(
                     report.getExpenseReportId(), 
                     now, 
@@ -1843,11 +1758,11 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("세무 수집된 문서만 수정 요청할 수 있습니다.");
         }
 
-        // PAID 또는 WAIT 상태의 문서만 수정 요청 가능
-        // - PAID: 처음 수정 요청하는 경우
+        // APPROVED 또는 WAIT 상태의 문서만 수정 요청 가능
+        // - APPROVED: 처음 수정 요청하는 경우
         // - WAIT: 이전 수정 요청이 처리되어 재요청하는 경우
-        if (!"PAID".equals(report.getStatus()) && !"WAIT".equals(report.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("지급 완료(PAID) 또는 대기(WAIT) 상태의 문서만 수정 요청할 수 있습니다.");
+        if (!"APPROVED".equals(report.getStatus()) && !"WAIT".equals(report.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("승인 완료(APPROVED) 또는 대기(WAIT) 상태의 문서만 수정 요청할 수 있습니다.");
         }
         
         // 이미 수정 요청된 경우에도 재요청 허용 (작성자가 수정 완료 후 다시 요청 가능하도록)
@@ -1894,8 +1809,8 @@ public class ExpenseService {
     public File exportExpensesToExcel(LocalDate startDate, LocalDate endDate, Long userId, String exportType) throws IOException {
         Long companyId = SecurityUtil.getCurrentCompanyId();
 
-        // 상태 필터링: tax-review는 PAID만, basic은 전체
-        List<String> statuses = "tax-review".equals(exportType) ? List.of("PAID") : null;
+        // 상태 필터링: tax-review는 APPROVED만, basic은 전체
+        List<String> statuses = "tax-review".equals(exportType) ? List.of("APPROVED") : null;
 
         // 기간별 지출결의서 목록 조회 (페이지네이션 없이 전체)
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
@@ -2407,8 +2322,7 @@ public class ExpenseService {
 
     /**
      * 전표 생성 및 분개 (회계 전표 형식)
-     * APPROVED 상태: 차변(비용) / 대변(미지급금)
-     * PAID 상태: 차변(미지급금) / 대변(현금)
+     * APPROVED 상태: 차변(비용) / 대변(현금) - 승인 즉시 지출로 처리
      * @param startDate 시작일 (optional)
      * @param endDate 종료일 (optional)
      * @param userId 현재 사용자 ID (권한 필터링용)
@@ -2418,8 +2332,8 @@ public class ExpenseService {
     public File exportJournalEntriesToExcel(LocalDate startDate, LocalDate endDate, Long userId) throws IOException {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         
-        // APPROVED와 PAID 상태의 지출결의서 조회
-        List<String> statuses = List.of("APPROVED", "PAID");
+        // APPROVED 상태의 지출결의서 조회
+        List<String> statuses = List.of("APPROVED");
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
@@ -2519,12 +2433,9 @@ public class ExpenseService {
             List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
             int firstRowForReport = rowNum; // 이 문서의 첫 번째 분개 행 번호 저장
             
-            if ("PAID".equals(report.getStatus())) {
-                // PAID 상태인 경우 분개 처리:
-                // 1. APPROVED 시점의 분개: 차변(비용) / 대변(미지급금) - 결재 금액 기준
-                // 2. PAID 시점의 분개: 차변(미지급금) / 대변(현금) - 실제 지급 금액 기준
-                // 3-1. 실제 지급 < 결재: 미지급금 잔액 정리 - 차변(미지급금 잔액) / 대변(기타수익)
-                // 3-2. 실제 지급 > 결재: 추가 비용 발생 - 차변(해당 항목 계정과목) / 대변(미지급금)
+            if ("APPROVED".equals(report.getStatus())) {
+                // APPROVED 상태인 경우 분개 처리:
+                // 1. 승인 시점의 분개: 차변(비용) / 대변(현금) - 결재 금액 기준
                 //      * 항목별로 차액을 계산하고, 각 항목의 계정과목으로 처리 (회계 원칙 준수)
                 
                 // 1. APPROVED 시점 분개 생성 (결재 금액 기준)
@@ -2538,7 +2449,7 @@ public class ExpenseService {
                     }
                 }
                 
-                // 2. PAID 시점 분개 생성 (실제 지급 금액 기준)
+                // 2. 승인 시점 분개 생성 (결재 금액 기준)
                 if (details.isEmpty()) {
                     Row row = sheet.createRow(rowNum++);
                     createJournalEntryRowForPaid(row, report, null, dataStyle, numberStyle);
@@ -2641,7 +2552,7 @@ public class ExpenseService {
 
     /**
      * 세무사 전용 전표 생성 (세무 회계 원칙에 입각)
-     * PAID 상태의 문서만 포함하며, 세무 수집 여부와 관계없이 기간 내 모든 PAID 문서를 포함합니다.
+     * APPROVED 상태의 문서만 포함하며, 세무 수집 여부와 관계없이 기간 내 모든 APPROVED 문서를 포함합니다.
      * @param startDate 시작일 (optional)
      * @param endDate 종료일 (optional)
      * @param userId 현재 사용자 ID (권한 필터링용)
@@ -2651,8 +2562,8 @@ public class ExpenseService {
     public File exportTaxJournalEntriesToExcel(LocalDate startDate, LocalDate endDate, Long userId) throws IOException {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         
-        // PAID 상태의 지출결의서만 조회 (세무 수집 여부와 관계없이)
-        List<String> statuses = List.of("PAID");
+        // APPROVED 상태의 지출결의서만 조회 (세무 수집 여부와 관계없이)
+        List<String> statuses = List.of("APPROVED");
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
@@ -2753,11 +2664,8 @@ public class ExpenseService {
         for (ExpenseReportDto report : expenseReports) {
             List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
             
-            // PAID 상태인 경우 분개 처리:
-            // 1. APPROVED 시점의 분개: 차변(비용) / 대변(미지급금) - 결재 금액 기준
-            // 2. PAID 시점의 분개: 차변(미지급금) / 대변(현금) - 실제 지급 금액 기준
-            // 3-1. 실제 지급 < 결재: 미지급금 잔액 정리 - 차변(미지급금 잔액) / 대변(기타수익)
-            // 3-2. 실제 지급 > 결재: 추가 비용 발생 - 차변(해당 항목 계정과목) / 대변(미지급금)
+            // APPROVED 상태인 경우 분개 처리:
+            // 승인 시점의 분개: 차변(비용) / 대변(현금) - 결재 금액 기준
             
             // 1. APPROVED 시점 분개 생성 (결재 금액 기준)
             if (details.isEmpty()) {
@@ -2770,7 +2678,7 @@ public class ExpenseService {
                 }
             }
             
-            // 2. PAID 시점 분개 생성 (실제 지급 금액 기준)
+            // 승인 시점 분개 생성 (결재 금액 기준)
             if (details.isEmpty()) {
                 Row row = sheet.createRow(rowNum++);
                 createJournalEntryRowForPaid(row, report, null, dataStyle, numberStyle);
@@ -2975,8 +2883,8 @@ public class ExpenseService {
     }
     
     /**
-     * PAID 시점 분개 행 생성
-     * 차변(미지급금) / 대변(결제수단별 계정과목) - 실제 지급 금액 기준
+     * 승인 시점 분개 행 생성
+     * 차변(비용) / 대변(결제수단별 계정과목) - 결재 금액 기준
      */
     private void createJournalEntryRowForPaid(Row row, ExpenseReportDto report, ExpenseDetailDto detail, CellStyle dataStyle, CellStyle numberStyle) {
         int col = 0;
@@ -3479,8 +3387,19 @@ public class ExpenseService {
         // 카드정보 (detail에서 가져오거나 빈 문자열)
         cell = row.createCell(col++);
         String cardInfo = "";
-        if (detail != null && detail.getCardNumber() != null && detail.getCardNumber().length() >= 4) {
-            cardInfo = "****" + detail.getCardNumber().substring(detail.getCardNumber().length() - 4);
+        if (detail != null && detail.getCardNumber() != null && !detail.getCardNumber().trim().isEmpty()) {
+            try {
+                String decryptedCardNumber = encryptionUtil.decrypt(detail.getCardNumber());
+                if (decryptedCardNumber != null) {
+                    // 카드번호 포맷팅 (하이픈 추가)
+                    cardInfo = formatCardNumber(decryptedCardNumber);
+                }
+            } catch (Exception e) {
+                logger.debug("카드정보 표시 중 카드번호 복호화 실패 - expenseReportId: {}, detailId: {}",
+                        report.getExpenseReportId(), detail.getExpenseDetailId(), e);
+                // 복호화 실패 시 빈 문자열로 표시
+                cardInfo = "";
+            }
         }
         cell.setCellValue(cardInfo);
         cell.setCellStyle(dataStyle);

@@ -57,14 +57,14 @@ public class ExpenseController {
 
     /**
      * 1. 목록 조회 API (페이지네이션 + 필터링)
-     * 주소: GET /api/expenses?page=1&size=10&startDate=2024-01-01&endDate=2024-12-31&minAmount=1000&maxAmount=100000&status=APPROVED&status=PAID
+     * 주소: GET /api/expenses?page=1&size=10&startDate=2024-01-01&endDate=2024-12-31&minAmount=1000&maxAmount=100000&status=APPROVED
      * @param page 페이지 번호 (1부터 시작, 기본값: 1)
      * @param size 페이지 크기 (기본값: 10)
      * @param startDate 작성일 시작일 (optional, 형식: YYYY-MM-DD)
      * @param endDate 작성일 종료일 (optional, 형식: YYYY-MM-DD)
      * @param minAmount 최소 금액 (optional)
      * @param maxAmount 최대 금액 (optional)
-     * @param status 상태 배열 (optional, 여러 개 가능: ?status=APPROVED&status=PAID)
+     * @param status 상태 배열 (optional, 여러 개 가능: ?status=APPROVED)
      * @param category 카테고리 (optional)
      * @param taxProcessed 세무처리 완료 여부 (optional, true: 완료, false: 미완료, null: 전체)
      */
@@ -283,28 +283,6 @@ public class ExpenseController {
      * PUT /api/expenses/{expenseId}/status
      * 설명: ACCOUNTANT 권한을 가진 사용자만 상태를 변경할 수 있습니다.
      */
-    @PreAuthorize("hasRole('ACCOUNTANT')")
-    @Operation(summary = "지출결의서 상태 변경", description = "ACCOUNTANT가 결의서 상태를 변경합니다. PAID 상태로 변경 시 실제 지급 금액과 차이 사유를 입력할 수 있습니다.")
-    @PutMapping("/{expenseId}/status")
-    public ApiResponse<Void> updateExpenseStatus(
-            @PathVariable Long expenseId,
-            @RequestBody StatusUpdateRequest request) {
-        Long currentUserId = SecurityUtil.getCurrentUserId();
-        logger.info("지출결의서 상태 변경 요청 - expenseId: {}, userId: {}, status: {}, actualPaidAmount: {}", 
-                expenseId, currentUserId, request.getStatus(), request.getActualPaidAmount());
-        expenseService.updateExpenseStatus(expenseId, currentUserId, request.getStatus(), 
-                request.getActualPaidAmount(), request.getAmountDifferenceReason(), request.getDetailActualPaidAmounts());
-        logger.info("지출결의서 상태 변경 완료 - expenseId: {}, status: {}", expenseId, request.getStatus());
-        return new ApiResponse<>(true, "상태 변경 완료", null);
-    }
-
-    @Data
-    static class StatusUpdateRequest {
-        private String status;
-        private Long actualPaidAmount; // 실제 지급 금액 (선택사항, null이면 결재 금액과 동일 또는 상세 항목 합계)
-        private String amountDifferenceReason; // 금액 차이 사유 (금액이 다를 경우 필수)
-        private List<com.innersignature.backend.dto.ExpenseDetailDto> detailActualPaidAmounts; // 상세 항목별 실제 지급 금액
-    }
 
     /**
      * 7. 지출결의서 삭제 API
@@ -362,9 +340,9 @@ public class ExpenseController {
     /**
      * 9. 영수증 업로드 API
      * POST /api/expenses/{expenseId}/receipt
-     * 설명: PAID 상태의 결의서에 영수증을 첨부합니다. (작성자 또는 ACCOUNTANT만 가능)
+     * 설명: APPROVED 상태의 결의서에 영수증을 첨부합니다. (작성자 또는 ACCOUNTANT만 가능)
      */
-    @Operation(summary = "영수증 업로드", description = "PAID 상태 결의서에 영수증을 첨부합니다.")
+    @Operation(summary = "영수증 업로드", description = "APPROVED 상태 결의서에 영수증을 첨부합니다.")
     @PostMapping(value = "/{expenseId}/receipt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<Void> uploadReceipt(
             @PathVariable Long expenseId,
@@ -647,12 +625,12 @@ public class ExpenseController {
     }
 
     /**
-     * 19. PAID 상태 결의서 목록 조회 API
+     * 19. APPROVED 상태 결의서 목록 조회 API
      * GET /api/expenses/tax/pending?startDate=2024-01-01&endDate=2024-12-31
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
-    @Operation(summary = "PAID 상태 결의서 조회", description = "세무사(TAX_ACCOUNTANT)가 PAID 상태 결의서를 조회합니다.")
+    @Operation(summary = "APPROVED 상태 결의서 조회", description = "세무사(TAX_ACCOUNTANT)가 APPROVED 상태 결의서를 조회합니다.")
     @GetMapping("/tax/pending")
     public ApiResponse<List<ExpenseReportDto>> getTaxPendingReports(
             @RequestParam(required = false) String startDate,
@@ -773,7 +751,7 @@ public class ExpenseController {
      */
     @PostMapping("/tax/collect")
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
-    @Operation(summary = "기간별 세무 자료 일괄 수집 및 다운로드", description = "TAX_ACCOUNTANT가 기간별로 PAID 상태의 자료를 수집하고 종합 검토 자료(5개 시트)를 다운로드합니다.")
+    @Operation(summary = "기간별 세무 자료 일괄 수집 및 다운로드", description = "TAX_ACCOUNTANT가 기간별로 APPROVED 상태의 자료를 수집하고 종합 검토 자료(5개 시트)를 다운로드합니다.")
     public ResponseEntity<?> collectTaxData(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {

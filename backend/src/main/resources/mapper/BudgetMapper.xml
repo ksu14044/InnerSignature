@@ -29,7 +29,7 @@
                   AND YEAR(er.report_date) = b.budget_year
                   AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
                   AND ed.category = b.category
-                  AND er.status IN ('APPROVED', 'PAID')
+                  AND er.status = 'APPROVED'
             ), 0) AS used_amount,
             CASE 
                 WHEN b.budget_amount > 0 THEN
@@ -41,7 +41,7 @@
                           AND YEAR(er.report_date) = b.budget_year
                           AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
                           AND ed.category = b.category
-                          AND er.status IN ('APPROVED', 'PAID')
+                          AND er.status = 'APPROVED'
                     ), 0) * 100.0 / b.budget_amount), 2)
                 ELSE 0
             END AS usage_rate
@@ -61,7 +61,7 @@
                   AND YEAR(er.report_date) = b.budget_year
                   AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
                   AND ed.category = b.category
-                  AND er.status IN ('APPROVED', 'PAID')
+                  AND er.status = 'APPROVED'
             ), 0) AS used_amount,
             CASE 
                 WHEN b.budget_amount > 0 THEN
@@ -73,7 +73,7 @@
                           AND YEAR(er.report_date) = b.budget_year
                           AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
                           AND ed.category = b.category
-                          AND er.status IN ('APPROVED', 'PAID')
+                          AND er.status = 'APPROVED'
                     ), 0) * 100.0 / b.budget_amount), 2)
                 ELSE 0
             END AS usage_rate
@@ -95,7 +95,7 @@
                   AND YEAR(er.report_date) = b.budget_year
                   AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
                   AND ed.category = b.category
-                  AND er.status IN ('APPROVED', 'PAID')
+                  AND er.status = 'APPROVED'
             ), 0) AS used_amount,
             CASE 
                 WHEN b.budget_amount > 0 THEN
@@ -107,7 +107,7 @@
                           AND YEAR(er.report_date) = b.budget_year
                           AND (b.budget_month IS NULL OR MONTH(er.report_date) = b.budget_month)
                           AND ed.category = b.category
-                          AND er.status IN ('APPROVED', 'PAID')
+                          AND er.status = 'APPROVED'
                     ), 0) * 100.0 / b.budget_amount), 2)
                 ELSE 0
             END AS usage_rate

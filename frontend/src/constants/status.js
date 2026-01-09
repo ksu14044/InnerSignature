@@ -3,7 +3,6 @@ export const EXPENSE_STATUS = {
   WAIT: 'WAIT',           // 대기
   APPROVED: 'APPROVED',   // 승인
   REJECTED: 'REJECTED',   // 반려
-  PAID: 'PAID',          // 지급완료
 };
 
 export const APPROVAL_STATUS = {
@@ -24,6 +23,5 @@ export const STATUS_KOREAN = {
   PENDING: '대기',
   APPROVED: '승인',
   REJECTED: '반려',
-  PAID: '지급완료',
   WAIT: '대기'
 };

@@ -33,8 +33,8 @@ public class TaxReportService {
     public File exportTaxReportToExcel(LocalDate startDate, LocalDate endDate) throws IOException {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         
-        // PAID 상태이고 세무처리 완료된 문서만 조회
-        List<String> statuses = List.of("PAID");
+        // APPROVED 상태이고 세무처리 완료된 문서만 조회
+        List<String> statuses = List.of("APPROVED");
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,

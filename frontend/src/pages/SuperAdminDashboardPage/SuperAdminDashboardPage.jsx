@@ -907,7 +907,6 @@ const SuperAdminDashboardPage = () => {
                   <option value="WAIT">대기</option>
                   <option value="APPROVED">승인</option>
                   <option value="REJECTED">반려</option>
-                  <option value="PAID">지급완료</option>
                 </S.Select>
               </S.FilterGroup>
               
@@ -955,7 +954,7 @@ const SuperAdminDashboardPage = () => {
                         <td data-label="작성일">{expense.reportDate ? new Date(expense.reportDate).toLocaleDateString() : '-'}</td>
                         <td data-label="총액">{formatCurrency(expense.totalAmount)}</td>
                         <td data-label="상태">
-                          <S.StatusBadge active={expense.status === 'PAID' || expense.status === 'APPROVED'}>
+                          <S.StatusBadge active={expense.status === 'APPROVED'}>
                             {STATUS_KOREAN[expense.status] || expense.status}
                           </S.StatusBadge>
                         </td>

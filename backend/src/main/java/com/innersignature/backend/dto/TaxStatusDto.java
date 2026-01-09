@@ -7,8 +7,8 @@ import lombok.Data;
  */
 @Data
 public class TaxStatusDto {
-    private Long totalCount;          // 총 대상 건수 (PAID 상태 결의서)
-    private Long pendingCount;        // 미수집 건수 (PAID 상태이지만 taxProcessed=false)
+    private Long totalCount;          // 총 대상 건수 (APPROVED 상태 결의서)
+    private Long pendingCount;        // 미수집 건수 (APPROVED 상태이지만 taxProcessed=false)
     private Long completedCount;      // 수집 완료 건수 (taxProcessed=true)
     private Double completionRate;    // 수집률 (0.0 ~ 1.0)
     private Long totalAmount;          // 총 금액

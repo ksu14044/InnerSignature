@@ -52,7 +52,7 @@ const TaxSummaryPage = () => {
         fetchCategorySummary({
           startDate: filters.startDate,
           endDate: filters.endDate,
-          status: ['PAID'], // PAID 상태만
+          status: ['APPROVED'], // APPROVED 상태만
           taxProcessed: filters.collectionStatus
         }),
         fetchMonthlyTaxSummary(filters.startDate || null, filters.endDate || null)
@@ -142,7 +142,7 @@ const TaxSummaryPage = () => {
       return;
     }
 
-    if (!confirm(`선택한 기간의 자료를 수집하시겠습니까?\n\n📅 ${filters.startDate} ~ ${filters.endDate}\n\n⚠️ 주의사항:\n- PAID 상태 결의서가 수집 처리됩니다\n- 수집 후에는 일반 사용자가 수정/삭제 불가능합니다\n- 세무사의 수정 요청이 있을 때만 수정 가능합니다`)) {
+    if (!confirm(`선택한 기간의 자료를 수집하시겠습니까?\n\n📅 ${filters.startDate} ~ ${filters.endDate}\n\n⚠️ 주의사항:\n- APPROVED 상태 결의서가 수집 처리됩니다\n- 수집 후에는 일반 사용자가 수정/삭제 불가능합니다\n- 세무사의 수정 요청이 있을 때만 수정 가능합니다`)) {
       return;
     }
 
@@ -172,7 +172,7 @@ const TaxSummaryPage = () => {
     const lastDay = new Date(endMonthObj.getFullYear(), endMonthObj.getMonth() + 1, 0).getDate();
     const endDate = `${monthRange.endMonth}-${String(lastDay).padStart(2, '0')}`;
     
-    if (!confirm(`선택한 기간을 수집하시겠습니까?\n\n📅 ${monthRange.startMonth} ~ ${monthRange.endMonth}\n(${startDate} ~ ${endDate})\n\n⚠️ 주의사항:\n- PAID 상태 결의서가 수집 처리됩니다\n- 수집 후에는 일반 사용자가 수정/삭제 불가능합니다\n- 세무사의 수정 요청이 있을 때만 수정 가능합니다`)) {
+    if (!confirm(`선택한 기간을 수집하시겠습니까?\n\n📅 ${monthRange.startMonth} ~ ${monthRange.endMonth}\n(${startDate} ~ ${endDate})\n\n⚠️ 주의사항:\n- APPROVED 상태 결의서가 수집 처리됩니다\n- 수집 후에는 일반 사용자가 수정/삭제 불가능합니다\n- 세무사의 수정 요청이 있을 때만 수정 가능합니다`)) {
       return;
     }
     
@@ -433,7 +433,7 @@ const TaxSummaryPage = () => {
         <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#e3f2fd', borderRadius: '4px', fontSize: '13px', color: '#1565c0' }}>
           💡 <strong>수집 안내:</strong>
           <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
-            <li>선택한 기간의 PAID 결의서를 수집하고 세무사 전용 전표(Excel)를 다운로드합니다</li>
+            <li>선택한 기간의 APPROVED 결의서를 수집하고 세무사 전용 전표(Excel)를 다운로드합니다</li>
             <li>이미 수집된 자료도 전표에 포함됩니다</li>
             <li>월별 수집 시: 1월~3월처럼 연속된 여러 달을 한번에 수집 가능</li>
           </ul>
@@ -444,7 +444,7 @@ const TaxSummaryPage = () => {
       {!loading && taxStatus && (
         <S.StatCard data-tourid="tour-tax-status">
           <S.StatItem>
-            <S.StatLabel>PAID 상태 결의서</S.StatLabel>
+            <S.StatLabel>APPROVED 상태 결의서</S.StatLabel>
             <S.StatValue>{taxStatus.totalCount?.toLocaleString()}건</S.StatValue>
           </S.StatItem>
           <S.StatItem>
@@ -470,10 +470,10 @@ const TaxSummaryPage = () => {
         </S.StatCard>
       )}
 
-      {/* PAID 상태 결의서 목록 */}
+      {/* APPROVED 상태 결의서 목록 */}
       <S.Card>
         <S.CardTitle data-tourid="tour-tax-pending">
-          PAID 상태 결의서 ({pendingReports.length}건)
+          APPROVED 상태 결의서 ({pendingReports.length}건)
           <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666', marginLeft: '12px' }}>
             (증빙 확인 및 수집 대상)
           </span>
@@ -481,7 +481,7 @@ const TaxSummaryPage = () => {
         {loading ? (
           <S.Empty>불러오는 중...</S.Empty>
         ) : pendingReports.length === 0 ? (
-          <S.Empty>PAID 상태 결의서가 없습니다.</S.Empty>
+          <S.Empty>APPROVED 상태 결의서가 없습니다.</S.Empty>
         ) : (
           <>
             <S.SummaryTable>

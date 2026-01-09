@@ -96,7 +96,7 @@ public interface ExpenseMapper {
     // 문서 상태 업데이트
     void updateExpenseReportStatus(@Param("expenseReportId") Long expenseReportId, @Param("status") String status, @Param("companyId") Long companyId);
     
-    // 문서 상태 업데이트 (PAID 상태일 때 실제 지급 금액 포함)
+    // 문서 상태 업데이트 (실제 지급 금액 포함)
     void updateExpenseReportStatusWithPayment(
             @Param("expenseReportId") Long expenseReportId, 
             @Param("status") String status,
@@ -117,7 +117,7 @@ public interface ExpenseMapper {
         @Param("companyId") Long companyId
     );
 
-    // 세무 수집 대기 건 조회 (PAID 상태이지만 tax_collected_at이 NULL)
+    // 세무 수집 대기 건 조회 (APPROVED 상태이지만 tax_collected_at이 NULL)
     List<ExpenseReportDto> selectTaxPendingCollection(
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
@@ -235,7 +235,7 @@ public interface ExpenseMapper {
             @Param("companyId") Long companyId
     );
 
-    // 세무처리 대기 건 조회 (PAID 상태이지만 taxProcessed=false)
+    // 세무처리 대기 건 조회 (APPROVED 상태이지만 taxProcessed=false)
     List<ExpenseReportDto> selectTaxPendingReports(
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,

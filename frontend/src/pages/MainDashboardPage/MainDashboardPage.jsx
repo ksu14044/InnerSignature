@@ -71,14 +71,11 @@ const MainDashboardPage = () => {
           const waitCount = filteredExpenses.filter(exp => exp.status === 'WAIT').length;
           const rejectedCount = filteredExpenses.filter(exp => exp.status === 'REJECTED').length;
           const approvedCount = filteredExpenses.filter(exp => exp.status === 'APPROVED').length;
-          const paidCount = filteredExpenses.filter(exp => exp.status === 'PAID').length;
-          
           setStats({
             totalAmount,
             waitCount,
             rejectedCount,
-            approvedCount,
-            paidCount
+            approvedCount
           });
         }
       } catch (error) {
@@ -342,17 +339,6 @@ const MainDashboardPage = () => {
           {selectedStatus === 'APPROVED' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
         </S.StatCard>
 
-        <S.StatCard
-          status="paid"
-          onClick={() => handleStatCardClick('PAID')}
-          style={{ cursor: 'pointer' }}
-          title="지출완료 상태 결의서 보기"
-          selected={selectedStatus === 'PAID'}
-        >
-          <S.StatLabel>지출완료</S.StatLabel>
-          <S.StatValue>{stats.paidCount}건</S.StatValue>
-          {selectedStatus === 'PAID' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
-        </S.StatCard>
       </S.StatsGrid>
 
       {/* 선택된 상태의 결의서 목록 */}

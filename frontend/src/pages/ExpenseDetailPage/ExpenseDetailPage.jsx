@@ -400,89 +400,6 @@ const ExpenseDetailPage = () => {
     setAmountDifferenceReason('');
   };
 
-  // 결제 완료 처리 (ACCOUNTANT 전용)
-  const handleMarkAsPaid = () => {
-    if(isMarkingAsPaid) return;
-    if(!user) {
-        alert("로그인 후 진행할 수 있습니다.");
-        return;
-    }
-
-    // 영수증 첨부 필수 체크
-    if (!receipts || receipts.length === 0) {
-      alert("결제 완료 처리를 위해서는 영수증을 반드시 첨부해야 합니다.");
-      return;
-    }
-
-    // 상세 항목별 실제 지급 금액 검증 및 변환
-    const detailActualPaidAmountList = [];
-    let totalDetailAmount = 0;
-    
-    if (detail.details && detail.details.length > 0) {
-      detail.details.forEach(item => {
-        const detailAmountStr = detailActualPaidAmounts[item.expenseDetailId] || '';
-        const paymentMethod = detailPaymentMethods[item.expenseDetailId] || 'CASH';
-        
-        if (detailAmountStr) {
-          const detailAmount = parseInt(detailAmountStr.replace(/,/g, ''));
-          if (detailAmount <= 0) {
-            alert(`${item.category || '항목'}의 실제 지급 금액은 0보다 커야 합니다.`);
-            return;
-          }
-          detailActualPaidAmountList.push({
-            expenseDetailId: item.expenseDetailId,
-            actualPaidAmount: detailAmount,
-            paymentMethod: paymentMethod
-          });
-          totalDetailAmount += detailAmount;
-        } else {
-          // 입력하지 않은 경우 결재 금액 사용
-          detailActualPaidAmountList.push({
-            expenseDetailId: item.expenseDetailId,
-            actualPaidAmount: item.amount || 0,
-            paymentMethod: paymentMethod
-          });
-          totalDetailAmount += (item.amount || 0);
-        }
-      });
-    }
-
-    // 항목 합계 검증
-    if (totalDetailAmount <= 0) {
-      alert("실제 지급 금액 합계는 0보다 커야 합니다.");
-      return;
-    }
-    
-    // 최종 사용할 금액 (항목 합계 사용)
-    const finalPaidAmount = totalDetailAmount;
-    const approvalAmount = detail.totalAmount;
-    
-    // 금액 차이가 있는 경우 처리
-    if (finalPaidAmount !== approvalAmount) {
-      // 사유 필수 확인
-      if (!amountDifferenceReason.trim()) {
-        alert("결재 금액과 실제 지급 금액이 다를 경우 차이 사유를 입력해주세요.");
-        return;
-      }
-    }
-
-    setIsMarkingAsPaid(true);
-    updateExpenseStatus(id, user.userId, 'PAID', finalPaidAmount, amountDifferenceReason.trim(), detailActualPaidAmountList)
-    .then((res) => {
-        if(res.success) {
-            alert("결제가 완료되었습니다!");
-            handleClosePaymentModal();
-            window.location.reload();
-        } else {
-            alert("결제 완료 처리 실패: " + res.message);
-        }
-    })
-    .catch((error) => {
-        const errorMessage = error?.response?.data?.message || error?.message || "오류가 발생했습니다.";
-        alert(errorMessage);
-    })
-    .finally(() => setIsMarkingAsPaid(false));
-  };
 
   // 금액 포맷팅 (천 단위 콤마)
   const formatAmount = (value) => {
@@ -675,7 +592,7 @@ const ExpenseDetailPage = () => {
   // 영수증 첨부 권한 체크
   const canUploadReceipt = () => {
     if (!user || !detail) return false;
-    if (detail.status !== 'PAID') return false;
+    if (detail.status !== 'APPROVED') return false;
     
     // 작성자 본인 또는 ACCOUNTANT
     const isOwner = detail.drafterId === user.userId;
@@ -749,8 +666,8 @@ const ExpenseDetailPage = () => {
             detail.approvalLines.map((line) => {
               // 현재 사용자가 해당 결재자인지 확인
               const isCurrentUser = user && line.approverId === user.userId;
-              // PAID 상태가 아니고, 현재 사용자가 해당 결재자인 경우 취소 가능
-              const canCancel = detail.status !== 'PAID' && isCurrentUser;
+              // APPROVED 상태가 아니고, 현재 사용자가 해당 결재자인 경우 취소 가능
+              const canCancel = detail.status !== 'APPROVED' && isCurrentUser;
               
               return (
                 <S.StampBox key={line.approvalLineId}>
@@ -796,7 +713,7 @@ const ExpenseDetailPage = () => {
                     </div>
                   )}
                   {/* 첫 결재자가 결재한 후 추가 결재자 추가 버튼 */}
-                  {isFirstApprover() && detail.approvalLines.indexOf(line) === 0 && detail.status !== 'PAID' && detail.status !== 'REJECTED' && (
+                  {isFirstApprover() && detail.approvalLines.indexOf(line) === 0 && detail.status !== 'APPROVED' && detail.status !== 'REJECTED' && (
                     <div style={{ marginTop: '8px' }}>
                       <button
                         onClick={handleOpenAddApproverModal}
@@ -897,9 +814,9 @@ const ExpenseDetailPage = () => {
               <th>상호명</th>
               <th>적요</th>
               <th style={{ textAlign: 'right' }}>금액</th>
-              {detail.status === 'PAID' && (
+              {detail.status === 'APPROVED' && (
                 <>
-                  <th style={{ textAlign: 'right' }}>실제 지급 금액</th>
+                  <th style={{ textAlign: 'right' }}>승인 금액</th>
                   <th>결제수단</th>
                   <th>카드번호</th>
                 </>
@@ -944,9 +861,9 @@ const ExpenseDetailPage = () => {
                 </S.MerchantNameCell>
                 <td data-label="적요">{item.description}</td>
                 <td style={{ textAlign: 'right' }} data-label="금액">{item.amount.toLocaleString()}원</td>
-                {detail.status === 'PAID' && (
+                {detail.status === 'APPROVED' && (
                   <>
-                    <td style={{ textAlign: 'right' }} data-label="실제 지급 금액">
+                    <td style={{ textAlign: 'right' }} data-label="승인 금액">
                       {item.actualPaidAmount !== null && item.actualPaidAmount !== undefined 
                         ? item.actualPaidAmount.toLocaleString() + '원'
                         : item.amount.toLocaleString() + '원'}
@@ -1102,7 +1019,7 @@ const ExpenseDetailPage = () => {
            </span>
          )}
          {/* 결재 권한이 있고, 문서가 반려되지 않고 결제가 완료되지 않은 경우에만 결재하기/반려하기 버튼 표시 */}
-         {hasApprovalPermission() && detail.status !== 'REJECTED' && detail.status !== 'PAID' && (
+         {hasApprovalPermission() && detail.status !== 'REJECTED' && detail.status !== 'APPROVED' && (
            <>
              <button 
                className="approve" 
@@ -1122,20 +1039,9 @@ const ExpenseDetailPage = () => {
              </button>
            </>
          )}
-         {/* ACCOUNTANT 권한을 가진 사용자가 APPROVED 상태의 문서를 PAID로 변경 가능 */}
-         {user && user.role === 'ACCOUNTANT' && detail.status === 'APPROVED' && (
-           <button 
-             className="paid" 
-             onClick={handleOpenPaymentModal} 
-             disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
-             aria-label="결제 완료"
-           >
-             {isMarkingAsPaid ? '처리 중...' : '결제 완료'}
-           </button>
-         )}
-         {/* TAX_ACCOUNTANT 권한을 가진 사용자가 세무 수집된 문서에 대해 수정 요청 가능 */}
-         {/* PAID 상태(처음 요청) 또는 WAIT 상태(재요청)에서 가능 */}
-         {user && user.role === 'TAX_ACCOUNTANT' && detail.taxCollectedAt && (detail.status === 'PAID' || detail.status === 'WAIT') && (
+        {/* TAX_ACCOUNTANT 권한을 가진 사용자가 세무 수집된 문서에 대해 수정 요청 가능 */}
+        {/* APPROVED 상태(처음 요청) 또는 WAIT 상태(재요청)에서 가능 */}
+        {user && user.role === 'TAX_ACCOUNTANT' && detail.taxCollectedAt && (detail.status === 'APPROVED' || detail.status === 'WAIT') && (
            <button 
              className="edit" 
              onClick={handleRequestTaxRevision} 

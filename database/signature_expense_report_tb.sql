@@ -28,7 +28,7 @@ CREATE TABLE `expense_report_tb` (
   `report_date` date NOT NULL COMMENT '작성 일자',
   `title` varchar(100) NOT NULL COMMENT '문서 제목',
   `total_amount` decimal(15,0) DEFAULT '0' COMMENT '총 합계 금액',
-  `status` varchar(20) DEFAULT 'DRAFT' COMMENT '상태 (DRAFT, PENDING, APPROVED, REJECTED, PAID)',
+  `status` varchar(20) DEFAULT 'DRAFT' COMMENT '상태 (DRAFT, PENDING, APPROVED, REJECTED)',
   `payment_req_date` date DEFAULT NULL COMMENT '지급 요청일',
   `receipt_file_path` varchar(500) DEFAULT NULL,
   `tax_processed` tinyint DEFAULT '0',

@@ -582,7 +582,7 @@ const ExpenseCreatePage = () => {
       reportDate: report.reportDate,
       paymentReqDate: report.paymentReqDate,
       isPreApproval: report.isPreApproval || false,
-      status: hasSalaryCategory ? EXPENSE_STATUS.PAID : EXPENSE_STATUS.WAIT,
+      status: hasSalaryCategory ? EXPENSE_STATUS.APPROVED : EXPENSE_STATUS.WAIT,
       totalAmount: totalAmount,
       details: cleanedDetails,
       approvalLines: !hasSalaryCategory ? finalApprovers.map(userId => {

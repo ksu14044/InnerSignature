@@ -574,7 +574,7 @@
         AND company_id = #{companyId}
     </update>
 
-    <!-- 세무 수집 대상 건 조회 (PAID 상태의 모든 문서, 수집 여부와 관계없이) -->
+    <!-- 세무 수집 대상 건 조회 (APPROVED 상태의 모든 문서, 수집 여부와 관계없이) -->
     <select id="selectTaxPendingCollection" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT 
             r.expense_report_id,
@@ -591,7 +591,7 @@
         FROM expense_report_tb r
         LEFT JOIN user_tb u ON r.drafter_id = u.user_id
         WHERE r.company_id = #{companyId}
-            AND r.status = 'PAID'
+            AND r.status = 'APPROVED'
         <if test="startDate != null">
             AND r.report_date >= #{startDate}
         </if>
@@ -701,7 +701,7 @@
         ORDER BY amount DESC
     </select>
 
-    <!-- 세무처리 대기 건 조회 (PAID 상태이지만 taxProcessed=false) -->
+    <!-- 세무처리 대기 건 조회 (APPROVED 상태이지만 taxProcessed=false) -->
     <select id="selectTaxPendingReports" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT 
             r.*, 
@@ -722,7 +722,7 @@
                AND TRIM(d.description) != '') AS descriptionCount
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
-        WHERE r.status = 'PAID' 
+        WHERE r.status = 'APPROVED' 
           AND (r.tax_processed = 0 OR r.tax_processed IS NULL)
           AND r.company_id = #{companyId}
         <if test="startDate != null">
@@ -749,7 +749,7 @@
             COALESCE(SUM(CASE WHEN (tax_processed = 0 OR tax_processed IS NULL) THEN COALESCE(actual_paid_amount, total_amount) ELSE 0 END), 0) AS pendingAmount,
             COALESCE(SUM(CASE WHEN tax_processed = 1 THEN COALESCE(actual_paid_amount, total_amount) ELSE 0 END), 0) AS completedAmount
         FROM expense_report_tb
-        WHERE status = 'PAID'
+        WHERE status = 'APPROVED'
         AND company_id = #{companyId}
         <if test="startDate != null">
             AND report_date &gt;= #{startDate}
@@ -767,7 +767,7 @@
             COALESCE(SUM(COALESCE(actual_paid_amount, total_amount)), 0) AS totalAmount,
             COALESCE(SUM(CASE WHEN tax_processed = 1 THEN COALESCE(actual_paid_amount, total_amount) ELSE 0 END), 0) AS completedAmount
         FROM expense_report_tb
-        WHERE status = 'PAID'
+        WHERE status = 'APPROVED'
         AND company_id = #{companyId}
         <if test="startDate != null">
             AND report_date &gt;= #{startDate}
