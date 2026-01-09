@@ -32,7 +32,7 @@ const ExpenseListPage = () => {
   const [paymentPendingTotalPages, setPaymentPendingTotalPages] = useState(1);
   const [paymentPendingTotalElements, setPaymentPendingTotalElements] = useState(0);
   
-  // 필터 상태
+  // 필터 상태 (실제 적용된 필터)
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -44,6 +44,21 @@ const ExpenseListPage = () => {
     isSecret: null, // null: 전체, true: 비밀글만, false: 일반글만
     drafterName: '', // 작성자(기안자) 이름
     paymentMethod: '' // 결제수단 필터
+  });
+
+  // 상태 체크박스용 로컬 상태 (체크박스는 제어 컴포넌트로 유지)
+  const [localStatus, setLocalStatus] = useState([]);
+
+  // 필터 입력 필드 ref (비제어 컴포넌트로 사용)
+  const filterRefs = useRef({
+    startDate: null,
+    endDate: null,
+    minAmount: null,
+    maxAmount: null,
+    category: null,
+    drafterName: null,
+    paymentMethod: null,
+    isSecret: null
   });
 
   const pageSize = 10;
@@ -132,36 +147,52 @@ const ExpenseListPage = () => {
     }
   };
 
-  // 필터 상태 변경 핸들러
-  const handleFilterChange = (field, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // 상태 체크박스 변경 핸들러
+  // 상태 체크박스 변경 핸들러 (상태만 제어 컴포넌트로 유지)
   const handleStatusChange = (status) => {
-    setFilters(prev => {
-      const statusList = prev.status || [];
-      if (statusList.includes(status)) {
-        return {
-          ...prev,
-          status: statusList.filter(s => s !== status)
-        };
+    setLocalStatus(prev => {
+      if (prev.includes(status)) {
+        return prev.filter(s => s !== status);
       } else {
-        return {
-          ...prev,
-          status: [...statusList, status]
-        };
+        return [...prev, status];
       }
     });
   };
 
-  // 필터 적용 핸들러
+  // 필터 열기/닫기 핸들러 (열 때 ref 값을 현재 필터로 동기화)
+  const handleFilterToggle = () => {
+    if (!isFilterOpen) {
+      // 필터를 열 때 ref에 현재 적용된 필터 값 설정
+      if (filterRefs.current.startDate) filterRefs.current.startDate.value = filters.startDate;
+      if (filterRefs.current.endDate) filterRefs.current.endDate.value = filters.endDate;
+      if (filterRefs.current.minAmount) filterRefs.current.minAmount.value = filters.minAmount;
+      if (filterRefs.current.maxAmount) filterRefs.current.maxAmount.value = filters.maxAmount;
+      if (filterRefs.current.category) filterRefs.current.category.value = filters.category;
+      if (filterRefs.current.drafterName) filterRefs.current.drafterName.value = filters.drafterName;
+      if (filterRefs.current.paymentMethod) filterRefs.current.paymentMethod.value = filters.paymentMethod;
+      if (filterRefs.current.isSecret) filterRefs.current.isSecret.value = filters.isSecret === null ? '' : filters.isSecret ? 'true' : 'false';
+      setLocalStatus(filters.status || []);
+    }
+    setIsFilterOpen(!isFilterOpen);
+  };
+
+  // 필터 적용 핸들러 (ref에서 값을 읽어 적용)
   const handleApplyFilters = () => {
+    const newFilters = {
+      startDate: filterRefs.current.startDate?.value || '',
+      endDate: filterRefs.current.endDate?.value || '',
+      minAmount: filterRefs.current.minAmount?.value || '',
+      maxAmount: filterRefs.current.maxAmount?.value || '',
+      status: localStatus,
+      category: filterRefs.current.category?.value || '',
+      taxProcessed: null,
+      isSecret: filterRefs.current.isSecret?.value === '' ? null : filterRefs.current.isSecret?.value === 'true',
+      drafterName: filterRefs.current.drafterName?.value || '',
+      paymentMethod: filterRefs.current.paymentMethod?.value || ''
+    };
+    
+    setFilters(newFilters);
     setCurrentPage(1);
-    loadExpenseList(1, filters);
+    loadExpenseList(1, newFilters);
     setIsFilterOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -177,8 +208,21 @@ const ExpenseListPage = () => {
       category: '',
       taxProcessed: null,
       isSecret: null,
-      drafterName: ''
+      drafterName: '',
+      paymentMethod: ''
     };
+    
+    // ref 값들을 초기화
+    if (filterRefs.current.startDate) filterRefs.current.startDate.value = '';
+    if (filterRefs.current.endDate) filterRefs.current.endDate.value = '';
+    if (filterRefs.current.minAmount) filterRefs.current.minAmount.value = '';
+    if (filterRefs.current.maxAmount) filterRefs.current.maxAmount.value = '';
+    if (filterRefs.current.category) filterRefs.current.category.value = '';
+    if (filterRefs.current.drafterName) filterRefs.current.drafterName.value = '';
+    if (filterRefs.current.paymentMethod) filterRefs.current.paymentMethod.value = '';
+    if (filterRefs.current.isSecret) filterRefs.current.isSecret.value = '';
+    setLocalStatus([]);
+    
     setFilters(emptyFilters);
     setCurrentPage(1);
     loadExpenseList(1, emptyFilters);
@@ -611,7 +655,7 @@ const ExpenseListPage = () => {
               <S.FilterButton 
                 data-tourid="tour-filter-button"
                 variant={isFilterOpen ? 'primary' : 'secondary'}
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                onClick={handleFilterToggle}
                 aria-label="필터"
                 aria-pressed={isFilterOpen}
               >
@@ -641,17 +685,16 @@ const ExpenseListPage = () => {
               <S.FilterLabel>작성일 시작일</S.FilterLabel>
               <S.FilterInput
                 type="date"
-                value={filters.startDate}
-                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                ref={(el) => (filterRefs.current.startDate = el)}
+                defaultValue={filters.startDate}
               />
             </S.FilterGroup>
             <S.FilterGroup>
               <S.FilterLabel>작성일 종료일</S.FilterLabel>
               <S.FilterInput
                 type="date"
-                value={filters.endDate}
-                onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                min={filters.startDate || undefined}
+                ref={(el) => (filterRefs.current.endDate = el)}
+                defaultValue={filters.endDate}
               />
             </S.FilterGroup>
             <S.FilterGroup>
@@ -659,8 +702,8 @@ const ExpenseListPage = () => {
               <S.FilterInput
                 type="number"
                 placeholder="0"
-                value={filters.minAmount}
-                onChange={(e) => handleFilterChange('minAmount', e.target.value)}
+                ref={(el) => (filterRefs.current.minAmount = el)}
+                defaultValue={filters.minAmount}
                 min="0"
               />
             </S.FilterGroup>
@@ -669,16 +712,16 @@ const ExpenseListPage = () => {
               <S.FilterInput
                 type="number"
                 placeholder="무제한"
-                value={filters.maxAmount}
-                onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
-                min={filters.minAmount || 0}
+                ref={(el) => (filterRefs.current.maxAmount = el)}
+                defaultValue={filters.maxAmount}
+                min="0"
               />
             </S.FilterGroup>
             <S.FilterGroup>
               <S.FilterLabel>카테고리</S.FilterLabel>
               <S.FilterSelect
-                value={filters.category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
+                ref={(el) => (filterRefs.current.category = el)}
+                defaultValue={filters.category}
               >
                 <option value="">전체</option>
                 <option value="식대">식대</option>
@@ -693,16 +736,17 @@ const ExpenseListPage = () => {
               <S.FilterLabel>작성자(기안자)</S.FilterLabel>
               <S.FilterInput
                 type="text"
-                value={filters.drafterName}
-                onChange={(e) => handleFilterChange('drafterName', e.target.value)}
+                ref={(el) => (filterRefs.current.drafterName = el)}
+                defaultValue={filters.drafterName}
+                placeholder="작성자 이름"
               />
             </S.FilterGroup>
             {/* 결제수단 필터 */}
             <S.FilterGroup>
               <S.FilterLabel>결제수단</S.FilterLabel>
               <S.FilterSelect
-                value={filters.paymentMethod}
-                onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
+                ref={(el) => (filterRefs.current.paymentMethod = el)}
+                defaultValue={filters.paymentMethod}
               >
                 <option value="">전체</option>
                 <option value="CASH">현금</option>
@@ -716,11 +760,8 @@ const ExpenseListPage = () => {
               <S.FilterGroup>
                 <S.FilterLabel>비밀글</S.FilterLabel>
                 <S.FilterSelect
-                  value={filters.isSecret === null ? '' : filters.isSecret ? 'true' : 'false'}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? null : e.target.value === 'true';
-                    handleFilterChange('isSecret', value);
-                  }}
+                  ref={(el) => (filterRefs.current.isSecret = el)}
+                  defaultValue={filters.isSecret === null ? '' : filters.isSecret ? 'true' : 'false'}
                 >
                   <option value="">전체</option>
                   <option value="true">비밀글만</option>
@@ -739,7 +780,7 @@ const ExpenseListPage = () => {
                   <S.StatusCheckboxLabel key={status}>
                     <input
                       type="checkbox"
-                      checked={filters.status.includes(status)}
+                      checked={localStatus.includes(status)}
                       onChange={() => handleStatusChange(status)}
                     />
                     <span>{label}</span>

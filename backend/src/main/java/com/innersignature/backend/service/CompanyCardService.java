@@ -23,6 +23,8 @@ public class CompanyCardService {
     private final CompanyCardMapper companyCardMapper;
     private final EncryptionUtil encryptionUtil;
     private final PermissionUtil permissionUtil;
+
+    
     
     /**
      * 회사 카드 생성
