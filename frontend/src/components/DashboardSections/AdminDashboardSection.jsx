@@ -127,27 +127,6 @@ const AdminDashboardSection = ({ filters }) => {
         </S.AlertSection>
       )}
 
-      {/* 요약 통계 */}
-      {dashboardStats && (
-        <S.StatsGrid>
-          <S.StatCard>
-            <S.StatLabel>총 금액</S.StatLabel>
-            <S.StatValue>{dashboardStats.totalAmount?.toLocaleString()}원</S.StatValue>
-          </S.StatCard>
-          <S.StatCard>
-            <S.StatLabel>총 건수</S.StatLabel>
-            <S.StatValue>{dashboardStats.totalCount?.toLocaleString()}건</S.StatValue>
-          </S.StatCard>
-          <S.StatCard>
-            <S.StatLabel>진행 중 건수</S.StatLabel>
-            <S.StatValue>{dashboardStats.pendingCount?.toLocaleString()}건</S.StatValue>
-          </S.StatCard>
-          <S.StatCard>
-            <S.StatLabel>평균 금액</S.StatLabel>
-            <S.StatValue>{Math.round(dashboardStats.averageAmount || 0).toLocaleString()}원</S.StatValue>
-          </S.StatCard>
-        </S.StatsGrid>
-      )}
 
       {/* 차트 */}
       <S.ChartsGrid>

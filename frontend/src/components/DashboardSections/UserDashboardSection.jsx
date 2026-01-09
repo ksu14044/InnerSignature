@@ -91,27 +91,6 @@ const UserDashboardSection = ({ filters }) => {
   // 데스크톱 버전
   return (
     <>
-      <S.SectionTitle>내 결의서 현황</S.SectionTitle>
-      
-      <S.StatsGrid>
-        <S.StatCard>
-          <S.StatLabel>총 금액</S.StatLabel>
-          <S.StatValue>{stats.totalAmount.toLocaleString()}원</S.StatValue>
-        </S.StatCard>
-        <S.StatCard status="wait">
-          <S.StatLabel>대기</S.StatLabel>
-          <S.StatValue>{stats.waitCount}건</S.StatValue>
-        </S.StatCard>
-        <S.StatCard status="approved">
-          <S.StatLabel>승인</S.StatLabel>
-          <S.StatValue>{stats.approvedCount}건</S.StatValue>
-        </S.StatCard>
-        <S.StatCard status="paid">
-          <S.StatLabel>지출완료</S.StatLabel>
-          <S.StatValue>{stats.paidCount}건</S.StatValue>
-        </S.StatCard>
-      </S.StatsGrid>
-
       {recentExpenses.length > 0 && (
         <S.RecentSection>
           <S.SectionTitle>최근 작성한 결의서</S.SectionTitle>

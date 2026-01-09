@@ -33,7 +33,6 @@ const MainDashboardPage = () => {
   const [selectedStatus, setSelectedStatus] = useState(null); // 선택된 상태
   const [statusExpenses, setStatusExpenses] = useState([]); // 선택된 상태의 결의서 목록
   const [loadingStatusExpenses, setLoadingStatusExpenses] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' 또는 'detailed'
   const [subscription, setSubscription] = useState(null);
   const [totalCredit, setTotalCredit] = useState(0);
   
@@ -246,15 +245,6 @@ const MainDashboardPage = () => {
         }
       />
 
-      {/* 탭 버튼 */}
-      <S.TabSection>
-        <S.TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
-          개요
-        </S.TabButton>
-        <S.TabButton active={activeTab === 'detailed'} onClick={() => setActiveTab('detailed')}>
-          상세 분석
-        </S.TabButton>
-      </S.TabSection>
 
       {/* 기간 필터 */}
       <S.FilterSection>
@@ -309,18 +299,15 @@ const MainDashboardPage = () => {
         </S.InfoCardsSection>
       )}
 
-      {/* 개요 탭 */}
-      {activeTab === 'overview' && (
-        <>
-          {/* 통계 카드 */}
-          <S.StatsGrid>
+      {/* 통계 카드 */}
+      <S.StatsGrid>
         <S.StatCard>
           <S.StatLabel>합계 금액</S.StatLabel>
           <S.StatValue>{stats.totalAmount.toLocaleString()}원</S.StatValue>
         </S.StatCard>
-        
-        <S.StatCard 
-          status="wait" 
+
+        <S.StatCard
+          status="wait"
           onClick={() => handleStatCardClick('WAIT')}
           style={{ cursor: 'pointer' }}
           title="대기 상태 결의서 보기"
@@ -330,9 +317,9 @@ const MainDashboardPage = () => {
           <S.StatValue>{stats.waitCount}건</S.StatValue>
           {selectedStatus === 'WAIT' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
         </S.StatCard>
-        
-        <S.StatCard 
-          status="rejected" 
+
+        <S.StatCard
+          status="rejected"
           onClick={() => handleStatCardClick('REJECTED')}
           style={{ cursor: 'pointer' }}
           title="반려 상태 결의서 보기"
@@ -342,9 +329,9 @@ const MainDashboardPage = () => {
           <S.StatValue>{stats.rejectedCount}건</S.StatValue>
           {selectedStatus === 'REJECTED' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
         </S.StatCard>
-        
-        <S.StatCard 
-          status="approved" 
+
+        <S.StatCard
+          status="approved"
           onClick={() => handleStatCardClick('APPROVED')}
           style={{ cursor: 'pointer' }}
           title="승인 상태 결의서 보기"
@@ -354,9 +341,9 @@ const MainDashboardPage = () => {
           <S.StatValue>{stats.approvedCount}건</S.StatValue>
           {selectedStatus === 'APPROVED' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
         </S.StatCard>
-        
-        <S.StatCard 
-          status="paid" 
+
+        <S.StatCard
+          status="paid"
           onClick={() => handleStatCardClick('PAID')}
           style={{ cursor: 'pointer' }}
           title="지출완료 상태 결의서 보기"
@@ -385,7 +372,7 @@ const MainDashboardPage = () => {
               전체 보기
             </S.ViewAllButton>
           </S.StatusExpenseHeader>
-          
+
           {loadingStatusExpenses ? (
             <S.LoadingMessage>로딩 중...</S.LoadingMessage>
           ) : statusExpenses.length === 0 ? (
@@ -400,14 +387,14 @@ const MainDashboardPage = () => {
                       .filter(d => d)
                       .sort()[0] || item.paymentReqDate || item.reportDate
                   : item.paymentReqDate || item.reportDate;
-                
+
                 // 적요(내용) 표시
-                const descriptionDisplay = (item.summaryDescription && item.summaryDescription.trim() !== '') 
-                  ? item.summaryDescription 
-                  : (item.firstDescription && item.firstDescription.trim() !== '') 
-                    ? item.firstDescription 
+                const descriptionDisplay = (item.summaryDescription && item.summaryDescription.trim() !== '')
+                  ? item.summaryDescription
+                  : (item.firstDescription && item.firstDescription.trim() !== '')
+                    ? item.firstDescription
                     : '-';
-                
+
                 return (
                   <S.ExpenseListItem key={item.expenseReportId}>
                     <S.ExpenseListItemLink to={`/detail/${item.expenseReportId}`}>
@@ -444,30 +431,12 @@ const MainDashboardPage = () => {
         </S.StatusExpenseSection>
       )}
 
-          {/* 빠른 액션 */}
-          <S.ActionSection>
-            <S.ActionButton onClick={() => navigate('/expenses/create')}>
-              <FaPlus />
-              <span>새 결의서 작성</span>
-            </S.ActionButton>
-            <S.ActionButton onClick={() => navigate('/expenses')} variant="secondary">
-              <FaList />
-              <span>결의서 목록</span>
-            </S.ActionButton>
-          </S.ActionSection>
-        </>
-      )}
-
-      {/* 상세 분석 탭 - 권한별 섹션 */}
-      {activeTab === 'detailed' && (
-        <>
-          {user?.role === 'USER' && <UserDashboardSection filters={filters} />}
-          {user?.role === 'ACCOUNTANT' && <AccountantDashboardSection filters={filters} />}
-          {user?.role === 'TAX_ACCOUNTANT' && <TaxAccountantDashboardSection filters={filters} />}
-          {user?.role === 'ADMIN' && <AdminDashboardSection filters={filters} />}
-          {user?.role === 'CEO' && <CEODashboardSection filters={filters} />}
-        </>
-      )}
+      {/* 권한별 대시보드 섹션 */}
+      {user?.role === 'USER' && <UserDashboardSection filters={filters} />}
+      {user?.role === 'ACCOUNTANT' && <AccountantDashboardSection filters={filters} />}
+      {user?.role === 'TAX_ACCOUNTANT' && <TaxAccountantDashboardSection filters={filters} />}
+      {user?.role === 'ADMIN' && <AdminDashboardSection filters={filters} />}
+      {user?.role === 'CEO' && <CEODashboardSection filters={filters} />}
 
       {/* CEO이면서 소속 회사가 없을 때 회사 등록 모달 */}
       <CompanyRegistrationModal
