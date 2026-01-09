@@ -38,7 +38,7 @@ public class TaxReportService {
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
-                null, null, statuses, null, true, null, null, // taxProcessed = true, isSecret = null, drafterName = null
+                null, null, statuses, null, true, null, // taxProcessed = true, drafterName = null
                 companyId, null, null); // paymentMethod = null, cardNumber = null
         
         // 각 지출결의서의 상세 내역 조회

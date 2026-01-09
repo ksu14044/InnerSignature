@@ -67,7 +67,6 @@ public class ExpenseController {
      * @param status 상태 배열 (optional, 여러 개 가능: ?status=APPROVED&status=PAID)
      * @param category 카테고리 (optional)
      * @param taxProcessed 세무처리 완료 여부 (optional, true: 완료, false: 미완료, null: 전체)
-     * @param isSecret 비밀글 여부 (optional, true: 비밀글만, false: 일반글만, null: 전체)
      */
     @Operation(summary = "지출결의서 목록 조회", description = "페이지네이션/필터 조건으로 지출결의 목록을 조회합니다.")
     @GetMapping
@@ -81,7 +80,6 @@ public class ExpenseController {
             @RequestParam(required = false) String[] status,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Boolean taxProcessed,
-            @RequestParam(required = false) Boolean isSecret,
             @RequestParam(required = false) String drafterName,
             @RequestParam(required = false) String paymentMethod,
             @RequestParam(required = false) String cardNumber) {
@@ -120,7 +118,7 @@ public class ExpenseController {
         PagedResponse<ExpenseReportDto> pagedResponse = expenseService.getExpenseList(
                 page, size, startDateParsed, endDateParsed,
                 minAmount, maxAmount, statusList, category,
-                taxProcessed, isSecret, drafterName, currentUserId, paymentMethod, cardNumber);
+                taxProcessed, drafterName, currentUserId, paymentMethod, cardNumber);
         
         // 약속된 포장지(ApiResponse)에 담아서 리턴
         return new ApiResponse<>(true, "목록 조회 성공", pagedResponse);
@@ -470,14 +468,13 @@ public class ExpenseController {
      * GET /api/expenses/summary/by-category?startDate=2024-01-01&endDate=2024-12-31&taxProcessed=true
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
-    @Operation(summary = "카테고리별 요약", description = "기간/상태/세무처리/비밀글 여부로 카테고리 요약을 조회합니다. (TAX_ACCOUNTANT)")
+    @Operation(summary = "카테고리별 요약", description = "기간/상태/세무처리 여부로 카테고리 요약을 조회합니다. (TAX_ACCOUNTANT)")
     @GetMapping("/summary/by-category")
     public ApiResponse<List<CategorySummaryDto>> getCategorySummary(
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
             @RequestParam(required = false) String[] status,
-            @RequestParam(required = false) Boolean taxProcessed,
-            @RequestParam(required = false) Boolean isSecret) {
+            @RequestParam(required = false) Boolean taxProcessed) {
 
         LocalDate startDateParsed = null;
         LocalDate endDateParsed = null;
@@ -505,7 +502,7 @@ public class ExpenseController {
 
         Long currentUserId = SecurityUtil.getCurrentUserId();
         List<CategorySummaryDto> summary = expenseService.getCategorySummaryForTaxAccountant(
-                startDateParsed, endDateParsed, statusList, taxProcessed, isSecret, currentUserId);
+                startDateParsed, endDateParsed, statusList, taxProcessed, currentUserId);
         return new ApiResponse<>(true, "카테고리별 요약 조회 성공", summary);
     }
 

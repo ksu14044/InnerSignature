@@ -44,8 +44,7 @@ const TaxAccountantDashboardSection = ({ filters }) => {
           startDate: filters.startDate,
           endDate: filters.endDate,
           status: ['PAID'],
-          taxProcessed: null,
-          isSecret: null
+          taxProcessed: null
         }),
         fetchMonthlyTaxSummary(filters.startDate || null, filters.endDate || null)
       ]);

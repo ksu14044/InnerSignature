@@ -41,7 +41,6 @@ const ExpenseListPage = () => {
     status: [],
     category: '',
     taxProcessed: null, // null: 전체, true: 완료, false: 미완료
-    isSecret: null, // null: 전체, true: 비밀글만, false: 일반글만
     drafterName: '', // 작성자(기안자) 이름
     paymentMethod: '', // 결제수단 필터
     cardNumber: '' // 카드번호 필터
@@ -59,8 +58,7 @@ const ExpenseListPage = () => {
     category: null,
     drafterName: null,
     paymentMethod: null,
-    cardNumber: null,
-    isSecret: null
+    cardNumber: null
   });
 
   const pageSize = 10;
@@ -171,7 +169,6 @@ const ExpenseListPage = () => {
       if (filterRefs.current.category) filterRefs.current.category.value = filters.category;
       if (filterRefs.current.drafterName) filterRefs.current.drafterName.value = filters.drafterName;
       if (filterRefs.current.paymentMethod) filterRefs.current.paymentMethod.value = filters.paymentMethod;
-      if (filterRefs.current.isSecret) filterRefs.current.isSecret.value = filters.isSecret === null ? '' : filters.isSecret ? 'true' : 'false';
       setLocalStatus(filters.status || []);
     }
     setIsFilterOpen(!isFilterOpen);
@@ -187,7 +184,6 @@ const ExpenseListPage = () => {
       status: localStatus,
       category: filterRefs.current.category?.value || '',
       taxProcessed: null,
-      isSecret: filterRefs.current.isSecret?.value === '' ? null : filterRefs.current.isSecret?.value === 'true',
       drafterName: filterRefs.current.drafterName?.value || '',
       paymentMethod: filterRefs.current.paymentMethod?.value || '',
       cardNumber: filterRefs.current.cardNumber?.value || ''
@@ -210,7 +206,6 @@ const ExpenseListPage = () => {
       status: [],
       category: '',
       taxProcessed: null,
-      isSecret: null,
       drafterName: '',
       paymentMethod: '',
       cardNumber: ''
@@ -225,7 +220,6 @@ const ExpenseListPage = () => {
     if (filterRefs.current.drafterName) filterRefs.current.drafterName.value = '';
     if (filterRefs.current.paymentMethod) filterRefs.current.paymentMethod.value = '';
     if (filterRefs.current.cardNumber) filterRefs.current.cardNumber.value = '';
-    if (filterRefs.current.isSecret) filterRefs.current.isSecret.value = '';
     setLocalStatus([]);
     
     setFilters(emptyFilters);
@@ -354,7 +348,6 @@ const ExpenseListPage = () => {
         status: statusParam ? [statusParam] : [],
         category: '',
         taxProcessed: null,
-        isSecret: null,
         drafterName: '',
         paymentMethod: ''
       };
@@ -770,20 +763,6 @@ const ExpenseListPage = () => {
                 placeholder="카드번호 (뒷 4자리)"
               />
             </S.FilterGroup>
-            {/* 비밀글 필터 (USER 역할이 아닌 경우에만 표시) */}
-            {user && user.role !== 'USER' && (
-              <S.FilterGroup>
-                <S.FilterLabel>비밀글</S.FilterLabel>
-                <S.FilterSelect
-                  ref={(el) => (filterRefs.current.isSecret = el)}
-                  defaultValue={filters.isSecret === null ? '' : filters.isSecret ? 'true' : 'false'}
-                >
-                  <option value="">전체</option>
-                  <option value="true">비밀글만</option>
-                  <option value="false">일반글만</option>
-                </S.FilterSelect>
-              </S.FilterGroup>
-            )}
           </S.FilterGrid>
           <S.FilterGroup>
             <S.FilterLabel>상태</S.FilterLabel>
@@ -858,9 +837,6 @@ const ExpenseListPage = () => {
                   <td>
                     <S.StyledLink to={`/detail/${item.expenseReportId}`}>
                       {paymentReqDate}
-                      {item.isSecret && (
-                        <S.SecretBadge>비밀</S.SecretBadge>
-                      )}
                     </S.StyledLink>
                   </td>
                   <td>{item.drafterName}</td>
@@ -1022,9 +998,6 @@ const ExpenseListPage = () => {
               <S.CardHeader>
                 <S.CardTitle>
                   지급 요청일: {paymentReqDate}
-                  {item.isSecret && (
-                    <S.SecretBadge>비밀</S.SecretBadge>
-                  )}
                 </S.CardTitle>
                 <S.StatusBadge status={item.status}>
                   {STATUS_KOREAN[item.status] || item.status}

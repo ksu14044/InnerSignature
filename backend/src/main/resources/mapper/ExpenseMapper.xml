@@ -121,9 +121,6 @@
             <if test="taxProcessed != null">
                 AND r.tax_processed = #{taxProcessed}
             </if>
-            <if test="isSecret != null">
-                AND r.is_secret = #{isSecret}
-            </if>
             <if test="drafterName != null and drafterName != ''">
                 AND u.korean_name LIKE CONCAT('%', #{drafterName}, '%')
             </if>
@@ -180,9 +177,6 @@
             <if test="taxProcessed != null">
                 AND r.tax_processed = #{taxProcessed}
             </if>
-            <if test="isSecret != null">
-                AND r.is_secret = #{isSecret}
-            </if>
             <if test="drafterName != null and drafterName != ''">
                 AND u.korean_name LIKE CONCAT('%', #{drafterName}, '%')
             </if>
@@ -222,9 +216,6 @@
             </if>
             <if test="taxProcessed != null">
                 AND r.tax_processed = #{taxProcessed}
-            </if>
-            <if test="isSecret != null">
-                AND r.is_secret = #{isSecret}
             </if>
         </where>
         GROUP BY d.category
@@ -360,7 +351,6 @@
             status,
             payment_req_date,
             is_pre_approval,
-            is_secret,
             company_id
         ) VALUES (
             #{drafterId},
@@ -370,7 +360,6 @@
             #{status, jdbcType=VARCHAR},
             #{paymentReqDate},
             #{isPreApproval, jdbcType=TINYINT},
-            #{isSecret, jdbcType=TINYINT},
             #{companyId}
         )
     </insert>
@@ -381,8 +370,7 @@
             report_date = #{expenseReportDto.reportDate},
             total_amount = #{expenseReportDto.totalAmount},
             payment_req_date = #{expenseReportDto.paymentReqDate},
-            is_pre_approval = #{expenseReportDto.isPreApproval, jdbcType=TINYINT},
-            is_secret = #{expenseReportDto.isSecret, jdbcType=TINYINT}
+            is_pre_approval = #{expenseReportDto.isPreApproval, jdbcType=TINYINT}
         WHERE
             expense_report_id = #{expenseReportDto.expenseReportId}
             AND company_id = #{companyId}
@@ -846,9 +834,6 @@
             <if test="taxProcessed != null">
                 AND r.tax_processed = #{taxProcessed}
             </if>
-            <if test="isSecret != null">
-                AND r.is_secret = #{isSecret}
-            </if>
             <if test="drafterName != null and drafterName != ''">
                 AND u.korean_name LIKE CONCAT('%', #{drafterName}, '%')
             </if>
@@ -893,9 +878,6 @@
             </if>
             <if test="taxProcessed != null">
                 AND r.tax_processed = #{taxProcessed}
-            </if>
-            <if test="isSecret != null">
-                AND r.is_secret = #{isSecret}
             </if>
             <if test="drafterName != null and drafterName != ''">
                 AND u.korean_name LIKE CONCAT('%', #{drafterName}, '%')

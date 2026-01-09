@@ -83,8 +83,7 @@ const ExpenseDetailPage = () => {
   // 급여 카테고리 포함 여부 확인
   const hasSalaryCategory = detail.details && detail.details.some(detailItem => detailItem.category === '급여');
   
-  // 비밀글이거나 급여인 경우 결재 불필요
-  const isSecretOrSalary = detail.isSecret || hasSalaryCategory;
+  // 급여인 경우 결재 불필요 (기밀 사항)
 
   const handleOpenModal = () => {
     // 저장된 서명이 있고 기본 서명이 있으면 바로 결재할지 물어봄
@@ -715,7 +714,7 @@ const ExpenseDetailPage = () => {
         <S.TitleInfo>
           <h1>
             지출결의서
-            {(detail.isSecret || hasSalaryCategory) && (
+            {hasSalaryCategory && (
               <S.SecretBadge>비밀</S.SecretBadge>
             )}
           </h1>
@@ -737,8 +736,8 @@ const ExpenseDetailPage = () => {
         </S.TitleInfo>
 
         <S.StampArea>
-          {isSecretOrSalary ? (
-            // 비밀글이거나 급여 결의서는 결재 불필요
+          {hasSalaryCategory ? (
+            // 급여 결의서는 결재 불필요
             <S.StampBox>
               <S.StampPosition>결재 정보</S.StampPosition>
               <S.StampContent>

@@ -30,7 +30,6 @@ const ExpenseCreatePage = () => {
   const [report, setReport] = useState({
     paymentReqDate: new Date().toISOString().split('T')[0], // 오늘 날짜로 디폴트 설정
     reportDate: new Date().toISOString().split('T')[0],
-    isSecret: false, // 비밀글 여부
     isPreApproval: false, // 가승인 요청 여부 (결의서 단위)
   });
 
@@ -90,8 +89,7 @@ const ExpenseCreatePage = () => {
     return completedDetails.some(detail => detail.category === '급여');
   }, [completedDetails]);
 
-  // 비밀글이거나 급여인 경우 결재 불필요
-  const isSecretOrSalary = report.isSecret || hasSalaryCategory;
+  // 급여인 경우 결재 불필요 (기밀 사항)
 
   // 카테고리 목록 상태 (API에서 동적으로 불러옴)
   const [categoryList, setCategoryList] = useState([]);
@@ -197,7 +195,6 @@ const ExpenseCreatePage = () => {
               title: expense.title || '',
               paymentReqDate: expense.paymentReqDate || '',
               reportDate: expense.reportDate || new Date().toISOString().split('T')[0],
-              isSecret: expense.isSecret || false,
               isPreApproval: expense.isPreApproval || false,
             });
 
@@ -494,8 +491,8 @@ const ExpenseCreatePage = () => {
       }
     }
     
-    // 2. 결재자 선택 확인 (비밀글이거나 급여가 아닌 경우)
-    if (!isSecretOrSalary && (!selectedApprovers || selectedApprovers.length === 0)) {
+    // 2. 결재자 선택 확인 (급여가 아닌 경우)
+    if (!hasSalaryCategory && (!selectedApprovers || selectedApprovers.length === 0)) {
       missingFields.push('결재자 선택');
       if (!firstMissingField) {
         firstMissingField = { type: 'approver', ref: approverSectionRef };
@@ -551,9 +548,9 @@ const ExpenseCreatePage = () => {
       amount: detail.amount ? Number(parseFormattedNumber(detail.amount)) : 0
     }));
 
-    // 담당 결재자 자동 설정 (비밀글이거나 급여가 아닌 경우)
+    // 담당 결재자 자동 설정 (급여가 아닌 경우)
     let finalApprovers = selectedApprovers;
-    if (!isSecretOrSalary && (!selectedApprovers || selectedApprovers.length === 0)) {
+    if (!hasSalaryCategory && (!selectedApprovers || selectedApprovers.length === 0)) {
       try {
         const { getActiveApprovers } = await import('../../api/userApproverApi');
         const approversResponse = await getActiveApprovers(user.userId);
@@ -585,11 +582,10 @@ const ExpenseCreatePage = () => {
       reportDate: report.reportDate,
       paymentReqDate: report.paymentReqDate,
       isPreApproval: report.isPreApproval || false,
-      status: isSecretOrSalary ? EXPENSE_STATUS.PAID : EXPENSE_STATUS.WAIT,
+      status: hasSalaryCategory ? EXPENSE_STATUS.PAID : EXPENSE_STATUS.WAIT,
       totalAmount: totalAmount,
       details: cleanedDetails,
-      isSecret: report.isSecret || false,
-      approvalLines: !isSecretOrSalary ? finalApprovers.map(userId => {
+      approvalLines: !hasSalaryCategory ? finalApprovers.map(userId => {
         const adminUser = adminUsers.find(user => user.userId === userId);
         return {
           approverId: userId,
@@ -621,8 +617,8 @@ const ExpenseCreatePage = () => {
           const expenseId = response.data.data;
 
           if (expenseId) {
-            // 비밀글이거나 급여가 아닌 경우에만 결재 라인 설정
-            if (!isSecretOrSalary) {
+            // 급여가 아닌 경우에만 결재 라인 설정
+            if (!hasSalaryCategory) {
               // 선택된 결재자들을 approvalLines로 변환 (순서 보장)
               const approvalLines = selectedApprovers.map(userId => {
                 const adminUser = adminUsers.find(user => user.userId === userId);
@@ -678,10 +674,10 @@ const ExpenseCreatePage = () => {
             }
 
             // 성공 메시지
-            if (!isSecretOrSalary) {
+            if (!hasSalaryCategory) {
               alert('지출결의서가 작성되고 결재 라인이 설정되었습니다!');
             } else {
-              alert(report.isSecret ? '비밀글 지출결의서가 작성되었습니다!' : '급여 지출결의서가 작성되었습니다!');
+              alert('급여 지출결의서가 작성되었습니다!');
             }
 
             navigate(`/detail/${expenseId}`);
@@ -746,8 +742,8 @@ const ExpenseCreatePage = () => {
         </S.FormRow>
       </S.Section>
 
-      {/* 2. 결재자 선택 섹션 - 비밀글이거나 급여가 아닌 경우에만 표시 */}
-      {!isSecretOrSalary && (
+      {/* 2. 결재자 선택 섹션 - 급여가 아닌 경우에만 표시 */}
+      {!hasSalaryCategory && (
         <S.Section ref={approverSectionRef} data-tourid="tour-approver-selection">
           <S.SectionHeader>
             <S.SectionTitle>결재자 선택</S.SectionTitle>
@@ -789,14 +785,12 @@ const ExpenseCreatePage = () => {
         </S.Section>
       )}
 
-      {/* 비밀글이거나 급여 카테고리 선택 시 안내 메시지 */}
-      {isSecretOrSalary && (
+      {/* 급여 카테고리 선택 시 안내 메시지 */}
+      {hasSalaryCategory && (
         <S.Section>
           <S.SectionTitle>결재자 정보</S.SectionTitle>
           <S.InfoMessage>
-            {report.isSecret 
-              ? '비밀글은 기밀 사항으로 결재자가 지정되지 않습니다. 작성자와 세무사만 조회할 수 있습니다.'
-              : '급여 항목은 기밀 사항으로 결재자가 지정되지 않습니다. 작성자와 세무사만 조회할 수 있습니다.'}
+            급여 항목은 기밀 사항으로 결재자가 지정되지 않습니다. 작성자와 세무사만 조회할 수 있습니다.
           </S.InfoMessage>
         </S.Section>
       )}
@@ -1047,7 +1041,7 @@ const ExpenseCreatePage = () => {
       </S.ButtonGroup>
 
       {/* 결재자 선택 모달 */}
-      {!isSecretOrSalary && isApproverModalOpen && (
+      {!hasSalaryCategory && isApproverModalOpen && (
         <Suspense fallback={<div>로딩 중...</div>}>
           <ApproverSelectionModal
             isOpen={isApproverModalOpen}

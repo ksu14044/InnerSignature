@@ -56,9 +56,6 @@ export const fetchExpenseList = async (page = 1, size = 10, filters = {}) => {
     if (filters.taxProcessed !== null && filters.taxProcessed !== undefined) {
       params.taxProcessed = filters.taxProcessed;
     }
-    if (filters.isSecret !== null && filters.isSecret !== undefined) {
-      params.isSecret = filters.isSecret;
-    }
 
     // 작성자(기안자) 이름 필터
     if (filters.drafterName && filters.drafterName.trim() !== '') {
@@ -336,9 +333,6 @@ export const fetchCategorySummary = async (filters = {}) => {
     }
     if (filters.taxProcessed !== null && filters.taxProcessed !== undefined) {
       params.taxProcessed = filters.taxProcessed;
-    }
-    if (filters.isSecret !== null && filters.isSecret !== undefined) {
-      params.isSecret = filters.isSecret;
     }
 
     const response = await axiosInstance.get(`${BASE_URL}/summary/by-category`, { params });

@@ -52,12 +52,12 @@ const getExpenseCreateTourSteps = () => [
   {
     target: 'tour-basic-info',
     title: '기본 정보 입력',
-    content: '지출결의서의 제목, 지급 요청일, 작성일 등을 입력합니다. CEO, ADMIN, ACCOUNTANT는 비밀글 설정이 가능합니다.',
+    content: '지출결의서의 제목, 지급 요청일, 작성일 등을 입력합니다.',
   },
   {
     target: 'tour-approver-selection',
     title: '결재자 선택',
-    content: '결재가 필요한 경우 결재자를 선택합니다. 선택한 순서대로 결재가 진행됩니다. 비밀글이나 급여 카테고리는 결재가 필요 없습니다.',
+    content: '결재가 필요한 경우 결재자를 선택합니다. 선택한 순서대로 결재가 진행됩니다. 급여 카테고리는 기밀 사항으로 결재가 필요 없습니다.',
   },
   {
     target: 'tour-expense-details',

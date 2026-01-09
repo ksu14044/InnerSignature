@@ -415,7 +415,6 @@ const MainDashboardPage = () => {
                       <S.ExpenseListItemContent>
                         <S.ExpenseListItemTitle>
                           {descriptionDisplay}
-                          {item.isSecret && <S.SecretBadge>비밀</S.SecretBadge>}
                         </S.ExpenseListItemTitle>
                         <S.ExpenseListItemMeta>
                           <span>{item.drafterName}</span>

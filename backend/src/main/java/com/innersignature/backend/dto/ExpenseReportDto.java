@@ -35,7 +35,6 @@ public class ExpenseReportDto {
     private Long taxCollectedBy; // 세무사가 자료를 수집한 사용자 ID
     private Boolean taxRevisionRequested; // 세무사가 수정 요청을 보냈는지 여부
     private String taxRevisionRequestReason; // 수정 요청 사유
-    private Boolean isSecret;           // 비밀글 여부
     private Long companyId;            // 회사 ID
 
     // --- 화면 보여주기용 추가 필드 ---

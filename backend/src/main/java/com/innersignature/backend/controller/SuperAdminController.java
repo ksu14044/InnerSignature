@@ -196,7 +196,6 @@ public class SuperAdminController {
             @RequestParam(required = false) String[] status,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Boolean taxProcessed,
-            @RequestParam(required = false) Boolean isSecret,
             @RequestParam(required = false) String drafterName,
             @RequestParam(required = false) Long companyId) {
         
@@ -234,7 +233,7 @@ public class SuperAdminController {
         PagedResponse<ExpenseReportDto> pagedResponse = expenseService.getExpenseListForSuperAdmin(
                 page, size, startDateParsed, endDateParsed,
                 minAmount, maxAmount, statusList, category,
-                taxProcessed, isSecret, drafterName, companyId);
+                taxProcessed, drafterName, companyId);
         
         logger.info("회사별 지출결의서 목록 조회 완료 - totalElements: {}", pagedResponse.getTotalElements());
         return new ApiResponse<>(true, "지출결의서 목록 조회 성공", pagedResponse);

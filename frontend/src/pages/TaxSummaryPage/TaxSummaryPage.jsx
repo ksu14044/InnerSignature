@@ -47,8 +47,7 @@ const TaxSummaryPage = () => {
           startDate: filters.startDate,
           endDate: filters.endDate,
           status: ['PAID'], // PAID 상태만
-          taxProcessed: filters.collectionStatus,
-          isSecret: null // 비밀글 필터 제거
+          taxProcessed: filters.collectionStatus
         }),
         fetchMonthlyTaxSummary(filters.startDate || null, filters.endDate || null)
       ]);

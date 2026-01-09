@@ -950,9 +950,6 @@ const SuperAdminDashboardPage = () => {
                         <td data-label="회사명">{expense.companyName || '-'}</td>
                         <td data-label="적요(내용)">
                           {descriptionDisplay}
-                          {expense.isSecret && (
-                            <S.SecretBadge>비밀</S.SecretBadge>
-                          )}
                         </td>
                         <td data-label="작성자">{expense.drafterName || '-'}</td>
                         <td data-label="작성일">{expense.reportDate ? new Date(expense.reportDate).toLocaleDateString() : '-'}</td>

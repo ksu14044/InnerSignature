@@ -40,7 +40,6 @@ public interface ExpenseMapper {
             @Param("statuses") List<String> statuses,
             @Param("category") String category,
             @Param("taxProcessed") Boolean taxProcessed,
-            @Param("isSecret") Boolean isSecret,
             @Param("drafterName") String drafterName,
             @Param("companyId") Long companyId,
             @Param("paymentMethod") String paymentMethod,
@@ -56,7 +55,6 @@ public interface ExpenseMapper {
             @Param("statuses") List<String> statuses,
             @Param("category") String category,
             @Param("taxProcessed") Boolean taxProcessed,
-            @Param("isSecret") Boolean isSecret,
             @Param("drafterName") String drafterName,
             @Param("companyId") Long companyId,
             @Param("paymentMethod") String paymentMethod,
@@ -69,7 +67,6 @@ public interface ExpenseMapper {
             @Param("endDate") LocalDate endDate,
             @Param("statuses") List<String> statuses,
             @Param("taxProcessed") Boolean taxProcessed,
-            @Param("isSecret") Boolean isSecret,
             @Param("companyId") Long companyId
     );
 
@@ -270,7 +267,6 @@ public interface ExpenseMapper {
             @Param("statuses") List<String> statuses,
             @Param("category") String category,
             @Param("taxProcessed") Boolean taxProcessed,
-            @Param("isSecret") Boolean isSecret,
             @Param("drafterName") String drafterName,
             @Param("companyId") Long companyId
     );
@@ -296,7 +292,6 @@ public interface ExpenseMapper {
             @Param("statuses") List<String> statuses,
             @Param("category") String category,
             @Param("taxProcessed") Boolean taxProcessed,
-            @Param("isSecret") Boolean isSecret,
             @Param("drafterName") String drafterName,
             @Param("companyId") Long companyId
     );

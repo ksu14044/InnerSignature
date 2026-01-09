@@ -33,7 +33,6 @@ CREATE TABLE `expense_report_tb` (
   `receipt_file_path` varchar(500) DEFAULT NULL,
   `tax_processed` tinyint DEFAULT '0',
   `tax_processed_at` datetime DEFAULT NULL,
-  `is_secret` tinyint(1) DEFAULT '0' COMMENT '비밀글 여부 (0: 일반, 1: 비밀글)',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
   `company_id` bigint NOT NULL,
   PRIMARY KEY (`expense_report_id`),

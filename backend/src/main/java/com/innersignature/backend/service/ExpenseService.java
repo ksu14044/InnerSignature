@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -156,7 +155,6 @@ public class ExpenseService {
      * @param statuses 상태 리스트 (optional, 여러 개 선택 가능)
      * @param category 카테고리 (optional)
      * @param taxProcessed 세무처리 완료 여부 (optional, true: 완료, false: 미완료, null: 전체)
-     * @param isSecret 비밀글 여부 (optional, true: 비밀글만, false: 일반글만, null: 전체)
      * @param userId 현재 사용자 ID (권한 필터링용)
      */
     public PagedResponse<ExpenseReportDto> getExpenseList(
@@ -169,7 +167,6 @@ public class ExpenseService {
             List<String> statuses,
             String category,
             Boolean taxProcessed,
-            Boolean isSecret,
             String drafterName,
             Long userId,
             String paymentMethod,
@@ -191,7 +188,7 @@ public class ExpenseService {
         
         long totalElements = calculateFilteredTotalElements(
                 startDate, endDate, minAmount, maxAmount,
-                statuses, category, taxProcessed, isSecret,
+                statuses, category, taxProcessed,
                 finalDrafterName, userId, paymentMethod, cardNumber);
         
         // 전체 페이지 수 계산
@@ -204,7 +201,7 @@ public class ExpenseService {
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 minAmount, maxAmount,
-                statuses, category, taxProcessed, isSecret,
+                statuses, category, taxProcessed,
                 finalDrafterName, companyId, paymentMethod, null); // cardNumber는 애플리케이션 레벨에서 필터링
         
         // 급여 문서 권한 필터링
@@ -278,23 +275,21 @@ public class ExpenseService {
             }
         }
         
-        // (2-1) 급여 카테고리 또는 비밀글 권한 체크
+        // (2-1) 급여 카테고리 권한 체크
         if (userId != null) {
             boolean hasSalary = hasSalaryCategory(details);
-            Boolean isSecret = report.getIsSecret();
-            boolean isSecretOrSalary = hasSalary || (isSecret != null && isSecret);
             
-            if (isSecretOrSalary) {
+            if (hasSalary) {
                 UserDto user = userService.selectUserById(userId);
                 boolean isTaxAccountant = user != null && "TAX_ACCOUNTANT".equals(user.getRole());
                 boolean isCEO = user != null && "CEO".equals(user.getRole());
                 boolean isOwner = report.getDrafterId().equals(userId);
                 
-                // CEO는 같은 회사의 모든 비밀글 조회 가능
+                // CEO는 같은 회사의 모든 급여 문서 조회 가능
                 if (isCEO) {
                     Long userCompanyId = user.getCompanyId();
                     if (userCompanyId != null && userCompanyId.equals(companyId)) {
-                        // CEO는 같은 회사 비밀글 조회 가능
+                        // CEO는 같은 회사 급여 문서 조회 가능
                     } else {
                         throw new com.innersignature.backend.exception.BusinessException("비밀 문서에 대한 조회 권한이 없습니다.");
                     }
@@ -314,12 +309,6 @@ public class ExpenseService {
         report.setDetails(details);
         report.setApprovalLines(lines);
         report.setReceipts(receipts);
-
-        // (5-1) 급여 카테고리인 경우 isSecret을 true로 설정
-        boolean hasSalary = hasSalaryCategory(details);
-        if (hasSalary) {
-            report.setIsSecret(true);
-        }
 
         // (6) 권한에 따라 세무처리 정보 필터링
         // USER 역할은 세무처리 완료 상태를 볼 수 없음
@@ -622,20 +611,8 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
         }
 
-        // (0-4-1) 급여 카테고리인 경우 자동으로 비밀글 설정
-        Boolean isSecret = request.getIsSecret();
+        // (0-5) 급여인 경우 상태를 바로 PAID로 설정 (결재 없이 바로 지급완료)
         if (hasSalary) {
-            request.setIsSecret(true);
-            isSecret = true;
-        }
-
-        // (0-4-2) 비밀글은 CEO, ADMIN 또는 ACCOUNTANT만 사용 가능
-        if (isSecret != null && isSecret && !permissionUtil.isAdminOrCEO(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
-            throw new com.innersignature.backend.exception.BusinessException("비밀글은 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
-        }
-
-        // (0-5) 급여이거나 비밀글인 경우 상태를 바로 PAID로 설정 (결재 없이 바로 지급완료)
-        if (hasSalary || (isSecret != null && isSecret)) {
             request.setStatus("PAID");
         }
 
@@ -684,8 +661,8 @@ public class ExpenseService {
             logger.debug("상세 항목 저장 완료");
         }
         
-        // (2-1) 담당 결재자 자동 설정 (비밀글이거나 급여가 아닌 경우)
-        if (!hasSalary && (request.getIsSecret() == null || !request.getIsSecret())) {
+        // (2-1) 담당 결재자 자동 설정 (급여가 아닌 경우)
+        if (!hasSalary) {
             try {
                 List<UserDto> approvers = userApproverService.getActiveApproversByUserId(currentUserId, companyId);
                 if (approvers != null && !approvers.isEmpty()) {
@@ -838,19 +815,7 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
         }
 
-        // 8. 급여 카테고리인 경우 자동으로 비밀글 설정
-        Boolean isSecret = request.getIsSecret();
-        if (hasSalary) {
-            request.setIsSecret(true);
-            isSecret = true;
-        }
-
-        // 9. 비밀글은 CEO, ADMIN 또는 ACCOUNTANT만 사용 가능
-        if (isSecret != null && isSecret && !permissionUtil.isAdminOrCEO(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
-            throw new com.innersignature.backend.exception.BusinessException("비밀글은 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
-        }
-
-        // 10. 메인 문서 수정
+        // 8. 메인 문서 수정
         request.setExpenseReportId(expenseId);
         request.setDrafterId(existingReport.getDrafterId()); // 작성자는 변경 불가
         request.setCompanyId(companyId);
@@ -877,11 +842,10 @@ public class ExpenseService {
         // 13. 기존 결재 라인 삭제 (WAIT 상태이므로 결재가 시작되지 않았음)
         expenseMapper.deleteApprovalLines(expenseId, companyId);
 
-        // 14. 새로운 결재 라인 저장 (급여이거나 비밀글이 아닌 경우에만)
+        // 14. 새로운 결재 라인 저장 (급여가 아닌 경우에만)
         List<ApprovalLineDto> lines = request.getApprovalLines();
-        boolean isSecretOrSalary = hasSalary || (isSecret != null && isSecret);
 
-        if (!isSecretOrSalary && lines != null && !lines.isEmpty()) {
+        if (!hasSalary && lines != null && !lines.isEmpty()) {
             logger.debug("결재 라인 수정 시작 - 라인 수: {}", lines.size());
             int stepOrder = 1;
             for (ApprovalLineDto line : lines) {
@@ -892,8 +856,8 @@ public class ExpenseService {
                 expenseMapper.insertApprovalLine(line);
             }
             logger.debug("결재 라인 수정 완료");
-        } else if (isSecretOrSalary) {
-            logger.debug("급여 또는 비밀글 문서는 결재 라인이 생성되지 않습니다.");
+        } else if (hasSalary) {
+            logger.debug("급여 문서는 결재 라인이 생성되지 않습니다.");
         }
 
         // 15. 세무 수정 요청이 있었던 경우, 수정 완료 후 플래그 초기화
@@ -1148,8 +1112,8 @@ public class ExpenseService {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         List<ExpenseReportDto> list = expenseMapper.selectPendingApprovalsByUserId(userId, companyId);
         
-        // 결재함에서는 급여/비밀글이라도,
-        // "내가 결재자로 들어간 문서"는 반드시 봐야 하므로 급여/비밀글 필터링은 하지 않는다.
+        // 결재함에서는 급여 문서라도,
+        // "내가 결재자로 들어간 문서"는 반드시 봐야 하므로 급여 필터링은 하지 않는다.
         // filterSalaryExpenses(list, userId);
         
         // 세무 처리 정보는 일반 USER에게는 숨기고, 권한 가진 사람에겐 보여주도록 유지
@@ -1459,7 +1423,6 @@ public class ExpenseService {
             LocalDate endDate,
             List<String> statuses,
             Boolean taxProcessed,
-            Boolean isSecret,
             Long userId) {
         
         if (!permissionUtil.isTaxAccountant(userId)) {
@@ -1467,7 +1430,7 @@ public class ExpenseService {
         }
         
         Long companyId = SecurityUtil.getCurrentCompanyId();
-        return expenseMapper.selectCategorySummary(startDate, endDate, statuses, taxProcessed, isSecret, companyId);
+        return expenseMapper.selectCategorySummary(startDate, endDate, statuses, taxProcessed, companyId);
     }
 
     /**
@@ -1520,10 +1483,10 @@ public class ExpenseService {
     }
 
     /**
-     * 급여 카테고리 또는 비밀글 포함 문서에 대한 권한 체크
+     * 급여 카테고리 포함 문서에 대한 권한 체크
      * TAX_ACCOUNTANT는 모든 문서 조회 가능
-     * CEO는 같은 회사의 모든 비밀글 조회 가능
-     * ADMIN은 본인이 작성한 비밀글만 조회 가능
+     * CEO는 같은 회사의 모든 급여 문서 조회 가능
+     * ADMIN, USER는 본인이 작성한 급여 문서만 조회 가능
      * 최적화: N+1 쿼리 문제 해결을 위해 배치 조회 사용
      */
     private void filterSalaryExpenses(List<ExpenseReportDto> reports, Long userId) {
@@ -1536,7 +1499,7 @@ public class ExpenseService {
             return;
         }
         
-        // TAX_ACCOUNTANT는 모든 급여/비밀글 문서 조회 가능
+        // TAX_ACCOUNTANT는 모든 급여 문서 조회 가능
         if ("TAX_ACCOUNTANT".equals(user.getRole())) {
             return;
         }
@@ -1562,32 +1525,15 @@ public class ExpenseService {
         
         if (isCEO) {
             // CEO는 같은 회사의 모든 문서 조회 가능 (필터링 없음)
-            // 급여 문서에 isSecret 표시만 추가
-            for (ExpenseReportDto report : reports) {
-                List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
-                boolean hasSalary = hasSalaryCategory(details);
-                if (hasSalary) {
-                    report.setIsSecret(true);
-                }
-            }
         } else {
-            // 그 외의 경우 (ADMIN, USER), 본인이 작성한 급여/비밀글 문서만 조회 가능
+            // 그 외의 경우 (ADMIN, USER), 본인이 작성한 급여 문서만 조회 가능
             reports.removeIf(report -> {
-                // 비밀글인지 확인
-                Boolean isSecret = report.getIsSecret();
-                boolean isSecretReport = isSecret != null && isSecret;
-                
                 // 급여 카테고리가 포함된 문서인지 확인 (메모리에서 조회 - 빠름)
                 List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
                 boolean hasSalary = hasSalaryCategory(details);
                 
-                // 급여인 경우 isSecret을 true로 설정
-                if (hasSalary) {
-                    report.setIsSecret(true);
-                }
-                
-                // 비밀글이거나 급여 문서이고, 작성자가 아니면 제거
-                return (isSecretReport || hasSalary) && !report.getDrafterId().equals(userId);
+                // 급여 문서이고, 작성자가 아니면 제거
+                return hasSalary && !report.getDrafterId().equals(userId);
             });
         }
     }
@@ -1715,7 +1661,6 @@ public class ExpenseService {
             List<String> statuses,
             String category,
             Boolean taxProcessed,
-            Boolean isSecret,
             String drafterName,
             Long userId,
             String paymentMethod,
@@ -1733,7 +1678,7 @@ public class ExpenseService {
         if (userId == null) {
             long count = expenseMapper.countExpenseListWithFilters(
                     startDate, endDate, minAmount, maxAmount,
-                    statuses, category, taxProcessed, isSecret,
+                    statuses, category, taxProcessed,
                     drafterName, companyId, paymentMethod, null); // cardNumber는 애플리케이션 레벨에서 필터링
             
             // 카드번호 필터링이 있는 경우 전체 데이터를 가져와서 필터링
@@ -1742,7 +1687,7 @@ public class ExpenseService {
                         0, Integer.MAX_VALUE,
                         startDate, endDate,
                         minAmount, maxAmount,
-                        statuses, category, taxProcessed, isSecret,
+                        statuses, category, taxProcessed,
                         drafterName, companyId, paymentMethod, null);
                 allReports = filterByCardNumber(allReports, cardNumber, companyId);
                 return allReports.size();
@@ -1756,7 +1701,7 @@ public class ExpenseService {
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 minAmount, maxAmount,
-                statuses, category, taxProcessed, isSecret,
+                statuses, category, taxProcessed,
                 drafterName, companyId, paymentMethod, null); // cardNumber는 애플리케이션 레벨에서 필터링
 
         // 권한 필터링 적용
@@ -1966,7 +1911,7 @@ public class ExpenseService {
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 companyId, null, null);
         
         // 권한 필터링 적용
@@ -2111,7 +2056,6 @@ public class ExpenseService {
             List<String> statuses,
             String category,
             Boolean taxProcessed,
-            Boolean isSecret,
             String drafterName,
             Long companyId) {
         
@@ -2123,7 +2067,7 @@ public class ExpenseService {
         // 전체 개수 조회
         long totalElements = expenseMapper.countExpenseListForSuperAdmin(
                 startDate, endDate, minAmount, maxAmount,
-                statuses, category, taxProcessed, isSecret,
+                statuses, category, taxProcessed,
                 drafterName, companyId);
         
         // 전체 페이지 수 계산
@@ -2137,7 +2081,7 @@ public class ExpenseService {
                 offset, size,
                 startDate, endDate,
                 minAmount, maxAmount,
-                statuses, category, taxProcessed, isSecret,
+                statuses, category, taxProcessed,
                 drafterName, companyId);
         
         // 적요 요약 정보 생성
@@ -2175,12 +2119,6 @@ public class ExpenseService {
         report.setApprovalLines(lines);
         report.setReceipts(receipts);
 
-        // (6) 급여 카테고리인 경우 isSecret을 true로 설정
-        boolean hasSalary = hasSalaryCategory(details);
-        if (hasSalary) {
-            report.setIsSecret(true);
-        }
-
         return report;
     }
 
@@ -2197,7 +2135,7 @@ public class ExpenseService {
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListForSuperAdmin(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 companyId);
         
         // 각 지출결의서의 상세 내역 조회
@@ -2666,31 +2604,6 @@ public class ExpenseService {
     }
     
     /**
-     * 이미지 파일 로드 및 전처리
-     * PDF는 이미지로 변환, 일반 이미지는 그대로 로드
-     */
-    private BufferedImage loadAndPrepareImage(File imageFile) {
-        try {
-            String fileName = imageFile.getName().toLowerCase();
-            
-            if (fileName.endsWith(".pdf")) {
-                // PDF를 이미지로 변환
-                byte[] pdfImageBytes = convertPdfToImage(imageFile);
-                if (pdfImageBytes != null && pdfImageBytes.length > 0) {
-                    return ImageIO.read(new ByteArrayInputStream(pdfImageBytes));
-                }
-                return null;
-            } else {
-                // 일반 이미지 파일
-                return ImageIO.read(imageFile);
-            }
-        } catch (Exception e) {
-            logger.error("이미지 로드 실패: {}", imageFile.getName(), e);
-            return null;
-        }
-    }
-    
-    /**
      * 여러 영수증을 하이퍼링크 방식으로 삽입 (이미지 없이 텍스트 링크만)
      */
     private void insertMultipleReceiptImages(Sheet sheet, XSSFDrawing drawing, Workbook workbook, 
@@ -2809,7 +2722,7 @@ public class ExpenseService {
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
-                null, null, statuses, null, null, null, null,
+                null, null, statuses, null, null, null,
                 companyId, null, null);
         
         // 권한 필터링 적용
@@ -3124,7 +3037,7 @@ public class ExpenseService {
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
-                null, null, statuses, null, null, null, null,
+                null, null, statuses, null, null, null,
                 companyId, null, null);
         
         // 권한 필터링 적용
@@ -3716,16 +3629,6 @@ public class ExpenseService {
     }
     
     /**
-     * 카테고리를 계정과목 코드로 매핑
-     * AccountCodeService를 사용하여 데이터베이스의 매핑 정보를 활용
-     * @param category 카테고리
-     * @return 계정과목명
-     */
-    private String mapCategoryToAccountCode(String category) {
-        return mapCategoryToAccountCode(category, null);
-    }
-    
-    /**
      * 카테고리와 가맹점명을 계정과목 코드로 매핑
      * AccountCodeService를 사용하여 데이터베이스의 매핑 정보를 활용
      * @param category 카테고리
@@ -3796,7 +3699,7 @@ public class ExpenseService {
         List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
-                null, null, statuses, null, null, null, null,
+                null, null, statuses, null, null, null,
                 companyId, null, null);
         
         // 권한 필터링 적용
@@ -4135,7 +4038,6 @@ public class ExpenseService {
         Sheet sheet = workbook.createSheet("증빙 누락 체크리스트");
         
         CellStyle headerStyle = createHeaderStyle(workbook);
-        CellStyle dataStyle = createDataStyle(workbook);
         CellStyle numberStyle = createNumberStyle(workbook);
         CellStyle warningStyle = createMissingReceiptStyle(workbook);
         
