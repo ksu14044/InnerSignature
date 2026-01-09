@@ -65,6 +65,16 @@ export const fetchExpenseList = async (page = 1, size = 10, filters = {}) => {
       params.drafterName = filters.drafterName.trim();
     }
 
+    // 결제수단 필터
+    if (filters.paymentMethod && filters.paymentMethod.trim() !== '') {
+      params.paymentMethod = filters.paymentMethod.trim();
+    }
+
+    // 카드번호 필터
+    if (filters.cardNumber && filters.cardNumber.trim() !== '') {
+      params.cardNumber = filters.cardNumber.trim();
+    }
+
     const response = await axiosInstance.get(BASE_URL, { params });
     return response.data; // 백엔드가 준 { success, message, data } 반환
   } catch (error) {

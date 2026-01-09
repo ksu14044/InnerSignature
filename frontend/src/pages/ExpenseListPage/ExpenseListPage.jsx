@@ -43,7 +43,8 @@ const ExpenseListPage = () => {
     taxProcessed: null, // null: 전체, true: 완료, false: 미완료
     isSecret: null, // null: 전체, true: 비밀글만, false: 일반글만
     drafterName: '', // 작성자(기안자) 이름
-    paymentMethod: '' // 결제수단 필터
+    paymentMethod: '', // 결제수단 필터
+    cardNumber: '' // 카드번호 필터
   });
 
   // 상태 체크박스용 로컬 상태 (체크박스는 제어 컴포넌트로 유지)
@@ -58,6 +59,7 @@ const ExpenseListPage = () => {
     category: null,
     drafterName: null,
     paymentMethod: null,
+    cardNumber: null,
     isSecret: null
   });
 
@@ -187,7 +189,8 @@ const ExpenseListPage = () => {
       taxProcessed: null,
       isSecret: filterRefs.current.isSecret?.value === '' ? null : filterRefs.current.isSecret?.value === 'true',
       drafterName: filterRefs.current.drafterName?.value || '',
-      paymentMethod: filterRefs.current.paymentMethod?.value || ''
+      paymentMethod: filterRefs.current.paymentMethod?.value || '',
+      cardNumber: filterRefs.current.cardNumber?.value || ''
     };
     
     setFilters(newFilters);
@@ -209,7 +212,8 @@ const ExpenseListPage = () => {
       taxProcessed: null,
       isSecret: null,
       drafterName: '',
-      paymentMethod: ''
+      paymentMethod: '',
+      cardNumber: ''
     };
     
     // ref 값들을 초기화
@@ -220,6 +224,7 @@ const ExpenseListPage = () => {
     if (filterRefs.current.category) filterRefs.current.category.value = '';
     if (filterRefs.current.drafterName) filterRefs.current.drafterName.value = '';
     if (filterRefs.current.paymentMethod) filterRefs.current.paymentMethod.value = '';
+    if (filterRefs.current.cardNumber) filterRefs.current.cardNumber.value = '';
     if (filterRefs.current.isSecret) filterRefs.current.isSecret.value = '';
     setLocalStatus([]);
     
@@ -754,6 +759,16 @@ const ExpenseListPage = () => {
                 <option value="CARD">개인카드</option>
                 <option value="COMPANY_CARD">회사카드</option>
               </S.FilterSelect>
+            </S.FilterGroup>
+            {/* 카드번호 필터 */}
+            <S.FilterGroup>
+              <S.FilterLabel>카드번호</S.FilterLabel>
+              <S.FilterInput
+                type="text"
+                ref={(el) => (filterRefs.current.cardNumber = el)}
+                defaultValue={filters.cardNumber}
+                placeholder="카드번호 (뒷 4자리)"
+              />
             </S.FilterGroup>
             {/* 비밀글 필터 (USER 역할이 아닌 경우에만 표시) */}
             {user && user.role !== 'USER' && (

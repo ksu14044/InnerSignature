@@ -83,7 +83,8 @@ public class ExpenseController {
             @RequestParam(required = false) Boolean taxProcessed,
             @RequestParam(required = false) Boolean isSecret,
             @RequestParam(required = false) String drafterName,
-            @RequestParam(required = false) String paymentMethod) {
+            @RequestParam(required = false) String paymentMethod,
+            @RequestParam(required = false) String cardNumber) {
         
         // 날짜 파라미터 변환
         LocalDate startDateParsed = null;
@@ -119,7 +120,7 @@ public class ExpenseController {
         PagedResponse<ExpenseReportDto> pagedResponse = expenseService.getExpenseList(
                 page, size, startDateParsed, endDateParsed,
                 minAmount, maxAmount, statusList, category,
-                taxProcessed, isSecret, drafterName, currentUserId, paymentMethod);
+                taxProcessed, isSecret, drafterName, currentUserId, paymentMethod, cardNumber);
         
         // 약속된 포장지(ApiResponse)에 담아서 리턴
         return new ApiResponse<>(true, "목록 조회 성공", pagedResponse);

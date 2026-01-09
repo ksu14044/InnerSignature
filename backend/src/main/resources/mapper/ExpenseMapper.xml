@@ -186,6 +186,14 @@
             <if test="drafterName != null and drafterName != ''">
                 AND u.korean_name LIKE CONCAT('%', #{drafterName}, '%')
             </if>
+            <if test="paymentMethod != null and paymentMethod != ''">
+                AND EXISTS (
+                    SELECT 1 FROM expense_detail_tb d
+                    WHERE d.expense_report_id = r.expense_report_id
+                      AND d.payment_method = #{paymentMethod}
+                      AND d.company_id = r.company_id
+                )
+            </if>
         </where>
     </select>
 

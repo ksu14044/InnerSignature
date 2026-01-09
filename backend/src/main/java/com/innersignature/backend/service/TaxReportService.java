@@ -39,7 +39,7 @@ public class TaxReportService {
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 null, null, statuses, null, true, null, null, // taxProcessed = true, isSecret = null, drafterName = null
-                companyId, null); // paymentMethod = null
+                companyId, null, null); // paymentMethod = null, cardNumber = null
         
         // 각 지출결의서의 상세 내역 조회
         List<Long> expenseReportIds = expenseReports.stream()

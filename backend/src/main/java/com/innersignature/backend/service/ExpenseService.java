@@ -172,7 +172,8 @@ public class ExpenseService {
             Boolean isSecret,
             String drafterName,
             Long userId,
-            String paymentMethod) {
+            String paymentMethod,
+            String cardNumber) {
         
         // statuses가 null이거나 비어있으면 null로 설정 (필터링 안 함)
         if (statuses != null && statuses.isEmpty()) {
@@ -191,7 +192,7 @@ public class ExpenseService {
         long totalElements = calculateFilteredTotalElements(
                 startDate, endDate, minAmount, maxAmount,
                 statuses, category, taxProcessed, isSecret,
-                finalDrafterName, userId, null); // paymentMethod는 null로 전달 (추후 추가)
+                finalDrafterName, userId, paymentMethod, cardNumber);
         
         // 전체 페이지 수 계산
         int totalPages = (int) Math.ceil((double) totalElements / size);
@@ -204,7 +205,7 @@ public class ExpenseService {
                 startDate, endDate,
                 minAmount, maxAmount,
                 statuses, category, taxProcessed, isSecret,
-                finalDrafterName, companyId, paymentMethod);
+                finalDrafterName, companyId, paymentMethod, null); // cardNumber는 애플리케이션 레벨에서 필터링
         
         // 급여 문서 권한 필터링
         filterSalaryExpenses(allContent, userId);
@@ -216,6 +217,11 @@ public class ExpenseService {
             allContent = allContent.stream()
                 .filter(report -> report.getDrafterId().equals(userId))
                 .collect(java.util.stream.Collectors.toList());
+        }
+        
+        // 카드번호 필터링 (암호화되어 있어서 애플리케이션 레벨에서 처리)
+        if (cardNumber != null && !cardNumber.trim().isEmpty()) {
+            allContent = filterByCardNumber(allContent, cardNumber, companyId);
         }
         
         // 필터링 후 페이지네이션 적용
@@ -252,6 +258,25 @@ public class ExpenseService {
 
         // (2) 상세 항목들(식대, 간식...) 가져오기
         List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetails(expenseReportId, companyId);
+        
+        // (2-0) 카드번호 마스킹 처리 (마지막 4자리만 표시)
+        if (details != null) {
+            for (ExpenseDetailDto detail : details) {
+                if (detail.getCardNumber() != null && !detail.getCardNumber().trim().isEmpty()) {
+                    try {
+                        String decryptedCardNumber = encryptionUtil.decrypt(detail.getCardNumber());
+                        if (decryptedCardNumber != null && !decryptedCardNumber.isEmpty()) {
+                            // 마지막 4자리만 표시 (예: **** 1234)
+                            String maskedCardNumber = maskCardNumber(decryptedCardNumber);
+                            detail.setCardNumber(maskedCardNumber);
+                        }
+                    } catch (Exception e) {
+                        logger.debug("카드번호 복호화 실패 - detailId: {}", detail.getExpenseDetailId(), e);
+                        detail.setCardNumber(null); // 복호화 실패 시 null로 설정
+                    }
+                }
+            }
+        }
         
         // (2-1) 급여 카테고리 또는 비밀글 권한 체크
         if (userId != null) {
@@ -1474,6 +1499,27 @@ public class ExpenseService {
     }
 
     /**
+     * 카드번호 마스킹 처리 (마지막 4자리만 표시)
+     * 예: 1234567812345678 -> **** 5678
+     */
+    private String maskCardNumber(String cardNumber) {
+        if (cardNumber == null || cardNumber.isEmpty()) {
+            return null;
+        }
+        
+        // 공백과 하이픈 제거
+        String cleanNumber = cardNumber.replaceAll("[\\s-]", "");
+        
+        if (cleanNumber.length() < 4) {
+            return "**** " + cleanNumber; // 4자리 미만인 경우
+        }
+        
+        // 마지막 4자리만 표시
+        String lastFour = cleanNumber.substring(cleanNumber.length() - 4);
+        return "**** " + lastFour;
+    }
+
+    /**
      * 급여 카테고리 또는 비밀글 포함 문서에 대한 권한 체크
      * TAX_ACCOUNTANT는 모든 문서 조회 가능
      * CEO는 같은 회사의 모든 비밀글 조회 가능
@@ -1561,6 +1607,57 @@ public class ExpenseService {
     }
 
     /**
+     * 카드번호 필터링 (암호화된 카드번호를 복호화하여 검색)
+     */
+    private List<ExpenseReportDto> filterByCardNumber(List<ExpenseReportDto> reports, String searchCardNumber, Long companyId) {
+        if (reports == null || reports.isEmpty() || searchCardNumber == null || searchCardNumber.trim().isEmpty()) {
+            return reports;
+        }
+        
+        // 배치 조회: 모든 expense_report_id의 상세 항목을 한 번에 조회
+        List<Long> expenseReportIds = reports.stream()
+                .map(ExpenseReportDto::getExpenseReportId)
+                .collect(Collectors.toList());
+        
+        if (expenseReportIds.isEmpty()) {
+            return reports;
+        }
+        
+        List<ExpenseDetailDto> allDetails = expenseMapper.selectExpenseDetailsBatch(expenseReportIds, companyId);
+        Map<Long, List<ExpenseDetailDto>> detailsMap = allDetails.stream()
+                .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
+        
+        // 검색할 카드번호 (공백 제거)
+        String cleanSearchNumber = searchCardNumber.replaceAll("\\s+", "");
+        
+        // 각 report의 카드번호 확인
+        return reports.stream()
+                .filter(report -> {
+                    List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
+                    
+                    for (ExpenseDetailDto detail : details) {
+                        if (detail.getCardNumber() != null && !detail.getCardNumber().trim().isEmpty()) {
+                            try {
+                                // 암호화된 카드번호 복호화
+                                String decryptedCardNumber = encryptionUtil.decrypt(detail.getCardNumber());
+                                if (decryptedCardNumber != null) {
+                                    // 공백 제거 후 비교
+                                    String cleanDecrypted = decryptedCardNumber.replaceAll("\\s+", "");
+                                    if (cleanDecrypted.contains(cleanSearchNumber)) {
+                                        return true; // 매칭되는 카드번호 발견
+                                    }
+                                }
+                            } catch (Exception e) {
+                                logger.debug("카드번호 복호화 실패 - detailId: {}", detail.getExpenseDetailId(), e);
+                            }
+                        }
+                    }
+                    return false; // 매칭되는 카드번호 없음
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 적요 요약 정보 생성
      * expense_detail_tb의 description 필드에서 적요를 가져와서
      * 적요가 1개면 첫 번째 적요만, 2개 이상이면 "첫번째 적요 외 n개" 형식으로 생성
@@ -1621,7 +1718,8 @@ public class ExpenseService {
             Boolean isSecret,
             String drafterName,
             Long userId,
-            String paymentMethod) {
+            String paymentMethod,
+            String cardNumber) {
 
         Long companyId = SecurityUtil.getCurrentCompanyId();
         
@@ -1633,10 +1731,24 @@ public class ExpenseService {
         }
         
         if (userId == null) {
-            return expenseMapper.countExpenseListWithFilters(
+            long count = expenseMapper.countExpenseListWithFilters(
                     startDate, endDate, minAmount, maxAmount,
                     statuses, category, taxProcessed, isSecret,
-                    drafterName, companyId, paymentMethod);
+                    drafterName, companyId, paymentMethod, null); // cardNumber는 애플리케이션 레벨에서 필터링
+            
+            // 카드번호 필터링이 있는 경우 전체 데이터를 가져와서 필터링
+            if (cardNumber != null && !cardNumber.trim().isEmpty()) {
+                List<ExpenseReportDto> allReports = expenseMapper.selectExpenseListWithFilters(
+                        0, Integer.MAX_VALUE,
+                        startDate, endDate,
+                        minAmount, maxAmount,
+                        statuses, category, taxProcessed, isSecret,
+                        drafterName, companyId, paymentMethod, null);
+                allReports = filterByCardNumber(allReports, cardNumber, companyId);
+                return allReports.size();
+            }
+            
+            return count;
         }
 
         // 필터링된 전체 목록 조회 (페이지네이션 없이, 큰 수로 설정)
@@ -1645,10 +1757,15 @@ public class ExpenseService {
                 startDate, endDate,
                 minAmount, maxAmount,
                 statuses, category, taxProcessed, isSecret,
-                drafterName, companyId, paymentMethod);
+                drafterName, companyId, paymentMethod, null); // cardNumber는 애플리케이션 레벨에서 필터링
 
         // 권한 필터링 적용
         filterSalaryExpenses(allReports, userId);
+        
+        // 카드번호 필터링 적용
+        if (cardNumber != null && !cardNumber.trim().isEmpty()) {
+            allReports = filterByCardNumber(allReports, cardNumber, companyId);
+        }
 
         return allReports.size();
     }
@@ -1850,7 +1967,7 @@ public class ExpenseService {
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 null, null, null, null, null, null, null,
-                companyId, null);
+                companyId, null, null);
         
         // 권한 필터링 적용
         filterSalaryExpenses(expenseReports, userId);
@@ -2693,7 +2810,7 @@ public class ExpenseService {
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 null, null, statuses, null, null, null, null,
-                companyId, null);
+                companyId, null, null);
         
         // 권한 필터링 적용
         filterSalaryExpenses(expenseReports, userId);
@@ -3008,7 +3125,7 @@ public class ExpenseService {
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 null, null, statuses, null, null, null, null,
-                companyId, null);
+                companyId, null, null);
         
         // 권한 필터링 적용
         filterSalaryExpenses(expenseReports, userId);
@@ -3680,7 +3797,7 @@ public class ExpenseService {
                 0, Integer.MAX_VALUE,
                 startDate, endDate,
                 null, null, statuses, null, null, null, null,
-                companyId, null);
+                companyId, null, null);
         
         // 권한 필터링 적용
         filterSalaryExpenses(expenseReports, userId);

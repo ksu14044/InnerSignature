@@ -902,6 +902,7 @@ const ExpenseDetailPage = () => {
                 <>
                   <th style={{ textAlign: 'right' }}>실제 지급 금액</th>
                   <th>결제수단</th>
+                  <th>카드번호</th>
                 </>
               )}
               <th>비고</th>
@@ -953,6 +954,13 @@ const ExpenseDetailPage = () => {
                     </td>
                     <td style={{ textAlign: 'center' }} data-label="결제수단">
                       {getPaymentMethodLabel(item.paymentMethod)}
+                    </td>
+                    <td style={{ textAlign: 'center', fontSize: '13px', color: '#666' }} data-label="카드번호">
+                      {(item.paymentMethod === 'CARD' || item.paymentMethod === 'COMPANY_CARD' || 
+                        item.paymentMethod === 'CREDIT_CARD' || item.paymentMethod === 'DEBIT_CARD') 
+                        && item.cardNumber 
+                        ? item.cardNumber 
+                        : '-'}
                     </td>
                   </>
                 )}
