@@ -8,7 +8,7 @@ export const BottomNav = styled.nav`
   height: 64px;
   background: white;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: var(--z-nav);
   display: flex;
   justify-content: space-around;
   align-items: center;

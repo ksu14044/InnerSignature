@@ -1,9 +1,10 @@
 import styled from '@emotion/styled';
 
 export const MobileContainer = styled.div`
-  padding-bottom: 80px; /* Bottom navigation 공간 확보 */
+  padding-top: 56px; /* 상단 앱바 공간 */
+  padding-bottom: 80px; /* 하단 네비게이션 공간 확보 */
   background-color: #f5f5f5;
-  min-height: 100vh;
+  min-height: calc(100vh - 136px); /* 전체 높이에서 헤더+푸터 제외 */
 `;
 
 export const AlertBanner = styled.div`

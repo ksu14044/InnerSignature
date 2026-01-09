@@ -10,10 +10,10 @@ export const Container = styled.div`
     padding: 0;
     width: 100%;
     max-width: 100%;
-    min-height: auto;
+    min-height: auto; /* 모바일에서는 컨텐츠 높이에 따라 조정 */
     background: #f5f5f5;
     padding-top: 56px;
-    padding-bottom: 64px;
+    padding-bottom: 80px; /* 하단 네비게이션 + 여유 공간 */
   }
 `;
 

@@ -79,6 +79,7 @@
   
   /* Z-index 레이어 */
   --z-dropdown: 1000;
+  --z-nav: 1080;
   --z-sticky: 1020;
   --z-fixed: 1030;
   --z-modal-backdrop: 1040;
@@ -236,17 +237,11 @@ button:focus {
     width: 100%;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
   }
 
   #root {
-    height: 100vh;
+    min-height: 100vh;
     width: 100vw;
-    overflow-y: auto;
     overflow-x: hidden;
     position: relative;
     background-color: #f5f5f5;
@@ -352,7 +347,7 @@ button:focus {
   .mobile-content {
     padding-top: 56px;
     padding-bottom: 64px;
-    min-height: 100vh;
+    min-height: calc(100vh - 120px); /* 헤더(56px) + 푸터(64px) 제외 */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }

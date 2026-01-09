@@ -18,7 +18,7 @@ export const Container = styled.div`
     min-height: calc(100vh - 56px - 64px);
     background: #f5f5f5;
     padding-top: 56px;
-    padding-bottom: 64px;
+    padding-bottom: 80px; /* 하단 네비게이션 + FAB 공간 */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }

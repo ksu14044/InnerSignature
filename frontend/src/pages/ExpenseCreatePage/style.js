@@ -19,7 +19,7 @@ export const Container = styled.div`
     min-height: auto;
     background: var(--bg-light);
     padding-top: 56px;
-    padding-bottom: 140px; /* 하단 네비게이션 + 고정 버튼 공간 */
+    padding-bottom: 80px; /* 하단 네비게이션 + FAB 공간 */
   }
 `;
 
@@ -565,18 +565,16 @@ export const ButtonGroup = styled.div`
   }
 
   @media (max-width: 480px) {
-    position: fixed;
-    bottom: 64px;
-    left: 0;
-    right: 0;
+    position: relative;
     background: white;
     padding: var(--spacing-md);
-    margin: 0;
-    box-shadow: var(--shadow-lg);
+    margin: var(--spacing-md);
+    margin-bottom: calc(var(--spacing-md) + 80px); /* FAB 공간 확보 */
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
     flex-direction: row;
     gap: var(--spacing-sm);
-    z-index: var(--z-fixed);
-    border-top: 1px solid var(--border-light);
   }
 `;
 
