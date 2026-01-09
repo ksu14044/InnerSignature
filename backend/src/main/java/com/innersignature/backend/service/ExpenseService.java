@@ -66,7 +66,14 @@ public class ExpenseService {
     private final CompanyCardService companyCardService; // 회사 카드 서비스
     private final UserCardService userCardService; // 개인 카드 서비스
     private final AccountCodeService accountCodeService; // 계정 코드 매핑 서비스
-    
+
+    // 분리된 서비스들
+    private final ExpenseReportService expenseReportService;
+    private final ExpenseApprovalService expenseApprovalService;
+    private final ExpenseReceiptService expenseReceiptService;
+    private final ExpenseAnalyticsService expenseAnalyticsService;
+    private final ExpenseTaxService expenseTaxService;
+
     @Value("${file.upload.base-dir:uploads}")
     private String fileUploadBaseDir;
     

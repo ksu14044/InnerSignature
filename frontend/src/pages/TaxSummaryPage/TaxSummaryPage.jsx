@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   fetchCategorySummary,
@@ -10,6 +10,7 @@ import {
   downloadReceipt
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDebounce } from '../../hooks/useOptimizedList';
 import * as S from './style';
 
 const TaxSummaryPage = () => {
@@ -33,7 +34,9 @@ const TaxSummaryPage = () => {
   const [summary, setSummary] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState([]);
   const [loading, setLoading] = useState(false);
-  const debounceTimer = useRef(null);
+
+  // 디바운스된 필터 적용
+  const debouncedFilters = useDebounce(filters, 300);
 
   // 영수증 검색 관련 상태
   const [receiptSearchId, setReceiptSearchId] = useState('');
@@ -41,21 +44,22 @@ const TaxSummaryPage = () => {
 
   const isTaxAccountant = user?.role === 'TAX_ACCOUNTANT';
 
-  const loadTaxData = async () => {
+  // 최적화된 세무 데이터 로드 함수
+  const loadTaxData = useCallback(async () => {
     if (!isTaxAccountant) return;
     try {
       setLoading(true);
-      
+
       const [statusRes, pendingRes, summaryRes, monthlyRes] = await Promise.all([
-        fetchTaxStatus(filters.startDate || null, filters.endDate || null),
-        fetchTaxPendingReports(filters.startDate || null, filters.endDate || null),
+        fetchTaxStatus(debouncedFilters.startDate || null, debouncedFilters.endDate || null),
+        fetchTaxPendingReports(debouncedFilters.startDate || null, debouncedFilters.endDate || null),
         fetchCategorySummary({
-          startDate: filters.startDate,
-          endDate: filters.endDate,
+          startDate: debouncedFilters.startDate,
+          endDate: debouncedFilters.endDate,
           status: ['APPROVED'], // APPROVED 상태만
-          taxProcessed: filters.collectionStatus
+          taxProcessed: debouncedFilters.collectionStatus
         }),
-        fetchMonthlyTaxSummary(filters.startDate || null, filters.endDate || null)
+        fetchMonthlyTaxSummary(debouncedFilters.startDate || null, debouncedFilters.endDate || null)
       ]);
 
       if (statusRes.success) {
@@ -76,27 +80,12 @@ const TaxSummaryPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isTaxAccountant, debouncedFilters]);
 
-  // 필터 자동 적용 (debounce)
+  // 디바운스된 필터 변경 시 데이터 로드
   useEffect(() => {
-    if (!isTaxAccountant) return;
-    
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-    
-    debounceTimer.current = setTimeout(() => {
-      loadTaxData();
-    }, 500);
-    
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.startDate, filters.endDate, filters.collectionStatus, isTaxAccountant]);
+    loadTaxData();
+  }, [loadTaxData]);
 
   // 초기 로드
   useEffect(() => {

@@ -927,27 +927,24 @@
         ORDER BY r.uploaded_at DESC
     </select>
 
-    <!-- 증빙 누락 건 조회: 영수증이 없거나 작성일이 오래된 건 -->
+    <!-- 증빙 누락 건 조회: 영수증이 없거나 작성일이 오래된 건 (최적화 버전) -->
     <select id="selectMissingReceipts" resultType="com.innersignature.backend.dto.ExpenseReportDto">
-        SELECT 
-            r.*, 
+        SELECT
+            r.*,
             u.korean_name AS drafterName,
-            (SELECT d.description
-             FROM expense_detail_tb d
-             WHERE d.expense_report_id = r.expense_report_id
-               AND d.company_id = r.company_id
-               AND d.description IS NOT NULL
-               AND TRIM(d.description) != ''
-             ORDER BY d.expense_detail_id ASC
-             LIMIT 1) AS firstDescription,
-            (SELECT COUNT(*)
-             FROM expense_detail_tb d
-             WHERE d.expense_report_id = r.expense_report_id
-               AND d.company_id = r.company_id
-               AND d.description IS NOT NULL
-               AND TRIM(d.description) != '') AS descriptionCount
+            d.firstDescription,
+            d.descriptionCount
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
+        LEFT JOIN (
+            SELECT
+                d.expense_report_id,
+                MIN(CASE WHEN d.description IS NOT NULL AND TRIM(d.description) != '' THEN d.description END) AS firstDescription,
+                COUNT(CASE WHEN d.description IS NOT NULL AND TRIM(d.description) != '' THEN 1 END) AS descriptionCount
+            FROM expense_detail_tb d
+            WHERE d.description IS NOT NULL AND TRIM(d.description) != ''
+            GROUP BY d.expense_report_id
+        ) d ON r.expense_report_id = d.expense_report_id
         LEFT JOIN receipt_tb rec ON r.expense_report_id = rec.expense_report_id
         WHERE r.company_id = #{companyId}
           AND r.report_date &lt;= #{cutoffDate}

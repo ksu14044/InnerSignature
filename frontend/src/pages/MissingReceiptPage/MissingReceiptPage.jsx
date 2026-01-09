@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMissingReceipts, getMissingReceiptsByUser } from '../../api/missingReceiptApi';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import { FaExclamationTriangle, FaUser } from 'react-icons/fa';
+import { useDebounce } from '../../hooks/useOptimizedList';
 
 const MissingReceiptPage = () => {
   const { user, logout } = useAuth();
@@ -15,6 +16,10 @@ const MissingReceiptPage = () => {
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'byUser'
   const [days, setDays] = useState(3);
 
+  // 디바운스된 필터 값들
+  const debouncedDays = useDebounce(days, 300);
+  const debouncedViewMode = useDebounce(viewMode, 300);
+
   useEffect(() => {
     if (!user || user.role !== 'ACCOUNTANT') {
       alert('접근 권한이 없습니다. (ACCOUNTANT 권한 필요)');
@@ -22,19 +27,19 @@ const MissingReceiptPage = () => {
       return;
     }
     loadMissingReceipts();
-  }, [user, navigate, days, viewMode]);
+  }, [user, navigate, debouncedDays, debouncedViewMode]);
 
   // useCallback으로 최적화
   const loadMissingReceipts = useCallback(async () => {
     try {
       setLoading(true);
-      if (viewMode === 'byUser') {
-        const response = await getMissingReceiptsByUser(days);
+      if (debouncedViewMode === 'byUser') {
+        const response = await getMissingReceiptsByUser(debouncedDays);
         if (response.success) {
           setMissingReceiptsByUser(response.data || {});
         }
       } else {
-        const response = await getMissingReceipts(days);
+        const response = await getMissingReceipts(debouncedDays);
         if (response.success) {
           setMissingReceipts(response.data || []);
         }
@@ -45,7 +50,85 @@ const MissingReceiptPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [days, viewMode]);
+  }, [debouncedDays, debouncedViewMode]);
+
+  // 사용자별 그룹 목록 메모이제이션
+  const userGroupList = useMemo(() => {
+    if (viewMode !== 'byUser' || Object.keys(missingReceiptsByUser).length === 0) {
+      return null;
+    }
+
+    return Object.entries(missingReceiptsByUser).map(([userId, receipts]) => (
+      <S.UserGroup key={userId}>
+        <S.UserHeader>
+          <S.UserInfo>
+            <FaUser />
+            <S.UserName>{receipts[0]?.drafterName || `사용자 ID: ${userId}`}</S.UserName>
+            <S.CountBadge>{receipts.length}건</S.CountBadge>
+          </S.UserInfo>
+        </S.UserHeader>
+        <S.ReceiptList>
+          {receipts.map(receipt => (
+            <S.ReceiptItem key={receipt.expenseReportId}>
+              <S.ReceiptInfo>
+                <S.ReceiptTitle>{receipt.title || `문서 #${receipt.expenseReportId}`}</S.ReceiptTitle>
+                <S.ReceiptDetails>
+                  <S.DetailItem>
+                    <S.DetailLabel>작성일:</S.DetailLabel>
+                    <S.DetailValue>{new Date(receipt.reportDate).toLocaleDateString('ko-KR')}</S.DetailValue>
+                  </S.DetailItem>
+                  <S.DetailItem>
+                    <S.DetailLabel>금액:</S.DetailLabel>
+                    <S.DetailValue>{receipt.totalAmount?.toLocaleString()}원</S.DetailValue>
+                  </S.DetailItem>
+                  <S.DetailItem>
+                    <S.DetailLabel>상태:</S.DetailLabel>
+                    <S.DetailValue>{receipt.status}</S.DetailValue>
+                  </S.DetailItem>
+                </S.ReceiptDetails>
+              </S.ReceiptInfo>
+              <S.ViewButton onClick={() => navigate(`/detail/${receipt.expenseReportId}`)}>
+                상세보기
+              </S.ViewButton>
+            </S.ReceiptItem>
+          ))}
+        </S.ReceiptList>
+      </S.UserGroup>
+    ));
+  }, [missingReceiptsByUser, navigate, viewMode]);
+
+  // 전체 목록 메모이제이션
+  const receiptList = useMemo(() => {
+    if (viewMode === 'byUser' || missingReceipts.length === 0) {
+      return null;
+    }
+
+    return missingReceipts.map(receipt => (
+      <S.ReceiptCard key={receipt.expenseReportId}>
+        <S.ReceiptHeader>
+          <S.ReceiptTitle>{receipt.title || `문서 #${receipt.expenseReportId}`}</S.ReceiptTitle>
+          <S.StatusBadge>{receipt.status}</S.StatusBadge>
+        </S.ReceiptHeader>
+        <S.ReceiptInfo>
+          <S.InfoRow>
+            <S.InfoLabel>작성자:</S.InfoLabel>
+            <S.InfoValue>{receipt.drafterName || '알 수 없음'}</S.InfoValue>
+          </S.InfoRow>
+          <S.InfoRow>
+            <S.InfoLabel>작성일:</S.InfoLabel>
+            <S.InfoValue>{new Date(receipt.reportDate).toLocaleDateString('ko-KR')}</S.InfoValue>
+          </S.InfoRow>
+          <S.InfoRow>
+            <S.InfoLabel>금액:</S.InfoLabel>
+            <S.InfoValue>{receipt.totalAmount?.toLocaleString()}원</S.InfoValue>
+          </S.InfoRow>
+        </S.ReceiptInfo>
+        <S.ViewButton onClick={() => navigate(`/detail/${receipt.expenseReportId}`)}>
+          상세보기
+        </S.ViewButton>
+      </S.ReceiptCard>
+    ));
+  }, [missingReceipts, navigate, viewMode]);
 
   if (!user) {
     return (
@@ -110,43 +193,7 @@ const MissingReceiptPage = () => {
           {Object.keys(missingReceiptsByUser).length === 0 ? (
             <S.EmptyMessage>증빙 누락 건이 없습니다.</S.EmptyMessage>
           ) : (
-            Object.entries(missingReceiptsByUser).map(([userId, receipts]) => (
-              <S.UserGroup key={userId}>
-                <S.UserHeader>
-                  <S.UserInfo>
-                    <FaUser />
-                    <S.UserName>{receipts[0]?.drafterName || `사용자 ID: ${userId}`}</S.UserName>
-                    <S.CountBadge>{receipts.length}건</S.CountBadge>
-                  </S.UserInfo>
-                </S.UserHeader>
-                <S.ReceiptList>
-                  {receipts.map(receipt => (
-                    <S.ReceiptItem key={receipt.expenseReportId}>
-                      <S.ReceiptInfo>
-                        <S.ReceiptTitle>{receipt.title || `문서 #${receipt.expenseReportId}`}</S.ReceiptTitle>
-                        <S.ReceiptDetails>
-                          <S.DetailItem>
-                            <S.DetailLabel>작성일:</S.DetailLabel>
-                            <S.DetailValue>{new Date(receipt.reportDate).toLocaleDateString('ko-KR')}</S.DetailValue>
-                          </S.DetailItem>
-                          <S.DetailItem>
-                            <S.DetailLabel>금액:</S.DetailLabel>
-                            <S.DetailValue>{receipt.totalAmount?.toLocaleString()}원</S.DetailValue>
-                          </S.DetailItem>
-                          <S.DetailItem>
-                            <S.DetailLabel>상태:</S.DetailLabel>
-                            <S.DetailValue>{receipt.status}</S.DetailValue>
-                          </S.DetailItem>
-                        </S.ReceiptDetails>
-                      </S.ReceiptInfo>
-                      <S.ViewButton onClick={() => navigate(`/detail/${receipt.expenseReportId}`)}>
-                        상세보기
-                      </S.ViewButton>
-                    </S.ReceiptItem>
-                  ))}
-                </S.ReceiptList>
-              </S.UserGroup>
-            ))
+            userGroupList
           )}
         </S.UserGroupList>
       ) : (
@@ -154,31 +201,7 @@ const MissingReceiptPage = () => {
           {missingReceipts.length === 0 ? (
             <S.EmptyMessage>증빙 누락 건이 없습니다.</S.EmptyMessage>
           ) : (
-            missingReceipts.map(receipt => (
-              <S.ReceiptCard key={receipt.expenseReportId}>
-                <S.ReceiptHeader>
-                  <S.ReceiptTitle>{receipt.title || `문서 #${receipt.expenseReportId}`}</S.ReceiptTitle>
-                  <S.StatusBadge>{receipt.status}</S.StatusBadge>
-                </S.ReceiptHeader>
-                <S.ReceiptInfo>
-                  <S.InfoRow>
-                    <S.InfoLabel>작성자:</S.InfoLabel>
-                    <S.InfoValue>{receipt.drafterName || '알 수 없음'}</S.InfoValue>
-                  </S.InfoRow>
-                  <S.InfoRow>
-                    <S.InfoLabel>작성일:</S.InfoLabel>
-                    <S.InfoValue>{new Date(receipt.reportDate).toLocaleDateString('ko-KR')}</S.InfoValue>
-                  </S.InfoRow>
-                  <S.InfoRow>
-                    <S.InfoLabel>금액:</S.InfoLabel>
-                    <S.InfoValue>{receipt.totalAmount?.toLocaleString()}원</S.InfoValue>
-                  </S.InfoRow>
-                </S.ReceiptInfo>
-                <S.ViewButton onClick={() => navigate(`/detail/${receipt.expenseReportId}`)}>
-                  상세보기
-                </S.ViewButton>
-              </S.ReceiptCard>
-            ))
+            receiptList
           )}
         </S.ReceiptList>
       )}

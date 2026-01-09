@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchExpenseList } from '../../api/expenseApi';
@@ -6,6 +6,7 @@ import { getUserCompanies } from '../../api/userApi';
 import { getCurrentSubscription } from '../../api/subscriptionApi';
 import { getTotalAvailableAmount } from '../../api/creditApi';
 import { STATUS_KOREAN } from '../../constants/status';
+import { useDebounce, useOptimizedList } from '../../hooks/useOptimizedList';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
@@ -42,41 +43,43 @@ const MainDashboardPage = () => {
     endDate: ''
   });
 
-  // 대시보드 데이터 로드
+  // 디바운스된 필터 적용 (500ms 지연으로 API 호출 최적화)
+  const debouncedFilters = useDebounce(filters, 500);
+
+  // 메모이제이션된 필터 파라미터
+  const filterParams = useMemo(() => ({
+    ...debouncedFilters,
+    drafterName: user?.role === 'USER' ? user.koreanName : ''
+  }), [debouncedFilters, user]);
+
+  // 메모이제이션된 통계 계산 함수
+  const calculateStats = useCallback((expenses) => {
+    const filteredExpenses = user?.role === 'USER'
+      ? expenses.filter(exp => exp.drafterId === user.userId)
+      : expenses;
+
+    return {
+      totalAmount: filteredExpenses.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0),
+      waitCount: filteredExpenses.filter(exp => exp.status === 'WAIT').length,
+      rejectedCount: filteredExpenses.filter(exp => exp.status === 'REJECTED').length,
+      approvedCount: filteredExpenses.filter(exp => exp.status === 'APPROVED').length
+    };
+  }, [user]);
+
+  // 최적화된 대시보드 데이터 로드
   useEffect(() => {
     if (!user) return;
-    
+
     const loadDashboardData = async () => {
       try {
         setLoading(true);
-        
-        // 일반 사용자는 자신이 작성한 글만 조회
-        const filterParams = {
-          ...filters,
-          drafterName: user.role === 'USER' ? user.koreanName : ''
-        };
-        
-        const response = await fetchExpenseList(1, 1000, filterParams); // 큰 수로 설정하여 모든 데이터 조회
-        
+
+        const response = await fetchExpenseList(1, 1000, filterParams);
+
         if (response.success && response.data) {
           const expenses = response.data.content || [];
-          
-          // 일반 사용자는 자신이 작성한 글만 필터링 (이중 체크)
-          const filteredExpenses = user.role === 'USER' 
-            ? expenses.filter(exp => exp.drafterId === user.userId)
-            : expenses;
-          
-          // 통계 계산
-          const totalAmount = filteredExpenses.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0);
-          const waitCount = filteredExpenses.filter(exp => exp.status === 'WAIT').length;
-          const rejectedCount = filteredExpenses.filter(exp => exp.status === 'REJECTED').length;
-          const approvedCount = filteredExpenses.filter(exp => exp.status === 'APPROVED').length;
-          setStats({
-            totalAmount,
-            waitCount,
-            rejectedCount,
-            approvedCount
-          });
+          const newStats = calculateStats(expenses);
+          setStats(newStats);
         }
       } catch (error) {
         console.error('대시보드 데이터 로드 실패:', error);
@@ -85,9 +88,9 @@ const MainDashboardPage = () => {
         setLoading(false);
       }
     };
-    
+
     loadDashboardData();
-  }, [user, filters]);
+  }, [user, filterParams, calculateStats]);
 
 
   // 구독 및 크레딧 정보 로드 (CEO, ADMIN만)

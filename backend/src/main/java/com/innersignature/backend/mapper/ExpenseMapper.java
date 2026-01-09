@@ -10,6 +10,7 @@ import com.innersignature.backend.dto.MonthlyTrendDto;
 import com.innersignature.backend.dto.ReceiptDto;
 import com.innersignature.backend.dto.StatusStatsDto;
 import com.innersignature.backend.dto.TaxStatusDto;
+import com.innersignature.backend.dto.UserExpenseStatsDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -295,4 +296,69 @@ public interface ExpenseMapper {
             @Param("drafterName") String drafterName,
             @Param("companyId") Long companyId
     );
+
+    // ===== 결재 히스토리 관련 메소드들 =====
+
+    // 결재 히스토리 삽입
+    void insertApprovalHistory(@Param("expenseReportId") Long expenseReportId,
+                              @Param("approverId") Long approverId,
+                              @Param("action") String action,
+                              @Param("comment") String comment,
+                              @Param("signatureData") String signatureData);
+
+    // 결재 히스토리 삭제
+    void deleteApprovalHistory(@Param("expenseReportId") Long expenseReportId,
+                              @Param("approverId") Long approverId,
+                              @Param("action") String action);
+
+    // 특정 사용자의 최근 결재 히스토리 확인
+    boolean hasRecentApproval(@Param("expenseReportId") Long expenseReportId,
+                             @Param("approverId") Long approverId);
+
+    // 특정 사용자의 최근 반려 히스토리 확인
+    boolean hasRecentRejection(@Param("expenseReportId") Long expenseReportId,
+                              @Param("approverId") Long approverId);
+
+    // 승인된 결의서 목록 조회
+    List<ExpenseReportDto> selectMyApprovedReports(@Param("userId") Long userId,
+                                                  @Param("companyId") Long companyId);
+
+    // ===== 세무 처리 관련 메소드들 =====
+
+    // 세무 처리 상태 카운트
+    long countTaxPending(@Param("companyId") Long companyId,
+                        @Param("startDate") LocalDate startDate,
+                        @Param("endDate") LocalDate endDate);
+
+    long countTaxCompleted(@Param("companyId") Long companyId,
+                          @Param("startDate") LocalDate startDate,
+                          @Param("endDate") LocalDate endDate);
+
+    // 세무 처리 상태 업데이트
+    void updateTaxProcessingStatus(@Param("expenseReportId") Long expenseReportId,
+                                  @Param("status") String status,
+                                  @Param("userId") Long userId);
+
+    // 세액 공제 정보 업데이트
+    void updateExpenseDetailTaxInfo(@Param("expenseDetailId") Long expenseDetailId,
+                                   @Param("isDeductible") boolean isDeductible,
+                                   @Param("reason") String reason,
+                                   @Param("companyId") Long companyId);
+
+    // ===== 분석 및 통계 관련 메소드들 =====
+
+    // 상태별 결의서 카운트
+    long countExpensesByStatus(@Param("companyId") Long companyId,
+                              @Param("status") String status,
+                              @Param("startDate") java.time.LocalDate startDate,
+                              @Param("endDate") java.time.LocalDate endDate);
+
+    // 사용자별 결의서 통계
+    List<UserExpenseStatsDto> selectUserExpenseStats(@Param("companyId") Long companyId,
+                                                    @Param("startDate") java.time.LocalDate startDate,
+                                                    @Param("endDate") java.time.LocalDate endDate);
+
+    // 최근 활동 조회
+    List<ExpenseReportDto> selectRecentActivities(@Param("companyId") Long companyId,
+                                                 @Param("limit") int limit);
 }

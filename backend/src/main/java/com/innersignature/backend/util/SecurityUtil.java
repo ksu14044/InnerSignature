@@ -105,5 +105,15 @@ public class SecurityUtil {
                 })
                 .orElse(null);
     }
+
+    /**
+     * 현재 사용자가 세무 담당자인지 확인합니다.
+     *
+     * @return 세무 담당자이면 true, 아니면 false
+     */
+    public static boolean isTaxAccountant() {
+        String role = getCurrentRole();
+        return "TAX_ACCOUNTANT".equals(role);
+    }
 }
 
