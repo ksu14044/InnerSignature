@@ -40,9 +40,10 @@ public class UserApproverService {
     @Transactional
     public UserApproverMappingDto createMapping(UserApproverMappingDto mapping) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
-        
-        // 자기 자신을 담당 결재자로 설정할 수 없음
-        if (mapping.getUserId().equals(mapping.getApproverId())) {
+
+        // CEO는 자기 자신을 담당 결재자로 설정할 수 있음
+        String currentUserRole = SecurityUtil.getCurrentRole();
+        if (!"CEO".equals(currentUserRole) && mapping.getUserId().equals(mapping.getApproverId())) {
             throw new BusinessException("자기 자신을 담당 결재자로 설정할 수 없습니다.");
         }
         
