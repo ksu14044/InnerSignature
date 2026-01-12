@@ -28,9 +28,7 @@ const ExpenseCreatePage = () => {
 
   // 1. 문서 기본 정보 상태
   const [report, setReport] = useState({
-    paymentReqDate: new Date().toISOString().split('T')[0], // 오늘 날짜로 디폴트 설정
     reportDate: new Date().toISOString().split('T')[0],
-    isPreApproval: false, // 가승인 요청 여부 (결의서 단위)
   });
 
   // 2. 상세 내역 리스트 상태 - 초기값을 빈 배열로 변경
@@ -59,7 +57,6 @@ const ExpenseCreatePage = () => {
 
   // 4. 필드 참조 (스크롤 이동용)
   const titleInputRef = useRef(null);
-  const paymentReqDateInputRef = useRef(null);
   const descriptionInputRefs = useRef([]);
   const amountInputRefs = useRef([]);
   const approverSectionRef = useRef(null);
@@ -226,9 +223,7 @@ const ExpenseCreatePage = () => {
             // 기본 정보 설정
             setReport({
               title: expense.title || '',
-              paymentReqDate: expense.paymentReqDate || '',
               reportDate: expense.reportDate || new Date().toISOString().split('T')[0],
-              isPreApproval: expense.isPreApproval || false,
             });
 
             // 상세 내역 설정 (원본 데이터도 저장)
@@ -280,11 +275,6 @@ const ExpenseCreatePage = () => {
   }, [isEditMode, id, user, navigate]);
 
   // --- 이벤트 핸들러 ---
-
-  const handleReportChange = (e) => {
-    const { name, value } = e.target;
-    setReport({ ...report, [name]: value });
-  };
 
   // 숫자에 콤마 포맷팅 적용
   const formatNumber = (value) => {
@@ -535,17 +525,15 @@ const ExpenseCreatePage = () => {
       }
     }
     
-    // 3. 가승인 요청이 체크되지 않은 경우 영수증 첨부 필수 확인
-    if (!report.isPreApproval) {
-      const hasReceipts = isEditMode && id 
-        ? receipts.length > 0  // 수정 모드: 서버에 업로드된 영수증 확인
-        : pendingReceipts.length > 0;  // 생성 모드: 선택한 영수증 파일 확인
-      
-      if (!hasReceipts) {
-        missingFields.push('영수증 첨부 (가승인 요청이 체크되지 않은 경우 필수)');
-        if (!firstMissingField) {
-          firstMissingField = { type: 'receipt', ref: receiptSectionRef };
-        }
+    // 3. 영수증 첨부 필수 확인
+    const hasReceipts = isEditMode && id
+      ? receipts.length > 0  // 수정 모드: 서버에 업로드된 영수증 확인
+      : pendingReceipts.length > 0;  // 생성 모드: 선택한 영수증 파일 확인
+
+    if (!hasReceipts) {
+      missingFields.push('영수증 첨부');
+      if (!firstMissingField) {
+        firstMissingField = { type: 'receipt', ref: receiptSectionRef };
       }
     }
     
@@ -616,8 +604,6 @@ const ExpenseCreatePage = () => {
       drafterId: user.userId,
       drafterName: user.koreanName,
       reportDate: report.reportDate,
-      paymentReqDate: report.paymentReqDate,
-      isPreApproval: report.isPreApproval || false,
       status: hasSalaryCategory ? EXPENSE_STATUS.APPROVED : EXPENSE_STATUS.WAIT,
       totalAmount: totalAmount,
       details: cleanedDetails,
@@ -747,36 +733,6 @@ const ExpenseCreatePage = () => {
         <S.Title>{isEditMode ? '지출결의서 수정' : '지출결의서 작성'}</S.Title>
       </S.Header>
 
-      {/* 기본 정보 섹션 */}
-      <S.Section>
-        <S.SectionHeader>
-          <S.SectionTitle>기본 정보</S.SectionTitle>
-        </S.SectionHeader>
-        <S.FormRow>
-          <S.FormGroup>
-            <S.Label>지급 요청일 *</S.Label>
-            <S.Input
-              type="date"
-              name="paymentReqDate"
-              value={report.paymentReqDate}
-              onChange={handleReportChange}
-              required
-            />
-          </S.FormGroup>
-          <S.FormGroup style={{ display: 'none' }}>
-            <S.Label>
-              <input
-                type="checkbox"
-                name="isPreApproval"
-                checked={report.isPreApproval || false}
-                onChange={(e) => setReport({ ...report, isPreApproval: e.target.checked })}
-              />
-              가승인 요청
-            </S.Label>
-            <S.HelpText>영수증이 아직 없는 경우 가승인을 요청할 수 있습니다.</S.HelpText>
-          </S.FormGroup>
-        </S.FormRow>
-      </S.Section>
 
       {/* 2. 결재자 선택 섹션 - 급여가 아닌 경우에만 표시 */}
       {!hasSalaryCategory && (
@@ -847,11 +803,11 @@ const ExpenseCreatePage = () => {
             <thead>
               <tr>
                 <S.Th width="5%">#</S.Th>
+                <S.Th width="12%">사용일자</S.Th>
                 <S.Th width="12%">항목</S.Th>
                 <S.Th width="10%">상호명</S.Th>
                 <S.Th width="15%">적요 (내용)</S.Th>
                 <S.Th width="12%">금액</S.Th>
-                <S.Th width="12%">지급 요청일</S.Th>
                 <S.Th width="12%">결제수단</S.Th>
                 <S.Th width="20%">관리</S.Th>
               </tr>
@@ -870,13 +826,13 @@ const ExpenseCreatePage = () => {
                   return (
                     <S.TableRow key={originalIndex} onClick={() => openEditModal(originalIndex)}>
                       <S.Td>{index + 1}</S.Td>
+                      <S.Td>{detail.paymentReqDate || '-'}</S.Td>
                       <S.Td>{detail.category || '-'}</S.Td>
                       <S.Td>{detail.merchantName || '-'}</S.Td>
                       <S.Td>{detail.description || '-'}</S.Td>
                       <S.Td style={{ textAlign: 'right', fontWeight: '600' }}>
                         {detail.amount ? formatNumber(detail.amount) + '원' : '-'}
                       </S.Td>
-                      <S.Td>{detail.paymentReqDate || '-'}</S.Td>
                       <S.Td>{getPaymentMethodLabel(detail.paymentMethod)}</S.Td>
                       <S.Td onClick={(e) => e.stopPropagation()}>
                         <S.ActionButtonGroup>
@@ -921,6 +877,10 @@ const ExpenseCreatePage = () => {
                   </S.CardHeader>
                   <S.CardBody>
                     <S.MobileSummaryRow>
+                      <S.MobileLabel>사용일자</S.MobileLabel>
+                      <S.MobileValue>{detail.paymentReqDate || '-'}</S.MobileValue>
+                    </S.MobileSummaryRow>
+                    <S.MobileSummaryRow>
                       <S.MobileLabel>항목</S.MobileLabel>
                       <S.MobileValue>{detail.category || '-'}</S.MobileValue>
                     </S.MobileSummaryRow>
@@ -941,10 +901,6 @@ const ExpenseCreatePage = () => {
                       </S.MobileValue>
                     </S.MobileSummaryRow>
                     <S.MobileSummaryRow>
-                      <S.MobileLabel>지급 요청일</S.MobileLabel>
-                      <S.MobileValue>{detail.paymentReqDate || '-'}</S.MobileValue>
-                    </S.MobileSummaryRow>
-                    <S.MobileSummaryRow>
                       <S.MobileLabel>결제수단</S.MobileLabel>
                       <S.MobileValue>{getPaymentMethodLabel(detail.paymentMethod)}</S.MobileValue>
                     </S.MobileSummaryRow>
@@ -960,19 +916,12 @@ const ExpenseCreatePage = () => {
       <S.Section ref={receiptSectionRef}>
         <S.SectionHeader>
           <S.SectionTitle>
-            영수증 {!report.isPreApproval && <span style={{ color: 'red' }}>*</span>}
+            영수증 <span style={{ color: 'red' }}>*</span>
           </S.SectionTitle>
         </S.SectionHeader>
-        {!report.isPreApproval && (
-          <S.InfoMessage style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fff3cd', border: '1px solid #ffc107', borderRadius: '8px' }}>
-            가승인 요청이 체크되지 않았으므로 영수증 첨부가 필수입니다.
-          </S.InfoMessage>
-        )}
-        {report.isPreApproval && (
-          <S.InfoMessage style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#d1ecf1', border: '1px solid #bee5eb', borderRadius: '8px' }}>
-            가승인 요청이 체크되었으므로 영수증 첨부는 선택사항입니다.
-          </S.InfoMessage>
-        )}
+        <S.InfoMessage style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fff3cd', border: '1px solid #ffc107', borderRadius: '8px' }}>
+          영수증 첨부가 필수입니다.
+        </S.InfoMessage>
         
         {/* 생성 전: 영수증 파일 선택 */}
         {!isEditMode || !id ? (

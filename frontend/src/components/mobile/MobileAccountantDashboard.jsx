@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
-import { fetchUserExpenseStats, fetchDashboardStats } from '../../api/expenseApi';
+import { fetchUserExpenseStats, fetchDashboardStats, fetchPendingApprovals, fetchExpenseList, fetchCategoryRatio } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -14,15 +14,22 @@ const MobileAccountantDashboard = () => {
   const [userExpenseStats, setUserExpenseStats] = useState([]);
   const [dashboardStats, setDashboardStats] = useState({});
   const [loading, setLoading] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [approvedExpenses, setApprovedExpenses] = useState([]);
+  const [activeTab, setActiveTab] = useState('stats');
+  const [categoryRatio, setCategoryRatio] = useState([]);
   // 데이터 로드
   const loadData = useCallback(async () => {
     if (!user) return;
 
     try {
       setLoading(true);
-      const [statsRes, userStatsRes] = await Promise.all([
+      const [statsRes, userStatsRes, pendingRes, approvedRes, categoryRes] = await Promise.all([
         fetchDashboardStats(),
-        fetchUserExpenseStats()
+        fetchUserExpenseStats(),
+        fetchPendingApprovals(user.userId).catch(() => ({ success: false, data: [] })),
+        fetchExpenseList(1, 5, { status: ['APPROVED'] }).catch(() => ({ success: false, data: { content: [] } })),
+        fetchCategoryRatio().catch(() => ({ success: false, data: [] }))
       ]);
 
       if (statsRes.success) {
@@ -30,6 +37,15 @@ const MobileAccountantDashboard = () => {
       }
       if (userStatsRes.success) {
         setUserExpenseStats(userStatsRes.data || []);
+      }
+      if (pendingRes.success) {
+        setPendingApprovals(pendingRes.data || []);
+      }
+      if (approvedRes.success && approvedRes.data) {
+        setApprovedExpenses(approvedRes.data.content || []);
+      }
+      if (categoryRes.success) {
+        setCategoryRatio(categoryRes.data || []);
       }
     } catch (error) {
       console.error('모바일 세무 담당자 대시보드 데이터 로드 실패:', error);
@@ -73,8 +89,12 @@ const MobileAccountantDashboard = () => {
   // 사용자별 지출 차트 데이터 변환
   const userExpenseChartData = userExpenseStats.map(item => ({
     name: item.userName,
-    amount: item.totalAmount
+    amount: item.totalAmount,
+    totalCount: item.totalCount || 0
   }));
+
+  // 상태별 차트 데이터 (사용자별 지출 통계와 동일)
+  const statusChartData = userExpenseChartData;
 
   // 카테고리 차트 데이터 변환
   const categoryChartData = categoryRatio.map(item => ({

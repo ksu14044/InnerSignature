@@ -274,6 +274,18 @@ const ExpenseDetailModal = ({
 
         <S.ModalBody>
           <S.FormGrid>
+          <S.FormGroup>
+              <S.Label>사용일자 *</S.Label>
+              <S.Input
+                type="date"
+                name="paymentReqDate"
+                value={formData.paymentReqDate}
+                onChange={handleChange}
+                required
+              />
+            </S.FormGroup>
+            <div></div>
+
             <S.FormGroup>
               <S.Label>항목 *</S.Label>
               <S.Select 
@@ -340,17 +352,6 @@ const ExpenseDetailModal = ({
                 <option value="CARD">개인카드</option>
                 <option value="COMPANY_CARD">회사카드</option>
               </S.Select>
-            </S.FormGroup>
-
-            <S.FormGroup>
-              <S.Label>지급 요청일 (사용일자) *</S.Label>
-              <S.Input
-                type="date"
-                name="paymentReqDate"
-                value={formData.paymentReqDate}
-                onChange={handleChange}
-                required
-              />
             </S.FormGroup>
 
             {(formData.paymentMethod === 'CARD' || formData.paymentMethod === 'COMPANY_CARD') && (

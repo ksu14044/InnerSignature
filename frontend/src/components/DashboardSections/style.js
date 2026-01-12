@@ -486,5 +486,98 @@ export const ViewMoreButton = styled.button`
   }
 `;
 
+export const RecentActivitySection = styled.div`
+  margin-bottom: 24px;
+
+  @media (max-width: 480px) {
+    margin-bottom: 16px;
+    padding: 0 8px;
+  }
+`;
+
+export const RecentActivityList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
+`;
+
+export const RecentActivityItem = styled.div`
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0,123,255,0.1);
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    border-radius: 12px;
+  }
+`;
+
+export const ActivityInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+export const ActivityTitle = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dark-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
+`;
+
+export const ActivityMeta = styled.div`
+  font-size: 14px;
+  color: var(--secondary-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
+`;
+
+export const ActivityDate = styled.div`
+  font-size: 14px;
+  color: var(--secondary-color);
+  font-weight: 500;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    align-self: flex-end;
+  }
+`;
+
 
 
