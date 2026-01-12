@@ -1796,64 +1796,24 @@ public class ExpenseService {
     }
 
     /**
-     * 세무 수정 요청
+     * 세무 수정 요청 - 기능 비활성화됨
      * TAX_ACCOUNTANT 권한을 가진 사용자만 처리할 수 있습니다.
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void requestTaxRevision(Long expenseReportId, String reason, Long userId) {
-        Long companyId = SecurityUtil.getCurrentCompanyId();
-        
-        // 권한 체크: TAX_ACCOUNTANT 권한자만 처리 가능
-        permissionUtil.checkTaxAccountantPermission(userId);
-        
-        // 문서 정보 조회
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
-        if (report == null) {
-            throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
-        }
-        
-        // 세무 수집된 문서만 수정 요청 가능
-        if (report.getTaxCollectedAt() == null) {
-            throw new com.innersignature.backend.exception.BusinessException("세무 수집된 문서만 수정 요청할 수 있습니다.");
-        }
-
-        // APPROVED 또는 WAIT 상태의 문서만 수정 요청 가능
-        // - APPROVED: 처음 수정 요청하는 경우
-        // - WAIT: 이전 수정 요청이 처리되어 재요청하는 경우
-        if (!"APPROVED".equals(report.getStatus()) && !"WAIT".equals(report.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("승인 완료(APPROVED) 또는 대기(WAIT) 상태의 문서만 수정 요청할 수 있습니다.");
-        }
-        
-        // 이미 수정 요청된 경우에도 재요청 허용 (작성자가 수정 완료 후 다시 요청 가능하도록)
-
-        // 1. 결재 라인 전체 초기화 (모든 서명/반려 정보 제거 후 WAIT 상태로 복원)
-        expenseMapper.resetApprovalLinesForReport(expenseReportId, companyId);
-
-        // 2. 문서 상태를 WAIT으로 변경 (다시 결재 프로세스를 타도록)
-        expenseMapper.updateExpenseReportStatus(expenseReportId, "WAIT", companyId);
-
-        // 3. 수정 요청 플래그 및 사유 저장
-        expenseMapper.updateTaxRevisionRequest(expenseReportId, true, reason, companyId);
-        logger.info("세무 수정 요청 처리 - expenseId: {}, userId: {}, reason: {}", 
-            expenseReportId, userId, reason);
+        // 기능 비활성화 - 아무 작업도 수행하지 않음
+        logger.info("세무 수정 요청 기능이 비활성화되어 요청이 무시되었습니다. - expenseId: {}, userId: {}", expenseReportId, userId);
+        throw new com.innersignature.backend.exception.BusinessException("세무 수정 요청 기능이 비활성화되었습니다.");
     }
 
     /**
-     * 세무 수정 요청 목록 (작성자용)
+     * 세무 수정 요청 목록 (작성자용) - 기능 비활성화됨
      * 세무사가 수정 요청한 결의서를 작성자 기준으로 조회합니다.
      */
     public List<ExpenseReportDto> getTaxRevisionRequestsForDrafter(Long userId) {
-        Long companyId = SecurityUtil.getCurrentCompanyId();
-        List<ExpenseReportDto> list = expenseMapper.selectTaxRevisionRequestsByDrafter(userId, companyId);
-
-        // 급여/세무 정보 필터링 및 요약 본문 생성은 다른 목록과 동일하게 처리
-        filterSalaryExpenses(list, userId);
-        filterTaxProcessingInfo(list, userId);
-        for (ExpenseReportDto report : list) {
-            generateSummaryDescription(report);
-        }
-
-        return list;
+        // 기능 비활성화 - 빈 리스트 반환
+        logger.debug("세무 수정 요청 목록 조회 기능이 비활성화되어 빈 리스트를 반환합니다. - userId: {}", userId);
+        return Collections.emptyList();
     }
 
     /**

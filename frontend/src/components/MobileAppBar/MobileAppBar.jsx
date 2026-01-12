@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { FaBars, FaBell, FaUser, FaSignOutAlt, FaBuilding, FaChevronDown, FaCheck, FaEdit } from 'react-icons/fa';
-import { fetchPendingApprovals, fetchTaxRevisionRequestsForDrafter } from '../../api/expenseApi';
+import { fetchPendingApprovals } from '../../api/expenseApi';
 import { getPendingUsers } from '../../api/userApi';
 import * as S from './style';
 
@@ -13,14 +13,14 @@ const MobileAppBar = ({ title, onMenuClick }) => {
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
-  const [taxRevisionRequests, setTaxRevisionRequests] = useState([]);
+  // const [taxRevisionRequests, setTaxRevisionRequests] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const companyDropdownRef = useRef(null);
   const notificationDropdownRef = useRef(null);
   const isLoginPage = location.pathname === '/' || location.pathname.startsWith('/find-') || location.pathname.startsWith('/reset-password');
   
   // 총 알림 개수 계산
-  const totalNotifications = pendingApprovals.length + taxRevisionRequests.length + pendingUsers.length;
+  const totalNotifications = pendingApprovals.length + pendingUsers.length;
 
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
@@ -77,19 +77,19 @@ const MobileAppBar = ({ title, onMenuClick }) => {
         });
     }
 
-    // 세무 수정 요청 알림 (작성자용)
-    fetchTaxRevisionRequestsForDrafter()
-      .then((response) => {
-        if (response.success) {
-          setTaxRevisionRequests(response.data || []);
-        } else {
-          setTaxRevisionRequests([]);
-        }
-      })
-      .catch((error) => {
-        console.error('세무 수정 요청 알림 조회 실패:', error);
-        setTaxRevisionRequests([]);
-      });
+    // 세무 수정 요청 알림 (작성자용) - 기능 비활성화됨
+    // fetchTaxRevisionRequestsForDrafter()
+    //   .then((response) => {
+    //     if (response.success) {
+    //       setTaxRevisionRequests(response.data || []);
+    //     } else {
+    //       setTaxRevisionRequests([]);
+    //     }
+    //   })
+    //   .catch((error) => {
+    //     console.error('세무 수정 요청 알림 조회 실패:', error);
+    //     setTaxRevisionRequests([]);
+    //   });
   }, [user, isLoginPage, location.pathname]);
 
   if (isLoginPage) {
@@ -203,7 +203,7 @@ const MobileAppBar = ({ title, onMenuClick }) => {
                         </S.NotificationText>
                       </S.NotificationDropdownItem>
                     )}
-                    {taxRevisionRequests.length > 0 && (
+                    {false && taxRevisionRequests.length > 0 && (
                       <S.NotificationDropdownItem
                         onClick={() => {
                           setIsNotificationDropdownOpen(false);

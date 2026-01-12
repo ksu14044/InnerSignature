@@ -86,7 +86,7 @@ const TaxAccountantDashboardSection = ({ filters }) => {
       return;
     }
 
-    if (!confirm(`선택한 기간의 자료를 수집하시겠습니까?\n\n📅 ${filters.startDate} ~ ${filters.endDate}\n\n⚠️ 주의사항:\n- APPROVED 상태 결의서가 수집 처리됩니다\n- 수집 후에는 일반 사용자가 수정/삭제 불가능합니다\n- 세무사의 수정 요청이 있을 때만 수정 가능합니다`)) {
+    if (!confirm(`선택한 기간의 자료를 수집하시겠습니까?\n\n📅 ${filters.startDate} ~ ${filters.endDate}\n\n⚠️ 주의사항:\n- APPROVED 상태 결의서가 수집 처리됩니다\n- 수집 후에는 일반 사용자가 수정/삭제 불가능합니다`)) {
       return;
     }
 
@@ -115,7 +115,7 @@ const TaxAccountantDashboardSection = ({ filters }) => {
     const lastDay = new Date(endMonthObj.getFullYear(), endMonthObj.getMonth() + 1, 0).getDate();
     const endDate = `${monthRange.endMonth}-${String(lastDay).padStart(2, '0')}`;
     
-    if (!confirm(`선택한 기간을 수집하시겠습니까?\n\n📅 ${monthRange.startMonth} ~ ${monthRange.endMonth}\n(${startDate} ~ ${endDate})\n\n⚠️ 주의사항:\n- APPROVED 상태 결의서가 수집 처리됩니다\n- 수집 후에는 일반 사용자가 수정/삭제 불가능합니다\n- 세무사의 수정 요청이 있을 때만 수정 가능합니다`)) {
+    if (!confirm(`선택한 기간을 수집하시겠습니까?\n\n📅 ${monthRange.startMonth} ~ ${monthRange.endMonth}\n(${startDate} ~ ${endDate})\n\n⚠️ 주의사항:\n- APPROVED 상태 결의서가 수집 처리됩니다\n- 수집 후에는 일반 사용자가 수정/삭제 불가능합니다`)) {
       return;
     }
     

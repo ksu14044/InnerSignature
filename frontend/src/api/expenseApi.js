@@ -216,16 +216,16 @@ export const fetchMyApprovedReports = async () => {
   }
 };
 
-// 8-1. 세무 수정 요청 알림 (작성자용)
-export const fetchTaxRevisionRequestsForDrafter = async () => {
-  try {
-    const response = await axiosInstance.get(`${BASE_URL}/tax/revision-requests`);
-    return response.data;
-  } catch (error) {
-    console.error("세무 수정 요청 알림 조회 실패:", error);
-    throw error;
-  }
-};
+// 8-1. 세무 수정 요청 알림 (작성자용) - 기능 비활성화됨
+// export const fetchTaxRevisionRequestsForDrafter = async () => {
+//   try {
+//     const response = await axiosInstance.get(`${BASE_URL}/tax/revision-requests`);
+//     return response.data;
+//   } catch (error) {
+//     console.error("세무 수정 요청 알림 조회 실패:", error);
+//     throw error;
+//   }
+// };
 
 // 9. 영수증 업로드
 export const uploadReceipt = async (expenseId, userId, file) => {
@@ -503,18 +503,18 @@ export const collectTaxData = async (startDate = null, endDate = null) => {
   }
 };
 
-// 22-2. 세무 수정 요청 (TAX_ACCOUNTANT 전용)
-export const requestTaxRevision = async (expenseReportId, reason) => {
-  try {
-    const response = await axiosInstance.post(`${BASE_URL}/${expenseReportId}/tax/revision-request`, {
-      reason
-    });
-    return response.data;
-  } catch (error) {
-    console.error("세무 수정 요청 실패:", error);
-    throw error;
-  }
-};
+// 22-2. 세무 수정 요청 (TAX_ACCOUNTANT 전용) - 기능 비활성화됨
+// export const requestTaxRevision = async (expenseReportId, reason) => {
+//   try {
+//     const response = await axiosInstance.post(`${BASE_URL}/${expenseReportId}/tax/revision-request`, {
+//       reason
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error("세무 수정 요청 실패:", error);
+//     throw error;
+//   }
+// };
 
 // 25. 부가세 신고 서식 다운로드 (TAX_ACCOUNTANT 전용)
 export const downloadTaxReport = async (startDate = null, endDate = null) => {

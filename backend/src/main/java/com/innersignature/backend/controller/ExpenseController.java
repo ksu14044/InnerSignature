@@ -327,15 +327,14 @@ public class ExpenseController {
     }
 
     /**
-     * 세무 수정 요청 목록 (작성자용)
+     * 세무 수정 요청 목록 (작성자용) - 기능 비활성화됨
      * TAX_ACCOUNTANT가 수정 요청한 결의서들을 작성자 기준으로 조회합니다.
      */
     @Operation(summary = "세무 수정 요청 목록(작성자용)", description = "세무사가 수정 요청한 결의서 목록을 작성자 기준으로 조회합니다.")
     @GetMapping("/tax/revision-requests")
     public ApiResponse<List<ExpenseReportDto>> getTaxRevisionRequestsForDrafter() {
-        Long currentUserId = SecurityUtil.getCurrentUserId();
-        List<ExpenseReportDto> list = expenseService.getTaxRevisionRequestsForDrafter(currentUserId);
-        return new ApiResponse<>(true, "세무 수정 요청 목록 조회 성공", list);
+        // 기능 비활성화 - 빈 리스트 반환
+        return new ApiResponse<>(true, "세무 수정 요청 기능이 비활성화되었습니다.", java.util.Collections.emptyList());
     }
 
     /**
@@ -823,7 +822,7 @@ public class ExpenseController {
     }
 
     /**
-     * 세무 수정 요청
+     * 세무 수정 요청 - 기능 비활성화됨
      * POST /api/expenses/{expenseReportId}/tax/revision-request
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
@@ -833,23 +832,8 @@ public class ExpenseController {
     public ApiResponse<Void> requestTaxRevision(
             @PathVariable Long expenseReportId,
             @RequestBody java.util.Map<String, String> request) {
-        Long currentUserId = SecurityUtil.getCurrentUserId();
-        String reason = request.get("reason");
-        
-        if (reason == null || reason.trim().isEmpty()) {
-            return new ApiResponse<>(false, "수정 요청 사유를 입력해주세요.", null);
-        }
-        
-        logger.info("세무 수정 요청 - expenseId: {}, userId: {}, reason: {}", expenseReportId, currentUserId, reason);
-        
-        try {
-            expenseService.requestTaxRevision(expenseReportId, reason, currentUserId);
-            logger.info("세무 수정 요청 완료 - expenseId: {}, userId: {}", expenseReportId, currentUserId);
-            return new ApiResponse<>(true, "수정 요청이 전송되었습니다.", null);
-        } catch (com.innersignature.backend.exception.BusinessException | com.innersignature.backend.exception.ResourceNotFoundException e) {
-            logger.warn("세무 수정 요청 실패 - expenseId: {}, userId: {}, error: {}", expenseReportId, currentUserId, e.getMessage());
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+        // 기능 비활성화 - 요청 거부
+        return new ApiResponse<>(false, "세무 수정 요청 기능이 비활성화되었습니다.", null);
     }
 
     /**

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
-import { fetchExpenseList, deleteExpense, downloadTaxReviewList, fetchTaxRevisionRequestsForDrafter, fetchMyApprovedReports, fetchPendingApprovals } from '../../api/expenseApi';
+import { fetchExpenseList, deleteExpense, downloadTaxReviewList, fetchMyApprovedReports, fetchPendingApprovals } from '../../api/expenseApi';
 import { getUserCompanies, getPendingUsers, approveUser } from '../../api/userApi';
 import * as S from './style';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -17,8 +17,8 @@ const ExpenseListPage = () => {
   const [loading, setLoading] = useState(true);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
-  const [taxRevisionRequests, setTaxRevisionRequests] = useState([]);
-  const [isTaxRevisionModalOpen, setIsTaxRevisionModalOpen] = useState(false);
+  // const [taxRevisionRequests, setTaxRevisionRequests] = useState([]);
+  // const [isTaxRevisionModalOpen, setIsTaxRevisionModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -427,7 +427,7 @@ const ExpenseListPage = () => {
   useEffect(() => {
     const openNotifications = searchParams.get('openNotifications');
     const openApprovals = searchParams.get('openApprovals');
-    const openTaxRevisions = searchParams.get('openTaxRevisions');
+    // const openTaxRevisions = searchParams.get('openTaxRevisions');
     
     if (openNotifications === 'true') {
       setIsNotificationModalOpen(true);
@@ -445,28 +445,29 @@ const ExpenseListPage = () => {
       setSearchParams(newSearchParams, { replace: true });
     }
 
-    if (openTaxRevisions === 'true') {
-      setIsTaxRevisionModalOpen(true);
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.delete('openTaxRevisions');
-      setSearchParams(newSearchParams, { replace: true });
-    }
+    // 세무 수정 요청 모달 열기 기능 비활성화됨
+    // if (openTaxRevisions === 'true') {
+    //   setIsTaxRevisionModalOpen(true);
+    //   const newSearchParams = new URLSearchParams(searchParams);
+    //   newSearchParams.delete('openTaxRevisions');
+    //   setSearchParams(newSearchParams, { replace: true });
+    // }
   }, [searchParams, setSearchParams]);
 
   // 커스텀 이벤트로 모달 열기 (이미 expenses 페이지에 있을 때)
   useEffect(() => {
     const handleOpenNotificationModal = () => setIsNotificationModalOpen(true);
     const handleOpenApprovalModal = () => setIsApprovalModalOpen(true);
-    const handleOpenTaxRevisionModal = () => setIsTaxRevisionModalOpen(true);
+    // const handleOpenTaxRevisionModal = () => setIsTaxRevisionModalOpen(true);
 
     window.addEventListener('openNotificationModal', handleOpenNotificationModal);
     window.addEventListener('openApprovalModal', handleOpenApprovalModal);
-    window.addEventListener('openTaxRevisionModal', handleOpenTaxRevisionModal);
+    // window.addEventListener('openTaxRevisionModal', handleOpenTaxRevisionModal);
 
     return () => {
       window.removeEventListener('openNotificationModal', handleOpenNotificationModal);
       window.removeEventListener('openApprovalModal', handleOpenApprovalModal);
-      window.removeEventListener('openTaxRevisionModal', handleOpenTaxRevisionModal);
+      // window.removeEventListener('openTaxRevisionModal', handleOpenTaxRevisionModal);
     };
   }, []);
 
@@ -512,26 +513,26 @@ const ExpenseListPage = () => {
       });
   }, [user?.userId, user?.role]);
 
-  // 세무 수정 요청 알림 데이터 로드
-  useEffect(() => {
-    if (!user?.userId) {
-      setTaxRevisionRequests([]);
-      return;
-    }
+  // 세무 수정 요청 알림 데이터 로드 - 기능 비활성화됨
+  // useEffect(() => {
+  //   if (!user?.userId) {
+  //     setTaxRevisionRequests([]);
+  //     return;
+  //   }
 
-    fetchTaxRevisionRequestsForDrafter()
-      .then((response) => {
-        if (response.success) {
-          setTaxRevisionRequests(response.data || []);
-        } else {
-          setTaxRevisionRequests([]);
-        }
-      })
-      .catch((error) => {
-        console.error('세무 수정 요청 알림 조회 실패:', error);
-        setTaxRevisionRequests([]);
-      });
-  }, [user?.userId]);
+  //   fetchTaxRevisionRequestsForDrafter()
+  //     .then((response) => {
+  //     if (response.success) {
+  //       setTaxRevisionRequests(response.data || []);
+  //     } else {
+  //       setTaxRevisionRequests([]);
+  //     }
+  //   })
+  //   .catch((error) => {
+  //     console.error('세무 수정 요청 알림 조회 실패:', error);
+  //     setTaxRevisionRequests([]);
+  //   });
+  // }, [user?.userId]);
 
   // useMemo로 displayedList 메모이제이션 (Hook은 조건문 이전에 호출)
   const displayedList = useMemo(() => {
@@ -559,9 +560,9 @@ const ExpenseListPage = () => {
         subtitle={`환영합니다, ${user?.koreanName}님`}
         additionalButtons={
           <>
-            {/* 세무 수정 요청 알림 배지 (작성자용) */}
-            {taxRevisionRequests.length > 0 && (
-              <S.NotificationBadge 
+            {/* 세무 수정 요청 알림 배지 (작성자용) - 기능 비활성화됨 */}
+            {false && taxRevisionRequests.length > 0 && (
+              <S.NotificationBadge
                 onClick={() => setIsTaxRevisionModalOpen(true)}
                 title={`세무 수정 요청: ${taxRevisionRequests.length}건`}
                 style={{ backgroundColor: '#ffc107', marginRight: '12px' }}
@@ -1048,8 +1049,8 @@ const ExpenseListPage = () => {
       </S.MobileCardContainer>
 
 
-      {/* 세무 수정 요청 모달 (작성자용) */}
-      {isTaxRevisionModalOpen && (
+      {/* 세무 수정 요청 모달 (작성자용) - 기능 비활성화됨 */}
+      {false && isTaxRevisionModalOpen && (
         <S.NotificationModal onClick={() => setIsTaxRevisionModalOpen(false)}>
           <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
             <S.NotificationModalHeader>

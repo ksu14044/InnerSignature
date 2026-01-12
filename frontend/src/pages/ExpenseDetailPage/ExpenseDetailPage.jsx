@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, requestTaxRevision } from '../../api/expenseApi';
+import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
 import { getMySignatures } from '../../api/signatureApi';
 import * as S from './style'; // 스타일 가져오기
@@ -204,14 +204,9 @@ const ExpenseDetailPage = () => {
     if (detail.drafterId !== user.userId) return false;
     // WAIT 상태가 아니면 불가
     if (detail.status !== 'WAIT' && detail.status !== 'REJECTED') return false;
-    
-    // 세무 수정 요청이 있는 경우는 수정 가능 (서명 여부와 관계없이)
-    if (detail.taxCollectedAt && detail.taxRevisionRequested) {
-      return true;
-    }
-    
-    // 세무 수집된 문서는 수정 요청이 없으면 수정/삭제 불가
-    if (detail.taxCollectedAt && !detail.taxRevisionRequested) {
+
+    // 세무 수집된 문서는 수정 불가 (세무 수정 요청 기능 비활성화됨)
+    if (detail.taxCollectedAt) {
       return false;
     }
     
@@ -445,51 +440,51 @@ const ExpenseDetailPage = () => {
     }));
   };
 
-  // 세무 수정 요청 처리 (TAX_ACCOUNTANT 전용)
-  const handleRequestTaxRevision = () => {
-    if(!user) {
-        alert("로그인 후 진행할 수 있습니다.");
-        return;
-    }
+  // 세무 수정 요청 처리 (TAX_ACCOUNTANT 전용) - 기능 비활성화됨
+  // const handleRequestTaxRevision = () => {
+  //   if(!user) {
+  //       alert("로그인 후 진행할 수 있습니다.");
+  //       return;
+  //   }
 
-    if(user.role !== 'TAX_ACCOUNTANT') {
-        alert("TAX_ACCOUNTANT 권한만 수정 요청이 가능합니다.");
-        return;
-    }
+  //   if(user.role !== 'TAX_ACCOUNTANT') {
+  //       alert("TAX_ACCOUNTANT 권한만 수정 요청이 가능합니다.");
+  //       return;
+  //   }
 
-    if(!detail || !detail.taxCollectedAt) {
-        alert("세무 수집된 문서만 수정 요청할 수 있습니다.");
-        return;
-    }
+  //   if(!detail || !detail.taxCollectedAt) {
+  //       alert("세무 수집된 문서만 수정 요청할 수 있습니다.");
+  //       return;
+  //   }
 
-    // 재요청 가능하므로 이미 수정 요청된 경우 체크 제거
-    const promptMessage = detail.taxRevisionRequested 
-      ? '수정 요청 사유를 입력해주세요.\n(재요청: 이전 요청 사유를 덮어씁니다)\n(예: 영수증과 작성 금액 불일치)'
-      : '수정 요청 사유를 입력해주세요.\n(예: 영수증과 작성 금액 불일치)';
-    
-    const reason = prompt(promptMessage);
-    if (!reason || !reason.trim()) {
-        return;
-    }
+  //   // 재요청 가능하므로 이미 수정 요청된 경우 체크 제거
+  //   const promptMessage = detail.taxRevisionRequested
+  //     ? '수정 요청 사유를 입력해주세요.\n(재요청: 이전 요청 사유를 덮어씁니다)\n(예: 영수증과 작성 금액 불일치)'
+  //     : '수정 요청 사유를 입력해주세요.\n(예: 영수증과 작성 금액 불일치)';
+  //
+  //   const reason = prompt(promptMessage);
+  //   if (!reason || !reason.trim()) {
+  //       return;
+  //   }
 
-    if(!window.confirm("정말로 수정 요청을 보내시겠습니까?")) {
-        return;
-    }
+  //   if(!window.confirm("정말로 수정 요청을 보내시겠습니까?")) {
+  //       return;
+  //   }
 
-    requestTaxRevision(id, reason)
-    .then((res) => {
-        if(res.success) {
-            alert("수정 요청이 전송되었습니다.");
-            window.location.reload();
-        } else {
-            alert("수정 요청 실패: " + res.message);
-        }
-    })
-    .catch((error) => {
-        const errorMessage = error?.response?.data?.message || error?.message || "오류가 발생했습니다.";
-        alert(errorMessage);
-    });
-  };
+  //   requestTaxRevision(id, reason)
+  //   .then((res) => {
+  //       if(res.success) {
+  //           alert("수정 요청이 전송되었습니다.");
+  //           window.location.reload();
+  //       } else {
+  //           alert("수정 요청 실패: " + res.message);
+  //       }
+  //   })
+  //   .catch((error) => {
+  //       const errorMessage = error?.response?.data?.message || error?.message || "오류가 발생했습니다.";
+  //       alert(errorMessage);
+  //   });
+  // };
 
   // 영수증 업로드 처리
   const handleReceiptUpload = (event) => {
@@ -630,7 +625,7 @@ const ExpenseDetailPage = () => {
     return false;
   };
 
-  console.log(detail);
+  // console.log(detail);
   return (
     <S.Container>
       {/* 1. 상단 헤더 */}
@@ -997,32 +992,18 @@ const ExpenseDetailPage = () => {
              수정하기
            </button>
          )}
-         {/* 세무 수집된 문서이지만 수정 요청이 없는 경우 안내 메시지 */}
-         {detail && detail.taxCollectedAt && !detail.taxRevisionRequested && user && detail.drafterId === user.userId && detail.status === 'WAIT' && (
-           <span style={{ 
-             color: '#dc3545', 
-             fontSize: '14px', 
+         {/* 세무 수집된 문서는 수정 불가 안내 메시지 */}
+         {detail && detail.taxCollectedAt && user && detail.drafterId === user.userId && detail.status === 'WAIT' && (
+           <span style={{
+             color: '#dc3545',
+             fontSize: '14px',
              marginLeft: '12px',
              padding: '8px 12px',
              backgroundColor: '#fff3cd',
              border: '1px solid #ffc107',
              borderRadius: '4px'
            }}>
-             ⚠️ 세무 수집된 문서는 수정할 수 없습니다. 세무사가 수정 요청을 보낸 경우에만 수정 가능합니다.
-           </span>
-         )}
-         {/* 수정 요청이 있는 경우 안내 메시지 */}
-         {detail && detail.taxRevisionRequested && detail.taxRevisionRequestReason && (
-           <span style={{ 
-             color: '#856404', 
-             fontSize: '14px', 
-             marginLeft: '12px',
-             padding: '8px 12px',
-             backgroundColor: '#fff3cd',
-             border: '1px solid #ffc107',
-             borderRadius: '4px'
-           }}>
-             📝 세무사 수정 요청: {detail.taxRevisionRequestReason}
+             ⚠️ 세무 수집된 문서는 수정할 수 없습니다.
            </span>
          )}
          {/* 결재 권한이 있고, 문서가 반려되지 않고 결제가 완료되지 않은 경우에만 결재하기/반려하기 버튼 표시 */}
@@ -1046,12 +1027,13 @@ const ExpenseDetailPage = () => {
              </button>
            </>
          )}
+        {/* 세무 수정 요청 버튼 - 기능 비활성화됨 */}
         {/* TAX_ACCOUNTANT 권한을 가진 사용자가 세무 수집된 문서에 대해 수정 요청 가능 */}
         {/* APPROVED 상태(처음 요청) 또는 WAIT 상태(재요청)에서 가능 */}
-        {user && user.role === 'TAX_ACCOUNTANT' && detail.taxCollectedAt && (detail.status === 'APPROVED' || detail.status === 'WAIT') && (
-           <button 
-             className="edit" 
-             onClick={handleRequestTaxRevision} 
+        {false && user && user.role === 'TAX_ACCOUNTANT' && detail.taxCollectedAt && (detail.status === 'APPROVED' || detail.status === 'WAIT') && (
+           <button
+             className="edit"
+             onClick={handleRequestTaxRevision}
              disabled={isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
              aria-label={detail.taxRevisionRequested ? '수정 요청 재전송' : '수정 요청 보내기'}
            >
