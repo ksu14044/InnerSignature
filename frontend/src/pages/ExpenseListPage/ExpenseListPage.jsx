@@ -42,8 +42,8 @@ const ExpenseListPage = () => {
   const checkedCompanyModalRef = useRef(false);
 
   // 편의 변수들
-  const { filters, filterRefs, localStatus, handleStatusChange, handleApplyFilters, handleResetFilters, handleFilterToggle } = filtersHook;
-  const { currentPage, totalPages, totalElements, handlePageChange } = paginationHook;
+  const { filters, setFilters, filterRefs, localStatus, handleStatusChange, handleApplyFilters, handleResetFilters, handleFilterToggle } = filtersHook;
+  const { currentPage, setCurrentPage, totalPages, totalElements, handlePageChange } = paginationHook;
   const { modals, handlers } = modalsHook;
   const { data, actions } = dataHook;
   const { list, loading, myApprovedList, paymentPendingList, paymentPendingPage, paymentPendingTotalPages, paymentPendingTotalElements } = data;

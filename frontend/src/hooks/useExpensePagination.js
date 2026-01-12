@@ -42,6 +42,7 @@ export const useExpensePagination = (initialPage = 1) => {
 
   return {
     currentPage,
+    setCurrentPage,
     totalPages,
     totalElements,
     pageSize,
