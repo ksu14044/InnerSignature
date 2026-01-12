@@ -13,3 +13,4 @@ public class ExpenseStatusCountDto {
     private Long paidCount;       // 지급 완료
     private Long totalCount;      // 전체
 }
+

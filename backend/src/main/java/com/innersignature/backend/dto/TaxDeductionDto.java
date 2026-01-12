@@ -16,3 +16,4 @@ public class TaxDeductionDto {
     private String deductionReason;   // 공제 사유
     private Long companyId;          // 회사 ID
 }
+

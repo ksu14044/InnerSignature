@@ -113,3 +113,4 @@ const handleServiceWorkerMessage = (event) => {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
 }
+

@@ -16,3 +16,4 @@ public class UserExpenseStatsDto {
     private Long rejectedCount;   // 반려된 결의서 수
     private Double approvalRate;  // 승인율 (0.0 ~ 1.0)
 }
+
