@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo } from '../../api/expenseApi';
+import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, deleteExpense } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
 import { getMySignatures } from '../../api/signatureApi';
 import * as S from './style'; // 스타일 가져오기
@@ -33,6 +33,7 @@ const ExpenseDetailPage = () => {
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [deletingReceiptId, setDeletingReceiptId] = useState(null);
   const [editingTaxInfo, setEditingTaxInfo] = useState(null);
+  const [isDeletingExpense, setIsDeletingExpense] = useState(false);
   const [taxInfoForm, setTaxInfoForm] = useState({ isTaxDeductible: true, nonDeductibleReason: '' });
   const [isAddApproverModalOpen, setIsAddApproverModalOpen] = useState(false);
   const [availableApprovers, setAvailableApprovers] = useState([]);
@@ -214,6 +215,34 @@ const ExpenseDetailPage = () => {
     if (hasAnyApprovalSignature() && detail.status !== 'REJECTED') return false;
     
     return true;
+  };
+
+  // 삭제 핸들러
+  const handleDeleteExpense = async () => {
+    if (isDeletingExpense) return;
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    if (!window.confirm('정말로 이 지출결의서를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) {
+      return;
+    }
+
+    try {
+      setIsDeletingExpense(true);
+      const response = await deleteExpense(id, user.userId);
+      if (response.success) {
+        alert('지출결의서가 삭제되었습니다.');
+        navigate('/expenses');
+      } else {
+        alert('삭제 실패: ' + response.message);
+      }
+    } catch (error) {
+      alert('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setIsDeletingExpense(false);
+    }
   };
 
   // 결재 라인에 있는 결재자가 추가 결재자를 추가할 수 있는지 확인
@@ -984,13 +1013,23 @@ const ExpenseDetailPage = () => {
          <button className="back" onClick={() => navigate('/expenses')}>목록으로</button>
          {/* 수정/삭제 가능한 경우에만 수정 버튼 표시 */}
          {canEditOrDelete() && (
-           <button 
-             className="edit" 
-             onClick={() => navigate(`/expenses/edit/${id}`)}
-             style={{ backgroundColor: '#17a2b8', color: 'white' }}
-           >
-             수정하기
-           </button>
+           <>
+             <button
+               className="edit"
+               onClick={() => navigate(`/expenses/edit/${id}`)}
+               style={{ backgroundColor: '#17a2b8', color: 'white' }}
+             >
+               수정하기
+             </button>
+             <button
+               className="delete"
+               onClick={handleDeleteExpense}
+               disabled={isDeletingExpense}
+               style={{ backgroundColor: '#dc3545', color: 'white' }}
+             >
+               {isDeletingExpense ? '삭제 중...' : '삭제하기'}
+             </button>
+           </>
          )}
          {/* 세무 수집된 문서는 수정 불가 안내 메시지 */}
          {detail && detail.taxCollectedAt && user && detail.drafterId === user.userId && detail.status === 'WAIT' && (

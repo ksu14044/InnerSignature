@@ -49,6 +49,7 @@ const CardManagementPage = () => {
         if (response.success) {
           setUserCards(response.data || []);
         }
+
       }
     } catch (error) {
       console.error('카드 목록 로드 실패:', error);
@@ -429,6 +430,7 @@ const CardManagementPage = () => {
 };
 
 export default CardManagementPage;
+
 
 
 

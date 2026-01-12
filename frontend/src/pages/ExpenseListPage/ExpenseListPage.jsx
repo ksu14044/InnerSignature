@@ -1,73 +1,53 @@
-import { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
-import { fetchExpenseList, deleteExpense, downloadTaxReviewList, fetchMyApprovedReports, fetchPendingApprovals } from '../../api/expenseApi';
+import { useEffect, useState, useRef, useMemo, lazy, Suspense } from 'react';
+import { deleteExpense, downloadTaxReviewList, fetchPendingApprovals } from '../../api/expenseApi';
 import { getUserCompanies, getPendingUsers, approveUser } from '../../api/userApi';
 import * as S from './style';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaPlus, FaTrash, FaEye, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaFileExcel, FaChartLine, FaEdit, FaCheck, FaTimesCircle } from 'react-icons/fa';
-import { STATUS_KOREAN, EXPENSE_STATUS } from '../../constants/status';
+import { FaPlus, FaFilter, FaTimes, FaFileExcel, FaChartLine, FaCheck, FaTimesCircle, FaTrash } from 'react-icons/fa';
+import { STATUS_KOREAN } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import AppHeader from '../../components/AppHeader/AppHeader';
+
+// 커스텀 훅들
+import { useExpenseFilters } from '../../hooks/useExpenseFilters';
+import { useExpensePagination } from '../../hooks/useExpensePagination';
+import { useExpenseModals } from '../../hooks/useExpenseModals';
+import { useExpenseData } from '../../hooks/useExpenseData';
+
+// 분리된 컴포넌트들
+import ExpenseFilters from '../../components/ExpenseFilters/ExpenseFilters';
+import ExpenseTable from '../../components/ExpenseTable/ExpenseTable';
+import ExpensePagination from '../../components/ExpensePagination/ExpensePagination';
 
 // Lazy load 모달 컴포넌트
 const CompanyRegistrationModal = lazy(() => import('../../components/CompanyRegistrationModal/CompanyRegistrationModal'));
 
 const ExpenseListPage = () => {
-  const [list, setList] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [pendingApprovals, setPendingApprovals] = useState([]);
-  const [pendingUsers, setPendingUsers] = useState([]);
-  // const [taxRevisionRequests, setTaxRevisionRequests] = useState([]);
-  // const [isTaxRevisionModalOpen, setIsTaxRevisionModalOpen] = useState(false);
-  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
-  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalElements, setTotalElements] = useState(0);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [deletingExpenseId, setDeletingExpenseId] = useState(null);
-  const [myApprovedList, setMyApprovedList] = useState([]);
-  const [paymentPendingList, setPaymentPendingList] = useState([]);
-  const [paymentPendingPage, setPaymentPendingPage] = useState(1);
-  const [paymentPendingTotalPages, setPaymentPendingTotalPages] = useState(1);
-  const [paymentPendingTotalElements, setPaymentPendingTotalElements] = useState(0);
-  
-  // 필터 상태 (실제 적용된 필터)
-  const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: '',
-    minAmount: '',
-    maxAmount: '',
-    status: [],
-    category: '',
-    taxProcessed: null, // null: 전체, true: 완료, false: 미완료
-    drafterName: '', // 작성자(기안자) 이름
-    paymentMethod: '', // 결제수단 필터
-    cardNumber: '' // 카드번호 필터
-  });
-
-  // 상태 체크박스용 로컬 상태 (체크박스는 제어 컴포넌트로 유지)
-  const [localStatus, setLocalStatus] = useState([]);
-
-  // 필터 입력 필드 ref (비제어 컴포넌트로 사용)
-  const filterRefs = useRef({
-    startDate: null,
-    endDate: null,
-    minAmount: null,
-    maxAmount: null,
-    category: null,
-    drafterName: null,
-    paymentMethod: null,
-    cardNumber: null
-  });
-
-  const pageSize = 10;
-  const navigate = useNavigate(); // 페이지 이동 훅
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+
+  // 상태 관리 훅들
+  const filtersHook = useExpenseFilters();
+  const paginationHook = useExpensePagination();
+  const modalsHook = useExpenseModals();
+  const dataHook = useExpenseData(user, filtersHook.filters, paginationHook);
+
+  // 추가 상태들
+  const [deletingExpenseId, setDeletingExpenseId] = useState(null);
+  const [activeTab, setActiveTab] = useState('MY_REPORTS');
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
   const checkedCompanyModalRef = useRef(false);
-  const [activeTab, setActiveTab] = useState('MY_REPORTS'); // MY_REPORTS | MY_APPROVALS | MY_APPROVAL_HISTORY | PAYMENT_PENDING
+
+  // 편의 변수들
+  const { filters, filterRefs, localStatus, handleStatusChange, handleApplyFilters, handleResetFilters, handleFilterToggle } = filtersHook;
+  const { currentPage, totalPages, totalElements, handlePageChange } = paginationHook;
+  const { modals, handlers } = modalsHook;
+  const { data, actions } = dataHook;
+  const { list, loading, myApprovedList, paymentPendingList, paymentPendingPage, paymentPendingTotalPages, paymentPendingTotalElements } = data;
+  const { loadExpenseList, loadMyApprovedReports, loadPaymentPendingList } = actions;
 
   // 삭제 권한 체크 함수 (작성자 본인, CEO, ADMIN, 또는 ACCOUNTANT만 삭제 가능)
   const canDeleteExpense = (expense) => {
@@ -88,147 +68,6 @@ const ExpenseListPage = () => {
     return true;
   };
 
-  // 목록 조회 함수 (useCallback으로 최적화)
-  const loadExpenseList = useCallback(async (page = 1, filterParams = filters) => {
-    try {
-      setLoading(true);
-      const response = await fetchExpenseList(page, pageSize, filterParams);
-      if (response.success && response.data) {
-        setList(response.data.content || []);
-        setCurrentPage(response.data.page || 1);
-        setTotalPages(response.data.totalPages || 1);
-        setTotalElements(response.data.totalElements || 0);
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error('목록 조회 실패:', error);
-      setLoading(false);
-    }
-  }, [filters]);
-
-  // 내가 결재한 문서 이력 조회 함수 (useCallback으로 최적화)
-  const loadMyApprovedReports = useCallback(async () => {
-    try {
-      const response = await fetchMyApprovedReports();
-      if (response.success && response.data) {
-        setMyApprovedList(response.data || []);
-      } else {
-        setMyApprovedList([]);
-      }
-    } catch (error) {
-      console.error('내 결재 문서 조회 실패:', error);
-      setMyApprovedList([]);
-    }
-  }, []);
-
-  // 결제 대기 건 조회 함수 (ACCOUNTANT용)
-  const loadPaymentPendingList = async (page = 1) => {
-    try {
-      setLoading(true);
-      const response = await fetchExpenseList(page, pageSize, { status: ['APPROVED'] });
-      if (response.success && response.data) {
-        setPaymentPendingList(response.data.content || []);
-        setPaymentPendingPage(response.data.page || 1);
-        setPaymentPendingTotalPages(response.data.totalPages || 1);
-        setPaymentPendingTotalElements(response.data.totalElements || 0);
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error('결제 대기 건 조회 실패:', error);
-      setLoading(false);
-    }
-  };
-
-  // 페이지 변경 핸들러
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      loadExpenseList(newPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  // 상태 체크박스 변경 핸들러 (상태만 제어 컴포넌트로 유지)
-  const handleStatusChange = (status) => {
-    setLocalStatus(prev => {
-      if (prev.includes(status)) {
-        return prev.filter(s => s !== status);
-      } else {
-        return [...prev, status];
-      }
-    });
-  };
-
-  // 필터 열기/닫기 핸들러 (열 때 ref 값을 현재 필터로 동기화)
-  const handleFilterToggle = () => {
-    if (!isFilterOpen) {
-      // 필터를 열 때 ref에 현재 적용된 필터 값 설정
-      if (filterRefs.current.startDate) filterRefs.current.startDate.value = filters.startDate;
-      if (filterRefs.current.endDate) filterRefs.current.endDate.value = filters.endDate;
-      if (filterRefs.current.minAmount) filterRefs.current.minAmount.value = filters.minAmount;
-      if (filterRefs.current.maxAmount) filterRefs.current.maxAmount.value = filters.maxAmount;
-      if (filterRefs.current.category) filterRefs.current.category.value = filters.category;
-      if (filterRefs.current.drafterName) filterRefs.current.drafterName.value = filters.drafterName;
-      if (filterRefs.current.paymentMethod) filterRefs.current.paymentMethod.value = filters.paymentMethod;
-      setLocalStatus(filters.status || []);
-    }
-    setIsFilterOpen(!isFilterOpen);
-  };
-
-  // 필터 적용 핸들러 (ref에서 값을 읽어 적용)
-  const handleApplyFilters = () => {
-    const newFilters = {
-      startDate: filterRefs.current.startDate?.value || '',
-      endDate: filterRefs.current.endDate?.value || '',
-      minAmount: filterRefs.current.minAmount?.value || '',
-      maxAmount: filterRefs.current.maxAmount?.value || '',
-      status: localStatus,
-      category: filterRefs.current.category?.value || '',
-      taxProcessed: null,
-      drafterName: filterRefs.current.drafterName?.value || '',
-      paymentMethod: filterRefs.current.paymentMethod?.value || '',
-      cardNumber: filterRefs.current.cardNumber?.value || ''
-    };
-    
-    setFilters(newFilters);
-    setCurrentPage(1);
-    loadExpenseList(1, newFilters);
-    setIsFilterOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // 필터 초기화 핸들러
-  const handleResetFilters = () => {
-    const emptyFilters = {
-      startDate: '',
-      endDate: '',
-      minAmount: '',
-      maxAmount: '',
-      status: [],
-      category: '',
-      taxProcessed: null,
-      drafterName: '',
-      paymentMethod: '',
-      cardNumber: ''
-    };
-    
-    // ref 값들을 초기화
-    if (filterRefs.current.startDate) filterRefs.current.startDate.value = '';
-    if (filterRefs.current.endDate) filterRefs.current.endDate.value = '';
-    if (filterRefs.current.minAmount) filterRefs.current.minAmount.value = '';
-    if (filterRefs.current.maxAmount) filterRefs.current.maxAmount.value = '';
-    if (filterRefs.current.category) filterRefs.current.category.value = '';
-    if (filterRefs.current.drafterName) filterRefs.current.drafterName.value = '';
-    if (filterRefs.current.paymentMethod) filterRefs.current.paymentMethod.value = '';
-    if (filterRefs.current.cardNumber) filterRefs.current.cardNumber.value = '';
-    setLocalStatus([]);
-    
-    setFilters(emptyFilters);
-    setCurrentPage(1);
-    loadExpenseList(1, emptyFilters);
-    setIsFilterOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   // 내가 쓴 글만 보기 토글 핸들러
   const handleMyPostsToggle = () => {
     const isMyPostsMode = filters.drafterName === user?.koreanName;
@@ -236,27 +75,24 @@ const ExpenseListPage = () => {
       ...filters,
       drafterName: isMyPostsMode ? '' : (user?.koreanName || '')
     };
-    setFilters(newFilters);
-    setCurrentPage(1);
-    loadExpenseList(1, newFilters);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    filtersHook.setFilters(newFilters);
+    paginationHook.handlePageChange(1, loadExpenseList);
   };
 
-  // 페이지 번호 배열 생성 (최대 5개 표시)
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxPages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
-    let endPage = Math.min(totalPages, startPage + maxPages - 1);
-    
-    if (endPage - startPage < maxPages - 1) {
-      startPage = Math.max(1, endPage - maxPages + 1);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-    return pages;
+  // 필터 적용 핸들러들 (커스텀 훅에서 가져온 함수들을 래핑)
+  const handleApplyFiltersWrapper = () => {
+    handleApplyFilters(loadExpenseList);
+    handlers.toggleFilter();
+  };
+
+  const handleResetFiltersWrapper = () => {
+    handleResetFilters(loadExpenseList);
+    handlers.toggleFilter();
+  };
+
+  const handleFilterToggleWrapper = () => {
+    handleFilterToggle(modals.isFilterOpen);
+    handlers.toggleFilter();
   };
 
   // 삭제 핸들러
@@ -405,7 +241,7 @@ const ExpenseListPage = () => {
             );
 
             if (shouldOpen) {
-              setIsCompanyModalOpen(true); // "예"일 때만 회사 등록 모달 표시
+              handlers.openCompanyModal(); // "예"일 때만 회사 등록 모달 표시
             }
           }
         } catch (error) {
@@ -415,7 +251,7 @@ const ExpenseListPage = () => {
             '회사 정보를 불러오지 못했습니다.\n지금 새 회사를 등록하시겠습니까?'
           );
           if (shouldOpen) {
-            setIsCompanyModalOpen(true);
+            handlers.openCompanyModal();
           }
         }
       })();
@@ -430,15 +266,15 @@ const ExpenseListPage = () => {
     // const openTaxRevisions = searchParams.get('openTaxRevisions');
     
     if (openNotifications === 'true') {
-      setIsNotificationModalOpen(true);
+      handlers.openNotificationModal();
       // URL에서 파라미터 제거
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('openNotifications');
       setSearchParams(newSearchParams, { replace: true });
     }
-    
+
     if (openApprovals === 'true') {
-      setIsApprovalModalOpen(true);
+      handlers.openApprovalModal();
       // URL에서 파라미터 제거
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('openApprovals');
@@ -456,20 +292,59 @@ const ExpenseListPage = () => {
 
   // 커스텀 이벤트로 모달 열기 (이미 expenses 페이지에 있을 때)
   useEffect(() => {
-    const handleOpenNotificationModal = () => setIsNotificationModalOpen(true);
-    const handleOpenApprovalModal = () => setIsApprovalModalOpen(true);
-    // const handleOpenTaxRevisionModal = () => setIsTaxRevisionModalOpen(true);
+    const handleOpenNotificationModal = () => handlers.openNotificationModal();
+    const handleOpenApprovalModal = () => handlers.openApprovalModal();
 
     window.addEventListener('openNotificationModal', handleOpenNotificationModal);
     window.addEventListener('openApprovalModal', handleOpenApprovalModal);
-    // window.addEventListener('openTaxRevisionModal', handleOpenTaxRevisionModal);
 
     return () => {
       window.removeEventListener('openNotificationModal', handleOpenNotificationModal);
       window.removeEventListener('openApprovalModal', handleOpenApprovalModal);
-      // window.removeEventListener('openTaxRevisionModal', handleOpenTaxRevisionModal);
     };
-  }, []);
+  }, [handlers]);
+
+  // 결재 대기 건 조회 (서명 대기)
+  useEffect(() => {
+    if (!user?.userId) {
+      setPendingApprovals([]);
+      return;
+    }
+
+    fetchPendingApprovals(user.userId)
+      .then((response) => {
+        if (response.success) {
+          setPendingApprovals(response.data || []);
+        } else {
+          setPendingApprovals([]);
+        }
+      })
+      .catch((error) => {
+        console.error('결재 대기 건 조회 실패:', error);
+        setPendingApprovals([]);
+      });
+  }, [user?.userId]);
+
+  // 승인 대기 사용자 조회 (CEO, ADMIN만)
+  useEffect(() => {
+    if (!user || (user.role !== 'CEO' && user.role !== 'ADMIN')) {
+      setPendingUsers([]);
+      return;
+    }
+
+    getPendingUsers()
+      .then((response) => {
+        if (response.success) {
+          setPendingUsers(response.data || []);
+        } else {
+          setPendingUsers([]);
+        }
+      })
+      .catch((error) => {
+        console.error('승인 대기 사용자 조회 실패:', error);
+        setPendingUsers([]);
+      });
+  }, [user?.userId, user?.role]);
 
   // 결재 대기 건 조회 (서명 대기)
   useEffect(() => {
@@ -655,10 +530,10 @@ const ExpenseListPage = () => {
               </S.ToggleContainer>
               <S.FilterButton
                 data-tourid="tour-filter-button"
-                variant={isFilterOpen ? 'primary' : 'secondary'}
-                onClick={handleFilterToggle}
+                variant={modals.isFilterOpen ? 'primary' : 'secondary'}
+                onClick={handleFilterToggleWrapper}
                 aria-label="필터"
-                aria-pressed={isFilterOpen}
+                aria-pressed={modals.isFilterOpen}
               >
                 <FaFilter />
                 <span>필터</span>
@@ -675,301 +550,48 @@ const ExpenseListPage = () => {
       </S.ActionBar>
 
       {/* 필터 UI */}
-      {isMyReportsTab && isFilterOpen && (
-        <S.FilterContainer>
-          <S.FilterTitle>
-            <FaFilter />
-            필터 조건
-          </S.FilterTitle>
-          <S.FilterGrid>
-            <S.FilterGroup>
-              <S.FilterLabel>작성일 시작일</S.FilterLabel>
-              <S.FilterInput
-                type="date"
-                ref={(el) => (filterRefs.current.startDate = el)}
-                defaultValue={filters.startDate}
-              />
-            </S.FilterGroup>
-            <S.FilterGroup>
-              <S.FilterLabel>작성일 종료일</S.FilterLabel>
-              <S.FilterInput
-                type="date"
-                ref={(el) => (filterRefs.current.endDate = el)}
-                defaultValue={filters.endDate}
-              />
-            </S.FilterGroup>
-            <S.FilterGroup>
-              <S.FilterLabel>최소 금액 (원)</S.FilterLabel>
-              <S.FilterInput
-                type="number"
-                placeholder="0"
-                ref={(el) => (filterRefs.current.minAmount = el)}
-                defaultValue={filters.minAmount}
-                min="0"
-              />
-            </S.FilterGroup>
-            <S.FilterGroup>
-              <S.FilterLabel>최대 금액 (원)</S.FilterLabel>
-              <S.FilterInput
-                type="number"
-                placeholder="무제한"
-                ref={(el) => (filterRefs.current.maxAmount = el)}
-                defaultValue={filters.maxAmount}
-                min="0"
-              />
-            </S.FilterGroup>
-            <S.FilterGroup>
-              <S.FilterLabel>카테고리</S.FilterLabel>
-              <S.FilterSelect
-                ref={(el) => (filterRefs.current.category = el)}
-                defaultValue={filters.category}
-              >
-                <option value="">전체</option>
-                <option value="식대">식대</option>
-                <option value="교통비">교통비</option>
-                <option value="비품비">비품비</option>
-                <option value="기타">기타</option>
-              </S.FilterSelect>
-            </S.FilterGroup>
-            {/* 세무처리 필터는 더 이상 사용하지 않으므로 UI에서 제거 */}
-            {/* 작성자(기안자) 필터 (모든 사용자 사용 가능) */}
-            <S.FilterGroup>
-              <S.FilterLabel>작성자(기안자)</S.FilterLabel>
-              <S.FilterInput
-                type="text"
-                ref={(el) => (filterRefs.current.drafterName = el)}
-                defaultValue={filters.drafterName}
-                placeholder="작성자 이름"
-              />
-            </S.FilterGroup>
-            {/* 결제수단 필터 */}
-            <S.FilterGroup>
-              <S.FilterLabel>결제수단</S.FilterLabel>
-              <S.FilterSelect
-                ref={(el) => (filterRefs.current.paymentMethod = el)}
-                defaultValue={filters.paymentMethod}
-              >
-                <option value="">전체</option>
-                <option value="CASH">현금</option>
-                <option value="BANK_TRANSFER">계좌이체</option>
-                <option value="CARD">개인카드</option>
-                <option value="COMPANY_CARD">회사카드</option>
-              </S.FilterSelect>
-            </S.FilterGroup>
-            {/* 카드번호 필터 */}
-            <S.FilterGroup>
-              <S.FilterLabel>카드번호</S.FilterLabel>
-              <S.FilterInput
-                type="text"
-                ref={(el) => (filterRefs.current.cardNumber = el)}
-                defaultValue={filters.cardNumber}
-                placeholder="카드번호 (뒷 4자리)"
-              />
-            </S.FilterGroup>
-          </S.FilterGrid>
-          <S.FilterGroup>
-            <S.FilterLabel>상태</S.FilterLabel>
-            <S.StatusCheckboxGroup>
-              {Object.entries(STATUS_KOREAN).map(([status, label]) => {
-                // DRAFT와 PENDING은 제외 (실제 사용되는 상태만 표시)
-                if (status === 'DRAFT' || status === 'PENDING') return null;
-                return (
-                  <S.StatusCheckboxLabel key={status}>
-                    <input
-                      type="checkbox"
-                      checked={localStatus.includes(status)}
-                      onChange={() => handleStatusChange(status)}
-                    />
-                    <span>{label}</span>
-                  </S.StatusCheckboxLabel>
-                );
-              })}
-            </S.StatusCheckboxGroup>
-          </S.FilterGroup>
-          <S.FilterActions>
-            <S.FilterButton variant="secondary" onClick={handleResetFilters}>
-              <FaTimes />
-              초기화
-            </S.FilterButton>
-            <S.FilterButton variant="primary" onClick={handleApplyFilters}>
-              적용
-            </S.FilterButton>
-          </S.FilterActions>
-        </S.FilterContainer>
+      {isMyReportsTab && (
+        <ExpenseFilters
+          isOpen={modals.isFilterOpen}
+          filterRefs={filterRefs}
+          localStatus={localStatus}
+          onStatusChange={handleStatusChange}
+          onApply={handleApplyFiltersWrapper}
+          onReset={handleResetFiltersWrapper}
+          onClose={handlers.toggleFilter}
+        />
       )}
 
-      <S.TableContainer data-tourid="tour-expense-list">
-        <S.Table>
-          <S.Thead>
-            <tr>
-              <th>지급 요청일</th>
-              <th>작성자</th>
-              <th>적요(내용)</th>
-              <S.AmountTh>금액</S.AmountTh>
-              <th>상태</th>
-              <th>관리</th>
-            </tr>
-          </S.Thead>
-          <tbody>
-            {displayedList.map((item) => {
-              // 지급 요청일 계산 (상세 항목 중 가장 빠른 날짜)
-              const paymentReqDate = item.details && item.details.length > 0
-                ? item.details
-                    .map(d => d.paymentReqDate)
-                    .filter(d => d)
-                    .sort()[0] || item.paymentReqDate || item.reportDate
-                : item.paymentReqDate || item.reportDate;
-              
-              // 항목 표시 (첫 번째 항목 외 n개)
-              const categoryDisplay = item.details && item.details.length > 0
-                ? item.details.length === 1
-                  ? item.details[0].category
-                  : `${item.details[0].category} 외 ${item.details.length - 1}개`
-                : '-';
-              
-              // 적요(내용) 표시 - 목록 응답의 요약 필드 사용
-              const descriptionDisplay =
-                item.summaryDescription && item.summaryDescription.trim() !== ''
-                  ? item.summaryDescription
-                  : item.firstDescription && item.firstDescription.trim() !== ''
-                    ? item.firstDescription
-                    : '-';
-              
-              return (
-                <S.Tr key={item.expenseReportId}>
-                  <td>
-                    <S.StyledLink to={`/detail/${item.expenseReportId}`}>
-                      {paymentReqDate}
-                    </S.StyledLink>
-                  </td>
-                  <td>{item.drafterName}</td>
-                  <td title={descriptionDisplay} style={{ 
-                    maxWidth: '200px', 
-                    overflow: 'hidden', 
-                    textOverflow: 'ellipsis', 
-                    whiteSpace: 'nowrap' 
-                  }}>
-                    {descriptionDisplay}
-                  </td>
-                  <S.AmountTd>{item.totalAmount.toLocaleString()}원</S.AmountTd>
-                  <td>
-                    <S.StatusBadge status={item.status}>
-                      {STATUS_KOREAN[item.status] || item.status}
-                    </S.StatusBadge>
-                  </td>
-                  <td>
-                    <S.ActionButtons>
-                      <S.ViewButton to={`/detail/${item.expenseReportId}`}>
-                        <FaEye />
-                      </S.ViewButton>
-                      {canDeleteExpense(item) && (
-                        <S.DeleteButton 
-                          onClick={() => handleDeleteExpense(item.expenseReportId)}
-                          disabled={deletingExpenseId === item.expenseReportId || deletingExpenseId !== null}
-                          title={deletingExpenseId === item.expenseReportId ? '삭제 중...' : '삭제'}
-                        >
-                          <FaTrash />
-                        </S.DeleteButton>
-                      )}
-                    </S.ActionButtons>
-                  </td>
-                </S.Tr>
-              );
-            })}
-          </tbody>
-        </S.Table>
-      </S.TableContainer>
+      <ExpenseTable
+        expenses={displayedList}
+        loading={loading}
+      />
 
       {/* 페이지네이션 */}
       {isMyReportsTab && totalPages > 1 && (
-        <S.PaginationContainer>
-          <S.PaginationInfo>
-            전체 {totalElements}개 중 {((currentPage - 1) * pageSize + 1)}-{Math.min(currentPage * pageSize, totalElements)}개 표시
-          </S.PaginationInfo>
-          <S.Pagination>
-            <S.PaginationButton
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              <FaChevronLeft />
-            </S.PaginationButton>
-            {getPageNumbers().map((pageNum) => (
-              <S.PaginationButton
-                key={pageNum}
-                onClick={() => handlePageChange(pageNum)}
-                active={pageNum === currentPage}
-              >
-                {pageNum}
-              </S.PaginationButton>
-            ))}
-            <S.PaginationButton
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              <FaChevronRight />
-            </S.PaginationButton>
-          </S.Pagination>
-        </S.PaginationContainer>
+        <ExpensePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={paginationHook.pageSize}
+          onPageChange={(page) => handlePageChange(page, loadExpenseList)}
+        />
       )}
 
       {/* 결제 대기 탭 페이지네이션 */}
       {isPaymentPendingTab && paymentPendingTotalPages > 1 && (
-        <S.PaginationContainer>
-          <S.PaginationInfo>
-            전체 {paymentPendingTotalElements}개 중 {((paymentPendingPage - 1) * pageSize + 1)}-{Math.min(paymentPendingPage * pageSize, paymentPendingTotalElements)}개 표시
-          </S.PaginationInfo>
-          <S.Pagination>
-            <S.PaginationButton
-              onClick={() => {
-                if (paymentPendingPage > 1) {
-                  loadPaymentPendingList(paymentPendingPage - 1);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-              }}
-              disabled={paymentPendingPage === 1}
-            >
-              <FaChevronLeft />
-            </S.PaginationButton>
-            {(() => {
-              const pages = [];
-              const maxPages = 5;
-              let startPage = Math.max(1, paymentPendingPage - Math.floor(maxPages / 2));
-              let endPage = Math.min(paymentPendingTotalPages, startPage + maxPages - 1);
-              
-              if (endPage - startPage < maxPages - 1) {
-                startPage = Math.max(1, endPage - maxPages + 1);
-              }
-              
-              for (let i = startPage; i <= endPage; i++) {
-                pages.push(i);
-              }
-              
-              return pages.map((pageNum) => (
-                <S.PaginationButton
-                  key={pageNum}
-                  onClick={() => {
-                    loadPaymentPendingList(pageNum);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  active={pageNum === paymentPendingPage}
-                >
-                  {pageNum}
-                </S.PaginationButton>
-              ));
-            })()}
-            <S.PaginationButton
-              onClick={() => {
-                if (paymentPendingPage < paymentPendingTotalPages) {
-                  loadPaymentPendingList(paymentPendingPage + 1);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-              }}
-              disabled={paymentPendingPage === paymentPendingTotalPages}
-            >
-              <FaChevronRight />
-            </S.PaginationButton>
-          </S.Pagination>
-        </S.PaginationContainer>
+        <ExpensePagination
+          currentPage={paymentPendingPage}
+          totalPages={paymentPendingTotalPages}
+          totalElements={paymentPendingTotalElements}
+          pageSize={paginationHook.pageSize}
+          onPageChange={loadPaymentPendingList}
+          isPaymentPending={true}
+          paymentPendingPage={paymentPendingPage}
+          paymentPendingTotalPages={paymentPendingTotalPages}
+          paymentPendingTotalElements={paymentPendingTotalElements}
+          onPaymentPendingPageChange={loadPaymentPendingList}
+        />
       )}
 
       {/* 모바일용 카드 뷰 */}
@@ -1095,8 +717,8 @@ const ExpenseListPage = () => {
       )}
 
       {/* 서명 대기 건 모달 */}
-      {isNotificationModalOpen && (
-        <S.NotificationModal onClick={() => setIsNotificationModalOpen(false)}>
+      {modals.isNotificationModalOpen && (
+        <S.NotificationModal onClick={handlers.closeNotificationModal}>
           <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
             <S.NotificationModalHeader>
               <h3>서명 대기 건 ({pendingApprovals.length}건)</h3>
@@ -1138,12 +760,12 @@ const ExpenseListPage = () => {
       )}
 
       {/* 승인 대기 사용자 모달 (CEO, ADMIN만) */}
-      {isApprovalModalOpen && (
-        <S.NotificationModal onClick={() => setIsApprovalModalOpen(false)}>
+      {modals.isApprovalModalOpen && (
+        <S.NotificationModal onClick={handlers.closeApprovalModal}>
           <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
             <S.NotificationModalHeader>
               <h3>승인 대기 사용자 ({pendingUsers.length}건)</h3>
-              <button onClick={() => setIsApprovalModalOpen(false)}>×</button>
+              <button onClick={handlers.closeApprovalModal}>×</button>
             </S.NotificationModalHeader>
             <S.NotificationModalBody>
               {pendingUsers.length === 0 ? (
@@ -1241,11 +863,11 @@ const ExpenseListPage = () => {
       )}
 
       {/* CEO이면서 소속 회사가 없을 때 회사 등록 모달 */}
-      {isCompanyModalOpen && (
+      {modals.isCompanyModalOpen && (
         <Suspense fallback={<div>로딩 중...</div>}>
           <CompanyRegistrationModal
-            isOpen={isCompanyModalOpen}
-            onClose={() => setIsCompanyModalOpen(false)}
+            isOpen={modals.isCompanyModalOpen}
+            onClose={handlers.closeCompanyModal}
             onSuccess={() => {
               // 모달 내부에서 성공 alert를 이미 보여주므로 여기서는 새로고침만 수행
               window.location.reload(); // 회사 등록 후 회사/권한 정보 갱신
