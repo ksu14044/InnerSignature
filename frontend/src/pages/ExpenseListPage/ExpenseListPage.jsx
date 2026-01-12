@@ -39,6 +39,7 @@ const ExpenseListPage = () => {
   const [activeTab, setActiveTab] = useState('MY_REPORTS');
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
+  const [pendingApprovalsLoading, setPendingApprovalsLoading] = useState(false);
   const checkedCompanyModalRef = useRef(false);
 
   // 편의 변수들
@@ -281,13 +282,6 @@ const ExpenseListPage = () => {
       setSearchParams(newSearchParams, { replace: true });
     }
 
-    // 세무 수정 요청 모달 열기 기능 비활성화됨
-    // if (openTaxRevisions === 'true') {
-    //   setIsTaxRevisionModalOpen(true);
-    //   const newSearchParams = new URLSearchParams(searchParams);
-    //   newSearchParams.delete('openTaxRevisions');
-    //   setSearchParams(newSearchParams, { replace: true });
-    // }
   }, [searchParams, setSearchParams]);
 
   // 커스텀 이벤트로 모달 열기 (이미 expenses 페이지에 있을 때)
@@ -308,9 +302,11 @@ const ExpenseListPage = () => {
   useEffect(() => {
     if (!user?.userId) {
       setPendingApprovals([]);
+      setPendingApprovalsLoading(false);
       return;
     }
 
+    setPendingApprovalsLoading(true);
     fetchPendingApprovals(user.userId)
       .then((response) => {
         if (response.success) {
@@ -322,6 +318,9 @@ const ExpenseListPage = () => {
       .catch((error) => {
         console.error('결재 대기 건 조회 실패:', error);
         setPendingApprovals([]);
+      })
+      .finally(() => {
+        setPendingApprovalsLoading(false);
       });
   }, [user?.userId]);
 
@@ -345,27 +344,6 @@ const ExpenseListPage = () => {
         setPendingUsers([]);
       });
   }, [user?.userId, user?.role]);
-
-  // 결재 대기 건 조회 (서명 대기)
-  useEffect(() => {
-    if (!user?.userId) {
-      setPendingApprovals([]);
-      return;
-    }
-
-    fetchPendingApprovals(user.userId)
-      .then((response) => {
-        if (response.success) {
-          setPendingApprovals(response.data || []);
-        } else {
-          setPendingApprovals([]);
-        }
-      })
-      .catch((error) => {
-        console.error('결재 대기 건 조회 실패:', error);
-        setPendingApprovals([]);
-      });
-  }, [user?.userId]);
 
   // 승인 대기 사용자 조회 (CEO, ADMIN만)
   useEffect(() => {
@@ -435,17 +413,6 @@ const ExpenseListPage = () => {
         subtitle={`환영합니다, ${user?.koreanName}님`}
         additionalButtons={
           <>
-            {/* 세무 수정 요청 알림 배지 (작성자용) - 기능 비활성화됨 */}
-            {false && taxRevisionRequests.length > 0 && (
-              <S.NotificationBadge
-                onClick={() => setIsTaxRevisionModalOpen(true)}
-                title={`세무 수정 요청: ${taxRevisionRequests.length}건`}
-                style={{ backgroundColor: '#ffc107', marginRight: '12px' }}
-              >
-                <FaEdit />
-                <S.NotificationCount>{taxRevisionRequests.length}</S.NotificationCount>
-              </S.NotificationBadge>
-            )}
             {/* 모든 사용자가 대시보드로 이동 가능 */}
             <S.FilterButton 
               variant="primary" 
@@ -671,50 +638,6 @@ const ExpenseListPage = () => {
       </S.MobileCardContainer>
 
 
-      {/* 세무 수정 요청 모달 (작성자용) - 기능 비활성화됨 */}
-      {false && isTaxRevisionModalOpen && (
-        <S.NotificationModal onClick={() => setIsTaxRevisionModalOpen(false)}>
-          <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
-            <S.NotificationModalHeader>
-              <h3>세무 수정 요청 건 ({taxRevisionRequests.length}건)</h3>
-              <button onClick={() => setIsTaxRevisionModalOpen(false)}>×</button>
-            </S.NotificationModalHeader>
-            <S.NotificationModalBody>
-              {taxRevisionRequests.length === 0 ? (
-                <p>세무 수정 요청이 들어온 결의서가 없습니다.</p>
-              ) : (
-                <S.NotificationList>
-                  {taxRevisionRequests.map((item) => (
-                    <S.NotificationItem
-                      key={item.expenseReportId}
-                      onClick={() => {
-                        navigate(`/detail/${item.expenseReportId}`);
-                        setIsTaxRevisionModalOpen(false);
-                      }}
-                    >
-                      <S.NotificationItemTitle>
-                        {(item.summaryDescription && item.summaryDescription.trim() !== '')
-                          ? item.summaryDescription
-                          : (item.firstDescription && item.firstDescription.trim() !== '')
-                            ? item.firstDescription
-                            : '-'}
-                      </S.NotificationItemTitle>
-                      <S.NotificationItemInfo>
-                        <span>문서번호: {item.expenseReportId}</span>
-                        <span>작성일: {item.reportDate}</span>
-                        <span>금액: {item.totalAmount.toLocaleString()}원</span>
-                        {item.taxRevisionRequestReason && (
-                          <span>요청 사유: {item.taxRevisionRequestReason}</span>
-                        )}
-                      </S.NotificationItemInfo>
-                    </S.NotificationItem>
-                  ))}
-                </S.NotificationList>
-              )}
-            </S.NotificationModalBody>
-          </S.NotificationModalContent>
-        </S.NotificationModal>
-      )}
 
       {/* 서명 대기 건 모달 */}
       {modals.isNotificationModalOpen && (
@@ -722,10 +645,12 @@ const ExpenseListPage = () => {
           <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
             <S.NotificationModalHeader>
               <h3>서명 대기 건 ({pendingApprovals.length}건)</h3>
-              <button onClick={() => setIsNotificationModalOpen(false)}>×</button>
+              <button onClick={handlers.closeNotificationModal}>×</button>
             </S.NotificationModalHeader>
             <S.NotificationModalBody>
-              {pendingApprovals.length === 0 ? (
+              {pendingApprovalsLoading ? (
+                <p>로딩 중...</p>
+              ) : pendingApprovals.length === 0 ? (
                 <p>서명 대기 중인 건이 없습니다.</p>
               ) : (
                 <S.NotificationList>
@@ -734,7 +659,7 @@ const ExpenseListPage = () => {
                       key={item.expenseReportId}
                       onClick={() => {
                         navigate(`/detail/${item.expenseReportId}`);
-                        setIsNotificationModalOpen(false);
+                        handlers.closeNotificationModal();
                       }}
                     >
                       <S.NotificationItemTitle>

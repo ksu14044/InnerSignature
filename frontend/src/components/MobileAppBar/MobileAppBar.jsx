@@ -169,8 +169,24 @@ const MobileAppBar = ({ title, onMenuClick }) => {
             {/* 통합 알림 배지 */}
             {totalNotifications > 0 && (
               <S.NotificationContainer ref={notificationDropdownRef}>
-                <S.NotificationBadge 
-                  onClick={() => setIsNotificationDropdownOpen(!isNotificationDropdownOpen)}
+                <S.NotificationBadge
+                  onClick={() => {
+                    // 서명 대기 건이 있으면 바로 모달 열기
+                    if (pendingApprovals.length > 0) {
+                      setIsNotificationDropdownOpen(false);
+                      if (location.pathname === '/expenses') {
+                        navigate('/expenses?openNotifications=true', { replace: true });
+                        setTimeout(() => {
+                          window.dispatchEvent(new CustomEvent('openNotificationModal'));
+                        }, 100);
+                      } else {
+                        navigate('/expenses?openNotifications=true');
+                      }
+                    } else {
+                      // 서명 대기 건이 없으면 드롭다운 토글
+                      setIsNotificationDropdownOpen(!isNotificationDropdownOpen);
+                    }
+                  }}
                   title={`알림 ${totalNotifications}건`}
                 >
                   <FaBell />
