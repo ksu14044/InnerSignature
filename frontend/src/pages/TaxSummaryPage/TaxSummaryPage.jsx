@@ -11,6 +11,7 @@ import {
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDebounce } from '../../hooks/useOptimizedList';
+import { showApiError } from '../../utils/errorHandler';
 import * as S from './style';
 
 const TaxSummaryPage = () => {
@@ -75,8 +76,7 @@ const TaxSummaryPage = () => {
         setMonthlySummary(monthlyRes.data || []);
       }
     } catch (e) {
-      console.error(e);
-      alert(e?.userMessage || '데이터 조회 중 오류가 발생했습니다.');
+      showApiError(e, '데이터 조회 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -141,8 +141,7 @@ const TaxSummaryPage = () => {
       alert('✅ 세무 자료가 수집되었고 전표가 다운로드되었습니다.');
       loadTaxData();
     } catch (e) {
-      console.error('세무 자료 수집 에러:', e);
-      alert(e?.userMessage || e?.response?.data?.message || e?.message || '세무 자료 수집 중 오류가 발생했습니다.');
+      showApiError(e, '세무 자료 수집 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -171,8 +170,7 @@ const TaxSummaryPage = () => {
       alert('✅ 세무 자료가 수집되었고 전표가 다운로드되었습니다.');
       loadTaxData();
     } catch (e) {
-      console.error('세무 자료 수집 에러:', e);
-      alert(e?.userMessage || e?.response?.data?.message || e?.message || '세무 자료 수집 중 오류가 발생했습니다.');
+      showApiError(e, '세무 자료 수집 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }

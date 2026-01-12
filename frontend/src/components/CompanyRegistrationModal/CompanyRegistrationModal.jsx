@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createCompany, checkBusinessRegNoDuplicate } from '../../api/companyApi';
 import { FaTimes, FaBuilding, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
+import { formatBusinessRegNo } from '../../utils/numberUtils';
 import * as S from './style';
 
 const CompanyRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
@@ -11,13 +12,6 @@ const CompanyRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const [duplicateCheckStatus, setDuplicateCheckStatus] = useState(null); // null, 'checking', 'available', 'duplicate'
 
-  // 사업자등록번호 포맷팅 (하이픈 자동 추가)
-  const formatBusinessRegNo = (value) => {
-    const numbers = value.replace(/[^0-9]/g, '');
-    if (numbers.length <= 3) return numbers;
-    if (numbers.length <= 5) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 5)}-${numbers.slice(5, 10)}`;
-  };
 
   const handleBusinessRegNoChange = (e) => {
     const formatted = formatBusinessRegNo(e.target.value);

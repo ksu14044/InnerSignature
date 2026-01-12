@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import * as S from './style';
 import { getCompanyCards, getUserCards } from '../../api/cardApi';
+import { formatNumber, parseFormattedNumber } from '../../utils/numberUtils';
+import { splitCardNumber, combineCardNumber } from '../../utils/cardUtils';
 
 const ExpenseDetailModal = ({ 
   isOpen, 
@@ -32,45 +34,6 @@ const ExpenseDetailModal = ({
   const [isLoadingCards, setIsLoadingCards] = useState(false);
   const [useSavedCard, setUseSavedCard] = useState(true);
 
-  const formatNumber = (value) => {
-    if (!value && value !== 0) return '';
-    const stringValue = String(value);
-    const numericValue = stringValue.replace(/[^0-9]/g, '');
-    if (!numericValue) return '';
-    return Number(numericValue).toLocaleString('ko-KR');
-  };
-
-  const parseFormattedNumber = (value) => {
-    if (!value && value !== 0) return '';
-    // 숫자인 경우 문자열로 변환
-    if (typeof value === 'number') {
-      return String(value);
-    }
-    // 문자열인 경우 콤마 제거
-    if (typeof value === 'string') {
-      return value.replace(/,/g, '');
-    }
-    return '';
-  };
-
-  // 카드번호를 4개 필드로 분리
-  const splitCardNumber = (cardNumber) => {
-    if (!cardNumber) return { cardNumber1: '', cardNumber2: '', cardNumber3: '', cardNumber4: '' };
-    const numericValue = cardNumber.replace(/[^0-9]/g, '');
-    return {
-      cardNumber1: numericValue.substring(0, 4) || '',
-      cardNumber2: numericValue.substring(4, 8) || '',
-      cardNumber3: numericValue.substring(8, 12) || '',
-      cardNumber4: numericValue.substring(12, 16) || ''
-    };
-  };
-
-  // 4개 필드를 하나의 카드번호로 합치기
-  const combineCardNumber = (cardNumber1, cardNumber2, cardNumber3, cardNumber4) => {
-    return [cardNumber1, cardNumber2, cardNumber3, cardNumber4]
-      .filter(part => part)
-      .join('');
-  };
 
   // 카드 목록 불러오기
   useEffect(() => {

@@ -13,6 +13,7 @@ import { getCategoriesByRole, filterCategoriesByRole } from '../../constants/cat
 import { DEFAULT_VALUES } from '../../constants/defaults';
 import { getMergedCategories } from '../../api/expenseCategoryApi';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import { formatNumber, parseFormattedNumber } from '../../utils/numberUtils';
 
 // Lazy load 모달 컴포넌트
 const ApproverSelectionModal = lazy(() => import('../../components/ApproverSelectionModal/ApproverSelectionModal'));
@@ -276,28 +277,6 @@ const ExpenseCreatePage = () => {
 
   // --- 이벤트 핸들러 ---
 
-  // 숫자에 콤마 포맷팅 적용
-  const formatNumber = (value) => {
-    if (!value && value !== 0) return '';
-    // 숫자인 경우 문자열로 변환
-    const stringValue = String(value);
-    // 숫자가 아닌 문자 제거
-    const numericValue = stringValue.replace(/[^0-9]/g, '');
-    if (!numericValue) return '';
-    // 3자리마다 콤마 추가
-    return Number(numericValue).toLocaleString('ko-KR');
-  };
-
-  // 콤마가 포함된 문자열을 숫자로 변환
-  const parseFormattedNumber = (value) => {
-    if (!value && value !== 0) return '';
-    // 숫자인 경우 문자열로 변환
-    if (typeof value === 'number') {
-      return String(value);
-    }
-    // 문자열인 경우 콤마 제거
-    return String(value).replace(/,/g, '');
-  };
 
   const handleDetailChange = (index, e) => {
     const { name, value } = e.target;
