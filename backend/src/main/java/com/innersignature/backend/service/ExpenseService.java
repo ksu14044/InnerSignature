@@ -747,17 +747,22 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("TAX_ACCOUNTANT 역할은 결의서를 수정할 수 없습니다.");
         }
 
-        // 6. 상세 항목들로부터 총 금액 계산 및 급여 카테고리 확인
+        // 6. 기존 상세 항목 조회 (변경사항 비교용)
+        List<ExpenseDetailDto> existingDetails = expenseMapper.selectExpenseDetails(expenseId, companyId);
+
+        // 6-1. 상세 항목들로부터 총 금액 계산 및 급여 카테고리 확인
         List<ExpenseDetailDto> details = request.getDetails();
         long totalAmount = 0L;
         boolean hasSalary = false;
+        boolean hasAnyChanges = false;
+
         if (details != null) {
             for (ExpenseDetailDto detail : details) {
                 // 결제수단 필수 검증
                 if (detail.getPaymentMethod() == null || detail.getPaymentMethod().trim().isEmpty()) {
                     throw new com.innersignature.backend.exception.BusinessException("결제수단은 필수입니다.");
                 }
-                
+
                 // 카드 결제인 경우 카드번호 처리
                 if ("CARD".equals(detail.getPaymentMethod()) || "COMPANY_CARD".equals(detail.getPaymentMethod()) || "CREDIT_CARD".equals(detail.getPaymentMethod()) || "DEBIT_CARD".equals(detail.getPaymentMethod())) {
                     // 저장된 카드 ID가 있는 경우 해당 카드의 암호화된 카드번호 사용
@@ -771,7 +776,7 @@ public class ExpenseService {
                                 UserCardDto card = userCardService.getCardForInternalUse(detail.getCardId(), currentUserId);
                                 encryptedCardNumber = card.getCardNumberEncrypted();
                             }
-                            
+
                             if (encryptedCardNumber != null) {
                                 detail.setCardNumber(encryptedCardNumber);
                             } else {
@@ -792,7 +797,7 @@ public class ExpenseService {
                         }
                     }
                 }
-                
+
                 totalAmount += detail.getAmount();
                 if ("급여".equals(detail.getCategory())) {
                     hasSalary = true;
@@ -800,6 +805,42 @@ public class ExpenseService {
             }
         }
         request.setTotalAmount(totalAmount);
+
+        // 6-2. 변경사항 비교 (기존 데이터와 비교하여 실제 변경사항이 있는지 확인)
+        if (existingDetails != null && details != null) {
+            // 항목 개수가 다른 경우
+            if (existingDetails.size() != details.size()) {
+                hasAnyChanges = true;
+            } else {
+                // 항목별로 상세 비교
+                for (int i = 0; i < details.size(); i++) {
+                    ExpenseDetailDto existing = existingDetails.get(i);
+                    ExpenseDetailDto current = details.get(i);
+
+                    // 주요 필드 비교 (결제수단 포함)
+                    if ((existing.getCategory() == null ? current.getCategory() != null : !existing.getCategory().equals(current.getCategory())) ||
+                        (existing.getMerchantName() == null ? current.getMerchantName() != null : !existing.getMerchantName().equals(current.getMerchantName())) ||
+                        (existing.getDescription() == null ? current.getDescription() != null : !existing.getDescription().equals(current.getDescription())) ||
+                        (existing.getAmount() == null ? current.getAmount() != null : !existing.getAmount().equals(current.getAmount())) ||
+                        (existing.getPaymentMethod() == null ? current.getPaymentMethod() != null : !existing.getPaymentMethod().equals(current.getPaymentMethod())) ||
+                        (existing.getCardNumber() == null ? current.getCardNumber() != null : !existing.getCardNumber().equals(current.getCardNumber())) ||
+                        (existing.getCardId() == null ? current.getCardId() != null : !existing.getCardId().equals(current.getCardId())) ||
+                        (existing.getNote() == null ? current.getNote() != null : !existing.getNote().equals(current.getNote()))) {
+                        hasAnyChanges = true;
+                        break;
+                    }
+                }
+            }
+        } else if ((existingDetails == null && details != null && !details.isEmpty()) ||
+                   (existingDetails != null && !existingDetails.isEmpty() && details == null)) {
+            // 한 쪽은 없고 다른 쪽은 있는 경우
+            hasAnyChanges = true;
+        }
+
+        // 변경사항이 없는 경우 경고 메시지 반환 (하지만 저장은 허용)
+        if (!hasAnyChanges) {
+            logger.info("지출결의서 수정 요청 - expenseReportId: {}, 변경사항 없음 (결제수단만 변경 가능)", expenseId);
+        }
 
         // 7. 급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT만 사용 가능
         if (hasSalary && !permissionUtil.isAdminOrCEO(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {

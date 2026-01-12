@@ -40,8 +40,16 @@ const ExpenseDetailModal = ({
   };
 
   const parseFormattedNumber = (value) => {
-    if (!value) return '';
-    return value.replace(/,/g, '');
+    if (!value && value !== 0) return '';
+    // 숫자인 경우 문자열로 변환
+    if (typeof value === 'number') {
+      return String(value);
+    }
+    // 문자열인 경우 콤마 제거
+    if (typeof value === 'string') {
+      return value.replace(/,/g, '');
+    }
+    return '';
   };
 
   // 카드번호를 4개 필드로 분리
@@ -157,8 +165,9 @@ const ExpenseDetailModal = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === 'amount') {
+      // 입력값을 숫자로 변환하여 저장 (콤마 제거 후)
       const numericValue = parseFormattedNumber(value);
       setFormData({ ...formData, [name]: numericValue });
     } else if (name === 'selectedCardId') {

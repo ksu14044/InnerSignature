@@ -36,6 +36,9 @@ const ExpenseCreatePage = () => {
   // 2. 상세 내역 리스트 상태 - 초기값을 빈 배열로 변경
   const [details, setDetails] = useState([]);
 
+  // 2-1. 기존 상세 내역 (수정 모드에서 변경사항 비교용)
+  const [originalDetails, setOriginalDetails] = useState([]);
+
   // 3. 결재자 관련 상태
   const [adminUsers, setAdminUsers] = useState([]);
   const [selectedApprovers, setSelectedApprovers] = useState([]); // 선택된 결재자 ID들 (순서 보장)
@@ -67,13 +70,42 @@ const ExpenseCreatePage = () => {
 
   // 입력이 완료된 항목만 필터링하는 함수
   const isValidDetail = (detail) => {
-    return detail.category && 
-           detail.description && 
+    return detail.category &&
+           detail.description &&
            detail.description.trim() !== '' &&
-           detail.amount && 
+           detail.amount &&
            Number(detail.amount) > 0 &&
            detail.paymentMethod &&
            (detail.paymentMethod !== 'CARD' && detail.paymentMethod !== 'COMPANY_CARD' || detail.cardNumber);
+  };
+
+  // 변경사항 비교 함수 (결제수단 변경 포함)
+  const hasAnyChanges = () => {
+    if (!isEditMode) return true; // 생성 모드에서는 항상 변경사항 있음
+
+    // 상세 내역 비교
+    if (originalDetails.length !== details.length) {
+      return true; // 항목 개수가 다름
+    }
+
+    for (let i = 0; i < details.length; i++) {
+      const original = originalDetails[i];
+      const current = details[i];
+
+      // 주요 필드 비교 (결제수단 포함)
+      if (original.category !== current.category ||
+          original.merchantName !== current.merchantName ||
+          original.description !== current.description ||
+          original.amount !== current.amount ||
+          original.paymentMethod !== current.paymentMethod || // 결제수단 변경 감지
+          original.cardNumber !== current.cardNumber ||
+          original.cardId !== current.cardId ||
+          original.note !== current.note) {
+        return true; // 변경사항 발견
+      }
+    }
+
+    return false; // 변경사항 없음
   };
 
   // 입력이 완료된 항목만 필터링
@@ -198,9 +230,12 @@ const ExpenseCreatePage = () => {
               isPreApproval: expense.isPreApproval || false,
             });
 
-            // 상세 내역 설정
+            // 상세 내역 설정 (원본 데이터도 저장)
             if (expense.details && expense.details.length > 0) {
               setDetails(expense.details);
+              setOriginalDetails(JSON.parse(JSON.stringify(expense.details))); // 깊은 복사
+            } else {
+              setOriginalDetails([]);
             }
 
             // 결재 라인 설정
