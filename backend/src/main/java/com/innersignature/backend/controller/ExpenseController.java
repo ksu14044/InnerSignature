@@ -12,6 +12,7 @@ import com.innersignature.backend.dto.PagedResponse;
 import com.innersignature.backend.dto.ReceiptDto;
 import com.innersignature.backend.dto.StatusStatsDto;
 import com.innersignature.backend.dto.TaxStatusDto;
+import com.innersignature.backend.dto.UserExpenseStatsDto;
 import com.innersignature.backend.service.ExpenseService;
 import com.innersignature.backend.util.SecurityUtil;
 import com.innersignature.backend.util.SecurityLogger;
@@ -594,7 +595,38 @@ public class ExpenseController {
     }
 
     /**
-     * 18. 카테고리별 비율 API
+     * 18. 사용자별 지출 통계 API
+     * GET /api/expenses/dashboard/user-stats?startDate=2024-01-01&endDate=2024-12-31
+     * 설명: CEO, ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
+     */
+    @PreAuthorize("hasAnyRole('CEO', 'ADMIN', 'ACCOUNTANT')")
+    @Operation(summary = "사용자별 지출 통계", description = "기간별 사용자별 지출 통계를 조회합니다. (CEO/ADMIN/ACCOUNTANT)")
+    @GetMapping("/dashboard/user-stats")
+    public ApiResponse<List<UserExpenseStatsDto>> getUserExpenseStats(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+
+        LocalDate startDateParsed = null;
+        LocalDate endDateParsed = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                startDateParsed = LocalDate.parse(startDate, formatter);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                endDateParsed = LocalDate.parse(endDate, formatter);
+            }
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "날짜 형식이 올바르지 않습니다. (형식: YYYY-MM-DD)", null);
+        }
+
+        List<UserExpenseStatsDto> stats = expenseService.getUserExpenseStats(startDateParsed, endDateParsed);
+        return new ApiResponse<>(true, "사용자별 지출 통계 조회 성공", stats);
+    }
+
+    /**
+     * 19. 카테고리별 비율 API
      * GET /api/expenses/dashboard/category-ratio?startDate=2024-01-01&endDate=2024-12-31
      * 설명: CEO, ADMIN 또는 ACCOUNTANT 권한 사용자만 접근 가능
      */

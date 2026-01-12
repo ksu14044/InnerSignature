@@ -642,10 +642,9 @@
 
     <!-- 월별 지출 추이 조회 -->
     <select id="selectMonthlyTrend" resultType="com.innersignature.backend.dto.MonthlyTrendDto">
-        SELECT 
+        SELECT
             DATE_FORMAT(report_date, '%Y-%m') AS yearMonth,
-            COALESCE(SUM(COALESCE(actual_paid_amount, total_amount)), 0) AS totalAmount,
-            COUNT(*) AS count
+            COALESCE(SUM(COALESCE(actual_paid_amount, total_amount)), 0) AS totalAmount
         FROM expense_report_tb
         <where>
             company_id = #{companyId}
@@ -662,7 +661,7 @@
 
     <!-- 상태별 통계 조회 -->
     <select id="selectStatusStats" resultType="com.innersignature.backend.dto.StatusStatsDto">
-        SELECT 
+        SELECT
             status,
             COUNT(*) AS count,
             COALESCE(SUM(COALESCE(actual_paid_amount, total_amount)), 0) AS totalAmount
@@ -678,6 +677,26 @@
         </where>
         GROUP BY status
         ORDER BY count DESC
+    </select>
+
+    <!-- 사용자별 지출 합계 조회 -->
+    <select id="selectUserExpenseStats" resultType="com.innersignature.backend.dto.UserExpenseStatsDto">
+        SELECT
+            u.user_id AS userId,
+            u.korean_name AS userName,
+            COALESCE(SUM(COALESCE(r.actual_paid_amount, r.total_amount)), 0) AS totalAmount
+        FROM user_tb u
+        LEFT JOIN expense_report_tb r ON u.user_id = r.drafter_id
+            AND r.company_id = #{companyId}
+            <if test="startDate != null">
+                AND r.report_date >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND r.report_date &lt;= #{endDate}
+            </if>
+        WHERE u.company_id = #{companyId}
+        GROUP BY u.user_id, u.korean_name
+        ORDER BY totalAmount DESC
     </select>
 
     <!-- 카테고리별 비율 조회 -->

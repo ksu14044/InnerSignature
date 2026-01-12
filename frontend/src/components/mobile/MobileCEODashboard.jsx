@@ -1,21 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
-import { STATUS_KOREAN } from '../../constants/status';
+import { fetchUserExpenseStats, fetchDashboardStats } from '../../api/expenseApi';
+import { useAuth } from '../../contexts/AuthContext';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import * as S from './style';
 
-const MobileCEODashboard = ({ 
-  dashboardStats, 
-  statusStats, 
-  categoryRatio, 
-  pendingUsers,
-  monthlyTrend 
-}) => {
+const MobileCEODashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [userExpenseStats, setUserExpenseStats] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState({});
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('stats');
+
+  // 데이터 로드
+  const loadData = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const [statsRes, userStatsRes] = await Promise.all([
+        fetchDashboardStats(),
+        fetchUserExpenseStats()
+      ]);
+
+      if (statsRes.success) {
+        setDashboardStats(statsRes.data || {});
+      }
+      if (userStatsRes.success) {
+        setUserExpenseStats(userStatsRes.data || []);
+      }
+    } catch (error) {
+      console.error('모바일 대시보드 데이터 로드 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // 상태별 색상 매핑
   const getStatusColor = (index) => {
@@ -45,23 +73,19 @@ const MobileCEODashboard = ({
     return icons[category] || '📊';
   };
 
-  // 상태별 차트 데이터 변환
-  const statusChartData = statusStats.map(item => ({
-    name: STATUS_KOREAN[item.status] || item.status,
-    count: item.count,
-    totalAmount: item.totalAmount,
-    status: item.status
+  // 사용자별 지출 차트 데이터 변환
+  const userExpenseChartData = userExpenseStats.map(item => ({
+    name: item.userName,
+    amount: item.totalAmount
   }));
 
-  // 카테고리 차트 데이터 변환
-  const categoryChartData = categoryRatio.map(item => ({
-    name: item.category,
-    amount: item.amount,
-    ratio: item.ratio
-  }));
-
-  // 전체 금액 계산 (비율 표시용)
-  const totalCategoryAmount = categoryChartData.reduce((sum, item) => sum + item.amount, 0);
+  if (loading) {
+    return (
+      <S.MobileContainer>
+        <S.LoadingMessage>로딩 중...</S.LoadingMessage>
+      </S.MobileContainer>
+    );
+  }
 
   return (
     <S.MobileContainer>
@@ -135,54 +159,39 @@ const MobileCEODashboard = ({
         )}
       </S.Section>
 
-      {/* 탭 네비게이션 */}
-      {(statusChartData.length > 0 || categoryChartData.length > 0) && (
-        <>
-          <S.TabContainer>
-            <S.Tab 
-              active={activeTab === 'stats'} 
-              onClick={() => setActiveTab('stats')}
-            >
-              상태별 통계
-            </S.Tab>
-            <S.Tab 
-              active={activeTab === 'category'} 
-              onClick={() => setActiveTab('category')}
-            >
-              카테고리 비중
-            </S.Tab>
-          </S.TabContainer>
+      {/* 사용자별 지출 합계 차트 */}
+      {userExpenseChartData.length > 0 && (
+        <S.Section>
+          <S.SectionTitle>사용자별 지출 합계</S.SectionTitle>
+          <S.ChartSection>
+            {userExpenseChartData.map((user, idx) => {
+              const maxAmount = Math.max(...userExpenseChartData.map(u => u.amount));
+              const barWidth = maxAmount > 0 ? (user.amount / maxAmount) * 100 : 0;
 
-          {/* 차트 영역 - 모바일 최적화된 간단한 형태 */}
-          <S.Section>
-            {activeTab === 'stats' && statusChartData.length > 0 && (
-              <S.ChartSection>
-                {statusChartData.map((stat, idx) => {
-                  const maxAmount = Math.max(...statusChartData.map(s => s.totalAmount));
-                  const barWidth = maxAmount > 0 ? (stat.totalAmount / maxAmount) * 100 : 0;
-                  
-                  return (
-                    <S.StatusItem key={stat.status}>
-                      <S.StatusInfo>
-                        <S.StatusName>{stat.name}</S.StatusName>
-                        <S.StatusCount>{stat.count}건</S.StatusCount>
-                      </S.StatusInfo>
-                      <S.StatusBar>
-                        <S.StatusBarFill 
-                          width={barWidth}
-                          color={getStatusColor(idx)}
-                        />
-                      </S.StatusBar>
-                      <S.StatusAmount>
-                        {stat.totalAmount.toLocaleString()}원
-                      </S.StatusAmount>
-                    </S.StatusItem>
-                  );
-                })}
-              </S.ChartSection>
-            )}
+              return (
+                <S.StatusItem key={user.name}>
+                  <S.StatusInfo>
+                    <S.StatusName>{user.name}</S.StatusName>
+                    <S.StatusCount></S.StatusCount>
+                  </S.StatusInfo>
+                  <S.StatusBar>
+                    <S.StatusBarFill
+                      width={barWidth}
+                      color={getStatusColor(idx)}
+                    />
+                  </S.StatusBar>
+                  <S.StatusAmount>
+                    {user.amount.toLocaleString()}원
+                  </S.StatusAmount>
+                </S.StatusItem>
+              );
+            })}
+          </S.ChartSection>
+        </S.Section>
+      )}
 
-            {activeTab === 'category' && categoryChartData.length > 0 && (
+      {/* 빈 상태 */}
+      {userExpenseChartData.length === 0 && (
               <S.ChartSection>
                 {categoryChartData.map((cat, idx) => (
                   <S.CategoryItem key={cat.name}>
@@ -193,35 +202,17 @@ const MobileCEODashboard = ({
                       <S.CategoryName>{cat.name}</S.CategoryName>
                       <S.CategoryAmount>
                         {cat.amount.toLocaleString()}원
-                      </S.CategoryAmount>
-                    </S.CategoryInfo>
-                    <S.CategoryRatio>
-                      {(cat.ratio * 100).toFixed(1)}%
-                    </S.CategoryRatio>
-                  </S.CategoryItem>
-                ))}
-              </S.ChartSection>
-            )}
+        </S.Section>
+      )}
 
-            {activeTab === 'stats' && statusChartData.length === 0 && (
-              <S.ChartSection>
-                <S.EmptyState>
-                  <S.EmptyIcon>📊</S.EmptyIcon>
-                  <S.EmptyText>표시할 상태별 통계가 없습니다</S.EmptyText>
-                </S.EmptyState>
-              </S.ChartSection>
-            )}
-
-            {activeTab === 'category' && categoryChartData.length === 0 && (
-              <S.ChartSection>
-                <S.EmptyState>
-                  <S.EmptyIcon>📦</S.EmptyIcon>
-                  <S.EmptyText>표시할 카테고리 통계가 없습니다</S.EmptyText>
-                </S.EmptyState>
-              </S.ChartSection>
-            )}
-          </S.Section>
-        </>
+      {/* 빈 상태 */}
+      {userExpenseChartData.length === 0 && (
+        <S.Section>
+          <S.EmptyState>
+            <S.EmptyIcon>📊</S.EmptyIcon>
+            <S.EmptyText>표시할 사용자별 통계가 없습니다</S.EmptyText>
+          </S.EmptyState>
+        </S.Section>
       )}
 
       {/* 빠른 액션 그리드 */}

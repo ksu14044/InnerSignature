@@ -385,6 +385,20 @@ export const fetchStatusStats = async (startDate = null, endDate = null) => {
   }
 };
 
+// 17.5. 사용자별 지출 통계 조회 (ADMIN/ACCOUNTANT 전용)
+export const fetchUserExpenseStats = async (startDate = null, endDate = null) => {
+  try {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await axiosInstance.get(`${BASE_URL}/dashboard/user-stats`, { params });
+    return response.data;
+  } catch (error) {
+    console.error("사용자별 지출 통계 조회 실패:", error);
+    throw error;
+  }
+};
+
 // 18. 카테고리별 비율 조회 (ADMIN/ACCOUNTANT 전용)
 export const fetchCategoryRatio = async (startDate = null, endDate = null) => {
   try {

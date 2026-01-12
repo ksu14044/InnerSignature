@@ -14,6 +14,7 @@ import com.innersignature.backend.dto.ReceiptDto;
 import com.innersignature.backend.dto.StatusStatsDto;
 import com.innersignature.backend.dto.TaxStatusDto;
 import com.innersignature.backend.dto.UserDto;
+import com.innersignature.backend.dto.UserExpenseStatsDto;
 import com.innersignature.backend.mapper.ExpenseMapper;
 import com.innersignature.backend.util.PermissionUtil;
 import com.innersignature.backend.util.SecurityLogger;
@@ -1688,6 +1689,14 @@ public class ExpenseService {
     public List<StatusStatsDto> getStatusStats(LocalDate startDate, LocalDate endDate) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         return expenseMapper.selectStatusStats(startDate, endDate, companyId);
+    }
+
+    /**
+     * 사용자별 지출 통계 조회
+     */
+    public List<UserExpenseStatsDto> getUserExpenseStats(LocalDate startDate, LocalDate endDate) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        return expenseMapper.selectUserExpenseStats(companyId, startDate, endDate);
     }
 
     /**

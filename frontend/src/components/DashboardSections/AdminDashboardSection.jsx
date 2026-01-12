@@ -1,39 +1,50 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { 
-  fetchDashboardStats, 
-  fetchMonthlyTrend, 
-  fetchStatusStats, 
-  fetchCategoryRatio
-} from '../../api/expenseApi';
-import { getPendingUsers } from '../../api/userApi';
-import { STATUS_KOREAN } from '../../constants/status';
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from 'recharts';
+import CommonDashboardSection from './CommonDashboardSection';
 import * as S from './style';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
+const AdminDashboardSection = ({ filters }) => {
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <CommonDashboardSection
+        chartType="user"
+        showPendingUsers={true}
+      />
+
+      {/* 관리 기능 */}
+      <S.ManagementSection>
+        <S.SectionTitle>관리 기능</S.SectionTitle>
+        <S.ManagementGrid>
+          <S.ManagementCard onClick={() => navigate('/users')}>
+            <S.ManagementIcon>👥</S.ManagementIcon>
+            <S.ManagementTitle>사용자 관리</S.ManagementTitle>
+            <S.ManagementDesc>회사 소속 사용자 관리</S.ManagementDesc>
+          </S.ManagementCard>
+          <S.ManagementCard onClick={() => navigate('/budget')}>
+            <S.ManagementIcon>💰</S.ManagementIcon>
+            <S.ManagementTitle>예산 관리</S.ManagementTitle>
+            <S.ManagementDesc>연간/월간 예산 설정</S.ManagementDesc>
+          </S.ManagementCard>
+          <S.ManagementCard onClick={() => navigate('/audit-rules')}>
+            <S.ManagementIcon>🛡️</S.ManagementIcon>
+            <S.ManagementTitle>감사 규칙</S.ManagementTitle>
+            <S.ManagementDesc>자동 감사 규칙 설정</S.ManagementDesc>
+          </S.ManagementCard>
+        </S.ManagementGrid>
+      </S.ManagementSection>
+    </>
+  );
+};
+
+export default AdminDashboardSection;
 
 const AdminDashboardSection = ({ filters }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dashboardStats, setDashboardStats] = useState(null);
   const [monthlyTrend, setMonthlyTrend] = useState([]);
-  const [statusStats, setStatusStats] = useState([]);
+  const [userExpenseStats, setUserExpenseStats] = useState([]);
   const [categoryRatio, setCategoryRatio] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -45,10 +56,10 @@ const AdminDashboardSection = ({ filters }) => {
     try {
       setLoading(true);
       
-      const [statsRes, trendRes, statusRes, categoryRes, usersRes] = await Promise.all([
+      const [statsRes, trendRes, userStatsRes, categoryRes, usersRes] = await Promise.all([
         fetchDashboardStats(filters.startDate || null, filters.endDate || null),
         fetchMonthlyTrend(filters.startDate || null, filters.endDate || null),
-        fetchStatusStats(filters.startDate || null, filters.endDate || null),
+        fetchUserExpenseStats(filters.startDate || null, filters.endDate || null),
         fetchCategoryRatio(filters.startDate || null, filters.endDate || null),
         getPendingUsers().catch(() => ({ success: false, data: [] }))
       ]);
@@ -59,8 +70,8 @@ const AdminDashboardSection = ({ filters }) => {
       if (trendRes.success) {
         setMonthlyTrend(trendRes.data || []);
       }
-      if (statusRes.success) {
-        setStatusStats(statusRes.data || []);
+      if (userStatsRes.success) {
+        setUserExpenseStats(userStatsRes.data || []);
       }
       if (categoryRes.success) {
         setCategoryRatio(categoryRes.data || []);
@@ -93,13 +104,14 @@ const AdminDashboardSection = ({ filters }) => {
   }, [loadDashboardData]);
 
   // useMemo로 차트 데이터 메모이제이션
-  const statusChartData = useMemo(() => 
-    statusStats.map(item => ({
-      name: STATUS_KOREAN[item.status] || item.status,
-      건수: item.count,
-      금액: item.totalAmount
+  const userExpenseChartData = useMemo(() =>
+    userExpenseStats.map(item => ({
+      name: item.userName,
+      총금액: item.totalAmount,
+      결의서수: item.totalCount,
+      승인율: (item.approvalRate * 100).toFixed(1)
     })),
-    [statusStats]
+    [userExpenseStats]
   );
 
   const categoryChartData = useMemo(() => 
@@ -149,20 +161,24 @@ const AdminDashboardSection = ({ filters }) => {
           </S.ChartCard>
         )}
 
-        {statusChartData.length > 0 && (
+        {userExpenseChartData.length > 0 && (
           <S.ChartCard>
-            <S.ChartTitle>상태별 통계</S.ChartTitle>
+            <S.ChartTitle>사용자별 지출 합계</S.ChartTitle>
             <S.ChartContainer>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={statusChartData}>
+                <BarChart data={userExpenseChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis yAxisId="left" />
                   <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip formatter={(value) => value.toLocaleString()} />
+                  <Tooltip formatter={(value, name) => {
+                    if (name === '승인율') return `${value}%`;
+                    if (name === '총금액') return `${value.toLocaleString()}원`;
+                    return value;
+                  }} />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="건수" fill="#82ca9d" name="건수" />
-                  <Bar yAxisId="right" dataKey="금액" fill="#8884d8" name="금액" />
+                  <Bar yAxisId="left" dataKey="총금액" fill="#8884d8" name="총금액" />
+                  <Bar yAxisId="right" dataKey="결의서수" fill="#82ca9d" name="결의서수" />
                 </BarChart>
               </ResponsiveContainer>
             </S.ChartContainer>

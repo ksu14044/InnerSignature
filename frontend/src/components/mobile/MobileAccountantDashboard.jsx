@@ -1,21 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
-import { STATUS_KOREAN } from '../../constants/status';
+import { fetchUserExpenseStats, fetchDashboardStats } from '../../api/expenseApi';
+import { useAuth } from '../../contexts/AuthContext';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import * as S from './style';
 
-const MobileAccountantDashboard = ({ 
-  dashboardStats,
-  statusStats,
-  categoryRatio,
-  pendingApprovals,
-  approvedExpenses
-}) => {
+const MobileAccountantDashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('stats');
+  const { user } = useAuth();
+  const [userExpenseStats, setUserExpenseStats] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState({});
+  const [loading, setLoading] = useState(false);
+  // 데이터 로드
+  const loadData = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const [statsRes, userStatsRes] = await Promise.all([
+        fetchDashboardStats(),
+        fetchUserExpenseStats()
+      ]);
+
+      if (statsRes.success) {
+        setDashboardStats(statsRes.data || {});
+      }
+      if (userStatsRes.success) {
+        setUserExpenseStats(userStatsRes.data || []);
+      }
+    } catch (error) {
+      console.error('모바일 세무 담당자 대시보드 데이터 로드 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // 상태별 색상 매핑
   const getStatusColor = (index) => {
@@ -45,12 +70,10 @@ const MobileAccountantDashboard = ({
     return icons[category] || '📊';
   };
 
-  // 상태별 차트 데이터 변환
-  const statusChartData = statusStats.map(item => ({
-    name: STATUS_KOREAN[item.status] || item.status,
-    count: item.count,
-    totalAmount: item.totalAmount,
-    status: item.status
+  // 사용자별 지출 차트 데이터 변환
+  const userExpenseChartData = userExpenseStats.map(item => ({
+    name: item.userName,
+    amount: item.totalAmount
   }));
 
   // 카테고리 차트 데이터 변환
@@ -174,11 +197,11 @@ const MobileAccountantDashboard = ({
       {(statusChartData.length > 0 || categoryChartData.length > 0) && (
         <>
           <S.TabContainer>
-            <S.Tab 
-              active={activeTab === 'stats'} 
+            <S.Tab
+              active={activeTab === 'stats'}
               onClick={() => setActiveTab('stats')}
             >
-              상태별 통계
+              사용자별 합계
             </S.Tab>
             <S.Tab 
               active={activeTab === 'category'} 
@@ -190,26 +213,26 @@ const MobileAccountantDashboard = ({
 
           {/* 차트 영역 */}
           <S.Section>
-            {activeTab === 'stats' && statusChartData.length > 0 && (
+            {activeTab === 'stats' && userExpenseChartData.length > 0 && (
               <S.ChartSection>
-                {statusChartData.map((stat, idx) => {
-                  const maxAmount = Math.max(...statusChartData.map(s => s.totalAmount));
-                  const barWidth = maxAmount > 0 ? (stat.totalAmount / maxAmount) * 100 : 0;
-                  
+                {userExpenseChartData.map((user, idx) => {
+                  const maxAmount = Math.max(...userExpenseChartData.map(u => u.totalAmount));
+                  const barWidth = maxAmount > 0 ? (user.totalAmount / maxAmount) * 100 : 0;
+
                   return (
-                    <S.StatusItem key={stat.status}>
+                    <S.StatusItem key={user.name}>
                       <S.StatusInfo>
-                        <S.StatusName>{stat.name}</S.StatusName>
-                        <S.StatusCount>{stat.count}건</S.StatusCount>
+                        <S.StatusName>{user.name}</S.StatusName>
+                        <S.StatusCount>{user.totalCount}건</S.StatusCount>
                       </S.StatusInfo>
                       <S.StatusBar>
-                        <S.StatusBarFill 
+                        <S.StatusBarFill
                           width={barWidth}
                           color={getStatusColor(idx)}
                         />
                       </S.StatusBar>
                       <S.StatusAmount>
-                        {stat.totalAmount.toLocaleString()}원
+                        {user.totalAmount.toLocaleString()}원
                       </S.StatusAmount>
                     </S.StatusItem>
                   );
@@ -238,11 +261,11 @@ const MobileAccountantDashboard = ({
               </S.ChartSection>
             )}
 
-            {activeTab === 'stats' && statusChartData.length === 0 && (
+            {activeTab === 'stats' && userExpenseChartData.length === 0 && (
               <S.ChartSection>
                 <S.EmptyState>
                   <S.EmptyIcon>📊</S.EmptyIcon>
-                  <S.EmptyText>표시할 상태별 통계가 없습니다</S.EmptyText>
+                  <S.EmptyText>표시할 사용자별 통계가 없습니다</S.EmptyText>
                 </S.EmptyState>
               </S.ChartSection>
             )}

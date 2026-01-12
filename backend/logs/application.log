@@ -1855,3 +1855,84 @@
 2026-01-12T11:35:56.816+09:00 DEBUG 18628 --- [http-nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
 2026-01-12T11:35:56.817+09:00 DEBUG 18628 --- [http-nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=조회 성공, data=[])]
 2026-01-12T11:35:56.819+09:00 DEBUG 18628 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-01-12T11:36:05.562+09:00  INFO 24360 --- [main] c.i.backend.BackendApplication           : Starting BackendApplication using Java 17.0.17 with PID 24360 (C:\InnerSignature\backend\target\classes started by owner in C:\InnerSignature\backend)
+2026-01-12T11:36:05.568+09:00 DEBUG 24360 --- [main] c.i.backend.BackendApplication           : Running with Spring Boot v3.5.8, Spring v6.2.14
+2026-01-12T11:36:05.574+09:00  INFO 24360 --- [main] c.i.backend.BackendApplication           : The following 1 profile is active: "dev"
+2026-01-12T11:36:07.623+09:00 DEBUG 24360 --- [main] o.m.s.b.a.MybatisAutoConfiguration       : Searching for mappers annotated with @Mapper
+2026-01-12T11:36:07.625+09:00 DEBUG 24360 --- [main] o.m.s.b.a.MybatisAutoConfiguration       : Using auto-configuration base package 'com.innersignature.backend'
+2026-01-12T11:36:08.032+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\AccountCodeMappingMapper.class]
+2026-01-12T11:36:08.034+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\AuditLogMapper.class]
+2026-01-12T11:36:08.036+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\AuditRuleMapper.class]
+2026-01-12T11:36:08.037+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\BudgetMapper.class]
+2026-01-12T11:36:08.038+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\CompanyCardMapper.class]
+2026-01-12T11:36:08.039+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\CompanyMapper.class]
+2026-01-12T11:36:08.040+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\CreditMapper.class]
+2026-01-12T11:36:08.041+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\ExpenseCategoryMapper.class]
+2026-01-12T11:36:08.042+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\ExpenseMapper.class]
+2026-01-12T11:36:08.043+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\MonthlyClosingMapper.class]
+2026-01-12T11:36:08.044+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\PasswordResetTokenMapper.class]
+2026-01-12T11:36:08.045+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\PaymentMapper.class]
+2026-01-12T11:36:08.046+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\SubscriptionMapper.class]
+2026-01-12T11:36:08.048+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\SubscriptionPlanMapper.class]
+2026-01-12T11:36:08.054+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\UserApproverMapper.class]
+2026-01-12T11:36:08.055+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\UserCardMapper.class]
+2026-01-12T11:36:08.059+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\UserMapper.class]
+2026-01-12T11:36:08.062+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\UserSignatureMapper.class]
+2026-01-12T11:36:08.072+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'accountCodeMappingMapper' and 'com.innersignature.backend.mapper.AccountCodeMappingMapper' mapperInterface
+2026-01-12T11:36:08.080+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'auditLogMapper' and 'com.innersignature.backend.mapper.AuditLogMapper' mapperInterface
+2026-01-12T11:36:08.083+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'auditRuleMapper' and 'com.innersignature.backend.mapper.AuditRuleMapper' mapperInterface
+2026-01-12T11:36:08.088+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'budgetMapper' and 'com.innersignature.backend.mapper.BudgetMapper' mapperInterface
+2026-01-12T11:36:08.093+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'companyCardMapper' and 'com.innersignature.backend.mapper.CompanyCardMapper' mapperInterface
+2026-01-12T11:36:08.094+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'companyMapper' and 'com.innersignature.backend.mapper.CompanyMapper' mapperInterface
+2026-01-12T11:36:08.097+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'creditMapper' and 'com.innersignature.backend.mapper.CreditMapper' mapperInterface
+2026-01-12T11:36:08.102+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'expenseCategoryMapper' and 'com.innersignature.backend.mapper.ExpenseCategoryMapper' mapperInterface
+2026-01-12T11:36:08.105+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'expenseMapper' and 'com.innersignature.backend.mapper.ExpenseMapper' mapperInterface
+2026-01-12T11:36:08.109+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'monthlyClosingMapper' and 'com.innersignature.backend.mapper.MonthlyClosingMapper' mapperInterface
+2026-01-12T11:36:08.110+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'passwordResetTokenMapper' and 'com.innersignature.backend.mapper.PasswordResetTokenMapper' mapperInterface
+2026-01-12T11:36:08.112+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'paymentMapper' and 'com.innersignature.backend.mapper.PaymentMapper' mapperInterface
+2026-01-12T11:36:08.114+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'subscriptionMapper' and 'com.innersignature.backend.mapper.SubscriptionMapper' mapperInterface
+2026-01-12T11:36:08.115+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'subscriptionPlanMapper' and 'com.innersignature.backend.mapper.SubscriptionPlanMapper' mapperInterface
+2026-01-12T11:36:08.117+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'userApproverMapper' and 'com.innersignature.backend.mapper.UserApproverMapper' mapperInterface
+2026-01-12T11:36:08.118+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'userCardMapper' and 'com.innersignature.backend.mapper.UserCardMapper' mapperInterface
+2026-01-12T11:36:08.121+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'userMapper' and 'com.innersignature.backend.mapper.UserMapper' mapperInterface
+2026-01-12T11:36:08.122+09:00 DEBUG 24360 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'userSignatureMapper' and 'com.innersignature.backend.mapper.UserSignatureMapper' mapperInterface
+2026-01-12T11:36:09.118+09:00  INFO 24360 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-01-12T11:36:09.151+09:00  INFO 24360 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-01-12T11:36:09.163+09:00  INFO 24360 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.49]
+2026-01-12T11:36:09.417+09:00  INFO 24360 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-01-12T11:36:09.424+09:00  INFO 24360 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3747 ms
+2026-01-12T11:36:09.545+09:00 DEBUG 24360 --- [main] c.i.b.security.JwtAuthenticationFilter   : Filter 'jwtAuthenticationFilter' configured for use
+2026-01-12T11:36:09.557+09:00 DEBUG 24360 --- [main] c.i.backend.security.RateLimitFilter     : Filter 'rateLimitFilter' configured for use
+2026-01-12T11:36:10.102+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\AccountCodeMappingMapper.xml]'
+2026-01-12T11:36:10.131+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\AuditLogMapper.xml]'
+2026-01-12T11:36:10.170+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\AuditRuleMapper.xml]'
+2026-01-12T11:36:10.189+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\BudgetMapper.xml]'
+2026-01-12T11:36:10.217+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\CompanyCardMapper.xml]'
+2026-01-12T11:36:10.255+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\CompanyMapper.xml]'
+2026-01-12T11:36:10.293+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\CreditMapper.xml]'
+2026-01-12T11:36:10.363+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\ExpenseCategoryMapper.xml]'
+2026-01-12T11:36:10.478+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\ExpenseMapper.xml]'
+2026-01-12T11:36:10.585+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\MonthlyClosingMapper.xml]'
+2026-01-12T11:36:10.594+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\PasswordResetTokenMapper.xml]'
+2026-01-12T11:36:10.611+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\PaymentMapper.xml]'
+2026-01-12T11:36:10.632+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\SubscriptionMapper.xml]'
+2026-01-12T11:36:10.642+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\SubscriptionPlanMapper.xml]'
+2026-01-12T11:36:10.660+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\UserApproverMapper.xml]'
+2026-01-12T11:36:10.678+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\UserCardMapper.xml]'
+2026-01-12T11:36:10.707+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\UserMappeer.xml]'
+2026-01-12T11:36:10.735+09:00 DEBUG 24360 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\UserSignatureMapper.xml]'
+2026-01-12T11:36:11.684+09:00 DEBUG 24360 --- [main] s.w.s.m.m.a.RequestMappingHandlerMapping : 153 mappings in 'requestMappingHandlerMapping'
+2026-01-12T11:36:11.836+09:00 DEBUG 24360 --- [main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**, /api/uploads/**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2026-01-12T11:36:11.870+09:00  WARN 24360 --- [main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 27413e0e-dd1f-4745-b166-04393e3d7a86
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-01-12T11:36:11.882+09:00  INFO 24360 --- [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-01-12T11:36:12.066+09:00 DEBUG 24360 --- [main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, RateLimitFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-01-12T11:36:12.261+09:00 DEBUG 24360 --- [main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-01-12T11:36:12.382+09:00 DEBUG 24360 --- [main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-01-12T11:36:12.397+09:00 DEBUG 24360 --- [main] o.m.s.b.a.MybatisAutoConfiguration       : Not found configuration for registering mapper bean using @MapperScan, MapperFactoryBean and MapperScannerConfigurer.
+2026-01-12T11:36:12.882+09:00  INFO 24360 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-01-12T11:36:12.920+09:00  INFO 24360 --- [main] c.i.backend.BackendApplication           : Started BackendApplication in 8.296 seconds (process running for 9.05)
