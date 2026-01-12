@@ -3238,13 +3238,11 @@ public class ExpenseService {
         // 헤더 행
         Row headerRow = sheet.createRow(0);
         String[] headers = {
-            "문서번호", "작성일", "지급일", "작성자", "부서",
-            "카테고리", "거래처", "적요",
-            "결재금액", "실지급액", "차액",
-            "부가세포함", "공급가액", "부가세", "공제가능", "공제불가사유",
-            "계정코드", "계정과목",
+            "문서번호", "사용일자", "작성자",
+            "카테고리", "상호명", "적요",
+            "결재금액", "계정과목",
             "결제수단", "카드정보",
-            "비고", "상태", "수정요청"
+            "비고"
         };
         
         for (int i = 0; i < headers.length; i++) {
@@ -3287,18 +3285,13 @@ public class ExpenseService {
                                    CellStyle dataStyle, CellStyle numberStyle) {
         int col = 0;
         Cell cell;
-        
+
         // 문서번호
         cell = row.createCell(col++);
         cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId().toString() : "");
         cell.setCellStyle(dataStyle);
 
-        // 작성일
-        cell = row.createCell(col++);
-        cell.setCellValue(report.getReportDate() != null ? report.getReportDate().toString() : "");
-        cell.setCellStyle(dataStyle);
-
-        // 지급일 (paymentReqDate 사용)
+        // 사용일자 (paymentReqDate 사용)
         cell = row.createCell(col++);
         cell.setCellValue(report.getPaymentReqDate() != null ? report.getPaymentReqDate().toString() : "");
         cell.setCellStyle(dataStyle);
@@ -3308,132 +3301,74 @@ public class ExpenseService {
         cell.setCellValue(report.getDrafterName() != null ? report.getDrafterName() : "");
         cell.setCellStyle(dataStyle);
 
-        // 부서 (없음 - 빈 문자열)
-        cell = row.createCell(col++);
-        cell.setCellValue("");
-        cell.setCellStyle(dataStyle);
-        
         if (detail != null) {
             // 상세 항목 정보
             // 카테고리
             cell = row.createCell(col++);
             cell.setCellValue(detail.getCategory() != null ? detail.getCategory() : "");
             cell.setCellStyle(dataStyle);
-            
-            // 거래처
+
+            // 상호명
             cell = row.createCell(col++);
             cell.setCellValue(detail.getMerchantName() != null ? detail.getMerchantName() : "");
             cell.setCellStyle(dataStyle);
-            
+
             // 적요
             cell = row.createCell(col++);
             cell.setCellValue(detail.getDescription() != null ? detail.getDescription() : "");
             cell.setCellStyle(dataStyle);
-            
+
             // 결재금액
             cell = row.createCell(col++);
             cell.setCellValue(detail.getAmount() != null ? detail.getAmount().doubleValue() : 0);
             cell.setCellStyle(numberStyle);
-            
-            // 실지급액
-            cell = row.createCell(col++);
-            Long actualPaid = detail.getActualPaidAmount() != null ? detail.getActualPaidAmount() : detail.getAmount();
-            cell.setCellValue(actualPaid != null ? actualPaid.doubleValue() : 0);
-            cell.setCellStyle(numberStyle);
-            
-            // 차액
-            cell = row.createCell(col++);
-            Long diff = (actualPaid != null ? actualPaid : 0L) - (detail.getAmount() != null ? detail.getAmount() : 0L);
-            cell.setCellValue(diff.doubleValue());
-            cell.setCellStyle(numberStyle);
-            
-            // 부가세포함 (항상 N으로 표시 - 필드 없음)
-            cell = row.createCell(col++);
-            cell.setCellValue("N");
-            cell.setCellStyle(dataStyle);
-            
-            // 공급가액, 부가세 (부가세 미포함으로 처리)
-            cell = row.createCell(col++);
-            cell.setCellValue(detail.getAmount() != null ? detail.getAmount().doubleValue() : 0);
-            cell.setCellStyle(numberStyle);
-            
-            cell = row.createCell(col++);
-            cell.setCellValue(0);
-            cell.setCellStyle(numberStyle);
-            
-            // 공제가능
-            cell = row.createCell(col++);
-            cell.setCellValue(detail.getIsTaxDeductible() != null && detail.getIsTaxDeductible() ? "Y" : "N");
-            cell.setCellStyle(dataStyle);
-            
-            // 공제불가사유
-            cell = row.createCell(col++);
-            cell.setCellValue(detail.getNonDeductibleReason() != null ? detail.getNonDeductibleReason() : "");
-            cell.setCellStyle(dataStyle);
-            
+
             // 계정과목 추천
             String accountCode = mapCategoryToAccountCode(detail.getCategory(), detail.getMerchantName());
             cell = row.createCell(col++);
-            cell.setCellValue(extractAccountCode(accountCode));
-            cell.setCellStyle(dataStyle);
-            
-            cell = row.createCell(col++);
             cell.setCellValue(accountCode);
             cell.setCellStyle(dataStyle);
-            
+
         } else {
             // 상세 항목 없을 때 - 문서 레벨 정보
             cell = row.createCell(col++);
             cell.setCellValue("");
             cell.setCellStyle(dataStyle);
-            
+
             cell = row.createCell(col++);
             cell.setCellValue("");
             cell.setCellStyle(dataStyle);
-            
+
             cell = row.createCell(col++);
             cell.setCellValue(report.getTitle() != null ? report.getTitle() : "");
             cell.setCellStyle(dataStyle);
-            
+
             // 결재금액
             cell = row.createCell(col++);
             cell.setCellValue(report.getTotalAmount() != null ? report.getTotalAmount().doubleValue() : 0);
             cell.setCellStyle(numberStyle);
-            
-            // 실지급액
+
+            // 계정과목 (빈 값)
             cell = row.createCell(col++);
-            Long actualPaid = report.getActualPaidAmount() != null ? report.getActualPaidAmount() : report.getTotalAmount();
-            cell.setCellValue(actualPaid != null ? actualPaid.doubleValue() : 0);
-            cell.setCellStyle(numberStyle);
-            
-            // 차액
-            cell = row.createCell(col++);
-            Long diff = (actualPaid != null ? actualPaid : 0L) - (report.getTotalAmount() != null ? report.getTotalAmount() : 0L);
-            cell.setCellValue(diff.doubleValue());
-            cell.setCellStyle(numberStyle);
-            
-            // 부가세 관련 (기본값)
-            for (int i = 0; i < 6; i++) {
-                cell = row.createCell(col++);
-                cell.setCellValue(i == 0 ? "N" : "");
-                cell.setCellStyle(dataStyle);
-            }
+            cell.setCellValue("");
+            cell.setCellStyle(dataStyle);
         }
-        
+
         // 결제수단 (detail에서 가져오거나 빈 문자열)
         cell = row.createCell(col++);
         cell.setCellValue(detail != null && detail.getPaymentMethod() != null ? detail.getPaymentMethod() : "");
         cell.setCellStyle(dataStyle);
 
-        // 카드정보 (detail에서 가져오거나 빈 문자열)
+        // 카드정보 (마스킹 처리 - 뒷4자리만 표시)
         cell = row.createCell(col++);
         String cardInfo = "";
         if (detail != null && detail.getCardNumber() != null && !detail.getCardNumber().trim().isEmpty()) {
             try {
                 String decryptedCardNumber = encryptionUtil.decrypt(detail.getCardNumber());
-                if (decryptedCardNumber != null) {
-                    // 카드번호 포맷팅 (하이픈 추가)
-                    cardInfo = formatCardNumber(decryptedCardNumber);
+                if (decryptedCardNumber != null && decryptedCardNumber.length() >= 4) {
+                    // 뒷 4자리만 표시 (마스킹)
+                    String lastFour = decryptedCardNumber.substring(decryptedCardNumber.length() - 4);
+                    cardInfo = "****-****-****-" + lastFour;
                 }
             } catch (Exception e) {
                 logger.debug("카드정보 표시 중 카드번호 복호화 실패 - expenseReportId: {}, detailId: {}",
@@ -3448,16 +3383,6 @@ public class ExpenseService {
         // 비고 (detail의 note 사용)
         cell = row.createCell(col++);
         cell.setCellValue(detail != null && detail.getNote() != null ? detail.getNote() : "");
-        cell.setCellStyle(dataStyle);
-
-        // 상태
-        cell = row.createCell(col++);
-        cell.setCellValue(report.getStatus() != null ? report.getStatus() : "");
-        cell.setCellStyle(dataStyle);
-
-        // 수정요청
-        cell = row.createCell(col++);
-        cell.setCellValue(report.getTaxRevisionRequested() != null && report.getTaxRevisionRequested() ? "Y" : "N");
         cell.setCellStyle(dataStyle);
     }
     
