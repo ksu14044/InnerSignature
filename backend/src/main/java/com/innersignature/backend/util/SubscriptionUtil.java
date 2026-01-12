@@ -45,8 +45,8 @@ public class SubscriptionUtil {
     public boolean isUserLimitExceeded(Long companyId, int currentUserCount) {
         SubscriptionDto subscription = getActiveSubscription(companyId);
         if (subscription == null || subscription.getPlan() == null) {
-            // 구독이 없으면 FREE 플랜으로 간주 (최대 3명)
-            return currentUserCount >= 3;
+            // 구독이 없으면 FREE 플랜으로 간주 (최대 2명)
+            return currentUserCount >= 2;
         }
         
         SubscriptionPlanDto plan = subscription.getPlan();
@@ -67,9 +67,9 @@ public class SubscriptionUtil {
             String planName = subscription != null && subscription.getPlan() != null 
                 ? subscription.getPlan().getPlanName() 
                 : "무료";
-            Integer maxUsers = subscription != null && subscription.getPlan() != null 
-                ? subscription.getPlan().getMaxUsers() 
-                : 3;
+            Integer maxUsers = subscription != null && subscription.getPlan() != null
+                ? subscription.getPlan().getMaxUsers()
+                : 2;
             
             throw new BusinessException(
                 String.format("%s 플랜의 최대 사용자 수(%d명)에 도달했습니다. 플랜을 업그레이드해주세요.", 

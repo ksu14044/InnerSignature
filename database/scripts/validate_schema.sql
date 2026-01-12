@@ -205,7 +205,7 @@ SELECT '\nChecking seed data...' as status;
 SELECT
     'subscription_plans' as data_type,
     COUNT(*) as count,
-    'Expected: 3 (FREE, BASIC, PRO)' as expected
+    'Expected: 2 (FREE, PRO)' as expected
 FROM subscription_plan_tb
 
 UNION ALL

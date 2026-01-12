@@ -87,7 +87,7 @@ const MobileAccountantDashboard = () => {
   };
 
   // 사용자별 지출 차트 데이터 변환
-  const userExpenseChartData = userExpenseStats.map(item => ({
+  const userExpenseChartData = (userExpenseStats || []).map(item => ({
     name: item.userName,
     amount: item.totalAmount,
     totalCount: item.totalCount || 0
@@ -97,7 +97,7 @@ const MobileAccountantDashboard = () => {
   const statusChartData = userExpenseChartData;
 
   // 카테고리 차트 데이터 변환
-  const categoryChartData = categoryRatio.map(item => ({
+  const categoryChartData = (categoryRatio || []).map(item => ({
     name: item.category,
     amount: item.amount,
     ratio: item.ratio
@@ -130,7 +130,7 @@ const MobileAccountantDashboard = () => {
             </S.PendingTitle>
           </S.PendingHeader>
           
-          {approvedExpenses.slice(0, 3).map((expense) => (
+          {approvedExpenses && approvedExpenses.slice(0, 3).map((expense) => (
             <S.PendingItem 
               key={expense.expenseReportId}
               onClick={() => navigate(`/expenses/${expense.expenseReportId}`)}
@@ -235,8 +235,8 @@ const MobileAccountantDashboard = () => {
           <S.Section>
             {activeTab === 'stats' && userExpenseChartData.length > 0 && (
               <S.ChartSection>
-                {userExpenseChartData.map((user, idx) => {
-                  const maxAmount = Math.max(...userExpenseChartData.map(u => u.totalAmount));
+                {userExpenseChartData && userExpenseChartData.map((user, idx) => {
+                  const maxAmount = userExpenseChartData.length > 0 ? Math.max(...userExpenseChartData.map(u => u.totalAmount)) : 0;
                   const barWidth = maxAmount > 0 ? (user.totalAmount / maxAmount) * 100 : 0;
 
                   return (
@@ -260,7 +260,7 @@ const MobileAccountantDashboard = () => {
               </S.ChartSection>
             )}
 
-            {activeTab === 'category' && categoryChartData.length > 0 && (
+            {activeTab === 'category' && categoryChartData && categoryChartData.length > 0 && (
               <S.ChartSection>
                 {categoryChartData.map((cat, idx) => (
                   <S.CategoryItem key={cat.name}>

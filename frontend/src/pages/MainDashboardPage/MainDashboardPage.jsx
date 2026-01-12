@@ -368,7 +368,7 @@ const MainDashboardPage = () => {
             <S.EmptyMessage>해당 상태의 결의서가 없습니다.</S.EmptyMessage>
           ) : (
             <S.ExpenseListContainer>
-              {statusExpenses.slice(0, 10).map((item) => {
+              {statusExpenses && statusExpenses.slice(0, 10).map((item) => {
                 // 지급 요청일 계산
                 const paymentReqDate = item.details && item.details.length > 0
                   ? item.details

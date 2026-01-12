@@ -34,11 +34,24 @@ const CEODashboardSection = ({ filters }) => {
 
   // 모바일 버전
   if (isMobile) {
-    return (
-      <Suspense fallback={<S.LoadingMessage>로딩 중...</S.LoadingMessage>}>
-        <MobileCEODashboard />
-      </Suspense>
-    );
+    try {
+      return (
+        <Suspense fallback={
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            로딩 중...
+          </div>
+        }>
+          <MobileCEODashboard />
+        </Suspense>
+      );
+    } catch (error) {
+      console.error('MobileCEODashboard 렌더링 오류:', error);
+      return (
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          모바일 대시보드를 불러올 수 없습니다.
+        </div>
+      );
+    }
   }
 
   // 데스크톱 버전 - 사용자별 지출 합계 위주로 표시

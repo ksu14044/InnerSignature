@@ -279,7 +279,7 @@ const CardManagementPage = () => {
             </S.EmptyState>
           ) : (
             <S.CardsGrid>
-              {companyCards.map(card => (
+              {companyCards && companyCards.map(card => (
                 <S.CardItem key={card.cardId}>
                   <S.CardHeader>
                     <S.CardName>{card.cardName}</S.CardName>
@@ -327,7 +327,7 @@ const CardManagementPage = () => {
             </S.EmptyState>
           ) : (
             <S.CardsGrid>
-              {userCards.map(card => (
+              {userCards && userCards.map(card => (
                 <S.CardItem key={card.cardId}>
                   <S.CardHeader>
                     <S.CardName>

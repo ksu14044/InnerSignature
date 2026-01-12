@@ -85,7 +85,7 @@ const MobileUserDashboard = ({ stats, recentExpenses }) => {
           </S.SectionHeader>
           
           <S.PendingSection>
-            {recentExpenses.slice(0, 5).map((expense) => (
+            {recentExpenses && recentExpenses.slice(0, 5).map((expense) => (
               <S.PendingItem 
                 key={expense.expenseReportId}
                 onClick={() => navigate(`/detail/${expense.expenseReportId}`)}

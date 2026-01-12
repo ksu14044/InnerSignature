@@ -185,7 +185,7 @@ const CompanyRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
             </S.InputGroup>
 
             <S.InfoText>
-              회사 등록 시 기본 무료 플랜(최대 3명)이 자동으로 할당됩니다.
+              회사 등록 시 기본 무료 플랜(최대 2명)이 자동으로 할당됩니다.
               플랜 변경은 구독 관리 페이지에서 가능합니다.
             </S.InfoText>
 

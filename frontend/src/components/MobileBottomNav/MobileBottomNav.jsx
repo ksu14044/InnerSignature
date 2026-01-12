@@ -51,14 +51,14 @@ const MobileBottomNav = () => {
         ...(user?.role === 'CEO' || user?.role === 'ADMIN'
           ? [{ path: '/subscriptions/manage', icon: FaChartBar, label: '구독' }]
           : []),
-        canManageUsers 
+        canManageUsers
           ? { path: '/users', icon: FaUsers, label: '사용자관리' }
           : { path: '/profile', icon: FaUser, label: '내정보' },
       ];
 
   return (
     <S.BottomNav>
-      {navItems.map((item) => {
+      {navItems && navItems.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.path);
         return (

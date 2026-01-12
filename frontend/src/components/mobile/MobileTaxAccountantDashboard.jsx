@@ -95,7 +95,7 @@ const MobileTaxAccountantDashboard = ({
           </S.SectionHeader>
           
           <S.PendingSection>
-            {pendingReports.slice(0, 5).map((report) => (
+            {pendingReports && pendingReports.slice(0, 5).map((report) => (
               <S.PendingItem 
                 key={report.expenseReportId}
                 onClick={() => navigate(`/detail/${report.expenseReportId}`)}
@@ -131,7 +131,7 @@ const MobileTaxAccountantDashboard = ({
           </S.SectionHeader>
           
           <S.ChartSection>
-            {summary.map((item, idx) => (
+            {summary && summary.map((item, idx) => (
               <S.CategoryItem key={idx}>
                 <S.CategoryIcon color={getCategoryColor(idx)}>
                   {getCategoryIcon(item.category)}

@@ -262,7 +262,7 @@ const MobileAppBar = ({ title, onMenuClick }) => {
             {/* 회사 선택 */}
             {companies && companies.length > 1 && (
               <S.CompanySelector ref={companyDropdownRef}>
-                <S.CompanyButton 
+                <S.CompanyButton
                   onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}
                   aria-label="회사 선택"
                 >
@@ -270,7 +270,7 @@ const MobileAppBar = ({ title, onMenuClick }) => {
                 </S.CompanyButton>
                 {isCompanyDropdownOpen && (
                   <S.CompanyDropdown>
-                    {companies.map((company) => (
+                    {companies && companies.map((company) => (
                       <S.CompanyDropdownItem
                         key={company.companyId}
                         selected={company.companyId === user.companyId}

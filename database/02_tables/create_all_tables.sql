@@ -22,7 +22,7 @@
 DROP TABLE IF EXISTS `subscription_plan_tb`;
 CREATE TABLE `subscription_plan_tb` (
   `plan_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '플랜 ID',
-  `plan_code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '플랜 코드 (FREE, BASIC, PRO)',
+  `plan_code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '플랜 코드 (FREE, PRO)',
   `plan_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '플랜 이름',
   `price` int(11) NOT NULL DEFAULT '0' COMMENT '월간 가격 (원)',
   `max_users` int(11) DEFAULT NULL COMMENT '최대 사용자 수 (NULL이면 무제한)',
