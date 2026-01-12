@@ -221,11 +221,18 @@ const ExpenseDetailPage = () => {
     return true;
   };
 
-  // 첫 결재자인지 확인
-  const isFirstApprover = () => {
+  // 결재 라인에 있는 결재자가 추가 결재자를 추가할 수 있는지 확인
+  const canAddApprover = () => {
     if (!user || !detail?.approvalLines || detail.approvalLines.length === 0) return false;
+
+    // 첫 결재자가 결재했는지 확인
     const firstLine = detail.approvalLines[0];
-    return firstLine.approverId === user.userId && firstLine.signatureData != null && firstLine.signatureData.trim() !== '';
+    const hasFirstApproverSigned = firstLine.signatureData != null && firstLine.signatureData.trim() !== '';
+
+    // 현재 사용자가 결재 라인에 있는지 확인
+    const isCurrentUserInApprovalLine = detail.approvalLines.some(line => line.approverId === user.userId);
+
+    return hasFirstApproverSigned && isCurrentUserInApprovalLine;
   };
 
   const handleSaveSignature = (signatureData) => {
@@ -712,8 +719,8 @@ const ExpenseDetailPage = () => {
                       </button>
                     </div>
                   )}
-                  {/* 첫 결재자가 결재한 후 추가 결재자 추가 버튼 */}
-                  {isFirstApprover() && detail.approvalLines.indexOf(line) === 0 && detail.status !== 'APPROVED' && detail.status !== 'REJECTED' && (
+                  {/* 결재 라인에 있는 모든 결재자가 추가 결재자 추가 버튼 */}
+                  {canAddApprover() && line.approverId === user.userId && detail.status !== 'REJECTED' && (
                     <div style={{ marginTop: '8px' }}>
                       <button
                         onClick={handleOpenAddApproverModal}

@@ -955,9 +955,11 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("첫 결재자가 아직 결재하지 않았습니다.");
         }
         
-        // 4. 첫 결재자가 현재 사용자인지 확인
-        if (!firstLine.getApproverId().equals(currentUserId)) {
-            throw new com.innersignature.backend.exception.BusinessException("첫 결재자만 추가 결재자를 설정할 수 있습니다.");
+        // 4. 현재 사용자가 결재 라인에 있는 결재자인지 확인
+        boolean isApproverInLine = existingLines.stream()
+            .anyMatch(line -> line.getApproverId().equals(currentUserId));
+        if (!isApproverInLine) {
+            throw new com.innersignature.backend.exception.BusinessException("결재 라인에 있는 결재자만 추가 결재자를 설정할 수 있습니다.");
         }
         
         // 5. 이미 추가된 결재자인지 확인

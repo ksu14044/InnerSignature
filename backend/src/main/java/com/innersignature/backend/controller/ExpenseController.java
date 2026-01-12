@@ -261,9 +261,9 @@ public class ExpenseController {
     /**
      * 5-1. 추가 결재 라인 추가 API
      * 주소: POST /api/expenses/{expenseId}/approval-lines/add
-     * 설명: 첫 결재자가 결재한 후 추가 결재자를 추가합니다.
+     * 설명: 결재 라인에 있는 결재자가 결재한 후 추가 결재자를 추가합니다.
      */
-    @Operation(summary = "추가 결재 라인 추가", description = "첫 결재자가 결재한 후 추가 결재자를 추가합니다.")
+    @Operation(summary = "추가 결재 라인 추가", description = "결재 라인에 있는 결재자가 결재한 후 추가 결재자를 추가합니다.")
     @PostMapping("/{expenseId}/approval-lines/add")
     public ApiResponse<Void> addApprovalLine(
             @PathVariable Long expenseId,
