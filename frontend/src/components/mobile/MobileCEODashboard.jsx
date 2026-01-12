@@ -4,6 +4,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import { fetchUserExpenseStats, fetchDashboardStats } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { getPendingUsers } from '../../api/userApi';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import * as S from './style';
@@ -14,8 +15,7 @@ const MobileCEODashboard = () => {
   const [userExpenseStats, setUserExpenseStats] = useState([]);
   const [dashboardStats, setDashboardStats] = useState({});
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('stats');
+  const [pendingUsers, setPendingUsers] = useState([]);
 
   // 데이터 로드
   const loadData = useCallback(async () => {
@@ -23,9 +23,10 @@ const MobileCEODashboard = () => {
 
     try {
       setLoading(true);
-      const [statsRes, userStatsRes] = await Promise.all([
+      const [statsRes, userStatsRes, usersRes] = await Promise.all([
         fetchDashboardStats(),
-        fetchUserExpenseStats()
+        fetchUserExpenseStats(),
+        getPendingUsers().catch(() => ({ success: false, data: [] }))
       ]);
 
       if (statsRes.success) {
@@ -33,6 +34,9 @@ const MobileCEODashboard = () => {
       }
       if (userStatsRes.success) {
         setUserExpenseStats(userStatsRes.data || []);
+      }
+      if (usersRes.success) {
+        setPendingUsers(usersRes.data || []);
       }
     } catch (error) {
       console.error('모바일 대시보드 데이터 로드 실패:', error);
@@ -192,25 +196,10 @@ const MobileCEODashboard = () => {
 
       {/* 빈 상태 */}
       {userExpenseChartData.length === 0 && (
-              <S.ChartSection>
-                {categoryChartData.map((cat, idx) => (
-                  <S.CategoryItem key={cat.name}>
-                    <S.CategoryIcon color={getCategoryColor(idx)}>
-                      {getCategoryIcon(cat.name)}
-                    </S.CategoryIcon>
-                    <S.CategoryInfo>
-                      <S.CategoryName>{cat.name}</S.CategoryName>
-                      <S.CategoryAmount>
-                        {cat.amount.toLocaleString()}원
-        </S.Section>
-      )}
-
-      {/* 빈 상태 */}
-      {userExpenseChartData.length === 0 && (
         <S.Section>
           <S.EmptyState>
             <S.EmptyIcon>📊</S.EmptyIcon>
-            <S.EmptyText>표시할 사용자별 통계가 없습니다</S.EmptyText>
+            <S.EmptyText>표시할 통계가 없습니다</S.EmptyText>
           </S.EmptyState>
         </S.Section>
       )}
