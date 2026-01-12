@@ -2850,10 +2850,32 @@ public class ExpenseService {
         // 업데이트
         expenseMapper.updateExpenseDetailTaxInfo(expenseDetailId, isTaxDeductible, nonDeductibleReason, companyId);
         
-        logger.info("부가세 공제 정보 업데이트 완료 - expenseDetailId: {}, isTaxDeductible: {}, reason: {}", 
+        logger.info("부가세 공제 정보 업데이트 완료 - expenseDetailId: {}, isTaxDeductible: {}, reason: {}",
                 expenseDetailId, isTaxDeductible, nonDeductibleReason);
     }
-    
+
+    /**
+     * 상세 항목 전체 정보 업데이트
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void updateExpenseDetail(ExpenseDetailDto expenseDetail) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+
+        // 상세 항목 존재 여부 확인
+        Long expenseReportId = expenseMapper.selectExpenseReportIdByDetailId(expenseDetail.getExpenseDetailId(), companyId);
+        if (expenseReportId == null) {
+            throw new com.innersignature.backend.exception.ResourceNotFoundException("상세 항목을 찾을 수 없습니다.");
+        }
+
+        // companyId 설정
+        expenseDetail.setCompanyId(companyId);
+
+        // 업데이트
+        expenseMapper.updateExpenseDetail(expenseDetail);
+
+        logger.info("상세 항목 업데이트 완료 - expenseDetailId: {}", expenseDetail.getExpenseDetailId());
+    }
+
     /**
      * APPROVED 시점 분개 행 생성
      * 차변(비용) / 대변(미지급금) - 결재 금액 기준

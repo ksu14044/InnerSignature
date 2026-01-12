@@ -92,12 +92,13 @@ const ExpenseCreatePage = () => {
       const original = originalDetails[i];
       const current = details[i];
 
-      // 주요 필드 비교 (결제수단 포함)
+      // 주요 필드 비교 (결제수단 및 지급 요청일 포함)
       if (original.category !== current.category ||
           original.merchantName !== current.merchantName ||
           original.description !== current.description ||
           original.amount !== current.amount ||
           original.paymentMethod !== current.paymentMethod || // 결제수단 변경 감지
+          original.paymentReqDate !== current.paymentReqDate || // 지급 요청일 변경 감지
           original.cardNumber !== current.cardNumber ||
           original.cardId !== current.cardId ||
           original.note !== current.note) {
@@ -605,9 +606,9 @@ const ExpenseCreatePage = () => {
       }
     }
 
-    // 상세 항목에서 paymentReqDate와 isPreApproval 제거 (결의서 단위로만 사용)
+    // 상세 항목에서 isPreApproval 제거 (결의서 단위로만 사용), paymentReqDate는 항목별로 사용
     const cleanedDetails = formattedDetails.map(detail => {
-      const { paymentReqDate, isPreApproval, ...rest } = detail;
+      const { isPreApproval, ...rest } = detail;
       return rest;
     });
 
@@ -762,7 +763,7 @@ const ExpenseCreatePage = () => {
               required
             />
           </S.FormGroup>
-          <S.FormGroup>
+          <S.FormGroup style={{ display: 'none' }}>
             <S.Label>
               <input
                 type="checkbox"
@@ -846,18 +847,19 @@ const ExpenseCreatePage = () => {
             <thead>
               <tr>
                 <S.Th width="5%">#</S.Th>
-                <S.Th width="15%">항목</S.Th>
+                <S.Th width="12%">항목</S.Th>
                 <S.Th width="10%">상호명</S.Th>
-                <S.Th width="20%">적요 (내용)</S.Th>
-                <S.Th width="15%">금액</S.Th>
-                <S.Th width="15%">결제수단</S.Th>
+                <S.Th width="15%">적요 (내용)</S.Th>
+                <S.Th width="12%">금액</S.Th>
+                <S.Th width="12%">지급 요청일</S.Th>
+                <S.Th width="12%">결제수단</S.Th>
                 <S.Th width="20%">관리</S.Th>
               </tr>
             </thead>
             <tbody>
               {completedDetails.length === 0 ? (
                 <tr>
-                  <S.Td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+                  <S.Td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
                     지출 상세 내역이 없습니다. "행 추가" 버튼을 클릭하여 추가하세요.
                   </S.Td>
                 </tr>
@@ -874,6 +876,7 @@ const ExpenseCreatePage = () => {
                       <S.Td style={{ textAlign: 'right', fontWeight: '600' }}>
                         {detail.amount ? formatNumber(detail.amount) + '원' : '-'}
                       </S.Td>
+                      <S.Td>{detail.paymentReqDate || '-'}</S.Td>
                       <S.Td>{getPaymentMethodLabel(detail.paymentMethod)}</S.Td>
                       <S.Td onClick={(e) => e.stopPropagation()}>
                         <S.ActionButtonGroup>
@@ -936,6 +939,10 @@ const ExpenseCreatePage = () => {
                       <S.MobileValue style={{ fontWeight: '600', color: '#007bff' }}>
                         {detail.amount ? formatNumber(detail.amount) + '원' : '-'}
                       </S.MobileValue>
+                    </S.MobileSummaryRow>
+                    <S.MobileSummaryRow>
+                      <S.MobileLabel>지급 요청일</S.MobileLabel>
+                      <S.MobileValue>{detail.paymentReqDate || '-'}</S.MobileValue>
                     </S.MobileSummaryRow>
                     <S.MobileSummaryRow>
                       <S.MobileLabel>결제수단</S.MobileLabel>

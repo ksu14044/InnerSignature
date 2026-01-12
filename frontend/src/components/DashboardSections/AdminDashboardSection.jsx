@@ -1,43 +1,31 @@
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import CommonDashboardSection from './CommonDashboardSection';
+import {
+  ResponsiveContainer,
+  LineChart,
+  BarChart,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  Line,
+  Bar
+} from 'recharts';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  fetchDashboardStats,
+  fetchMonthlyTrend,
+  fetchUserExpenseStats,
+  fetchCategoryRatio
+} from '../../api/expenseApi';
+import { getPendingUsers } from '../../api/userApi';
 import * as S from './style';
 
-const AdminDashboardSection = ({ filters }) => {
-  const navigate = useNavigate();
-
-  return (
-    <>
-      <CommonDashboardSection
-        chartType="user"
-        showPendingUsers={true}
-      />
-
-      {/* 관리 기능 */}
-      <S.ManagementSection>
-        <S.SectionTitle>관리 기능</S.SectionTitle>
-        <S.ManagementGrid>
-          <S.ManagementCard onClick={() => navigate('/users')}>
-            <S.ManagementIcon>👥</S.ManagementIcon>
-            <S.ManagementTitle>사용자 관리</S.ManagementTitle>
-            <S.ManagementDesc>회사 소속 사용자 관리</S.ManagementDesc>
-          </S.ManagementCard>
-          <S.ManagementCard onClick={() => navigate('/budget')}>
-            <S.ManagementIcon>💰</S.ManagementIcon>
-            <S.ManagementTitle>예산 관리</S.ManagementTitle>
-            <S.ManagementDesc>연간/월간 예산 설정</S.ManagementDesc>
-          </S.ManagementCard>
-          <S.ManagementCard onClick={() => navigate('/audit-rules')}>
-            <S.ManagementIcon>🛡️</S.ManagementIcon>
-            <S.ManagementTitle>감사 규칙</S.ManagementTitle>
-            <S.ManagementDesc>자동 감사 규칙 설정</S.ManagementDesc>
-          </S.ManagementCard>
-        </S.ManagementGrid>
-      </S.ManagementSection>
-    </>
-  );
-};
-
-export default AdminDashboardSection;
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 const AdminDashboardSection = ({ filters }) => {
   const { user } = useAuth();

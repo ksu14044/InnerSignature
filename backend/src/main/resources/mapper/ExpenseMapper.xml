@@ -398,9 +398,9 @@
             #{amount},
             #{actualPaidAmount},
             #{paymentMethod},
-            NULL,
+            #{paymentReqDate},
             #{cardNumber},
-            NULL,
+            #{isPreApproval, jdbcType=TINYINT},
             #{note},
             #{companyId}
         )
@@ -996,6 +996,25 @@
         UPDATE expense_detail_tb
         SET
             payment_method = #{paymentMethod}
+        WHERE expense_detail_id = #{expenseDetailId}
+          AND company_id = #{companyId}
+    </update>
+
+    <update id="updateExpenseDetail">
+        UPDATE expense_detail_tb
+        SET
+            category = #{category},
+            merchant_name = #{merchantName},
+            description = #{description},
+            amount = #{amount},
+            actual_paid_amount = #{actualPaidAmount},
+            payment_method = #{paymentMethod},
+            payment_req_date = #{paymentReqDate},
+            card_number = #{cardNumber},
+            is_pre_approval = #{isPreApproval, jdbcType=TINYINT},
+            note = #{note},
+            is_tax_deductible = #{isTaxDeductible, jdbcType=TINYINT},
+            non_deductible_reason = #{nonDeductibleReason}
         WHERE expense_detail_id = #{expenseDetailId}
           AND company_id = #{companyId}
     </update>

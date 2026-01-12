@@ -18,6 +18,7 @@ const ExpenseDetailModal = ({
     description: '',
     amount: '',
     paymentMethod: '',
+    paymentReqDate: new Date().toISOString().split('T')[0], // 오늘 날짜로 기본값 설정
     selectedCardId: '',
     cardNumber1: '',
     cardNumber2: '',
@@ -109,6 +110,7 @@ const ExpenseDetailModal = ({
         description: detail.description || '',
         amount: detail.amount || '',
         paymentMethod: detail.paymentMethod || '',
+        paymentReqDate: detail.paymentReqDate || new Date().toISOString().split('T')[0],
         selectedCardId: '',
         ...cardNumberParts,
         note: detail.note || ''
@@ -125,6 +127,7 @@ const ExpenseDetailModal = ({
         description: '',
         amount: '',
         paymentMethod: '',
+        paymentReqDate: new Date().toISOString().split('T')[0], // 오늘 날짜로 기본값 설정
         selectedCardId: '',
         cardNumber1: '',
         cardNumber2: '',
@@ -326,9 +329,9 @@ const ExpenseDetailModal = ({
 
             <S.FormGroup>
               <S.Label>결제수단 *</S.Label>
-              <S.Select 
-                name="paymentMethod" 
-                value={formData.paymentMethod} 
+              <S.Select
+                name="paymentMethod"
+                value={formData.paymentMethod}
                 onChange={handleChange}
               >
                 <option value="">선택하세요</option>
@@ -337,6 +340,17 @@ const ExpenseDetailModal = ({
                 <option value="CARD">개인카드</option>
                 <option value="COMPANY_CARD">회사카드</option>
               </S.Select>
+            </S.FormGroup>
+
+            <S.FormGroup>
+              <S.Label>지급 요청일 (사용일자) *</S.Label>
+              <S.Input
+                type="date"
+                name="paymentReqDate"
+                value={formData.paymentReqDate}
+                onChange={handleChange}
+                required
+              />
             </S.FormGroup>
 
             {(formData.paymentMethod === 'CARD' || formData.paymentMethod === 'COMPANY_CARD') && (
