@@ -65,7 +65,8 @@ const transformCategoryData = (data) => data.map(item => ({
 const CommonDashboardSection = ({
   chartTypes = ['user'], // Array of 'monthly' | 'user' | 'category'
   showCategoryChart = true,
-  showPendingUsers = true
+  showPendingUsers = true,
+  filters = null // 부모로부터 전달받은 필터 (null이면 전체 데이터)
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -76,10 +77,6 @@ const CommonDashboardSection = ({
   const [categoryData, setCategoryData] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({
-    startDate: null,
-    endDate: null
-  });
 
   const debounceTimer = useRef(null);
 
@@ -136,16 +133,16 @@ const CommonDashboardSection = ({
       setLoading(true);
 
       const promises = [
-        fetchDashboardStats(filters.startDate || null, filters.endDate || null)
+        fetchDashboardStats(filters?.startDate || null, filters?.endDate || null)
       ];
 
       // 각 차트 타입별로 API 호출
       chartTypes.forEach(type => {
-        promises.push(getChartData(type, filters.startDate || null, filters.endDate || null));
+        promises.push(getChartData(type, filters?.startDate || null, filters?.endDate || null));
       });
 
       if (showCategoryChart) {
-        promises.push(fetchCategoryRatio(filters.startDate || null, filters.endDate || null));
+        promises.push(fetchCategoryRatio(filters?.startDate || null, filters?.endDate || null));
       }
 
       if (showPendingUsers) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ResponsiveContainer,
@@ -36,7 +36,6 @@ const AdminDashboardSection = ({ filters }) => {
   const [categoryRatio, setCategoryRatio] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const debounceTimer = useRef(null);
 
   const loadDashboardData = useCallback(async () => {
     if (!user) return;
@@ -45,10 +44,10 @@ const AdminDashboardSection = ({ filters }) => {
       setLoading(true);
       
       const [statsRes, trendRes, userStatsRes, categoryRes, usersRes] = await Promise.all([
-        fetchDashboardStats(filters.startDate || null, filters.endDate || null),
-        fetchMonthlyTrend(filters.startDate || null, filters.endDate || null),
-        fetchUserExpenseStats(filters.startDate || null, filters.endDate || null),
-        fetchCategoryRatio(filters.startDate || null, filters.endDate || null),
+        fetchDashboardStats(null, null),
+        fetchMonthlyTrend(null, null),
+        fetchUserExpenseStats(null, null),
+        fetchCategoryRatio(null, null),
         getPendingUsers().catch(() => ({ success: false, data: [] }))
       ]);
 
@@ -72,23 +71,10 @@ const AdminDashboardSection = ({ filters }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, filters.startDate, filters.endDate]);
+  }, [user]);
 
   useEffect(() => {
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-    
-    // 디바운스 딜레이 300ms로 단축
-    debounceTimer.current = setTimeout(() => {
-      loadDashboardData();
-    }, 300);
-    
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    };
+    loadDashboardData();
   }, [loadDashboardData]);
 
   // useMemo로 차트 데이터 메모이제이션

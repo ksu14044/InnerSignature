@@ -68,6 +68,7 @@ const AccountantDashboardSection = ({ filters }) => {
       <CommonDashboardSection
         chartTypes={['monthly']}
         showPendingUsers={false}
+        filters={null} // 필터링하지 않음
       />
 
       {/* 최근 활동 */}

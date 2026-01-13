@@ -16,7 +16,7 @@ import AccountantDashboardSection from '../../components/DashboardSections/Accou
 import TaxAccountantDashboardSection from '../../components/DashboardSections/TaxAccountantDashboardSection';
 import AdminDashboardSection from '../../components/DashboardSections/AdminDashboardSection';
 import CEODashboardSection from '../../components/DashboardSections/CEODashboardSection';
-import { FaList, FaPlus, FaEye, FaChevronUp } from 'react-icons/fa';
+import { FaList, FaPlus, FaEye, FaChevronUp, FaCalendarAlt, FaChevronDown } from 'react-icons/fa';
 
 const MainDashboardPage = () => {
   const { user } = useAuth();
@@ -37,20 +37,23 @@ const MainDashboardPage = () => {
   const [subscription, setSubscription] = useState(null);
   const [totalCredit, setTotalCredit] = useState(0);
   
-  // 기간 필터 (기본값: 전체 기간)
+  // 기간 필터 (기본값: 이번 달)
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: ''
   });
+
+  // 현재 선택된 기간 표시를 위한 상태
+  const [selectedPeriod, setSelectedPeriod] = useState('이번 달');
 
   // 디바운스된 필터 적용 (500ms 지연으로 API 호출 최적화)
   const debouncedFilters = useDebounce(filters, 500);
 
   // 메모이제이션된 필터 파라미터
   const filterParams = useMemo(() => ({
-    ...debouncedFilters,
+    ...filters,
     drafterName: user?.role === 'USER' ? user.koreanName : ''
-  }), [debouncedFilters, user]);
+  }), [filters, user]);
 
   // 메모이제이션된 통계 계산 함수
   const calculateStats = useCallback((expenses) => {
@@ -163,6 +166,92 @@ const MainDashboardPage = () => {
     }));
   };
 
+  // 날짜를 YYYY-MM-DD 형식으로 변환하는 헬퍼 함수
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // 초기 로드 시 이번 달로 설정
+  useEffect(() => {
+    if (!filters.startDate && !filters.endDate) {
+      handleQuickFilter('thisMonth');
+    }
+  }, []);
+
+  // 개선된 빠른 기간 선택 핸들러
+  const handleQuickFilter = (period) => {
+    const today = new Date();
+    let startDate = '';
+    let endDate = '';
+    let periodLabel = '';
+
+    switch (period) {
+      case 'today':
+        startDate = endDate = formatDate(today);
+        periodLabel = '오늘';
+        break;
+      case 'yesterday':
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        startDate = endDate = formatDate(yesterday);
+        periodLabel = '어제';
+        break;
+      case 'thisWeek':
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        const weekEnd = new Date(today);
+        weekEnd.setDate(today.getDate() + (6 - today.getDay()));
+        startDate = formatDate(weekStart);
+        endDate = formatDate(weekEnd);
+        periodLabel = '이번 주';
+        break;
+      case 'lastWeek':
+        const lastWeekStart = new Date(today);
+        lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
+        const lastWeekEnd = new Date(today);
+        lastWeekEnd.setDate(today.getDate() - today.getDay() - 1);
+        startDate = formatDate(lastWeekStart);
+        endDate = formatDate(lastWeekEnd);
+        periodLabel = '지난 주';
+        break;
+      case 'thisMonth':
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        startDate = formatDate(monthStart);
+        endDate = formatDate(monthEnd);
+        periodLabel = '이번 달';
+        break;
+      case 'lastMonth':
+        const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+        startDate = formatDate(lastMonthStart);
+        endDate = formatDate(lastMonthEnd);
+        periodLabel = '지난 달';
+        break;
+      case 'thisYear':
+        const yearStart = new Date(today.getFullYear(), 0, 1);
+        const yearEnd = new Date(today.getFullYear(), 11, 31);
+        startDate = formatDate(yearStart);
+        endDate = formatDate(yearEnd);
+        periodLabel = '올해';
+        break;
+      case 'all':
+        startDate = '';
+        endDate = '';
+        periodLabel = '전체 기간';
+        break;
+    }
+
+    setFilters({
+      startDate,
+      endDate
+    });
+    setSelectedPeriod(periodLabel);
+  };
+
   // 통계 카드 클릭 핸들러 - 해당 상태의 결의서 목록 로드
   const handleStatCardClick = async (status) => {
     // 같은 상태를 다시 클릭하면 닫기
@@ -249,61 +338,50 @@ const MainDashboardPage = () => {
       {/* 기간 필터 */}
       <S.FilterSection>
         <S.FilterGroup>
-          <S.FilterLabel>시작일</S.FilterLabel>
-          <S.FilterInput
-            type="date"
-            value={filters.startDate}
-            onChange={(e) => handleFilterChange('startDate', e.target.value)}
-          />
-        </S.FilterGroup>
-        <S.FilterGroup>
-          <S.FilterLabel>종료일</S.FilterLabel>
-          <S.FilterInput
-            type="date"
-            value={filters.endDate}
-            onChange={(e) => handleFilterChange('endDate', e.target.value)}
-          />
+          <S.FilterLabel>
+            <FaCalendarAlt />
+            기간 선택
+          </S.FilterLabel>
+          <S.PeriodTabs>
+            <S.PeriodTab
+              active={selectedPeriod === '오늘'}
+              onClick={() => handleQuickFilter('today')}
+            >
+              오늘
+            </S.PeriodTab>
+            <S.PeriodTab
+              active={selectedPeriod === '이번 주'}
+              onClick={() => handleQuickFilter('thisWeek')}
+            >
+              이번 주
+            </S.PeriodTab>
+            <S.PeriodTab
+              active={selectedPeriod === '이번 달'}
+              onClick={() => handleQuickFilter('thisMonth')}
+            >
+              이번 달
+            </S.PeriodTab>
+            <S.PeriodTab
+              active={selectedPeriod === '올해'}
+              onClick={() => handleQuickFilter('thisYear')}
+            >
+              올해
+            </S.PeriodTab>
+            <S.PeriodTab
+              active={selectedPeriod === '전체 기간'}
+              onClick={() => handleQuickFilter('all')}
+            >
+              전체
+            </S.PeriodTab>
+          </S.PeriodTabs>
         </S.FilterGroup>
       </S.FilterSection>
-
-      {/* 구독 및 크레딧 카드 */}
-      {(subscription || totalCredit > 0) && (
-        <S.InfoCardsSection>
-          {subscription && (
-            <S.SubscriptionCard onClick={() => navigate('/subscriptions/manage')}>
-              <S.SubscriptionCardHeader>
-                <S.SubscriptionCardTitle>구독 상태</S.SubscriptionCardTitle>
-                {subscription.status === 'ACTIVE' && (
-                  <S.SubscriptionStatusBadge status={subscription.status}>활성</S.SubscriptionStatusBadge>
-                )}
-              </S.SubscriptionCardHeader>
-              <S.SubscriptionPlanName>{subscription.plan?.planName || '알 수 없음'} 플랜</S.SubscriptionPlanName>
-              {subscription.endDate && (
-                <S.SubscriptionExpiry>
-                  <S.SubscriptionExpiryLabel>만료일:</S.SubscriptionExpiryLabel>
-                  <S.SubscriptionExpiryDate>{subscription.endDate}</S.SubscriptionExpiryDate>
-                </S.SubscriptionExpiry>
-              )}
-              <S.SubscriptionCardFooter>구독 관리로 이동 →</S.SubscriptionCardFooter>
-            </S.SubscriptionCard>
-          )}
-          {totalCredit > 0 && (
-            <S.CreditCard onClick={() => navigate('/credits')}>
-              <S.CreditCardHeader>
-                <S.CreditCardTitle>사용 가능한 크레딧</S.CreditCardTitle>
-              </S.CreditCardHeader>
-              <S.CreditAmount>{totalCredit.toLocaleString()}원</S.CreditAmount>
-              <S.CreditCardFooter>크레딧 내역 보기 →</S.CreditCardFooter>
-            </S.CreditCard>
-          )}
-        </S.InfoCardsSection>
-      )}
 
       {/* 통계 카드 */}
       <S.StatsGrid>
         <S.StatCard>
           <S.StatLabel>합계 금액</S.StatLabel>
-          <S.StatValue>{stats.totalAmount.toLocaleString()}원</S.StatValue>
+          <S.StatValue status="default">{stats.totalAmount.toLocaleString()}원</S.StatValue>
         </S.StatCard>
 
         <S.StatCard
@@ -314,7 +392,7 @@ const MainDashboardPage = () => {
           selected={selectedStatus === 'WAIT'}
         >
           <S.StatLabel>대기</S.StatLabel>
-          <S.StatValue>{stats.waitCount}건</S.StatValue>
+          <S.StatValue status="wait">{stats.waitCount}건</S.StatValue>
           {selectedStatus === 'WAIT' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
         </S.StatCard>
 
@@ -326,7 +404,7 @@ const MainDashboardPage = () => {
           selected={selectedStatus === 'REJECTED'}
         >
           <S.StatLabel>반려</S.StatLabel>
-          <S.StatValue>{stats.rejectedCount}건</S.StatValue>
+          <S.StatValue status="rejected">{stats.rejectedCount}건</S.StatValue>
           {selectedStatus === 'REJECTED' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
         </S.StatCard>
 
@@ -338,7 +416,7 @@ const MainDashboardPage = () => {
           selected={selectedStatus === 'APPROVED'}
         >
           <S.StatLabel>승인</S.StatLabel>
-          <S.StatValue>{stats.approvedCount}건</S.StatValue>
+          <S.StatValue status="approved">{stats.approvedCount}건</S.StatValue>
           {selectedStatus === 'APPROVED' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
         </S.StatCard>
 
@@ -420,12 +498,64 @@ const MainDashboardPage = () => {
         </S.StatusExpenseSection>
       )}
 
+       
+
       {/* 권한별 대시보드 섹션 */}
       {user?.role === 'USER' && <UserDashboardSection filters={filters} />}
       {user?.role === 'ACCOUNTANT' && <AccountantDashboardSection filters={filters} />}
       {user?.role === 'TAX_ACCOUNTANT' && <TaxAccountantDashboardSection filters={filters} />}
       {user?.role === 'ADMIN' && <AdminDashboardSection filters={filters} />}
       {user?.role === 'CEO' && <CEODashboardSection filters={filters} />}
+
+      {/* 구독 카드 */}
+      {(subscription || totalCredit > 0) && (
+        <S.InfoCardsSection>
+          <S.SubscriptionCard onClick={() => navigate('/subscriptions/manage')}>
+            <S.SubscriptionCardHeader>
+              <S.SubscriptionCardTitle>💎 구독 정보</S.SubscriptionCardTitle>
+              {subscription?.status === 'ACTIVE' && (
+                <S.SubscriptionStatusBadge status={subscription.status}>활성</S.SubscriptionStatusBadge>
+              )}
+            </S.SubscriptionCardHeader>
+
+            <S.SubscriptionInfoGrid>
+              {totalCredit > 0 && (
+                <S.SubscriptionInfoItem>
+                  <S.InfoItemIcon>💰</S.InfoItemIcon>
+                  <S.InfoItemContent>
+                    <S.InfoItemValue>{totalCredit.toLocaleString()}원</S.InfoItemValue>
+                    <S.InfoItemLabel>사용 가능한 크레딧</S.InfoItemLabel>
+                  </S.InfoItemContent>
+                </S.SubscriptionInfoItem>
+              )}
+
+              {subscription && (
+                <S.SubscriptionInfoItem>
+                  <S.InfoItemIcon>📋</S.InfoItemIcon>
+                  <S.InfoItemContent>
+                    <S.InfoItemValue>{subscription.plan?.planName || '알 수 없음'}</S.InfoItemValue>
+                    <S.InfoItemLabel>현재 플랜</S.InfoItemLabel>
+                  </S.InfoItemContent>
+                </S.SubscriptionInfoItem>
+              )}
+
+              {subscription?.endDate && (
+                <S.SubscriptionInfoItem>
+                  <S.InfoItemIcon>📅</S.InfoItemIcon>
+                  <S.InfoItemContent>
+                    <S.InfoItemValue>{subscription.endDate}</S.InfoItemValue>
+                    <S.InfoItemLabel>만료 예정일</S.InfoItemLabel>
+                  </S.InfoItemContent>
+                </S.SubscriptionInfoItem>
+              )}
+            </S.SubscriptionInfoGrid>
+
+            <S.SubscriptionCardFooter>관리 페이지로 이동 →</S.SubscriptionCardFooter>
+          </S.SubscriptionCard>
+        </S.InfoCardsSection>
+      )}
+
+    
 
       {/* CEO이면서 소속 회사가 없을 때 회사 등록 모달 */}
       <CompanyRegistrationModal

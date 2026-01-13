@@ -15,10 +15,10 @@ export const Container = styled.div`
     padding: 0;
     width: 100%;
     max-width: 100%;
-    min-height: auto; /* 모바일에서는 컨텐츠 높이에 따라 조정 */
+    min-height: auto;
     background: #f5f5f5;
     padding-top: 56px;
-    padding-bottom: 80px; /* 하단 네비게이션 + 여유 공간 */
+    padding-bottom: 80px;
   }
 `;
 
@@ -607,24 +607,17 @@ export const NotificationItemInfo = styled.div`
 `;
 
 export const FilterSection = styled.div`
-  display: flex;
-  gap: 16px;
-  margin-bottom: 32px;
-  padding: 16px;
+  margin-bottom: 24px;
+  padding: 20px;
   background: white;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 12px;
-  }
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
   @media (max-width: 480px) {
-    margin: 8px;
-    padding: 12px;
-    border-radius: 8px;
+    margin: 0 0 20px 0;
+    padding: 16px;
+    border-radius: 6px;
   }
 `;
 
@@ -643,6 +636,15 @@ export const FilterLabel = styled.label`
   font-size: 14px;
   font-weight: 600;
   color: var(--dark-color);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+
+  svg {
+    color: var(--primary-color);
+    font-size: 16px;
+  }
 `;
 
 export const FilterInput = styled.input`
@@ -652,7 +654,7 @@ export const FilterInput = styled.input`
   font-size: 14px;
   transition: all 0.2s;
   min-height: 48px;
-  
+
   &:focus {
     outline: none;
     border-color: var(--primary-color);
@@ -664,22 +666,92 @@ export const FilterInput = styled.input`
   }
 `;
 
-export const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 32px;
+export const QuickFilterButtons = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+
+export const QuickButton = styled.button`
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: ${props => props.variant === 'secondary' ? '#f8f9fa' : 'white'};
+  color: ${props => props.variant === 'secondary' ? 'var(--dark-color)' : 'var(--primary-color)'};
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.variant === 'secondary' ? '#e9ecef' : 'var(--primary-color)'};
+    color: ${props => props.variant === 'secondary' ? 'var(--dark-color)' : 'white'};
+    border-color: var(--primary-color);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  @media (max-width: 480px) {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+`;
+
+export const PeriodTabs = styled.div`
+  display: flex;
+  gap: 2px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: 4px;
+  width: 100%;
+`;
+
+export const PeriodTab = styled.button`
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 6px;
+  background: ${props => props.active ? 'white' : 'transparent'};
+  color: ${props => props.active ? '#3b82f6' : '#6b7280'};
+  font-size: 14px;
+  font-weight: ${props => props.active ? '600' : '500'};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: ${props => props.active ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none'};
+
+  &:hover {
+    background: ${props => props.active ? 'white' : 'rgba(255, 255, 255, 0.5)'};
+    color: ${props => props.active ? '#3b82f6' : '#374151'};
+  }
 
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+`;
+
+export const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
   }
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
-    gap: 12px;
-    margin: 8px;
-    margin-bottom: 24px;
+    gap: 16px;
+    margin: 0 0 32px 0;
   }
 `;
 
@@ -687,56 +759,75 @@ export const StatCard = styled.div`
   padding: 24px;
   background: white;
   border-radius: 12px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
   border-left: 4px solid ${props => {
     switch(props.status) {
-      case 'wait': return 'var(--warning-color)';
-      case 'rejected': return 'var(--danger-color)';
-      case 'approved': return '#17a2b8';
-      case 'paid': return 'var(--success-color)';
-      default: return 'var(--primary-color)';
+      case 'wait': return '#f59e0b';
+      case 'rejected': return '#ef4444';
+      case 'approved': return '#10b981';
+      default: return '#3b82f6';
     }
   }};
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
-  
+  position: relative;
+
   ${props => props.selected && `
-    background-color: rgba(0, 123, 255, 0.05);
-    border-left-width: 6px;
+    background-color: #f8fafc;
+    border-color: #3b82f6;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1);
   `}
-  
+
   &:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
-    border-left-width: ${props => props.selected ? '6px' : '6px'};
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border-color: ${props => {
+      switch(props.status) {
+        case 'wait': return '#f59e0b';
+        case 'rejected': return '#ef4444';
+        case 'approved': return '#10b981';
+        default: return '#3b82f6';
+      }
+    }};
   }
 
   @media (max-width: 480px) {
-    padding: 16px;
+    padding: 20px;
     border-radius: 8px;
   }
 `;
 
 export const StatLabel = styled.div`
   font-size: 14px;
-  color: var(--secondary-color);
-  margin-bottom: 8px;
-  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
 `;
 
 export const StatValue = styled.div`
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--dark-color);
+  font-size: 32px;
+  font-weight: 800;
+  color: ${props => {
+    switch(props.status) {
+      case 'wait': return '#f59e0b';
+      case 'rejected': return '#ef4444';
+      case 'approved': return '#10b981';
+      default: return '#3b82f6';
+    }
+  }};
+  margin-bottom: 8px;
 
   @media (max-width: 768px) {
-    font-size: 24px;
+    font-size: 28px;
   }
 
   @media (max-width: 480px) {
-    font-size: 20px;
+    font-size: 24px;
   }
 `;
 
@@ -870,18 +961,18 @@ export const Button = styled.button`
 `;
 
 export const StatusExpenseSection = styled.div`
-  margin-top: 32px;
-  margin-bottom: 32px;
+  margin-top: 24px;
+  margin-bottom: 24px;
   background: white;
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  padding: 24px;
-  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  border: 1px solid #e5e7eb;
 
   @media (max-width: 480px) {
-    margin: 16px 8px;
+    margin: 16px 0;
     padding: 16px;
-    border-radius: 8px;
+    border-radius: 6px;
   }
 `;
 
@@ -934,10 +1025,32 @@ export const ViewAllButton = styled.button`
 `;
 
 export const LoadingMessage = styled.div`
-  padding: 40px;
+  padding: 40px 20px;
   text-align: center;
-  color: var(--secondary-color);
-  font-size: 16px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin: 20px 0;
+  border: 1px solid #e5e7eb;
+
+  &::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 50%;
+    border-top-color: #9ca3af;
+    animation: spin 1s ease-in-out infinite;
+    margin-left: 8px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 `;
 
 export const EmptyMessage = styled.div`
@@ -1111,40 +1224,30 @@ export const TabButton = styled.button`
 `;
 
 export const InfoCardsSection = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 32px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
+  margin-bottom: 40px;
 
   @media (max-width: 480px) {
-    margin: 8px;
-    margin-bottom: 24px;
-    gap: 12px;
+    margin: 0 0 32px 0;
   }
 `;
 
 export const SubscriptionCard = styled.div`
   padding: 20px;
   background: white;
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 
   &:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-color: #d1d5db;
   }
 
   @media (max-width: 480px) {
     padding: 16px;
-    border-radius: 8px;
+    border-radius: 6px;
   }
 `;
 
@@ -1156,107 +1259,89 @@ export const SubscriptionCardHeader = styled.div`
 `;
 
 export const SubscriptionCardTitle = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--secondary-color);
-`;
-
-export const SubscriptionStatusBadge = styled.span`
-  padding: 4px 12px;
-  background-color: ${props => props.status === 'ACTIVE' ? '#28a745' : '#6c757d'};
-  color: white;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-`;
-
-export const SubscriptionPlanName = styled.div`
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--dark-color);
-  margin-bottom: 12px;
-`;
-
-export const SubscriptionExpiry = styled.div`
+  color: #1e293b;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  color: var(--secondary-color);
-  margin-bottom: 12px;
 `;
 
-export const SubscriptionExpiryLabel = styled.span`
-  font-weight: 500;
-`;
-
-export const SubscriptionExpiryDate = styled.span`
-  font-weight: 600;
-  color: var(--dark-color);
-`;
-
-export const SubscriptionExpiryWarning = styled.span`
-  color: ${props => props.danger ? '#dc3545' : '#ffc107'};
-  font-weight: 600;
+export const SubscriptionStatusBadge = styled.span`
+  padding: 6px 12px;
+  background-color: ${props => props.status === 'ACTIVE' ? '#10b981' : '#6b7280'};
+  color: white;
+  border-radius: 20px;
   font-size: 12px;
+  font-weight: 600;
 `;
 
-export const SubscriptionExpiryInfo = styled.span`
-  color: var(--secondary-color);
-  font-size: 12px;
-`;
 
 export const SubscriptionCardFooter = styled.div`
   font-size: 14px;
-  color: var(--primary-color);
+  color: #3b82f6;
   font-weight: 600;
   text-align: right;
-  margin-top: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
 `;
 
-export const CreditCard = styled.div`
-  padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  cursor: pointer;
-  transition: all 0.2s;
-  color: white;
+export const SubscriptionInfoGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+`;
+
+export const SubscriptionInfoItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #f3f4f6;
+  transition: all 0.2s ease;
 
   &:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
-  }
-
-  @media (max-width: 480px) {
-    padding: 16px;
-    border-radius: 8px;
+    background: #ffffff;
+    border-color: #e5e7eb;
   }
 `;
 
-export const CreditCardHeader = styled.div`
+export const InfoItemIcon = styled.div`
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  justify-content: center;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #6b7280;
+  flex-shrink: 0;
 `;
 
-export const CreditCardTitle = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+export const InfoItemContent = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 `;
 
-export const CreditAmount = styled.div`
-  font-size: 32px;
+export const InfoItemValue = styled.div`
+  font-size: 18px;
   font-weight: 700;
-  color: white;
-  margin-bottom: 12px;
+  color: #1e293b;
+  line-height: 1.2;
 `;
 
-export const CreditCardFooter = styled.div`
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 600;
-  text-align: right;
+export const InfoItemLabel = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
 `;

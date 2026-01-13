@@ -70,6 +70,7 @@ const CEODashboardSection = ({ filters }) => {
       <CommonDashboardSection
         chartTypes={['monthly', 'user']}
         showPendingUsers={false}
+        filters={null} // 필터링하지 않음
       />
 
       {/* 관리 기능 */}
