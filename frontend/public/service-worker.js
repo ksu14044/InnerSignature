@@ -147,8 +147,8 @@ async function handleApiRequest(request) {
     // 네트워크 요청 시도
     const networkResponse = await fetch(request);
 
-    // 성공 시 캐시에 저장
-    if (networkResponse.ok) {
+    // 성공 시 캐시에 저장 (GET 요청만)
+    if (networkResponse.ok && request.method === 'GET') {
       const cache = await caches.open(API_CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }

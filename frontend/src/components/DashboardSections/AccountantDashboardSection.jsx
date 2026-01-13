@@ -90,15 +90,10 @@ const AccountantDashboardSection = ({ filters }) => {
         </S.RecentActivityList>
       </S.RecentActivitySection>
 
-      {/* 세무 기능 */}
+      {/* 세무 검토 기능 */}
       <S.ManagementSection>
-        <S.SectionTitle>세무 기능</S.SectionTitle>
+        <S.SectionTitle>세무 검토 기능</S.SectionTitle>
         <S.ManagementGrid>
-          <S.ManagementCard onClick={() => navigate('/tax-summary')}>
-            <S.ManagementIcon>📊</S.ManagementIcon>
-            <S.ManagementTitle>세무 요약</S.ManagementTitle>
-            <S.ManagementDesc>부가세 신고 및 세무 현황</S.ManagementDesc>
-          </S.ManagementCard>
           <S.ManagementCard onClick={() => downloadTaxReviewList()}>
             <S.ManagementIcon>📥</S.ManagementIcon>
             <S.ManagementTitle>엑셀 다운로드</S.ManagementTitle>
