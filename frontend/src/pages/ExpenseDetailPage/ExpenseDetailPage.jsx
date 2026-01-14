@@ -1419,7 +1419,6 @@ const ExpenseDetailPage = () => {
                               }}
                             >
                               <option value="CASH">현금</option>
-                              <option value="BANK_TRANSFER">계좌이체</option>
                               <option value="CARD">카드</option>
                               <option value="CHECK">수표</option>
                             </select>

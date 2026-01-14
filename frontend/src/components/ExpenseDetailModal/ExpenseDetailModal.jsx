@@ -360,7 +360,6 @@ const ExpenseDetailModal = ({
               >
                 <option value="">선택하세요</option>
                 <option value="CASH">현금</option>
-                <option value="BANK_TRANSFER">계좌이체</option>
                 <option value="CARD">개인카드</option>
                 <option value="COMPANY_CARD">회사카드</option>
               </S.Select>
