@@ -78,22 +78,8 @@ const AccountantDashboardSection = ({ filters }) => {
         </S.RecentActivityList>
       </S.RecentActivitySection>
 
-      {/* 세무 검토 기능 */}
-      <S.ManagementSection>
-        <S.SectionTitle>세무 검토 기능</S.SectionTitle>
-        <S.ManagementGrid>
-          <S.ManagementCard onClick={() => downloadTaxReviewList()}>
-            <S.ManagementIcon>📥</S.ManagementIcon>
-            <S.ManagementTitle>엑셀 다운로드</S.ManagementTitle>
-            <S.ManagementDesc>세무 검토용 엑셀 파일</S.ManagementDesc>
-          </S.ManagementCard>
-          <S.ManagementCard onClick={() => navigate('/missing-receipts')}>
-            <S.ManagementIcon>🔍</S.ManagementIcon>
-            <S.ManagementTitle>증빙 누락</S.ManagementTitle>
-            <S.ManagementDesc>영수증 없는 결의서 조회</S.ManagementDesc>
-          </S.ManagementCard>
-        </S.ManagementGrid>
-      </S.ManagementSection>
+      
+      
     </>
   );
 };

@@ -269,21 +269,6 @@ const CommonDashboardSection = ({
       {/* 필터 UI는 추후 추가 가능 */}
       {renderCharts()}
 
-      {/* 대시보드 통계 카드들 */}
-      <S.StatsGrid>
-        <S.StatCard>
-          <S.StatValue>{dashboardStats.totalCount || 0}</S.StatValue>
-          <S.StatLabel>총 결의서</S.StatLabel>
-        </S.StatCard>
-        <S.StatCard>
-          <S.StatValue>{dashboardStats.totalAmount?.toLocaleString() || 0}원</S.StatValue>
-          <S.StatLabel>총 금액</S.StatLabel>
-        </S.StatCard>
-        <S.StatCard>
-          <S.StatValue>{dashboardStats.averageAmount?.toLocaleString() || 0}원</S.StatValue>
-          <S.StatLabel>평균 금액</S.StatLabel>
-        </S.StatCard>
-      </S.StatsGrid>
     </>
   );
 };
