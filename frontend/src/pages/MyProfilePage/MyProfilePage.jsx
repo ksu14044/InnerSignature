@@ -5,7 +5,6 @@ import { getCurrentUser, updateCurrentUser, changePassword, getUserCompanies, ge
 import { FaSearch, FaTimes, FaCheck, FaTrash, FaArrowLeft } from 'react-icons/fa';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import CompanySearchModal from '../../components/CompanySearchModal/CompanySearchModal';
-import AppHeader from '../../components/AppHeader/AppHeader';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 
@@ -269,16 +268,6 @@ const MyProfilePage = () => {
 
   return (
     <S.Container>
-      <AppHeader 
-        title="내 정보 수정"
-        subtitle={`${authUser.koreanName}님 환영합니다`}
-        additionalButtons={
-          <S.Button onClick={() => navigate('/expenses')}>
-            <FaArrowLeft /> 지출결의서 목록
-          </S.Button>
-        }
-      />
-
       <S.ProfileCard data-tourid="tour-basic-info">
         <S.CardTitle>기본 정보</S.CardTitle>
         <form onSubmit={handleSubmit}>

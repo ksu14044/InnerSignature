@@ -4,6 +4,7 @@ import LoadingOverlay from './components/LoadingOverlay/LoadingOverlay';
 import MobileAppBar from './components/MobileAppBar/MobileAppBar';
 import MobileBottomNav from './components/MobileBottomNav/MobileBottomNav';
 import MobileFAB from './components/MobileFAB/MobileFAB';
+import AuthenticatedLayout from './components/AuthenticatedLayout/AuthenticatedLayout';
 import { registerServiceWorker } from './utils/serviceWorker';
 
 // Code Splitting 적용 - 각 페이지를 lazy loading으로 로드
@@ -42,33 +43,130 @@ function App() {
       <MobileAppBar />
       <Suspense fallback={<LoadingOverlay fullScreen={true} message="페이지 로딩 중..." />}>
         <Routes>
+          {/* 공개 라우트 (헤더 없음) */}
           <Route path="/" element={<LoginPage />} />
           <Route path="/find-id" element={<FindIdPage />} />
           <Route path="/find-password" element={<FindPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-          <Route path="/expenses" element={<ExpenseListPage />} />
-          <Route path="/detail/:id" element={<ExpenseDetailPage />} />
-          <Route path="/expenses/create" element={<ExpenseCreatePage />} />
-          <Route path="/expenses/edit/:id" element={<ExpenseCreatePage />} />
-          <Route path="/tax/summary" element={<TaxSummaryPage />} />
-          <Route path="/users" element={<UserManagementPage />} />
-          <Route path="/profile" element={<MyProfilePage />} />
-          <Route path="/dashboard" element={<MainDashboardPage />} />
-          <Route path="/dashboard/main" element={<MainDashboardPage />} />
-          <Route path="/expense-categories" element={<ExpenseCategoryPage />} />
-          <Route path="/my-approvers" element={<MyApproverPage />} />
-          <Route path="/subscriptions/manage" element={<SubscriptionManagementPage />} />
-          <Route path="/subscriptions/plans" element={<SubscriptionManagementPage />} />
-          <Route path="/subscriptions/payments" element={<SubscriptionManagementPage />} />
-          <Route path="/credits" element={<SubscriptionManagementPage />} />
-          <Route path="/monthly-closing" element={<BudgetManagementPage />} />
-          <Route path="/budget" element={<BudgetManagementPage />} />
-          <Route path="/audit-rules" element={<AuditRuleManagementPage />} />
-          <Route path="/audit-logs" element={<AuditRuleManagementPage />} />
-          <Route path="/missing-receipts" element={<MissingReceiptPage />} />
-          <Route path="/account-codes" element={<ExpenseCategoryPage />} />
-          <Route path="/cards" element={<CardManagementPage />} />
-          <Route path="/signatures" element={<SignatureManagementPage />} />
+          
+          {/* 인증 필요 라우트 (공통 헤더 표시) */}
+          <Route path="/expenses" element={
+            <AuthenticatedLayout>
+              <ExpenseListPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/detail/:id" element={
+            <AuthenticatedLayout>
+              <ExpenseDetailPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/expenses/create" element={
+            <AuthenticatedLayout>
+              <ExpenseCreatePage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/expenses/edit/:id" element={
+            <AuthenticatedLayout>
+              <ExpenseCreatePage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/tax/summary" element={
+            <AuthenticatedLayout>
+              <TaxSummaryPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/users" element={
+            <AuthenticatedLayout>
+              <UserManagementPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/profile" element={
+            <AuthenticatedLayout>
+              <MyProfilePage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/dashboard" element={
+            <AuthenticatedLayout>
+              <MainDashboardPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/dashboard/main" element={
+            <AuthenticatedLayout>
+              <MainDashboardPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/expense-categories" element={
+            <AuthenticatedLayout>
+              <ExpenseCategoryPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/my-approvers" element={
+            <AuthenticatedLayout>
+              <MyApproverPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/subscriptions/manage" element={
+            <AuthenticatedLayout>
+              <SubscriptionManagementPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/subscriptions/plans" element={
+            <AuthenticatedLayout>
+              <SubscriptionManagementPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/subscriptions/payments" element={
+            <AuthenticatedLayout>
+              <SubscriptionManagementPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/credits" element={
+            <AuthenticatedLayout>
+              <SubscriptionManagementPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/monthly-closing" element={
+            <AuthenticatedLayout>
+              <BudgetManagementPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/budget" element={
+            <AuthenticatedLayout>
+              <BudgetManagementPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/audit-rules" element={
+            <AuthenticatedLayout>
+              <AuditRuleManagementPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/audit-logs" element={
+            <AuthenticatedLayout>
+              <AuditRuleManagementPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/missing-receipts" element={
+            <AuthenticatedLayout>
+              <MissingReceiptPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/account-codes" element={
+            <AuthenticatedLayout>
+              <ExpenseCategoryPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/cards" element={
+            <AuthenticatedLayout>
+              <CardManagementPage />
+            </AuthenticatedLayout>
+          } />
+          <Route path="/signatures" element={
+            <AuthenticatedLayout>
+              <SignatureManagementPage />
+            </AuthenticatedLayout>
+          } />
+          
+          {/* SUPERADMIN은 별도 레이아웃 (자체 헤더 사용) */}
           <Route path="/superadmin/dashboard" element={<SuperAdminDashboardPage />} />
         </Routes>
       </Suspense>

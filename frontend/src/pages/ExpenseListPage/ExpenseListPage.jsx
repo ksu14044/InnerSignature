@@ -4,10 +4,9 @@ import { getUserCompanies, getPendingUsers, approveUser } from '../../api/userAp
 import * as S from './style';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaPlus, FaFilter, FaTimes, FaFileExcel, FaChartLine, FaCheck, FaTimesCircle, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaFilter, FaTimes, FaFileExcel, FaCheck, FaTimesCircle, FaTrash } from 'react-icons/fa';
 import { STATUS_KOREAN } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import AppHeader from '../../components/AppHeader/AppHeader';
 
 // 커스텀 훅들
 import { useExpenseFilters } from '../../hooks/useExpenseFilters';
@@ -408,32 +407,6 @@ const ExpenseListPage = () => {
 
   return (
     <S.Container>
-      <AppHeader 
-        title="지출결의서 목록"
-        subtitle={`환영합니다, ${user?.koreanName}님`}
-        additionalButtons={
-          <>
-            {/* 모든 사용자가 대시보드로 이동 가능 */}
-            <S.FilterButton 
-              variant="primary" 
-              onClick={() => navigate('/dashboard/main')}
-              title="대시보드로 이동"
-            >
-              <FaChartLine />
-              <span>대시보드</span>
-            </S.FilterButton>
-            {user?.role === 'TAX_ACCOUNTANT' && (
-              <S.FilterButton 
-                variant="primary" 
-                onClick={() => navigate('/tax/summary')}
-              >
-                <span>세무사 요약</span>
-              </S.FilterButton>
-            )}
-          </>
-        }
-      />
-
       <S.ActionBar>
         <S.TabContainer>
           <S.TabButton

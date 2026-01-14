@@ -5,7 +5,6 @@ import { getUserApprovers, createUserApprover, updateUserApprover, deleteUserApp
 import { fetchApprovers } from '../../api/expenseApi';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import AppHeader from '../../components/AppHeader/AppHeader';
 import { FaPlus, FaEdit, FaTrash, FaUserCheck } from 'react-icons/fa';
 
 const MyApproverPage = () => {
@@ -141,8 +140,6 @@ const MyApproverPage = () => {
 
   return (
     <S.Container>
-      <AppHeader title="담당 결재자 설정" />
-
       <S.InfoBox>
         <p>담당 결재자를 설정하면 지출결의서 작성 시 자동으로 결재자가 선택됩니다.</p>
         <p>담당 결재자가 1명이면 자동 선택되고, 2명 이상이면 선택할 수 있습니다.</p>

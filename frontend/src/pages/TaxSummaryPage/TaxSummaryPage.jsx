@@ -15,7 +15,7 @@ import { showApiError } from '../../utils/errorHandler';
 import * as S from './style';
 
 const TaxSummaryPage = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState({
@@ -233,20 +233,6 @@ const TaxSummaryPage = () => {
 
   return (
     <S.Container>
-      <S.Header data-tourid="tour-tax-header">
-        <div>
-          <S.Title>세무사 상세 분석</S.Title>
-          <S.SubTitle>결의서 검토 및 기간별 자료 수집</S.SubTitle>
-        </div>
-        <S.ButtonRow>
-          <S.Button onClick={() => navigate('/dashboard')}>대시보드</S.Button>
-          <S.Button onClick={() => navigate('/expenses')}>결의서 목록</S.Button>
-          <S.Button variant="danger" onClick={async () => { await logout(); navigate('/'); }}>
-            로그아웃
-          </S.Button>
-        </S.ButtonRow>
-      </S.Header>
-
       {/* 조회 필터 */}
       <S.FilterCard data-tourid="tour-tax-filter">
         <S.FilterGrid>

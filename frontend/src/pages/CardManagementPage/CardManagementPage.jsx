@@ -13,7 +13,6 @@ import {
 } from '../../api/cardApi';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import AppHeader from '../../components/AppHeader/AppHeader';
 import * as S from './style';
 
 const CardManagementPage = () => {
@@ -235,10 +234,6 @@ const CardManagementPage = () => {
 
   return (
     <S.Container>
-      <AppHeader 
-        title="카드 관리"
-      />
-
       {/* 탭 */}
       <S.Tabs>
         <S.Tab 

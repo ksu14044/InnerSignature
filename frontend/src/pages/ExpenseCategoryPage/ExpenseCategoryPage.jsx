@@ -13,7 +13,6 @@ import {
 import { getAccountCodeMappingList, createAccountCodeMapping, updateAccountCodeMapping, deleteAccountCodeMapping } from '../../api/accountCodeApi';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import AppHeader from '../../components/AppHeader/AppHeader';
 import { FaPlus, FaEdit, FaTrash, FaGripVertical, FaCode } from 'react-icons/fa';
 
 const ExpenseCategoryPage = ({ hideHeader = false }) => {
@@ -348,9 +347,6 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
   if (!canViewCategories && activeTab === 'categories') {
     return (
       <S.Container>
-        {!hideHeader && (
-          <AppHeader title="시스템 설정" />
-        )}
         <S.Alert>
           <strong>지출 항목 관리</strong>
           <p>이 기능은 다음 권한이 필요합니다:</p>
@@ -374,9 +370,6 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
   if (!canViewMapping && activeTab === 'accountCodes') {
     return (
       <S.Container>
-        {!hideHeader && (
-          <AppHeader title="시스템 설정" />
-        )}
         <S.Alert>
           <strong>계정 코드 매핑</strong>
           <p>이 기능은 다음 권한이 필요합니다:</p>
@@ -399,9 +392,6 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
 
   return (
     <S.Container>
-      {!hideHeader && (
-        <AppHeader title="시스템 설정" />
-      )}
 
       {/* 탭 버튼 */}
       <S.TabSection>

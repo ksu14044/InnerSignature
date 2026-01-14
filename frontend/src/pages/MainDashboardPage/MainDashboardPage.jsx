@@ -10,13 +10,12 @@ import { useDebounce, useOptimizedList } from '../../hooks/useOptimizedList';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
-import AppHeader from '../../components/AppHeader/AppHeader';
 import UserDashboardSection from '../../components/DashboardSections/UserDashboardSection';
 import AccountantDashboardSection from '../../components/DashboardSections/AccountantDashboardSection';
 import TaxAccountantDashboardSection from '../../components/DashboardSections/TaxAccountantDashboardSection';
 import AdminDashboardSection from '../../components/DashboardSections/AdminDashboardSection';
 import CEODashboardSection from '../../components/DashboardSections/CEODashboardSection';
-import { FaList, FaPlus, FaEye, FaChevronUp, FaCalendarAlt, FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaPlus, FaEye, FaChevronUp, FaCalendarAlt, FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const MainDashboardPage = () => {
   const { user } = useAuth();
@@ -351,32 +350,6 @@ const MainDashboardPage = () => {
 
   return (
     <S.Container>
-      <AppHeader 
-        title="대시보드"
-        subtitle={`환영합니다, ${user.koreanName}님`}
-        additionalButtons={
-          <>
-            <S.FilterButton 
-              variant="secondary" 
-              onClick={() => navigate('/expenses')}
-              title="결의서 목록으로 이동"
-            >
-              <FaList />
-              <span>결의서 목록</span>
-            </S.FilterButton>
-            {user?.role === 'TAX_ACCOUNTANT' && (
-              <S.FilterButton 
-                variant="primary" 
-                onClick={() => navigate('/tax/summary')}
-              >
-                <span>세무사 요약</span>
-              </S.FilterButton>
-            )}
-          </>
-        }
-      />
-
-
       {/* 기간 필터 */}
       <S.FilterSection>
         <S.FilterGroup>
