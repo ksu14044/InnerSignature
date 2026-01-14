@@ -1,18 +1,13 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchPendingApprovals, fetchExpenseList, downloadTaxReviewList } from '../../api/expenseApi';
-import { useIsMobile } from '../../hooks/useMediaQuery';
 import CommonDashboardSection from './CommonDashboardSection';
 import * as S from './style';
-
-// Lazy load 모바일 컴포넌트
-const MobileAccountantDashboard = lazy(() => import('../mobile/MobileAccountantDashboard'));
 
 const AccountantDashboardSection = ({ filters }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isMobile = useIsMobile();
 
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [approvedExpenses, setApprovedExpenses] = useState([]);
@@ -42,19 +37,7 @@ const AccountantDashboardSection = ({ filters }) => {
     loadAdditionalData();
   }, [loadAdditionalData]);
 
-  // 모바일 버전
-  if (isMobile) {
-    return (
-      <Suspense fallback={<S.LoadingMessage>로딩 중...</S.LoadingMessage>}>
-        <MobileAccountantDashboard
-          pendingApprovals={pendingApprovals}
-          approvedExpenses={approvedExpenses}
-        />
-      </Suspense>
-    );
-  }
-
-  // 데스크톱 버전
+  // 데스크톱 및 모바일 공통 버전 (CommonDashboardSection이 모바일 렌더링 자동 처리)
   return (
     <>
       {/* 대기 중인 결재 알림 */}
@@ -67,9 +50,10 @@ const AccountantDashboardSection = ({ filters }) => {
         </S.AlertSection>
       )}
 
-      {/* 메인 차트 - 월별 추이 */}
+      {/* 메인 차트 - 월별 추이, 사용자별 지출 합계, 카테고리별 비율 */}
       <CommonDashboardSection
-        chartTypes={['monthly']}
+        chartTypes={['monthly', 'user']}
+        showCategoryChart={true}
         showPendingUsers={false}
         filters={filters} // 필터 적용
       />

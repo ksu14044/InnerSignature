@@ -1,19 +1,13 @@
-import { lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useIsMobile } from '../../hooks/useMediaQuery';
 import CommonDashboardSection from './CommonDashboardSection';
 import { getPendingUsers } from '../../api/userApi';
 import { useAuth } from '../../contexts/AuthContext';
-import { useState, useEffect, useCallback } from 'react';
 import * as S from './style';
-
-// Lazy load 모바일 컴포넌트
-const MobileCEODashboard = lazy(() => import('../mobile/MobileCEODashboard'));
 
 const CEODashboardSection = ({ filters }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isMobile = useIsMobile();
   const [pendingUsers, setPendingUsers] = useState([]);
 
   // 승인 대기 사용자 데이터 로드
@@ -32,29 +26,7 @@ const CEODashboardSection = ({ filters }) => {
     loadPendingUsers();
   }, [loadPendingUsers]);
 
-  // 모바일 버전
-  if (isMobile) {
-    try {
-      return (
-        <Suspense fallback={
-          <div style={{ padding: '20px', textAlign: 'center' }}>
-            로딩 중...
-          </div>
-        }>
-          <MobileCEODashboard />
-        </Suspense>
-      );
-    } catch (error) {
-      console.error('MobileCEODashboard 렌더링 오류:', error);
-      return (
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          모바일 대시보드를 불러올 수 없습니다.
-        </div>
-      );
-    }
-  }
-
-  // 데스크톱 버전 - 사용자별 지출 합계 위주로 표시
+  // 데스크톱 및 모바일 공통 버전 (CommonDashboardSection이 모바일 렌더링 자동 처리)
   return (
     <>
       {/* 승인 대기 사용자 */}
@@ -69,6 +41,7 @@ const CEODashboardSection = ({ filters }) => {
 
       <CommonDashboardSection
         chartTypes={['monthly', 'user']}
+        showCategoryChart={true}
         showPendingUsers={false}
         filters={filters} // 필터 적용
       />

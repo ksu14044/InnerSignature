@@ -386,25 +386,6 @@ const MainDashboardPage = () => {
               <FaChevronRight />
             </S.NavButton>
           </S.MonthNavigator>
-          <S.QuickMonthButtons>
-            <S.QuickButton onClick={() => handleMonthFilter(new Date())}>
-              이번 달
-            </S.QuickButton>
-            <S.QuickButton onClick={() => {
-              const lastMonth = new Date();
-              lastMonth.setMonth(lastMonth.getMonth() - 1);
-              handleMonthFilter(lastMonth);
-            }}>
-              지난 달
-            </S.QuickButton>
-            <S.QuickButton onClick={() => {
-              const twoMonthsAgo = new Date();
-              twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-              handleMonthFilter(twoMonthsAgo);
-            }}>
-              2개월 전
-            </S.QuickButton>
-          </S.QuickMonthButtons>
         </S.FilterGroup>
       </S.FilterSection>
 

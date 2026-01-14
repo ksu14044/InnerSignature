@@ -23,7 +23,6 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import { useIsMobile } from '../../hooks/useMediaQuery';
 import * as S from './style';
 
 // 차트 타입별 설정
@@ -51,10 +50,12 @@ const transformMonthlyData = (data) => data.map(item => ({
   amount: item.totalAmount
 }));
 
-const transformUserData = (data) => data.map(item => ({
-  name: item.userName,
-  amount: item.totalAmount
-}));
+const transformUserData = (data) => data
+  .filter(item => item.totalAmount > 0) // 지출 내역이 있는 사용자만 필터링
+  .map(item => ({
+    name: item.userName,
+    amount: item.totalAmount
+  }));
 
 const transformCategoryData = (data) => data.map(item => ({
   name: item.category,
@@ -70,7 +71,6 @@ const CommonDashboardSection = ({
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isMobile = useIsMobile();
 
   const [dashboardStats, setDashboardStats] = useState({});
   const [chartDatas, setChartDatas] = useState({});
@@ -205,47 +205,8 @@ const CommonDashboardSection = ({
     };
   }, [loadDashboardData]);
 
-  // 모바일 대시보드용 간단 차트 렌더링
-  const renderMobileChart = () => {
-    const firstType = chartTypes[0];
-    const chartData = transformedChartDatas[firstType];
-    if (!chartData || chartData.length === 0) return null;
-
-    const config = CHART_CONFIGS[firstType];
-
-    return (
-      <S.Section>
-        <S.SectionTitle>{config.title}</S.SectionTitle>
-        <S.ChartSection>
-          {chartData.map((item, idx) => {
-            const maxAmount = Math.max(...chartData.map(d => d.amount));
-            const barWidth = maxAmount > 0 ? (item.amount / maxAmount) * 100 : 0;
-
-            return (
-              <S.StatusItem key={item.name}>
-                <S.StatusInfo>
-                  <S.StatusName>{item.name}</S.StatusName>
-                  <S.StatusCount></S.StatusCount>
-                </S.StatusInfo>
-                <S.StatusBar>
-                  <S.StatusBarFill
-                    width={barWidth}
-                    color={`hsl(${idx * 137.5 % 360}, 70%, 50%)`}
-                  />
-                </S.StatusBar>
-                <S.StatusAmount>
-                  {item.amount.toLocaleString()}원
-                </S.StatusAmount>
-              </S.StatusItem>
-            );
-          })}
-        </S.ChartSection>
-      </S.Section>
-    );
-  };
-
-  // 데스크톱 차트 렌더링
-  const renderDesktopCharts = () => (
+  // 차트 렌더링 (데스크톱 및 모바일 공통)
+  const renderCharts = () => (
     <S.ChartsGrid>
       {/* 각 차트 타입별 렌더링 */}
       {chartTypes.map(type => {
@@ -306,7 +267,7 @@ const CommonDashboardSection = ({
   return (
     <>
       {/* 필터 UI는 추후 추가 가능 */}
-      {isMobile ? renderMobileChart() : renderDesktopCharts()}
+      {renderCharts()}
 
       {/* 대시보드 통계 카드들 */}
       <S.StatsGrid>

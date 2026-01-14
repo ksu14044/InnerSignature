@@ -579,5 +579,92 @@ export const ActivityDate = styled.div`
   }
 `;
 
+// 모바일 차트용 스타일 컴포넌트
+export const Section = styled.div`
+  margin-bottom: 24px;
 
+  @media (max-width: 480px) {
+    margin-bottom: 16px;
+    padding: 0 8px;
+  }
+`;
+
+export const ChartSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+    margin-top: 12px;
+  }
+`;
+
+export const StatusItem = styled.div`
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    border-radius: 16px;
+  }
+`;
+
+export const StatusInfo = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+`;
+
+export const StatusName = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dark-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
+`;
+
+export const StatusCount = styled.div`
+  font-size: 14px;
+  color: var(--secondary-color);
+`;
+
+export const StatusBar = styled.div`
+  width: 100%;
+  height: 8px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 8px 0;
+`;
+
+export const StatusBarFill = styled.div`
+  height: 100%;
+  width: ${props => props.width || 0}%;
+  background-color: ${props => props.color || '#8884d8'};
+  border-radius: 4px;
+  transition: width 0.3s ease;
+`;
+
+export const StatusAmount = styled.div`
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dark-color);
+  text-align: right;
+  margin-top: 4px;
+
+  @media (max-width: 480px) {
+    font-size: 16px;
+  }
+`;
 

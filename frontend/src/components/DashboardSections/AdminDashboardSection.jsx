@@ -1,105 +1,30 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  ResponsiveContainer,
-  LineChart,
-  BarChart,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  Line,
-  Bar
-} from 'recharts';
 import { useAuth } from '../../contexts/AuthContext';
-import {
-  fetchDashboardStats,
-  fetchMonthlyTrend,
-  fetchUserExpenseStats,
-  fetchCategoryRatio
-} from '../../api/expenseApi';
 import { getPendingUsers } from '../../api/userApi';
+import CommonDashboardSection from './CommonDashboardSection';
 import * as S from './style';
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 const AdminDashboardSection = ({ filters }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [dashboardStats, setDashboardStats] = useState(null);
-  const [monthlyTrend, setMonthlyTrend] = useState([]);
-  const [userExpenseStats, setUserExpenseStats] = useState([]);
-  const [categoryRatio, setCategoryRatio] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  const loadDashboardData = useCallback(async () => {
-    if (!user) return;
-
+  // 승인 대기 사용자 데이터 로드
+  const loadPendingUsers = useCallback(async () => {
     try {
-      setLoading(true);
-      
-      const [statsRes, trendRes, userStatsRes, categoryRes, usersRes] = await Promise.all([
-        fetchDashboardStats(filters?.startDate || null, filters?.endDate || null),
-        fetchMonthlyTrend(null, null), // 월별 추이는 전체 기간 데이터로 유지
-        fetchUserExpenseStats(filters?.startDate || null, filters?.endDate || null),
-        fetchCategoryRatio(filters?.startDate || null, filters?.endDate || null),
-        getPendingUsers().catch(() => ({ success: false, data: [] }))
-      ]);
-
-      if (statsRes.success) {
-        setDashboardStats(statsRes.data);
-      }
-      if (trendRes.success) {
-        setMonthlyTrend(trendRes.data || []);
-      }
-      if (userStatsRes.success) {
-        setUserExpenseStats(userStatsRes.data || []);
-      }
-      if (categoryRes.success) {
-        setCategoryRatio(categoryRes.data || []);
-      }
-      if (usersRes.success) {
-        setPendingUsers(usersRes.data || []);
+      const response = await getPendingUsers();
+      if (response.success) {
+        setPendingUsers(response.data || []);
       }
     } catch (error) {
-      console.error('대시보드 데이터 로드 실패:', error);
-    } finally {
-      setLoading(false);
+      console.error('승인 대기 사용자 조회 실패:', error);
     }
-  }, [user, filters]);
+  }, []);
 
   useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
-
-  // useMemo로 차트 데이터 메모이제이션
-  const userExpenseChartData = useMemo(() =>
-    userExpenseStats.map(item => ({
-      name: item.userName,
-      총금액: item.totalAmount,
-      결의서수: item.totalCount,
-      승인율: (item.approvalRate * 100).toFixed(1)
-    })),
-    [userExpenseStats]
-  );
-
-  const categoryChartData = useMemo(() => 
-    categoryRatio.map(item => ({
-      name: item.category,
-      value: item.amount,
-      ratio: (item.ratio * 100).toFixed(1)
-    })),
-    [categoryRatio]
-  );
-
-  if (loading) {
-    return <S.LoadingMessage>로딩 중...</S.LoadingMessage>;
-  }
+    loadPendingUsers();
+  }, [loadPendingUsers]);
 
   return (
     <>
@@ -113,79 +38,13 @@ const AdminDashboardSection = ({ filters }) => {
         </S.AlertSection>
       )}
 
-
-      {/* 차트 */}
-      <S.ChartsGrid>
-        {monthlyTrend.length > 0 && (
-          <S.ChartCard>
-            <S.ChartTitle>월별 지출 추이</S.ChartTitle>
-            <S.ChartContainer>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="yearMonth" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => value.toLocaleString()} />
-                  <Legend />
-                  <Line type="monotone" dataKey="totalAmount" stroke="#8884d8" name="금액" strokeWidth={2} />
-                  <Line type="monotone" dataKey="count" stroke="#82ca9d" name="건수" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </S.ChartContainer>
-          </S.ChartCard>
-        )}
-
-        {userExpenseChartData.length > 0 && (
-          <S.ChartCard>
-            <S.ChartTitle>사용자별 지출 합계</S.ChartTitle>
-            <S.ChartContainer>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={userExpenseChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip formatter={(value, name) => {
-                    if (name === '승인율') return `${value}%`;
-                    if (name === '총금액') return `${value.toLocaleString()}원`;
-                    return value;
-                  }} />
-                  <Legend />
-                  <Bar yAxisId="left" dataKey="총금액" fill="#8884d8" name="총금액" />
-                  <Bar yAxisId="right" dataKey="결의서수" fill="#82ca9d" name="결의서수" />
-                </BarChart>
-              </ResponsiveContainer>
-            </S.ChartContainer>
-          </S.ChartCard>
-        )}
-
-        {categoryChartData.length > 0 && (
-          <S.ChartCard>
-            <S.ChartTitle>카테고리별 비율</S.ChartTitle>
-            <S.ChartContainer>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, ratio }) => `${name}: ${ratio}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {categoryChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => value.toLocaleString() + '원'} />
-                </PieChart>
-              </ResponsiveContainer>
-            </S.ChartContainer>
-          </S.ChartCard>
-        )}
-      </S.ChartsGrid>
+      {/* 차트 - CommonDashboardSection 사용 */}
+      <CommonDashboardSection
+        chartTypes={['monthly', 'user']}
+        showCategoryChart={true}
+        showPendingUsers={false}
+        filters={filters}
+      />
 
       {/* 관리 메뉴 */}
       <S.ManagementSection>
@@ -228,5 +87,3 @@ const AdminDashboardSection = ({ filters }) => {
 };
 
 export default AdminDashboardSection;
-
-
