@@ -86,6 +86,11 @@
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
+
+  /* 공통 레이아웃(페이지 바디) */
+  --page-max-width: 1200px;
+  --page-padding: 20px;
+  --page-padding-tablet: 15px;
 }
 
 * {

@@ -3,12 +3,12 @@ import styled from '@emotion/styled';
 // 대부분 페이지의 S.Container와 동일한 폭/패딩 규칙으로 헤더를 감쌉니다.
 // (페이지별 Container를 제거하지 않고도 헤더와 바디 정렬을 맞추는 목적)
 export const HeaderContainer = styled.div`
-  max-width: 1200px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 20px;
+  padding: var(--page-padding);
 
   @media (max-width: 768px) {
-    padding: 15px;
+    padding: var(--page-padding-tablet);
   }
 
   @media (max-width: 480px) {

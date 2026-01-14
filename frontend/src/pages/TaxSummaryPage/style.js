@@ -1,9 +1,9 @@
 import styled from '@emotion/styled';
 
 export const Container = styled.div`
-  max-width: 1100px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 20px;
+  padding: var(--page-padding);
   min-height: 100vh;
 
   @media (max-width: 480px) {
