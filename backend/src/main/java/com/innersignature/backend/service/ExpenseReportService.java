@@ -4,6 +4,7 @@ import com.innersignature.backend.dto.ApprovalLineDto;
 import com.innersignature.backend.dto.ExpenseDetailDto;
 import com.innersignature.backend.dto.ExpenseReportDto;
 import com.innersignature.backend.dto.PagedResponse;
+import com.innersignature.backend.dto.UserDto;
 import com.innersignature.backend.mapper.ExpenseMapper;
 import com.innersignature.backend.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import java.util.List;
 public class ExpenseReportService {
 
     private final ExpenseMapper expenseMapper;
+    private final UserService userService;
 
     /**
      * 결의서 목록 조회 (페이지네이션 미적용)
@@ -200,10 +202,32 @@ public class ExpenseReportService {
     }
 
     private boolean canAccessExpense(ExpenseReportDto report, Long userId) {
-        // 본인 결의서이거나, 결재자인 경우 접근 가능
-        return report.getDrafterId().equals(userId) ||
-               (report.getApprovalLines() != null &&
-                report.getApprovalLines().stream().anyMatch(a -> a.getApproverId().equals(userId)));
+        if (userId == null) {
+            return false;
+        }
+        
+        // 작성자는 항상 접근 가능
+        if (report.getDrafterId().equals(userId)) {
+            return true;
+        }
+        
+        // 결재자는 접근 가능
+        if (report.getApprovalLines() != null &&
+            report.getApprovalLines().stream().anyMatch(a -> a.getApproverId().equals(userId))) {
+            return true;
+        }
+        
+        // ADMIN, CEO, ACCOUNTANT, TAX_ACCOUNTANT는 모든 문서 조회 가능
+        UserDto user = userService.selectUserById(userId);
+        if (user != null) {
+            String role = user.getRole();
+            if ("ADMIN".equals(role) || "CEO".equals(role) || 
+                "ACCOUNTANT".equals(role) || "TAX_ACCOUNTANT".equals(role)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     private boolean canModifyExpense(ExpenseReportDto report, Long userId) {
