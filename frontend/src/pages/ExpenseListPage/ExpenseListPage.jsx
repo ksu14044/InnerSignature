@@ -160,12 +160,8 @@ const ExpenseListPage = () => {
 
     // URL 파라미터에서 탭 및 필터 읽기 및 적용
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'MY_APPROVALS' || tabParam === 'MY_APPROVAL_HISTORY' || tabParam === 'PAYMENT_PENDING') {
+    if (tabParam === 'MY_APPROVALS' || tabParam === 'MY_APPROVAL_HISTORY') {
       setActiveTab(tabParam);
-      // 결제 대기 탭인 경우 데이터 로드
-      if (tabParam === 'PAYMENT_PENDING' && user?.role === 'ACCOUNTANT') {
-        loadPaymentPendingList(1);
-      }
     } else {
       setActiveTab('MY_REPORTS');
     }
@@ -218,10 +214,6 @@ const ExpenseListPage = () => {
       // 내가 결재한 문서 이력 로드
       loadMyApprovedReports();
 
-      // ACCOUNTANT인 경우 결제 대기 건도 함께 로드
-      if (user?.role === 'ACCOUNTANT') {
-        loadPaymentPendingList(1);
-      }
     }
 
     // CEO이고 회사가 하나도 없으면 회사 등록 여부를 먼저 확인 후 모달 표시
@@ -393,15 +385,13 @@ const ExpenseListPage = () => {
         return list;
       case 'MY_APPROVALS':
         return pendingApprovals;
-      case 'PAYMENT_PENDING':
-        return paymentPendingList;
       default:
+        // 'MY_APPROVAL_HISTORY' 포함
         return myApprovedList;
     }
-  }, [activeTab, list, pendingApprovals, paymentPendingList, myApprovedList]);
+  }, [activeTab, list, pendingApprovals, myApprovedList]);
 
   const isMyReportsTab = activeTab === 'MY_REPORTS';
-  const isPaymentPendingTab = activeTab === 'PAYMENT_PENDING';
 
   if (loading) return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
 
@@ -433,19 +423,6 @@ const ExpenseListPage = () => {
           >
             내가 결재한 문서
           </S.TabButton>
-          {user?.role === 'ACCOUNTANT' && (
-            <S.TabButton
-              type="button"
-              active={activeTab === 'PAYMENT_PENDING'}
-              onClick={() => {
-                setActiveTab('PAYMENT_PENDING');
-                loadPaymentPendingList(1);
-              }}
-              aria-label="결제 대기"
-            >
-              결제 대기
-            </S.TabButton>
-          )}
         </S.TabContainer>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           {isMyReportsTab && (
@@ -518,21 +495,7 @@ const ExpenseListPage = () => {
         />
       )}
 
-      {/* 결제 대기 탭 페이지네이션 */}
-      {isPaymentPendingTab && paymentPendingTotalPages > 1 && (
-        <ExpensePagination
-          currentPage={paymentPendingPage}
-          totalPages={paymentPendingTotalPages}
-          totalElements={paymentPendingTotalElements}
-          pageSize={paginationHook.pageSize}
-          onPageChange={loadPaymentPendingList}
-          isPaymentPending={true}
-          paymentPendingPage={paymentPendingPage}
-          paymentPendingTotalPages={paymentPendingTotalPages}
-          paymentPendingTotalElements={paymentPendingTotalElements}
-          onPaymentPendingPageChange={loadPaymentPendingList}
-        />
-      )}
+      {/* 결제 대기 탭 페이지네이션 제거 (ACCOUNTANT 전용 탭 사용 중단) */}
 
       {/* 모바일용 카드 뷰 */}
       <S.MobileCardContainer>
