@@ -115,7 +115,7 @@ const CommonDashboardSection = ({
   const getChartData = useCallback(async (chartType, startDate, endDate) => {
     switch (chartType) {
       case 'monthly':
-        return await fetchMonthlyTrend(startDate, endDate);
+        return await fetchMonthlyTrend(null, null); // 월별 추이는 전체 기간 데이터로 유지
       case 'user':
         return await fetchUserExpenseStats(startDate, endDate);
       case 'category':

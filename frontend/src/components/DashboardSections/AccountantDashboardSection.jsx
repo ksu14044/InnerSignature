@@ -46,7 +46,10 @@ const AccountantDashboardSection = ({ filters }) => {
   if (isMobile) {
     return (
       <Suspense fallback={<S.LoadingMessage>로딩 중...</S.LoadingMessage>}>
-        <MobileAccountantDashboard />
+        <MobileAccountantDashboard
+          pendingApprovals={pendingApprovals}
+          approvedExpenses={approvedExpenses}
+        />
       </Suspense>
     );
   }
@@ -68,7 +71,7 @@ const AccountantDashboardSection = ({ filters }) => {
       <CommonDashboardSection
         chartTypes={['monthly']}
         showPendingUsers={false}
-        filters={null} // 필터링하지 않음
+        filters={filters} // 필터 적용
       />
 
       {/* 최근 활동 */}

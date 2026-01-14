@@ -12,6 +12,8 @@ const MobileAppBar = ({ title, onMenuClick }) => {
   const { user, logout, companies, switchCompany } = useAuth();
   const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   // const [taxRevisionRequests, setTaxRevisionRequests] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -153,9 +155,157 @@ const MobileAppBar = ({ title, onMenuClick }) => {
     }
   };
 
+  // 모달 렌더링 함수들
+  const renderNotificationModal = () => {
+    if (!isNotificationModalOpen) return null;
+
+    return (
+      <S.NotificationModal onClick={() => setIsNotificationModalOpen(false)}>
+        <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
+          <S.NotificationModalHeader>
+            <h3>서명 대기 건 ({pendingApprovals.length}건)</h3>
+            <button onClick={() => setIsNotificationModalOpen(false)}>×</button>
+          </S.NotificationModalHeader>
+          <S.NotificationModalBody>
+            {pendingApprovals.length === 0 ? (
+              <p>서명 대기 중인 건이 없습니다.</p>
+            ) : (
+              <S.NotificationList>
+                {pendingApprovals.map((item) => (
+                  <S.NotificationItem
+                    key={item.expenseReportId}
+                    onClick={() => {
+                      navigate(`/detail/${item.expenseReportId}`);
+                      setIsNotificationModalOpen(false);
+                    }}
+                  >
+                    <S.NotificationItemTitle>
+                      {item.summaryDescription || item.firstDescription || '-'}
+                    </S.NotificationItemTitle>
+                    <S.NotificationItemInfo>
+                      <span>문서번호: {item.expenseReportId}</span>
+                      <span>작성자: {item.drafterName}</span>
+                      <span>작성일: {item.reportDate}</span>
+                      <span>금액: {item.totalAmount.toLocaleString()}원</span>
+                    </S.NotificationItemInfo>
+                  </S.NotificationItem>
+                ))}
+              </S.NotificationList>
+            )}
+          </S.NotificationModalBody>
+        </S.NotificationModalContent>
+      </S.NotificationModal>
+    );
+  };
+
+  const renderApprovalModal = () => {
+    if (!isApprovalModalOpen) return null;
+
+    return (
+      <S.NotificationModal onClick={() => setIsApprovalModalOpen(false)}>
+        <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
+          <S.NotificationModalHeader>
+            <h3>승인 대기 사용자 ({pendingUsers.length}건)</h3>
+            <button onClick={() => setIsApprovalModalOpen(false)}>×</button>
+          </S.NotificationModalHeader>
+          <S.NotificationModalBody>
+            {pendingUsers.length === 0 ? (
+              <p>승인 대기 중인 사용자가 없습니다.</p>
+            ) : (
+              <S.NotificationList>
+                {pendingUsers.map((pendingUser) => (
+                  <S.NotificationItem key={pendingUser.userId}>
+                    <S.NotificationItemTitle>{pendingUser.koreanName} ({pendingUser.username})</S.NotificationItemTitle>
+                    <S.NotificationItemInfo>
+                      <span>역할: {pendingUser.role}</span>
+                      <span>직급: {pendingUser.position || '-'}</span>
+                      <span>이메일: {pendingUser.email || '-'}</span>
+                    </S.NotificationItemInfo>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await approveUser(pendingUser.userId, 'APPROVE');
+                            if (response.success) {
+                              setPendingUsers(pendingUsers.filter(u => u.userId !== pendingUser.userId));
+                              const refreshResponse = await getPendingUsers();
+                              if (refreshResponse.success) {
+                                setPendingUsers(refreshResponse.data || []);
+                              }
+                              alert('사용자가 승인되었습니다.');
+                            } else {
+                              alert(response.message || '승인에 실패했습니다.');
+                            }
+                          } catch (error) {
+                            console.error('승인 실패:', error);
+                            alert(error?.response?.data?.message || error?.message || '승인에 실패했습니다.');
+                          }
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#4caf50',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <FaCheck /> 승인
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`${pendingUser.koreanName}(${pendingUser.username}) 사용자를 거부하시겠습니까?`)) {
+                            return;
+                          }
+                          try {
+                            const response = await approveUser(pendingUser.userId, 'REJECT');
+                            if (response.success) {
+                              setPendingUsers(pendingUsers.filter(u => u.userId !== pendingUser.userId));
+                              const refreshResponse = await getPendingUsers();
+                              if (refreshResponse.success) {
+                                setPendingUsers(refreshResponse.data || []);
+                              }
+                              alert('사용자가 거부되었습니다.');
+                            } else {
+                              alert(response.message || '거부에 실패했습니다.');
+                            }
+                          } catch (error) {
+                            console.error('거부 실패:', error);
+                            alert(error?.response?.data?.message || error?.message || '거부에 실패했습니다.');
+                          }
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#f44336',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <FaTimesCircle /> 거부
+                      </button>
+                    </div>
+                  </S.NotificationItem>
+                ))}
+              </S.NotificationList>
+            )}
+          </S.NotificationModalBody>
+        </S.NotificationModalContent>
+      </S.NotificationModal>
+    );
+  };
+
   return (
-    <S.AppBar>
-      <S.LeftSection>
+    <div>
+      <S.AppBar>
+        <S.LeftSection>
         {showBackButton && (
           <S.MenuButton onClick={handleBack}>
             ←
@@ -173,17 +323,12 @@ const MobileAppBar = ({ title, onMenuClick }) => {
                   onClick={() => {
                     // 서명 대기 건이 있으면 바로 모달 열기
                     if (pendingApprovals.length > 0) {
-                      setIsNotificationDropdownOpen(false);
-                      if (location.pathname === '/expenses') {
-                        navigate('/expenses?openNotifications=true', { replace: true });
-                        setTimeout(() => {
-                          window.dispatchEvent(new CustomEvent('openNotificationModal'));
-                        }, 100);
-                      } else {
-                        navigate('/expenses?openNotifications=true');
-                      }
+                      setIsNotificationModalOpen(true);
+                    } else if (pendingUsers.length > 0) {
+                      // 승인 대기 건이 있으면 승인 모달 열기
+                      setIsApprovalModalOpen(true);
                     } else {
-                      // 서명 대기 건이 없으면 드롭다운 토글
+                      // 알림이 없으면 드롭다운 토글
                       setIsNotificationDropdownOpen(!isNotificationDropdownOpen);
                     }
                   }}
@@ -200,14 +345,7 @@ const MobileAppBar = ({ title, onMenuClick }) => {
                       <S.NotificationDropdownItem
                         onClick={() => {
                           setIsNotificationDropdownOpen(false);
-                          if (location.pathname === '/expenses') {
-                            navigate('/expenses?openNotifications=true', { replace: true });
-                            setTimeout(() => {
-                              window.dispatchEvent(new CustomEvent('openNotificationModal'));
-                            }, 100);
-                          } else {
-                            navigate('/expenses?openNotifications=true');
-                          }
+                          setIsNotificationModalOpen(true);
                         }}
                       >
                         <S.NotificationIcon style={{ backgroundColor: 'var(--primary-color)' }}>
@@ -246,14 +384,7 @@ const MobileAppBar = ({ title, onMenuClick }) => {
                       <S.NotificationDropdownItem
                         onClick={() => {
                           setIsNotificationDropdownOpen(false);
-                          if (location.pathname === '/expenses') {
-                            navigate('/expenses?openApprovals=true', { replace: true });
-                            setTimeout(() => {
-                              window.dispatchEvent(new CustomEvent('openApprovalModal'));
-                            }, 100);
-                          } else {
-                            navigate('/expenses?openApprovals=true');
-                          }
+                          setIsApprovalModalOpen(true);
                         }}
                       >
                         <S.NotificationIcon style={{ backgroundColor: 'var(--success-color)' }}>
@@ -307,7 +438,11 @@ const MobileAppBar = ({ title, onMenuClick }) => {
           </>
         )}
       </S.RightSection>
-    </S.AppBar>
+      </S.AppBar>
+
+      {renderNotificationModal()}
+      {renderApprovalModal()}
+    </div>
   );
 };
 

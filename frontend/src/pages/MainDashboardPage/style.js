@@ -1345,3 +1345,71 @@ export const InfoItemLabel = styled.div`
   letter-spacing: 0.5px;
   opacity: 0.8;
 `;
+
+export const MonthNavigator = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+
+  @media (max-width: 480px) {
+    gap: 12px;
+    padding: 10px;
+  }
+`;
+
+export const NavButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 16px;
+
+  &:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  @media (max-width: 480px) {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+`;
+
+export const CurrentMonth = styled.div`
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dark-color);
+  min-width: 120px;
+  text-align: center;
+
+  @media (max-width: 480px) {
+    font-size: 16px;
+    min-width: 100px;
+  }
+`;
+
+export const QuickMonthButtons = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+`;

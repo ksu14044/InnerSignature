@@ -242,23 +242,140 @@ export const CompanyDropdownItem = styled.div`
   color: #333;
   display: flex;
   align-items: center;
-  
+
   &:hover {
     background-color: #f5f5f5;
   }
-  
+
   &:active {
     background-color: #e0e0e0;
   }
-  
+
   ${props => props.selected && `
     background-color: rgba(0, 123, 255, 0.1);
     font-weight: 600;
     color: #007bff;
   `}
-  
+
   &:not(:last-child) {
     border-bottom: 1px solid #e0e0e0;
+  }
+`;
+
+// 알림 모달 (PC 버전 스타일 복사)
+export const NotificationModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+export const NotificationModalContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+export const NotificationModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+
+  h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  button {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+
+    &:hover {
+      color: #374151;
+      background-color: #e5e7eb;
+    }
+  }
+`;
+
+export const NotificationModalBody = styled.div`
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+
+  p {
+    margin: 0;
+    color: #6b7280;
+    text-align: center;
+    padding: 40px 20px;
+  }
+`;
+
+export const NotificationList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+export const NotificationItem = styled.div`
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: white;
+
+  &:hover {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  }
+`;
+
+export const NotificationItemTitle = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+`;
+
+export const NotificationItemInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: #6b7280;
+
+  span {
+    display: block;
   }
 `;
 

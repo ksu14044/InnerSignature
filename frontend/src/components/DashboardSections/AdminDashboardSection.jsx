@@ -44,10 +44,10 @@ const AdminDashboardSection = ({ filters }) => {
       setLoading(true);
       
       const [statsRes, trendRes, userStatsRes, categoryRes, usersRes] = await Promise.all([
-        fetchDashboardStats(null, null),
-        fetchMonthlyTrend(null, null),
-        fetchUserExpenseStats(null, null),
-        fetchCategoryRatio(null, null),
+        fetchDashboardStats(filters?.startDate || null, filters?.endDate || null),
+        fetchMonthlyTrend(null, null), // 월별 추이는 전체 기간 데이터로 유지
+        fetchUserExpenseStats(filters?.startDate || null, filters?.endDate || null),
+        fetchCategoryRatio(filters?.startDate || null, filters?.endDate || null),
         getPendingUsers().catch(() => ({ success: false, data: [] }))
       ]);
 
@@ -71,7 +71,7 @@ const AdminDashboardSection = ({ filters }) => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, filters]);
 
   useEffect(() => {
     loadDashboardData();

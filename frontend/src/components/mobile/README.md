@@ -178,3 +178,4 @@ console.log('Is Mobile:', isMobile, 'Window Width:', window.innerWidth);
 문제가 발생하거나 개선 제안이 있으시면 이슈를 등록해주세요.
 
 
+

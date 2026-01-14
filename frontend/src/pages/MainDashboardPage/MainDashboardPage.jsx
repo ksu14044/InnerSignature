@@ -16,7 +16,7 @@ import AccountantDashboardSection from '../../components/DashboardSections/Accou
 import TaxAccountantDashboardSection from '../../components/DashboardSections/TaxAccountantDashboardSection';
 import AdminDashboardSection from '../../components/DashboardSections/AdminDashboardSection';
 import CEODashboardSection from '../../components/DashboardSections/CEODashboardSection';
-import { FaList, FaPlus, FaEye, FaChevronUp, FaCalendarAlt, FaChevronDown } from 'react-icons/fa';
+import { FaList, FaPlus, FaEye, FaChevronUp, FaCalendarAlt, FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const MainDashboardPage = () => {
   const { user } = useAuth();
@@ -45,6 +45,9 @@ const MainDashboardPage = () => {
 
   // 현재 선택된 기간 표시를 위한 상태
   const [selectedPeriod, setSelectedPeriod] = useState('이번 달');
+
+  // 선택된 월을 관리하는 상태
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // 디바운스된 필터 적용 (500ms 지연으로 API 호출 최적화)
   const debouncedFilters = useDebounce(filters, 500);
@@ -177,7 +180,7 @@ const MainDashboardPage = () => {
   // 초기 로드 시 이번 달로 설정
   useEffect(() => {
     if (!filters.startDate && !filters.endDate) {
-      handleQuickFilter('thisMonth');
+      handleMonthFilter(new Date());
     }
   }, []);
 
@@ -250,6 +253,36 @@ const MainDashboardPage = () => {
       endDate
     });
     setSelectedPeriod(periodLabel);
+  };
+
+  // 월별 필터 적용 함수
+  const handleMonthFilter = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0);
+
+    const startDate = formatDate(monthStart);
+    const endDate = formatDate(monthEnd);
+    const periodLabel = `${year}년 ${month}월`;
+
+    setFilters({ startDate, endDate });
+    setSelectedPeriod(periodLabel);
+    setCurrentMonth(date);
+  };
+
+  // 이전 월로 이동
+  const handlePreviousMonth = () => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(currentMonth.getMonth() - 1);
+    handleMonthFilter(newMonth);
+  };
+
+  // 다음 월로 이동
+  const handleNextMonth = () => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(currentMonth.getMonth() + 1);
+    handleMonthFilter(newMonth);
   };
 
   // 통계 카드 클릭 핸들러 - 해당 상태의 결의서 목록 로드
@@ -340,40 +373,38 @@ const MainDashboardPage = () => {
         <S.FilterGroup>
           <S.FilterLabel>
             <FaCalendarAlt />
-            기간 선택
+            월별 탐색
           </S.FilterLabel>
-          <S.PeriodTabs>
-            <S.PeriodTab
-              active={selectedPeriod === '오늘'}
-              onClick={() => handleQuickFilter('today')}
-            >
-              오늘
-            </S.PeriodTab>
-            <S.PeriodTab
-              active={selectedPeriod === '이번 주'}
-              onClick={() => handleQuickFilter('thisWeek')}
-            >
-              이번 주
-            </S.PeriodTab>
-            <S.PeriodTab
-              active={selectedPeriod === '이번 달'}
-              onClick={() => handleQuickFilter('thisMonth')}
-            >
+          <S.MonthNavigator>
+            <S.NavButton onClick={handlePreviousMonth}>
+              <FaChevronLeft />
+            </S.NavButton>
+            <S.CurrentMonth>
+              {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
+            </S.CurrentMonth>
+            <S.NavButton onClick={handleNextMonth}>
+              <FaChevronRight />
+            </S.NavButton>
+          </S.MonthNavigator>
+          <S.QuickMonthButtons>
+            <S.QuickButton onClick={() => handleMonthFilter(new Date())}>
               이번 달
-            </S.PeriodTab>
-            <S.PeriodTab
-              active={selectedPeriod === '올해'}
-              onClick={() => handleQuickFilter('thisYear')}
-            >
-              올해
-            </S.PeriodTab>
-            <S.PeriodTab
-              active={selectedPeriod === '전체 기간'}
-              onClick={() => handleQuickFilter('all')}
-            >
-              전체
-            </S.PeriodTab>
-          </S.PeriodTabs>
+            </S.QuickButton>
+            <S.QuickButton onClick={() => {
+              const lastMonth = new Date();
+              lastMonth.setMonth(lastMonth.getMonth() - 1);
+              handleMonthFilter(lastMonth);
+            }}>
+              지난 달
+            </S.QuickButton>
+            <S.QuickButton onClick={() => {
+              const twoMonthsAgo = new Date();
+              twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+              handleMonthFilter(twoMonthsAgo);
+            }}>
+              2개월 전
+            </S.QuickButton>
+          </S.QuickMonthButtons>
         </S.FilterGroup>
       </S.FilterSection>
 
