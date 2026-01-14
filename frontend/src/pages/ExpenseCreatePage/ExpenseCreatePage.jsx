@@ -785,14 +785,6 @@ const ExpenseCreatePage = () => {
 
   return (
     <S.Container>
-      <S.Header>
-        <S.BackButton onClick={() => navigate(-1)}>
-          <FaArrowLeft />
-        </S.BackButton>
-        <S.Title>{isEditMode ? '지출결의서 수정' : '지출결의서 작성'}</S.Title>
-      </S.Header>
-
-
       {/* 2. 결재자 선택 섹션 - 급여가 아닌 경우에만 표시 */}
       {!hasSalaryCategory && (
         <S.Section ref={approverSectionRef} data-tourid="tour-approver-selection">

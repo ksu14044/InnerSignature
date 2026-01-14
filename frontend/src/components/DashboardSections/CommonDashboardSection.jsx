@@ -222,7 +222,7 @@ const CommonDashboardSection = ({
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
-                  <YAxis />
+                  <YAxis tickFormatter={(value) => value?.toLocaleString?.() ?? value} />
                   <Tooltip formatter={(value) => `${value.toLocaleString()}원`} />
                   <Bar dataKey="amount" fill={config.color} />
                 </BarChart>
