@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public class ReceiptDto {
     private Long receiptId;
     private Long expenseReportId;
+    private Long expenseDetailId; // 지출 상세 내역 ID
     private String filePath;
     private String originalFilename;
     private Long fileSize;

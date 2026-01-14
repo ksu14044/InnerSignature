@@ -268,6 +268,42 @@ export const deleteReceipt = async (receiptId, userId) => {
     }
   };
 
+// 12. 상세 내역별 영수증 업로드
+export const uploadReceiptForDetail = async (expenseDetailId, expenseReportId, userId, file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('expenseReportId', expenseReportId);
+      
+      const response = await axiosInstance.post(
+        `${BASE_URL}/details/${expenseDetailId}/receipt`, 
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("상세 내역별 영수증 업로드 실패:", error);
+      throw error;
+    }
+  };
+
+// 13. 상세 내역별 영수증 목록 조회
+export const getReceiptsByDetail = async (expenseDetailId, expenseReportId) => {
+    try {
+      const response = await axiosInstance.get(
+        `${BASE_URL}/details/${expenseDetailId}/receipts?expenseReportId=${expenseReportId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("상세 내역별 영수증 목록 조회 실패:", error);
+      throw error;
+    }
+  };
+
 // 12-1. 추가 결재 라인 추가
 export const addApprovalLine = async (expenseId, approvalLine) => {
   try {

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class ExpenseDetailDto {
@@ -47,4 +48,7 @@ public class ExpenseDetailDto {
     private String nonDeductibleReason;   // 불공제 사유 (BUSINESS_UNRELATED, ENTERTAINMENT, SMALL_CAR 등)
     
     private Long companyId;       // 회사 ID
+    
+    // 영수증 목록 (상세 내역별)
+    private List<ReceiptDto> receipts;
 }

@@ -177,6 +177,9 @@ public interface ExpenseMapper {
     // 영수증 목록 조회
     List<ReceiptDto> selectReceiptsByExpenseReportId(@Param("expenseReportId") Long expenseReportId, @Param("companyId") Long companyId);
 
+    // 상세 내역별 영수증 목록 조회
+    List<ReceiptDto> selectReceiptsByExpenseDetailId(@Param("expenseDetailId") Long expenseDetailId, @Param("companyId") Long companyId);
+
     // 영수증 저장
     void insertReceipt(ReceiptDto receiptDto);
 

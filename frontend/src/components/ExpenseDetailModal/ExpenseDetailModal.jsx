@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaTimes, FaFileUpload, FaTrash } from 'react-icons/fa';
 import * as S from './style';
 import { getCompanyCards, getUserCards } from '../../api/cardApi';
 import { formatNumber, parseFormattedNumber } from '../../utils/numberUtils';
@@ -33,6 +33,8 @@ const ExpenseDetailModal = ({
   const [userCards, setUserCards] = useState([]);
   const [isLoadingCards, setIsLoadingCards] = useState(false);
   const [useSavedCard, setUseSavedCard] = useState(true);
+  const [receiptFiles, setReceiptFiles] = useState([]); // 선택된 영수증 파일들
+  const receiptFileInputRef = useRef(null);
 
 
   // 카드 목록 불러오기
@@ -82,6 +84,8 @@ const ExpenseDetailModal = ({
       if (detail.cardNumber) {
         setUseSavedCard(false);
       }
+      // 기존 영수증 파일 초기화 (수정 모드에서는 서버에 저장된 영수증 사용)
+      setReceiptFiles([]);
     } else {
       // 새 항목 추가 시 초기화
       setFormData({
@@ -99,6 +103,7 @@ const ExpenseDetailModal = ({
         note: ''
       });
       setUseSavedCard(true);
+      setReceiptFiles([]);
     }
   }, [detail, isOpen]);
 
@@ -184,7 +189,50 @@ const ExpenseDetailModal = ({
     setFormData(prev => ({ ...prev, selectedCardId: '' }));
   };
 
+  // 영수증 파일 선택 처리
+  const handleReceiptFileSelect = (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) {
+      return;
+    }
+
+    // 각 파일 검증
+    const validFiles = [];
+    for (const file of files) {
+      // 파일 크기 제한 (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`${file.name}: 파일 크기는 10MB를 초과할 수 없습니다.`);
+        continue;
+      }
+
+      // 파일 타입 검증
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        alert(`${file.name}: 지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, pdf만 허용)`);
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    // 유효한 파일들을 receiptFiles에 추가
+    setReceiptFiles([...receiptFiles, ...validFiles]);
+    event.target.value = '';
+  };
+
+  // 영수증 파일 제거
+  const handleRemoveReceiptFile = (index) => {
+    const newReceiptFiles = receiptFiles.filter((_, i) => i !== index);
+    setReceiptFiles(newReceiptFiles);
+  };
+
   const handleSave = () => {
+    // 영수증 필수 검증
+    if (receiptFiles.length === 0) {
+      alert('영수증을 첨부해주세요.');
+      return;
+    }
+
     let cardNumber = '';
     
     // 저장된 카드 선택 시
@@ -217,7 +265,8 @@ const ExpenseDetailModal = ({
       ...restFormData,
       amount: formData.amount ? Number(parseFormattedNumber(formData.amount)) : 0,
       cardNumber: cardNumber,
-      cardId: useSavedCard && formData.selectedCardId ? Number(formData.selectedCardId) : null
+      cardId: useSavedCard && formData.selectedCardId ? Number(formData.selectedCardId) : null,
+      receiptFiles: receiptFiles // 영수증 파일들 포함
     };
     onSave(savedData);
     onClose();
@@ -435,6 +484,83 @@ const ExpenseDetailModal = ({
                 placeholder="비고를 입력하세요 (선택사항)"
                 rows={3}
               />
+            </S.FormGroup>
+
+            <S.FormGroup fullWidth>
+              <S.Label>
+                영수증 <span style={{ color: 'red' }}>*</span>
+              </S.Label>
+              <input
+                ref={receiptFileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
+                onChange={handleReceiptFileSelect}
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                onClick={() => receiptFileInputRef.current?.click()}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '12px'
+                }}
+              >
+                <FaFileUpload />
+                <span>영수증 선택</span>
+              </button>
+              {receiptFiles.length > 0 ? (
+                <div style={{ marginTop: '8px' }}>
+                  {receiptFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px',
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '4px',
+                        marginBottom: '4px'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: '500' }}>{file.name}</div>
+                        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                          크기: {(file.size / 1024).toFixed(2)} KB
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveReceiptFile(index)}
+                        style={{
+                          padding: '4px 8px',
+                          backgroundColor: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                        title="제거"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: '12px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+                  영수증을 선택해주세요. (필수)
+                </div>
+              )}
             </S.FormGroup>
           </S.FormGrid>
         </S.ModalBody>

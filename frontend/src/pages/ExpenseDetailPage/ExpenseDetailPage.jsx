@@ -53,12 +53,17 @@ const ExpenseDetailPage = () => {
       .then((res) => {
         if (res.success) {
           setDetail(res.data);
-          // 영수증 목록 설정 (상세 조회에서 이미 포함됨)
+          // 문서 단위 영수증 (호환성 유지)
           if (res.data.receipts) {
             setReceipts(res.data.receipts || []);
           }
+          // 상세 내역별 영수증은 res.data.details[].receipts에 포함됨
           console.log('Loaded expense detail:', res.data); // 데이터 확인용 로그
-          console.log('Approval lines:', res.data.approvalLines); // approvalLines 확인용 로그
+          console.log('Details with receipts:', res.data.details?.map(d => ({
+            id: d.expenseDetailId,
+            category: d.category,
+            receiptsCount: d.receipts?.length || 0
+          }))); // 상세 내역별 영수증 확인용 로그
         } else navigate('/');
       })
       .catch(() => navigate('/'));
@@ -1081,55 +1086,74 @@ const ExpenseDetailPage = () => {
          )}
        </S.ButtonGroup>
 
-      {/* 4. 영수증 섹션 */}
-      {canViewReceipt() && (
-        <S.ReceiptSection>
-           <S.ReceiptSectionHeader>
-             <S.SectionTitle>영수증</S.SectionTitle>
-             {canUploadReceipt() && (
-               <label>
-                 <S.UploadButton disabled={isUploadingReceipt || isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
-                   {isUploadingReceipt ? '업로드 중...' : '영수증 추가'}
-                 </S.UploadButton>
-                 <input
-                   type="file"
-                   accept="image/*,application/pdf"
-                   onChange={handleReceiptUpload}
-                   disabled={isUploadingReceipt || isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
-                   style={{ display: 'none' }}
-                 />
-               </label>
-             )}
-           </S.ReceiptSectionHeader>
-           {receipts.length > 0 ? (
-             <S.ReceiptList>
-              {receipts.map((receipt) => (
-                <S.ReceiptItem key={receipt.receiptId}>
-                   <S.ReceiptInfo>
-                     <div><strong>{receipt.originalFilename}</strong></div>
-                     <div>업로드: {receipt.uploadedByName} ({receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''})</div>
-                     {receipt.fileSize && (
-                       <div>크기: {(receipt.fileSize / 1024).toFixed(2)} KB</div>
-                     )}
-                   </S.ReceiptInfo>
-                   <S.ReceiptActions>
-                     <button onClick={() => handleReceiptDownload(receipt.receiptId, receipt.originalFilename)} disabled={isUploadingReceipt || deletingReceiptId !== null}>다운로드</button>
-                     {canUploadReceipt() && (
-                       <button onClick={() => handleReceiptDelete(receipt.receiptId)} disabled={isUploadingReceipt || deletingReceiptId === receipt.receiptId || deletingReceiptId !== null}>
-                         {deletingReceiptId === receipt.receiptId ? '삭제 중...' : '삭제'}
-                       </button>
-                     )}
-                   </S.ReceiptActions>
-                 </S.ReceiptItem>
-               ))}
-             </S.ReceiptList>
-           ) : (
-             <S.ReceiptEmpty>
-               <p>영수증이 아직 첨부되지 않았습니다.</p>
-             </S.ReceiptEmpty>
-           )}
-         </S.ReceiptSection>
-       )}
+      {/* 4. 영수증 섹션 - 모든 상세 내역의 영수증을 모아서 표시 (적요와 함께) */}
+      {canViewReceipt() && (() => {
+        // 모든 상세 내역의 영수증을 수집하고 적요 정보 포함
+        const allReceiptsWithDescription = detail.details?.flatMap(item => 
+          (item.receipts || []).map(receipt => ({
+            ...receipt,
+            description: item.description || '-',
+            category: item.category || '-',
+            amount: item.amount || 0
+          }))
+        ) || [];
+        
+        return (
+          <S.ReceiptSection>
+            <S.ReceiptSectionHeader>
+              <S.SectionTitle>영수증 (전체)</S.SectionTitle>
+              {canUploadReceipt() && (
+                <label>
+                  <S.UploadButton disabled={isUploadingReceipt || isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
+                    {isUploadingReceipt ? '업로드 중...' : '영수증 추가'}
+                  </S.UploadButton>
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleReceiptUpload}
+                    disabled={isUploadingReceipt || isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              )}
+            </S.ReceiptSectionHeader>
+            {allReceiptsWithDescription.length > 0 ? (
+              <S.ReceiptList>
+                {allReceiptsWithDescription.map((receipt) => (
+                  <S.ReceiptItem key={receipt.receiptId}>
+                    <S.ReceiptInfo>
+                      <div><strong>{receipt.originalFilename}</strong></div>
+                      <div style={{ marginTop: '4px', color: '#666', fontSize: '14px' }}>
+                        <strong>적요:</strong> {receipt.description} | <strong>항목:</strong> {receipt.category} | <strong>금액:</strong> {receipt.amount.toLocaleString()}원
+                      </div>
+                      <div style={{ marginTop: '4px', fontSize: '12px', color: '#999' }}>
+                        업로드: {receipt.uploadedByName} ({receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''})
+                      </div>
+                      {receipt.fileSize && (
+                        <div style={{ marginTop: '2px', fontSize: '12px', color: '#999' }}>
+                          크기: {(receipt.fileSize / 1024).toFixed(2)} KB
+                        </div>
+                      )}
+                    </S.ReceiptInfo>
+                    <S.ReceiptActions>
+                      <button onClick={() => handleReceiptDownload(receipt.receiptId, receipt.originalFilename)} disabled={isUploadingReceipt || deletingReceiptId !== null}>다운로드</button>
+                      {canUploadReceipt() && (
+                        <button onClick={() => handleReceiptDelete(receipt.receiptId)} disabled={isUploadingReceipt || deletingReceiptId === receipt.receiptId || deletingReceiptId !== null}>
+                          {deletingReceiptId === receipt.receiptId ? '삭제 중...' : '삭제'}
+                        </button>
+                      )}
+                    </S.ReceiptActions>
+                  </S.ReceiptItem>
+                ))}
+              </S.ReceiptList>
+            ) : (
+              <S.ReceiptEmpty>
+                <p>영수증이 아직 첨부되지 않았습니다.</p>
+              </S.ReceiptEmpty>
+            )}
+          </S.ReceiptSection>
+        );
+      })()}
 
        {isModalOpen && (
          <Suspense fallback={<div>로딩 중...</div>}>

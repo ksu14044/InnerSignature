@@ -442,6 +442,42 @@ public class ExpenseController {
     }
 
     /**
+     * 12-1. 상세 내역별 영수증 업로드 API
+     * POST /api/expenses/details/{expenseDetailId}/receipt
+     * 설명: 지출 상세 내역에 영수증을 첨부합니다.
+     */
+    @Operation(summary = "상세 내역별 영수증 업로드", description = "지출 상세 내역에 영수증을 첨부합니다.")
+    @PostMapping(value = "/details/{expenseDetailId}/receipt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<Void> uploadReceiptForDetail(
+            @PathVariable Long expenseDetailId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("expenseReportId") Long expenseReportId) throws IOException {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        logger.info("상세 내역별 영수증 업로드 요청 - expenseDetailId: {}, expenseReportId: {}, userId: {}, filename: {}", 
+                expenseDetailId, expenseReportId, currentUserId, file.getOriginalFilename());
+        expenseService.uploadReceiptForDetail(expenseDetailId, expenseReportId, currentUserId, file);
+        logger.info("상세 내역별 영수증 업로드 완료 - expenseDetailId: {}", expenseDetailId);
+        return new ApiResponse<>(true, "영수증 업로드 완료", null);
+    }
+
+    /**
+     * 12-2. 상세 내역별 영수증 목록 조회 API
+     * GET /api/expenses/details/{expenseDetailId}/receipts
+     * 설명: 지출 상세 내역에 첨부된 영수증 목록을 조회합니다.
+     */
+    @Operation(summary = "상세 내역별 영수증 목록 조회", description = "지출 상세 내역에 첨부된 영수증 목록을 조회합니다.")
+    @GetMapping("/details/{expenseDetailId}/receipts")
+    public ApiResponse<List<ReceiptDto>> getReceiptsByDetail(
+            @PathVariable Long expenseDetailId,
+            @RequestParam("expenseReportId") Long expenseReportId) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        logger.debug("상세 내역별 영수증 목록 조회 요청 - expenseDetailId: {}, expenseReportId: {}, userId: {}", 
+                expenseDetailId, expenseReportId, currentUserId);
+        List<ReceiptDto> receipts = expenseService.getReceiptsByDetail(expenseDetailId, expenseReportId, currentUserId);
+        return new ApiResponse<>(true, "상세 내역별 영수증 목록 조회 성공", receipts);
+    }
+
+    /**
      * 13. 카테고리별 요약 조회 API (세무사 전용)
      * GET /api/expenses/summary/by-category?startDate=2024-01-01&endDate=2024-12-31&taxProcessed=true
      */

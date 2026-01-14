@@ -30,7 +30,7 @@ public class ExpenseReceiptService {
     private static final String RECEIPT_UPLOAD_DIR = "uploads/receipts/";
 
     /**
-     * 영수증 업로드
+     * 영수증 업로드 (문서 단위 - 기존 호환성 유지)
      */
     @Transactional
     public void uploadReceipt(Long expenseReportId, Long userId, MultipartFile file) throws IOException {
@@ -47,16 +47,48 @@ public class ExpenseReceiptService {
         // 데이터베이스 저장
         ReceiptDto receipt = new ReceiptDto();
         receipt.setExpenseReportId(expenseReportId);
+        receipt.setExpenseDetailId(null); // 문서 단위는 null
         receipt.setOriginalFilename(file.getOriginalFilename());
         receipt.setFilePath(filePath);
         receipt.setFileSize(file.getSize());
         receipt.setUploadedBy(userId);
 
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        receipt.setCompanyId(companyId);
         expenseMapper.insertReceipt(receipt);
     }
 
     /**
-     * 영수증 목록 조회
+     * 상세 내역별 영수증 업로드
+     */
+    @Transactional
+    public void uploadReceiptForDetail(Long expenseDetailId, Long expenseReportId, Long userId, MultipartFile file) throws IOException {
+        // 결의서 접근 권한 검증
+        expenseReportService.getExpenseDetail(expenseReportId, userId);
+
+        // 파일 검증
+        validateReceiptFile(file);
+
+        // 파일 저장
+        String fileName = generateUniqueFileName(file.getOriginalFilename());
+        String filePath = saveFile(file, fileName);
+
+        // 데이터베이스 저장
+        ReceiptDto receipt = new ReceiptDto();
+        receipt.setExpenseReportId(expenseReportId);
+        receipt.setExpenseDetailId(expenseDetailId);
+        receipt.setOriginalFilename(file.getOriginalFilename());
+        receipt.setFilePath(filePath);
+        receipt.setFileSize(file.getSize());
+        receipt.setUploadedBy(userId);
+
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        receipt.setCompanyId(companyId);
+        expenseMapper.insertReceipt(receipt);
+    }
+
+    /**
+     * 영수증 목록 조회 (문서 단위 - 기존 호환성 유지)
      */
     public List<ReceiptDto> getReceipts(Long expenseReportId, Long userId) {
         // 결의서 접근 권한 검증
@@ -64,6 +96,17 @@ public class ExpenseReceiptService {
 
         Long companyId = SecurityUtil.getCurrentCompanyId();
         return expenseMapper.selectReceiptsByExpenseReportId(expenseReportId, companyId);
+    }
+
+    /**
+     * 상세 내역별 영수증 목록 조회
+     */
+    public List<ReceiptDto> getReceiptsByDetail(Long expenseDetailId, Long expenseReportId, Long userId) {
+        // 결의서 접근 권한 검증
+        expenseReportService.getExpenseDetail(expenseReportId, userId);
+
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        return expenseMapper.selectReceiptsByExpenseDetailId(expenseDetailId, companyId);
     }
 
     /**

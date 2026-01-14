@@ -376,7 +376,7 @@
             AND company_id = #{companyId}
     </update>
 
-    <insert id="insertExpenseDetail">
+    <insert id="insertExpenseDetail" useGeneratedKeys="true" keyProperty="expenseDetailId">
         INSERT INTO expense_detail_tb (
             expense_report_id,
             category,
@@ -526,10 +526,23 @@
         ORDER BY r.uploaded_at DESC
     </select>
 
+    <!-- 상세 내역별 영수증 조회 -->
+    <select id="selectReceiptsByExpenseDetailId" resultType="com.innersignature.backend.dto.ReceiptDto">
+        SELECT 
+            r.*,
+            u.korean_name AS uploadedByName
+        FROM receipt_tb r
+        JOIN user_tb u ON r.uploaded_by = u.user_id
+        WHERE r.expense_detail_id = #{expenseDetailId}
+        AND r.company_id = #{companyId}
+        ORDER BY r.uploaded_at DESC
+    </select>
+
     <!-- 영수증 저장 -->
     <insert id="insertReceipt" useGeneratedKeys="true" keyProperty="receiptId">
         INSERT INTO receipt_tb (
             expense_report_id,
+            expense_detail_id,
             file_path,
             original_filename,
             file_size,
@@ -538,6 +551,7 @@
             company_id
         ) VALUES (
             #{expenseReportId},
+            #{expenseDetailId},
             #{filePath},
             #{originalFilename},
             #{fileSize},

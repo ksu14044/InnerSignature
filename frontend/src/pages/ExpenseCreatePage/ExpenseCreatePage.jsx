@@ -6,7 +6,7 @@ import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck, FaEdit, FaFileUpload
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
 import * as S from './style';
 import { useAuth } from '../../contexts/AuthContext';
-import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts } from '../../api/expenseApi';
+import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail } from '../../api/expenseApi';
 import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole, filterCategoriesByRole } from '../../constants/categories';
@@ -504,15 +504,15 @@ const ExpenseCreatePage = () => {
       }
     }
     
-    // 3. 영수증 첨부 필수 확인
-    const hasReceipts = isEditMode && id
-      ? receipts.length > 0  // 수정 모드: 서버에 업로드된 영수증 확인
-      : pendingReceipts.length > 0;  // 생성 모드: 선택한 영수증 파일 확인
+    // 3. 각 상세 내역별 영수증 첨부 필수 확인
+    const allDetailsHaveReceipts = completedDetails.every(detail => 
+      detail.receiptFiles && detail.receiptFiles.length > 0
+    );
 
-    if (!hasReceipts) {
-      missingFields.push('영수증 첨부');
+    if (!allDetailsHaveReceipts) {
+      missingFields.push('모든 지출 상세 내역에 영수증을 첨부해야 합니다');
       if (!firstMissingField) {
-        firstMissingField = { type: 'receipt', ref: receiptSectionRef };
+        firstMissingField = { type: 'detailsSection', ref: detailsSectionRef };
       }
     }
     
@@ -545,11 +545,17 @@ const ExpenseCreatePage = () => {
       return;
     }
 
-    // 완료된 항목만 제출 (금액을 숫자로 변환)
-    const formattedDetails = completedDetails.map(detail => ({
-      ...detail,
-      amount: detail.amount ? Number(parseFormattedNumber(detail.amount)) : 0
-    }));
+    // 완료된 항목만 제출 (금액을 숫자로 변환, receiptFiles는 별도로 보관)
+    const formattedDetails = completedDetails.map(detail => {
+      const { receiptFiles, ...restDetail } = detail;
+      return {
+        ...restDetail,
+        amount: detail.amount ? Number(parseFormattedNumber(detail.amount)) : 0
+      };
+    });
+    
+    // receiptFiles 매핑: completedDetails의 인덱스 -> receiptFiles
+    const receiptFilesByIndex = completedDetails.map(detail => detail.receiptFiles || []);
 
     // 담당 결재자 자동 설정 (급여가 아닌 경우)
     let finalApprovers = selectedApprovers;
@@ -639,39 +645,113 @@ const ExpenseCreatePage = () => {
               }
             }
 
-            // 선택한 영수증 파일들을 자동으로 업로드
-            if (pendingReceipts.length > 0) {
-              setIsUploadingReceipt(true);
-              let uploadSuccessCount = 0;
-              let uploadFailCount = 0;
+            // 각 상세 내역의 영수증 파일들을 업로드
+            setIsUploadingReceipt(true);
+            let totalUploadSuccessCount = 0;
+            let totalUploadFailCount = 0;
 
-              for (const file of pendingReceipts) {
-                try {
-                  const uploadResponse = await uploadReceipt(expenseId, user.userId, file);
-                  if (uploadResponse.success) {
-                    uploadSuccessCount++;
-                  } else {
-                    uploadFailCount++;
-                    console.error('영수증 업로드 실패:', uploadResponse.message);
+            // 상세 내역 ID 조회를 위해 상세 정보 다시 가져오기
+            try {
+              console.log('상세 내역 조회 시작, expenseId:', expenseId);
+              const detailResponse = await fetchExpenseDetail(expenseId);
+              
+              if (!detailResponse.success) {
+                console.error('상세 내역 조회 실패:', detailResponse);
+                alert('상세 내역 조회에 실패했습니다. 영수증은 상세 페이지에서 업로드해주세요.');
+                setIsUploadingReceipt(false);
+                return;
+              }
+              
+              if (!detailResponse.data || !detailResponse.data.details) {
+                console.error('상세 내역 데이터가 없습니다:', detailResponse.data);
+                alert('상세 내역 데이터를 찾을 수 없습니다. 영수증은 상세 페이지에서 업로드해주세요.');
+                setIsUploadingReceipt(false);
+                return;
+              }
+              
+              const savedDetails = detailResponse.data.details;
+              console.log('저장된 상세 내역:', savedDetails.map(d => ({
+                id: d.expenseDetailId,
+                category: d.category,
+                description: d.description,
+                amount: d.amount
+              })));
+              console.log('업로드할 영수증이 있는 내역:', formattedDetails.map((d, idx) => ({
+                index: idx,
+                category: d.category,
+                description: d.description,
+                amount: d.amount,
+                receiptCount: receiptFilesByIndex[idx]?.length || 0
+              })));
+
+              // 각 상세 내역별로 영수증 업로드 (description, category, amount로 매칭)
+              for (let i = 0; i < formattedDetails.length; i++) {
+                const detail = formattedDetails[i];
+                const receiptFiles = receiptFilesByIndex[i];
+                
+                if (receiptFiles && receiptFiles.length > 0) {
+                  // description, category, amount로 매칭하여 더 정확한 내역 찾기
+                  const savedDetail = savedDetails.find(saved => 
+                    saved.description === detail.description && 
+                    saved.category === detail.category &&
+                    Math.abs(saved.amount - detail.amount) < 1 // 금액이 정확히 일치하는지 확인
+                  );
+                  
+                  if (!savedDetail) {
+                    console.error(`상세 내역을 찾을 수 없습니다:`, {
+                      category: detail.category,
+                      description: detail.description,
+                      amount: detail.amount
+                    });
+                    totalUploadFailCount += receiptFiles.length;
+                    continue;
                   }
-                } catch (error) {
-                  uploadFailCount++;
-                  console.error('영수증 업로드 오류:', error);
+                  
+                  if (!savedDetail.expenseDetailId) {
+                    console.error(`expenseDetailId가 없습니다:`, savedDetail);
+                    totalUploadFailCount += receiptFiles.length;
+                    continue;
+                  }
+                  
+                  console.log(`영수증 업로드 시작: expenseDetailId=${savedDetail.expenseDetailId}, 파일 수=${receiptFiles.length}`);
+                  
+                  for (const file of receiptFiles) {
+                    try {
+                      console.log(`영수증 업로드 시도: expenseDetailId=${savedDetail.expenseDetailId}, filename=${file.name}`);
+                      const uploadResponse = await uploadReceiptForDetail(
+                        savedDetail.expenseDetailId, 
+                        expenseId, 
+                        user.userId, 
+                        file
+                      );
+                      if (uploadResponse.success) {
+                        totalUploadSuccessCount++;
+                        console.log(`영수증 업로드 성공: ${file.name}`);
+                      } else {
+                        totalUploadFailCount++;
+                        console.error('영수증 업로드 실패:', uploadResponse.message);
+                      }
+                    } catch (error) {
+                      totalUploadFailCount++;
+                      console.error('영수증 업로드 오류:', error);
+                      console.error('에러 상세:', error.response?.data || error.message);
+                    }
+                  }
                 }
               }
+            } catch (error) {
+              console.error('상세 내역 조회 실패:', error);
+              alert('상세 내역 조회에 실패했습니다. 영수증은 상세 페이지에서 업로드해주세요.');
+            }
 
-              setIsUploadingReceipt(false);
+            setIsUploadingReceipt(false);
 
-              if (uploadSuccessCount > 0) {
-                if (uploadFailCount > 0) {
-                  alert(`${uploadSuccessCount}개의 영수증이 업로드되었습니다. ${uploadFailCount}개의 영수증 업로드에 실패했습니다.`);
-                }
-              } else if (uploadFailCount > 0) {
-                alert('모든 영수증 업로드에 실패했습니다. 상세 페이지에서 다시 업로드해주세요.');
+            if (totalUploadSuccessCount > 0) {
+              if (totalUploadFailCount > 0) {
+                alert(`⚠️ ${totalUploadSuccessCount}개의 영수증이 업로드되었습니다.\n${totalUploadFailCount}개의 영수증 업로드에 실패했습니다.\n상세 페이지에서 다시 업로드해주세요.`);
               }
-
-              // 업로드 완료 후 pendingReceipts 초기화
-              setPendingReceipts([]);
+            } else if (totalUploadFailCount > 0) {
+              alert(`❌ 모든 영수증 업로드에 실패했습니다.\n상세 페이지에서 다시 업로드해주세요.\n\n실패한 영수증 수: ${totalUploadFailCount}개`);
             }
 
             // 성공 메시지
@@ -891,104 +971,18 @@ const ExpenseCreatePage = () => {
         </S.MobileCardContainer>
       </S.Section>
 
-      {/* 4. 영수증 섹션 */}
+      {/* 4. 영수증 안내 섹션 */}
       <S.Section ref={receiptSectionRef}>
         <S.SectionHeader>
           <S.SectionTitle>
-            영수증 <span style={{ color: 'red' }}>*</span>
+            영수증 안내
           </S.SectionTitle>
         </S.SectionHeader>
-        <S.InfoMessage style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fff3cd', border: '1px solid #ffc107', borderRadius: '8px' }}>
-          영수증 첨부가 필수입니다.
+        <S.InfoMessage style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#e7f3ff', border: '1px solid #007bff', borderRadius: '8px' }}>
+          각 지출 상세 내역에 영수증을 첨부해주세요. 영수증은 필수 항목입니다.
+          <br />
+          지출 상세 내역 추가/수정 모달에서 영수증을 첨부할 수 있습니다.
         </S.InfoMessage>
-        
-        {/* 생성 전: 영수증 파일 선택 */}
-        {!isEditMode || !id ? (
-          <>
-            <input
-              ref={receiptFileInputRef}
-              type="file"
-              accept="image/*,application/pdf"
-              multiple
-              onChange={handleReceiptFileSelect}
-              disabled={isSubmitting}
-              style={{ display: 'none' }}
-            />
-            <S.UploadButton 
-              as="div"
-              disabled={isSubmitting} 
-              onClick={() => !isSubmitting && receiptFileInputRef.current?.click()}
-              style={{ marginBottom: '16px', cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
-            >
-              <FaFileUpload />
-              <span>영수증 선택</span>
-            </S.UploadButton>
-            {pendingReceipts.length > 0 ? (
-              <S.ReceiptList>
-                {pendingReceipts.map((file, index) => (
-                  <S.ReceiptItem key={index}>
-                    <S.ReceiptInfo>
-                      <div><strong>{file.name}</strong></div>
-                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                        크기: {(file.size / 1024).toFixed(2)} KB
-                      </div>
-                    </S.ReceiptInfo>
-                    <S.DeleteButton 
-                      onClick={() => handleRemovePendingReceipt(index)}
-                      style={{ minWidth: '40px', minHeight: '40px', padding: '8px' }}
-                      title="제거"
-                    >
-                      <FaTrash />
-                    </S.DeleteButton>
-                  </S.ReceiptItem>
-                ))}
-              </S.ReceiptList>
-            ) : (
-              <S.EmptyMessage style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-                선택된 영수증이 없습니다. 위의 "영수증 선택" 버튼을 클릭하여 영수증을 선택하세요.
-              </S.EmptyMessage>
-            )}
-          </>
-        ) : (
-          <>
-            {/* 수정 모드: 영수증 업로드 */}
-            <input
-              ref={receiptUploadInputRef}
-              type="file"
-              accept="image/*,application/pdf"
-              onChange={handleReceiptUpload}
-              disabled={isUploadingReceipt || isSubmitting}
-              style={{ display: 'none' }}
-            />
-            <S.UploadButton 
-              as="div"
-              disabled={isUploadingReceipt || isSubmitting} 
-              onClick={() => !(isUploadingReceipt || isSubmitting) && receiptUploadInputRef.current?.click()}
-              style={{ marginBottom: '16px', cursor: (isUploadingReceipt || isSubmitting) ? 'not-allowed' : 'pointer' }}
-            >
-              <FaFileUpload />
-              <span>{isUploadingReceipt ? '업로드 중...' : '영수증 추가'}</span>
-            </S.UploadButton>
-            {receipts.length > 0 ? (
-              <S.ReceiptList>
-                {receipts.map((receipt) => (
-                  <S.ReceiptItem key={receipt.receiptId}>
-                    <S.ReceiptInfo>
-                      <div><strong>{receipt.originalFilename}</strong></div>
-                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                        업로드: {receipt.uploadedByName} ({receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''})
-                      </div>
-                    </S.ReceiptInfo>
-                  </S.ReceiptItem>
-                ))}
-              </S.ReceiptList>
-            ) : (
-              <S.EmptyMessage style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-                첨부된 영수증이 없습니다.
-              </S.EmptyMessage>
-            )}
-          </>
-        )}
       </S.Section>
 
       {/* 5. 하단 총계 및 버튼 */}

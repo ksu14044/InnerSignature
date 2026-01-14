@@ -250,7 +250,7 @@ public class ExpenseService {
         // (2) 상세 항목들(식대, 간식...) 가져오기
         List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetails(expenseReportId, companyId);
         
-        // (2-0) 카드번호 마스킹 처리 (마지막 4자리만 표시)
+        // (2-0) 카드번호 마스킹 처리 및 영수증 조회 (마지막 4자리만 표시)
         if (details != null) {
             for (ExpenseDetailDto detail : details) {
                 if (detail.getCardNumber() != null && !detail.getCardNumber().trim().isEmpty()) {
@@ -265,6 +265,13 @@ public class ExpenseService {
                         logger.debug("카드번호 복호화 실패 - detailId: {}", detail.getExpenseDetailId(), e);
                         detail.setCardNumber(null); // 복호화 실패 시 null로 설정
                     }
+                }
+                
+                // 각 상세 내역의 영수증 조회
+                if (detail.getExpenseDetailId() != null) {
+                    List<ReceiptDto> detailReceipts = expenseReceiptService.getReceiptsByDetail(
+                        detail.getExpenseDetailId(), expenseReportId, userId);
+                    detail.setReceipts(detailReceipts);
                 }
             }
         }
@@ -1237,6 +1244,36 @@ public class ExpenseService {
         }
 
         return expenseMapper.selectReceiptsByExpenseReportId(expenseReportId, companyId);
+    }
+
+    /**
+     * 상세 내역별 영수증 업로드
+     */
+    public void uploadReceiptForDetail(Long expenseDetailId, Long expenseReportId, Long userId, MultipartFile file) throws IOException {
+        // 결의서 접근 권한 검증
+        getExpenseDetail(expenseReportId, userId);
+        
+        // 상세 내역 존재 확인
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetails(expenseReportId, companyId);
+        boolean detailExists = details.stream()
+            .anyMatch(d -> d.getExpenseDetailId().equals(expenseDetailId));
+        
+        if (!detailExists) {
+            throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 상세 내역을 찾을 수 없습니다.");
+        }
+        
+        expenseReceiptService.uploadReceiptForDetail(expenseDetailId, expenseReportId, userId, file);
+    }
+
+    /**
+     * 상세 내역별 영수증 목록 조회
+     */
+    public List<ReceiptDto> getReceiptsByDetail(Long expenseDetailId, Long expenseReportId, Long userId) {
+        // 결의서 접근 권한 검증
+        getExpenseDetail(expenseReportId, userId);
+        
+        return expenseReceiptService.getReceiptsByDetail(expenseDetailId, expenseReportId, userId);
     }
 
     /**
