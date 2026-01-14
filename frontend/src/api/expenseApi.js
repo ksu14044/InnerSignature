@@ -304,6 +304,59 @@ export const getReceiptsByDetail = async (expenseDetailId, expenseReportId) => {
     }
   };
 
+// 13-1. 영수증 일괄 다운로드
+export const downloadReceiptsBatch = async (receiptIds) => {
+  try {
+    const response = await axiosInstance.post(
+      `${BASE_URL}/receipts/batch-download`,
+      { receiptIds },
+      {
+        responseType: 'blob', // ZIP 파일 다운로드를 위해 blob으로 받기
+      }
+    );
+    
+    // Blob을 다운로드 링크로 변환
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // 파일명 생성
+    const now = new Date();
+    const filename = `영수증_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.zip`;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true };
+  } catch (error) {
+    console.error("영수증 일괄 다운로드 실패:", error);
+    let message = "영수증 일괄 다운로드 중 오류가 발생했습니다.";
+    const data = error?.response?.data;
+    try {
+      if (data instanceof Blob) {
+        const text = await data.text();
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed?.message) message = parsed.message;
+        } catch {
+          if (text) message = text;
+        }
+      } else if (typeof data === 'string' && data) {
+        message = data;
+      } else if (data?.message) {
+        message = data.message;
+      }
+    } catch (e) {
+      // ignore parsing errors
+    }
+    const err = new Error(message);
+    err.userMessage = message;
+    throw err;
+  }
+};
+
 // 12-1. 추가 결재 라인 추가
 export const addApprovalLine = async (expenseId, approvalLine) => {
   try {

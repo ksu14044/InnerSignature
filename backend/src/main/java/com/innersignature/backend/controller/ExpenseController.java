@@ -41,6 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
@@ -475,6 +476,54 @@ public class ExpenseController {
                 expenseDetailId, expenseReportId, currentUserId);
         List<ReceiptDto> receipts = expenseService.getReceiptsByDetail(expenseDetailId, expenseReportId, currentUserId);
         return new ApiResponse<>(true, "상세 내역별 영수증 목록 조회 성공", receipts);
+    }
+
+    /**
+     * 12-3. 영수증 일괄 다운로드 API
+     * POST /api/expenses/receipts/batch-download
+     * 설명: 여러 영수증을 ZIP 파일로 압축하여 다운로드합니다.
+     */
+    @Operation(summary = "영수증 일괄 다운로드", description = "여러 영수증을 ZIP 파일로 압축하여 다운로드합니다.")
+    @PostMapping("/receipts/batch-download")
+    public ResponseEntity<?> downloadReceiptsBatch(@RequestBody BatchDownloadRequest request) {
+        try {
+            Long currentUserId = SecurityUtil.getCurrentUserId();
+            logger.info("영수증 일괄 다운로드 요청 - receiptIds: {}, userId: {}", request.getReceiptIds(), currentUserId);
+            
+            if (request.getReceiptIds() == null || request.getReceiptIds().isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "다운로드할 영수증 ID가 필요합니다.", null));
+            }
+            
+            File zipFile = expenseService.createReceiptsZip(request.getReceiptIds(), currentUserId);
+            Resource resource = new FileSystemResource(zipFile);
+            
+            String filename = String.format("영수증_%s.zip", 
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")));
+            
+            logger.info("영수증 일괄 다운로드 완료 - receiptIds: {}, userId: {}", request.getReceiptIds(), currentUserId);
+            
+            return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(resource);
+        } catch (com.innersignature.backend.exception.BusinessException e) {
+            logger.warn("영수증 일괄 다운로드 실패: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            logger.error("영수증 일괄 다운로드 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApiResponse<>(false, "영수증 일괄 다운로드 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
+    }
+
+    @Data
+    static class BatchDownloadRequest {
+        private List<Long> receiptIds;
     }
 
     /**

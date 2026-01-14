@@ -45,6 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.util.IOUtils;
@@ -1274,6 +1276,87 @@ public class ExpenseService {
         getExpenseDetail(expenseReportId, userId);
         
         return expenseReceiptService.getReceiptsByDetail(expenseDetailId, expenseReportId, userId);
+    }
+
+    /**
+     * 영수증 일괄 다운로드 (ZIP 파일 생성)
+     */
+    public File createReceiptsZip(List<Long> receiptIds, Long userId) throws IOException {
+        if (receiptIds == null || receiptIds.isEmpty()) {
+            throw new com.innersignature.backend.exception.BusinessException("다운로드할 영수증이 없습니다.");
+        }
+
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        // 임시 ZIP 파일 생성
+        String tempDir = System.getProperty("java.io.tmpdir");
+        String zipFileName = "receipts_" + System.currentTimeMillis() + ".zip";
+        File zipFile = new File(tempDir, zipFileName);
+        
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipFile))) {
+            int successCount = 0;
+            int failCount = 0;
+            
+            for (Long receiptId : receiptIds) {
+                try {
+                    ReceiptDto receipt = getReceiptById(receiptId, userId);
+                    
+                    // 파일 경로 처리 (상대 경로 또는 절대 경로 모두 지원)
+                    Path filePath = Paths.get(receipt.getFilePath());
+                    if (!filePath.isAbsolute()) {
+                        // 상대 경로인 경우 프로젝트 루트 기준으로 변환
+                        String projectRoot = System.getProperty("user.dir");
+                        filePath = Paths.get(projectRoot, receipt.getFilePath());
+                    }
+                    
+                    if (!Files.exists(filePath)) {
+                        logger.warn("영수증 파일이 존재하지 않습니다 - receiptId: {}, filePath: {}", receiptId, filePath);
+                        failCount++;
+                        continue;
+                    }
+                    
+                    // ZIP 엔트리 생성 (파일명 중복 방지를 위해 receiptId 포함)
+                    String entryName = receipt.getOriginalFilename();
+                    if (entryName == null || entryName.isEmpty()) {
+                        entryName = "receipt_" + receiptId;
+                    } else {
+                        // 같은 이름의 파일이 있을 수 있으므로 receiptId를 포함
+                        int lastDotIndex = entryName.lastIndexOf('.');
+                        if (lastDotIndex > 0) {
+                            String baseName = entryName.substring(0, lastDotIndex);
+                            String extension = entryName.substring(lastDotIndex);
+                            entryName = baseName + "_" + receiptId + extension;
+                        } else {
+                            entryName = entryName + "_" + receiptId;
+                        }
+                    }
+                    
+                    ZipEntry entry = new ZipEntry(entryName);
+                    zos.putNextEntry(entry);
+                    Files.copy(filePath, zos);
+                    zos.closeEntry();
+                    successCount++;
+                    
+                    logger.debug("영수증 ZIP에 추가 완료 - receiptId: {}, filename: {}", receiptId, entryName);
+                } catch (Exception e) {
+                    logger.error("영수증 ZIP 추가 실패 - receiptId: {}", receiptId, e);
+                    failCount++;
+                }
+            }
+            
+            if (successCount == 0) {
+                zipFile.delete();
+                throw new com.innersignature.backend.exception.BusinessException("다운로드 가능한 영수증이 없습니다.");
+            }
+            
+            if (failCount > 0) {
+                logger.warn("일부 영수증 다운로드 실패 - 성공: {}, 실패: {}", successCount, failCount);
+            }
+            
+            logger.info("영수증 ZIP 파일 생성 완료 - 총: {}, 성공: {}, 실패: {}", receiptIds.size(), successCount, failCount);
+        }
+        
+        return zipFile;
     }
 
     /**

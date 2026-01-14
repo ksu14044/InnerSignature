@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, deleteExpense } from '../../api/expenseApi';
+import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, deleteExpense, downloadReceiptsBatch } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
 import { getMySignatures } from '../../api/signatureApi';
 import * as S from './style'; // 스타일 가져오기
@@ -40,6 +40,7 @@ const ExpenseDetailPage = () => {
   const [selectedAdditionalApprover, setSelectedAdditionalApprover] = useState(null);
   const [isAddingApprover, setIsAddingApprover] = useState(false);
   const [savedSignatures, setSavedSignatures] = useState([]);
+  const [isDownloadingBatch, setIsDownloadingBatch] = useState(false);
   const paymentModalReceiptInputRef = useRef(null);
   const {user} = useAuth();
 
@@ -589,6 +590,43 @@ const ExpenseDetailPage = () => {
     });
   };
 
+  // 영수증 일괄 다운로드
+  const handleBatchDownload = () => {
+    if (isDownloadingBatch) return;
+    if (!user) {
+      alert("로그인 후 진행할 수 있습니다.");
+      return;
+    }
+
+    // 모든 상세 내역의 영수증을 수집
+    const allReceipts = detail.details?.flatMap(item => item.receipts || []) || [];
+    
+    if (allReceipts.length === 0) {
+      alert("다운로드할 영수증이 없습니다.");
+      return;
+    }
+
+    const receiptIds = allReceipts.map(receipt => receipt.receiptId).filter(id => id != null);
+    
+    if (receiptIds.length === 0) {
+      alert("다운로드할 영수증이 없습니다.");
+      return;
+    }
+
+    setIsDownloadingBatch(true);
+    downloadReceiptsBatch(receiptIds)
+      .then(() => {
+        // 다운로드 성공 (브라우저가 자동으로 다운로드 처리)
+      })
+      .catch((err) => {
+        const msg = err?.userMessage || err?.message || "영수증 일괄 다운로드 중 오류가 발생했습니다.";
+        alert(msg);
+      })
+      .finally(() => {
+        setIsDownloadingBatch(false);
+      });
+  };
+
   // 영수증 삭제
   const handleReceiptDelete = (receiptId) => {
     if(deletingReceiptId === receiptId) return;
@@ -1102,20 +1140,41 @@ const ExpenseDetailPage = () => {
           <S.ReceiptSection>
             <S.ReceiptSectionHeader>
               <S.SectionTitle>영수증 (전체)</S.SectionTitle>
-              {canUploadReceipt() && (
-                <label>
-                  <S.UploadButton disabled={isUploadingReceipt || isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
-                    {isUploadingReceipt ? '업로드 중...' : '영수증 추가'}
-                  </S.UploadButton>
-                  <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={handleReceiptUpload}
-                    disabled={isUploadingReceipt || isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-              )}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {allReceiptsWithDescription.length > 0 && (
+                  <button
+                    onClick={handleBatchDownload}
+                    disabled={isDownloadingBatch || isUploadingReceipt || deletingReceiptId !== null}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: isDownloadingBatch ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      opacity: (isDownloadingBatch || isUploadingReceipt || deletingReceiptId !== null) ? 0.6 : 1
+                    }}
+                  >
+                    {isDownloadingBatch ? '다운로드 중...' : '전체 다운로드 (ZIP)'}
+                  </button>
+                )}
+                {canUploadReceipt() && (
+                  <label>
+                    <S.UploadButton disabled={isUploadingReceipt || isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}>
+                      {isUploadingReceipt ? '업로드 중...' : '영수증 추가'}
+                    </S.UploadButton>
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={handleReceiptUpload}
+                      disabled={isUploadingReceipt || isApproving || isRejecting || isCancelingApproval || isCancelingRejection || isMarkingAsPaid || isCompletingTax}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                )}
+              </div>
             </S.ReceiptSectionHeader>
             {allReceiptsWithDescription.length > 0 ? (
               <S.ReceiptList>
