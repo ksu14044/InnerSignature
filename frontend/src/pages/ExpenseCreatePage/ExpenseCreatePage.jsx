@@ -963,19 +963,6 @@ const ExpenseCreatePage = () => {
         </S.MobileCardContainer>
       </S.Section>
 
-      {/* 4. 영수증 안내 섹션 */}
-      <S.Section ref={receiptSectionRef}>
-        <S.SectionHeader>
-          <S.SectionTitle>
-            영수증 안내
-          </S.SectionTitle>
-        </S.SectionHeader>
-        <S.InfoMessage style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#e7f3ff', border: '1px solid #007bff', borderRadius: '8px' }}>
-          각 지출 상세 내역에 영수증을 첨부해주세요. 영수증은 필수 항목입니다.
-          <br />
-          지출 상세 내역 추가/수정 모달에서 영수증을 첨부할 수 있습니다.
-        </S.InfoMessage>
-      </S.Section>
 
       {/* 5. 하단 총계 및 버튼 */}
       <S.TotalSection data-tourid="tour-total-amount">
