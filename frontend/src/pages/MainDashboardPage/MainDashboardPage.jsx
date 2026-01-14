@@ -37,14 +37,35 @@ const MainDashboardPage = () => {
   const [subscription, setSubscription] = useState(null);
   const [totalCredit, setTotalCredit] = useState(0);
   
-  // 기간 필터 (기본값: 이번 달)
-  const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: ''
-  });
+  // 날짜를 YYYY-MM-DD 형식으로 변환하는 헬퍼 함수
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // 초기 필터 계산 함수
+  const getInitialMonthFilters = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0);
+    return {
+      startDate: formatDate(monthStart),
+      endDate: formatDate(monthEnd)
+    };
+  };
+
+  // 기간 필터 (기본값: 이번 달) - 초기값을 바로 설정
+  const [filters, setFilters] = useState(getInitialMonthFilters);
 
   // 현재 선택된 기간 표시를 위한 상태
-  const [selectedPeriod, setSelectedPeriod] = useState('이번 달');
+  const [selectedPeriod, setSelectedPeriod] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}년 ${today.getMonth() + 1}월`;
+  });
 
   // 선택된 월을 관리하는 상태
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -64,8 +85,11 @@ const MainDashboardPage = () => {
       ? expenses.filter(exp => exp.drafterId === user.userId)
       : expenses;
 
+    // 승인된 결의서만 필터링
+    const approvedExpenses = filteredExpenses.filter(exp => exp.status === 'APPROVED');
+
     return {
-      totalAmount: filteredExpenses.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0),
+      totalAmount: approvedExpenses.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0),
       waitCount: filteredExpenses.filter(exp => exp.status === 'WAIT').length,
       rejectedCount: filteredExpenses.filter(exp => exp.status === 'REJECTED').length,
       approvedCount: filteredExpenses.filter(exp => exp.status === 'APPROVED').length
@@ -168,21 +192,6 @@ const MainDashboardPage = () => {
       [field]: value
     }));
   };
-
-  // 날짜를 YYYY-MM-DD 형식으로 변환하는 헬퍼 함수
-  const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  // 초기 로드 시 이번 달로 설정
-  useEffect(() => {
-    if (!filters.startDate && !filters.endDate) {
-      handleMonthFilter(new Date());
-    }
-  }, []);
 
   // 개선된 빠른 기간 선택 핸들러
   const handleQuickFilter = (period) => {
