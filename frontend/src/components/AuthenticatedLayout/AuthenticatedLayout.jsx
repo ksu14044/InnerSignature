@@ -58,6 +58,7 @@ const getAdditionalButtons = (pathname, user, navigate) => {
     alignItems: 'center',
     gap: '8px',
     fontSize: '14px',
+    fontWeight: '600',
   };
 
   // 결의서 목록 버튼 (대시보드/결의서 목록 외 페이지에서도 제공)

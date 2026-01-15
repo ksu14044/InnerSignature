@@ -150,8 +150,11 @@ public interface ExpenseMapper {
     // 2. 상세 항목(지출 내역) 저장
     void insertExpenseDetail(ExpenseDetailDto expenseDetailDto);
 
-    // 2-1. 상세 항목 삭제
+    // 2-1. 상세 항목 삭제 (전체)
     void deleteExpenseDetails(@Param("expenseReportId") Long expenseReportId, @Param("companyId") Long companyId);
+
+    // 2-2. 상세 항목 단건 삭제
+    void deleteExpenseDetail(@Param("expenseDetailId") Long expenseDetailId, @Param("companyId") Long companyId);
 
     // 3. 결재 라인 저장
     void insertApprovalLine(ApprovalLineDto approvalLineDto);
@@ -188,6 +191,9 @@ public interface ExpenseMapper {
 
     // 영수증 조회 (단건)
     ReceiptDto selectReceiptById(@Param("receiptId") Long receiptId, @Param("companyId") Long companyId);
+
+    // 영수증의 expense_detail_id 업데이트
+    void updateReceiptDetailId(@Param("receiptId") Long receiptId, @Param("expenseDetailId") Long expenseDetailId, @Param("companyId") Long companyId);
 
     // 상세 항목의 부가세 공제 정보 업데이트
     void updateExpenseDetailTaxInfo(

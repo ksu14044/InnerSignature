@@ -52,6 +52,11 @@ const ExpenseCreatePage = () => {
   const [receipts, setReceipts] = useState([]); // 서버에 업로드된 영수증 목록 (수정 모드)
   const [pendingReceipts, setPendingReceipts] = useState([]); // 생성 전에 선택한 영수증 파일들
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  
+  // 6-1. 항목 단위 영수증 업로드 관련 상태 (수정 모드)
+  const [isReceiptDetailSelectModalOpen, setIsReceiptDetailSelectModalOpen] = useState(false);
+  const [selectedReceiptFile, setSelectedReceiptFile] = useState(null);
+  const [savedDetailsForReceipt, setSavedDetailsForReceipt] = useState([]); // 영수증 업로드용 저장된 상세 내역
 
   // 7. 토스트 메시지 상태
   const [toastMessage, setToastMessage] = useState(null);
@@ -403,7 +408,7 @@ const ExpenseCreatePage = () => {
     setPendingReceipts(newPendingReceipts);
   };
 
-  // 영수증 업로드 처리 (수정 모드)
+  // 영수증 업로드 처리 (수정 모드) - 항목 단위 업로드로 변경
   const handleReceiptUpload = async (event) => {
     if (isUploadingReceipt) return;
     if (!user) {
@@ -435,15 +440,63 @@ const ExpenseCreatePage = () => {
       return;
     }
 
+    // 상세 내역이 없는 경우 경고
+    if (!details || details.length === 0) {
+      alert("영수증을 첨부할 상세 내역이 없습니다. 먼저 상세 내역을 추가해주세요.");
+      event.target.value = '';
+      return;
+    }
+
+    // 저장된 상세 내역 조회하여 expenseDetailId 확인
+    try {
+      const detailResponse = await fetchExpenseDetail(id);
+      if (!detailResponse.success || !detailResponse.data || !detailResponse.data.details) {
+        alert("상세 내역을 조회할 수 없습니다.");
+        event.target.value = '';
+        return;
+      }
+
+      const savedDetails = detailResponse.data.details;
+      if (savedDetails.length === 0) {
+        alert("영수증을 첨부할 상세 내역이 없습니다.");
+        event.target.value = '';
+        return;
+      }
+
+      // 상세 내역이 하나만 있으면 바로 업로드
+      if (savedDetails.length === 1) {
+        await uploadReceiptToDetail(savedDetails[0].expenseDetailId, file);
+      } else {
+        // 여러 항목이 있으면 선택 모달 표시
+        setSavedDetailsForReceipt(savedDetails);
+        setSelectedReceiptFile(file);
+        setIsReceiptDetailSelectModalOpen(true);
+      }
+    } catch (error) {
+      console.error("상세 내역 조회 오류:", error);
+      alert("상세 내역을 조회하는 중 오류가 발생했습니다.");
+    }
+
+    event.target.value = '';
+  };
+
+  // 선택한 항목에 영수증 업로드
+  const uploadReceiptToDetail = async (expenseDetailId, file) => {
+    if (!expenseDetailId || !file || !id) return;
+
     setIsUploadingReceipt(true);
     try {
-      const response = await uploadReceipt(id, user.userId, file);
+      const response = await uploadReceiptForDetail(expenseDetailId, id, user.userId, file);
       if (response.success) {
         alert("영수증이 업로드되었습니다!");
-        // 영수증 목록 갱신
-        const receiptsResponse = await getReceipts(id);
-        if (receiptsResponse.success) {
-          setReceipts(receiptsResponse.data || []);
+        // 상세 정보 다시 조회하여 영수증 목록 갱신
+        const detailResponse = await fetchExpenseDetail(id);
+        if (detailResponse.success && detailResponse.data) {
+          // 상세 내역별 영수증은 data.details[].receipts에 포함됨
+          // 문서 단위 영수증도 확인
+          if (detailResponse.data.receipts && detailResponse.data.receipts.length > 0) {
+            setReceipts(detailResponse.data.receipts || []);
+          }
         }
       } else {
         alert("영수증 업로드 실패: " + response.message);
@@ -454,8 +507,16 @@ const ExpenseCreatePage = () => {
       alert(errorMessage);
     } finally {
       setIsUploadingReceipt(false);
-      event.target.value = '';
     }
+  };
+
+  // 영수증 첨부할 항목 선택 핸들러
+  const handleReceiptDetailSelect = async (expenseDetailId) => {
+    if (!selectedReceiptFile) return;
+    
+    setIsReceiptDetailSelectModalOpen(false);
+    await uploadReceiptToDetail(expenseDetailId, selectedReceiptFile);
+    setSelectedReceiptFile(null);
   };
 
   // 결재자 선택 핸들러 (순서 보장)
@@ -504,15 +565,18 @@ const ExpenseCreatePage = () => {
       }
     }
     
-    // 3. 각 상세 내역별 영수증 첨부 필수 확인
-    const allDetailsHaveReceipts = completedDetails.every(detail => 
-      detail.receiptFiles && detail.receiptFiles.length > 0
-    );
+    // 3. (생성 모드에서만) 각 상세 내역별 영수증 첨부 필수 확인
+    // 수정 모드에서는 기존에 업로드된 영수증을 그대로 사용하는 것을 허용
+    if (!isEditMode) {
+      const allDetailsHaveReceipts = completedDetails.every(detail => 
+        detail.receiptFiles && detail.receiptFiles.length > 0
+      );
 
-    if (!allDetailsHaveReceipts) {
-      missingFields.push('모든 지출 상세 내역에 영수증을 첨부해야 합니다');
-      if (!firstMissingField) {
-        firstMissingField = { type: 'detailsSection', ref: detailsSectionRef };
+      if (!allDetailsHaveReceipts) {
+        missingFields.push('모든 지출 상세 내역에 영수증을 첨부해야 합니다');
+        if (!firstMissingField) {
+          firstMissingField = { type: 'detailsSection', ref: detailsSectionRef };
+        }
       }
     }
     
@@ -610,7 +674,124 @@ const ExpenseCreatePage = () => {
         // 수정 모드
         const response = await updateExpense(id, payload);
         if (response.success) {
-          alert('지출결의서가 수정되었습니다!');
+          // 저장 후 영수증 업로드 (생성 모드와 동일한 방식)
+          const hasReceiptFiles = receiptFilesByIndex.some(files => files && files.length > 0);
+          
+          if (hasReceiptFiles) {
+            setIsUploadingReceipt(true);
+            let totalUploadSuccessCount = 0;
+            let totalUploadFailCount = 0;
+
+            // 상세 내역 ID 조회를 위해 상세 정보 다시 가져오기
+            try {
+              console.log('수정 후 상세 내역 조회 시작, expenseId:', id);
+              const detailResponse = await fetchExpenseDetail(id);
+              
+              if (!detailResponse.success) {
+                console.error('상세 내역 조회 실패:', detailResponse);
+                alert('상세 내역 조회에 실패했습니다. 영수증은 상세 페이지에서 업로드해주세요.');
+                setIsUploadingReceipt(false);
+                navigate(`/detail/${id}`);
+                return;
+              }
+              
+              if (!detailResponse.data || !detailResponse.data.details) {
+                console.error('상세 내역 데이터가 없습니다:', detailResponse.data);
+                alert('상세 내역 데이터를 찾을 수 없습니다. 영수증은 상세 페이지에서 업로드해주세요.');
+                setIsUploadingReceipt(false);
+                navigate(`/detail/${id}`);
+                return;
+              }
+              
+              const savedDetails = detailResponse.data.details;
+              console.log('저장된 상세 내역:', savedDetails.map(d => ({
+                id: d.expenseDetailId,
+                category: d.category,
+                description: d.description,
+                amount: d.amount
+              })));
+              console.log('업로드할 영수증이 있는 내역:', formattedDetails.map((d, idx) => ({
+                index: idx,
+                category: d.category,
+                description: d.description,
+                amount: d.amount,
+                receiptCount: receiptFilesByIndex[idx]?.length || 0
+              })));
+
+              // 각 상세 내역별로 영수증 업로드 (인덱스 기반 매칭 - 생성 모드와 동일)
+              for (let i = 0; i < formattedDetails.length; i++) {
+                const detail = formattedDetails[i];
+                const receiptFiles = receiptFilesByIndex[i];
+                
+                if (receiptFiles && receiptFiles.length > 0) {
+                  // 인덱스 기반 매칭 (저장된 상세 내역은 저장 순서대로 반환되므로 인덱스로 매칭 가능)
+                  const savedDetail = savedDetails[i];
+                  
+                  if (!savedDetail) {
+                    console.error(`상세 내역을 찾을 수 없습니다 (인덱스: ${i}):`, {
+                      category: detail.category,
+                      description: detail.description,
+                      amount: detail.amount
+                    });
+                    totalUploadFailCount += receiptFiles.length;
+                    continue;
+                  }
+                  
+                  if (!savedDetail.expenseDetailId) {
+                    console.error(`expenseDetailId가 없습니다 (인덱스: ${i}):`, savedDetail);
+                    totalUploadFailCount += receiptFiles.length;
+                    continue;
+                  }
+                  
+                  console.log(`영수증 업로드 시작: expenseDetailId=${savedDetail.expenseDetailId}, 파일 수=${receiptFiles.length}`);
+                  
+                  for (const file of receiptFiles) {
+                    try {
+                      console.log(`영수증 업로드 시도: expenseDetailId=${savedDetail.expenseDetailId}, filename=${file.name}`);
+                      const uploadResponse = await uploadReceiptForDetail(
+                        savedDetail.expenseDetailId, 
+                        id, 
+                        user.userId, 
+                        file
+                      );
+                      if (uploadResponse.success) {
+                        totalUploadSuccessCount++;
+                        console.log(`영수증 업로드 성공: ${file.name}`);
+                      } else {
+                        totalUploadFailCount++;
+                        console.error('영수증 업로드 실패:', uploadResponse.message);
+                      }
+                    } catch (error) {
+                      totalUploadFailCount++;
+                      console.error('영수증 업로드 오류:', error);
+                      console.error('에러 상세:', error.response?.data || error.message);
+                    }
+                  }
+                }
+              }
+              
+              setIsUploadingReceipt(false);
+
+              if (totalUploadSuccessCount > 0) {
+                if (totalUploadFailCount > 0) {
+                  alert(`⚠️ 지출결의서가 수정되었습니다!\n${totalUploadSuccessCount}개의 영수증이 업로드되었습니다.\n${totalUploadFailCount}개의 영수증 업로드에 실패했습니다.\n상세 페이지에서 다시 업로드해주세요.`);
+                } else {
+                  alert('지출결의서가 수정되고 모든 영수증이 업로드되었습니다!');
+                }
+              } else if (totalUploadFailCount > 0) {
+                alert(`⚠️ 지출결의서가 수정되었습니다.\n❌ 모든 영수증 업로드에 실패했습니다.\n상세 페이지에서 다시 업로드해주세요.\n\n실패한 영수증 수: ${totalUploadFailCount}개`);
+              } else {
+                alert('지출결의서가 수정되었습니다!');
+              }
+            } catch (error) {
+              console.error('상세 내역 조회 실패:', error);
+              alert('지출결의서가 수정되었으나 영수증 업로드 중 오류가 발생했습니다. 상세 페이지에서 다시 업로드해주세요.');
+              setIsUploadingReceipt(false);
+            }
+          } else {
+            alert('지출결의서가 수정되었습니다!');
+          }
+          
           navigate(`/detail/${id}`);
         } else {
           alert('수정 실패: ' + response.message);
@@ -1013,6 +1194,58 @@ const ExpenseCreatePage = () => {
             amountInputRef={amountInputRefs.current[editingDetailIndex || 0]}
           />
         </Suspense>
+      )}
+
+      {/* 영수증 첨부할 항목 선택 모달 (수정 모드) */}
+      {isReceiptDetailSelectModalOpen && isEditMode && id && (
+        <S.ModalOverlay onClick={() => {
+          setIsReceiptDetailSelectModalOpen(false);
+          setSelectedReceiptFile(null);
+        }}>
+          <S.ModalContent onClick={(e) => e.stopPropagation()}>
+            <S.ModalHeader>
+              <S.ModalTitle>영수증을 첨부할 항목 선택</S.ModalTitle>
+              <S.ModalCloseButton onClick={() => {
+                setIsReceiptDetailSelectModalOpen(false);
+                setSelectedReceiptFile(null);
+              }}>
+                ×
+              </S.ModalCloseButton>
+            </S.ModalHeader>
+            <S.ModalBody>
+              <p style={{ marginBottom: '16px', color: '#666', fontSize: '14px' }}>
+                다음 항목 중 영수증을 첨부할 항목을 선택하세요.
+              </p>
+              {savedDetailsForReceipt.length > 0 ? (
+                <S.DetailSelectList>
+                  {savedDetailsForReceipt.map((detail, index) => (
+                    <S.DetailSelectItem
+                      key={detail.expenseDetailId}
+                      onClick={() => handleReceiptDetailSelect(detail.expenseDetailId)}
+                      disabled={isUploadingReceipt}
+                    >
+                      <S.DetailSelectItemInfo>
+                        <S.DetailSelectItemTitle>
+                          #{index + 1} - {detail.category || '항목 없음'}
+                        </S.DetailSelectItemTitle>
+                        <S.DetailSelectItemDesc>
+                          {detail.description || '적요 없음'} | {detail.amount ? formatNumber(detail.amount) + '원' : '금액 없음'}
+                        </S.DetailSelectItemDesc>
+                      </S.DetailSelectItemInfo>
+                      {isUploadingReceipt && (
+                        <span style={{ color: '#999', fontSize: '12px' }}>업로드 중...</span>
+                      )}
+                    </S.DetailSelectItem>
+                  ))}
+                </S.DetailSelectList>
+              ) : (
+                <p style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
+                  저장된 상세 내역이 없습니다. 먼저 결의서를 저장해주세요.
+                </p>
+              )}
+            </S.ModalBody>
+          </S.ModalContent>
+        </S.ModalOverlay>
       )}
 
       {/* 토스트 메시지 */}

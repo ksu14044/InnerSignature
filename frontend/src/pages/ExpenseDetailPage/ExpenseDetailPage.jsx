@@ -51,21 +51,36 @@ const ExpenseDetailPage = () => {
       : fetchExpenseDetail(id);
     
     fetchDetail
-      .then((res) => {
+      .then(async (res) => {
         if (res.success) {
-          setDetail(res.data);
-          // 문서 단위 영수증 (호환성 유지)
-          if (res.data.receipts) {
-            setReceipts(res.data.receipts || []);
+          const data = res.data;
+          setDetail(data);
+
+          // 1) 문서 단위 영수증 (res.data.receipts)이 있으면 우선 사용
+          if (data.receipts && data.receipts.length > 0) {
+            setReceipts(data.receipts || []);
+          } else {
+            // 2) 없으면 별도 영수증 조회 API로 문서 단위 영수증 로드 (구버전 호환)
+            try {
+              const receiptRes = await getReceipts(id);
+              if (receiptRes.success) {
+                setReceipts(receiptRes.data || []);
+              }
+            } catch (e) {
+              console.error('영수증 별도 조회 실패:', e);
+            }
           }
-          // 상세 내역별 영수증은 res.data.details[].receipts에 포함됨
-          console.log('Loaded expense detail:', res.data); // 데이터 확인용 로그
-          console.log('Details with receipts:', res.data.details?.map(d => ({
+
+          // 상세 내역별 영수증은 data.details[].receipts에 포함될 수 있음
+          console.log('Loaded expense detail:', data); // 데이터 확인용 로그
+          console.log('Details with receipts:', data.details?.map(d => ({
             id: d.expenseDetailId,
             category: d.category,
             receiptsCount: d.receipts?.length || 0
           }))); // 상세 내역별 영수증 확인용 로그
-        } else navigate('/');
+        } else {
+          navigate('/');
+        }
       })
       .catch(() => navigate('/'));
   }, [id, navigate, user]);
@@ -1124,10 +1139,10 @@ const ExpenseDetailPage = () => {
          )}
        </S.ButtonGroup>
 
-      {/* 4. 영수증 섹션 - 모든 상세 내역의 영수증을 모아서 표시 (적요와 함께) */}
+      {/* 4. 영수증 섹션 - 모든 상세 내역의 영수증과 문서 단위 영수증을 모아서 표시 (적요와 함께) */}
       {canViewReceipt() && (() => {
-        // 모든 상세 내역의 영수증을 수집하고 적요 정보 포함
-        const allReceiptsWithDescription = detail.details?.flatMap(item => 
+        // 1) 모든 상세 내역의 영수증을 수집하고 적요 정보 포함
+        let allReceiptsWithDescription = detail.details?.flatMap(item => 
           (item.receipts || []).map(receipt => ({
             ...receipt,
             description: item.description || '-',
@@ -1135,6 +1150,31 @@ const ExpenseDetailPage = () => {
             amount: item.amount || 0
           }))
         ) || [];
+
+        // 2) 문서 단위 영수증(detail.receipts)도 함께 리스트에 포함
+        //    - 이미 상세 내역에 매핑되어 있는 receiptId는 중복 방지
+        if (receipts && receipts.length > 0) {
+          const detailReceiptIds = new Set(
+            allReceiptsWithDescription
+              .map(r => r.receiptId)
+              .filter(id => id != null)
+          );
+
+          const docLevelReceipts = receipts
+            .filter(r => r.receiptId != null && !detailReceiptIds.has(r.receiptId))
+            .map(r => ({
+              ...r,
+              // 문서 단위 영수증임을 구분할 수 있도록 기본 라벨 제공
+              description: r.description || '문서 단위 영수증',
+              category: r.category || '-',
+              amount: detail.totalAmount || 0
+            }));
+
+          allReceiptsWithDescription = [
+            ...allReceiptsWithDescription,
+            ...docLevelReceipts
+          ];
+        }
         
         return (
           <S.ReceiptSection>

@@ -412,6 +412,13 @@
         AND company_id = #{companyId}
     </delete>
 
+    <!-- 상세 항목 단건 삭제 -->
+    <delete id="deleteExpenseDetail">
+        DELETE FROM expense_detail_tb
+        WHERE expense_detail_id = #{expenseDetailId}
+        AND company_id = #{companyId}
+    </delete>
+
     <insert id="insertApprovalLine">
         INSERT INTO approval_line_tb (
             expense_report_id,
@@ -578,6 +585,15 @@
         WHERE r.receipt_id = #{receiptId}
         AND r.company_id = #{companyId}
     </select>
+
+    <!-- 영수증의 expense_detail_id 업데이트 -->
+    <update id="updateReceiptDetailId">
+        UPDATE receipt_tb
+        SET expense_detail_id = #{expenseDetailId}
+        WHERE receipt_id = #{receiptId}
+        AND company_id = #{companyId}
+        AND expense_detail_id IS NULL
+    </update>
 
     <!-- 세무처리 완료 업데이트 -->
     <update id="updateTaxProcessed">
@@ -1024,20 +1040,20 @@
     <update id="updateExpenseDetail">
         UPDATE expense_detail_tb
         SET
-            category = #{category},
-            merchant_name = #{merchantName},
-            description = #{description},
-            amount = #{amount},
-            actual_paid_amount = #{actualPaidAmount},
-            payment_method = #{paymentMethod},
-            payment_req_date = #{paymentReqDate},
-            card_number = #{cardNumber},
-            is_pre_approval = #{isPreApproval, jdbcType=TINYINT},
-            note = #{note},
-            is_tax_deductible = #{isTaxDeductible, jdbcType=TINYINT},
-            non_deductible_reason = #{nonDeductibleReason}
-        WHERE expense_detail_id = #{expenseDetailId}
-          AND company_id = #{companyId}
+            category = #{expenseDetail.category},
+            merchant_name = #{expenseDetail.merchantName},
+            description = #{expenseDetail.description},
+            amount = #{expenseDetail.amount},
+            actual_paid_amount = #{expenseDetail.actualPaidAmount},
+            payment_method = #{expenseDetail.paymentMethod},
+            payment_req_date = #{expenseDetail.paymentReqDate},
+            card_number = #{expenseDetail.cardNumber},
+            is_pre_approval = #{expenseDetail.isPreApproval, jdbcType=TINYINT},
+            note = #{expenseDetail.note},
+            is_tax_deductible = #{expenseDetail.isTaxDeductible, jdbcType=TINYINT},
+            non_deductible_reason = #{expenseDetail.nonDeductibleReason}
+        WHERE expense_detail_id = #{expenseDetail.expenseDetailId}
+          AND company_id = #{expenseDetail.companyId}
     </update>
 
     <!-- 세무 수정 요청 건 조회: 작성자 기준 -->

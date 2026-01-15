@@ -864,21 +864,111 @@ public class ExpenseService {
         request.setStatus("WAIT"); // 상태는 WAIT로 유지
         expenseMapper.updateExpenseReport(request, companyId);
 
-        // 11. 기존 상세 항목 삭제
-        expenseMapper.deleteExpenseDetails(expenseId, companyId);
-
-        // 12. 새로운 상세 항목 저장
+        // 11-12. 상세 항목 업데이트 (삭제 후 재생성 대신 UPDATE/INSERT/DELETE 방식 사용)
+        // 영수증이 CASCADE 삭제되지 않도록 기존 항목은 UPDATE로 처리
         if (details != null) {
             logger.debug("상세 항목 수정 시작 - 항목 수: {}", details.size());
+            
+            // 기존 항목 ID 목록
+            java.util.Set<Long> existingDetailIds = existingDetails != null 
+                ? existingDetails.stream()
+                    .map(ExpenseDetailDto::getExpenseDetailId)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet())
+                : java.util.Collections.emptySet();
+            
+            // 새 항목 ID 목록 (수정된 항목)
+            java.util.Set<Long> newDetailIds = details.stream()
+                .map(ExpenseDetailDto::getExpenseDetailId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+            
+            // 1. 삭제할 항목: 기존에는 있지만 새 목록에는 없는 항목
+            java.util.Set<Long> toDelete = new java.util.HashSet<>(existingDetailIds);
+            toDelete.removeAll(newDetailIds);
+            for (Long detailId : toDelete) {
+                expenseMapper.deleteExpenseDetail(detailId, companyId);
+                logger.debug("상세 항목 삭제 - expenseDetailId: {}", detailId);
+            }
+            
+            // 2. 업데이트/추가 처리
+            int updateCount = 0;
+            int insertCount = 0;
             for (ExpenseDetailDto detail : details) {
                 detail.setExpenseReportId(expenseId);
                 detail.setCompanyId(companyId);
                 // 지급 요청일과 가승인은 결의서 단위이므로 detail에서는 null로 설정
                 detail.setPaymentReqDate(null);
                 detail.setIsPreApproval(null);
-                expenseMapper.insertExpenseDetail(detail);
+                
+                if (detail.getExpenseDetailId() != null && existingDetailIds.contains(detail.getExpenseDetailId())) {
+                    // 기존 항목 업데이트 (영수증 보존을 위해)
+                    expenseMapper.updateExpenseDetail(detail);
+                    updateCount++;
+                    logger.debug("상세 항목 업데이트 - expenseDetailId: {}", detail.getExpenseDetailId());
+                } else {
+                    // 새 항목 추가
+                    detail.setExpenseDetailId(null); // INSERT를 위해 null로 설정
+                    expenseMapper.insertExpenseDetail(detail);
+                    insertCount++;
+                    logger.debug("상세 항목 추가 - category: {}", detail.getCategory());
+                }
             }
-            logger.debug("상세 항목 수정 완료");
+            logger.debug("상세 항목 수정 완료 - 업데이트: {}, 추가: {}, 삭제: {}", updateCount, insertCount, toDelete.size());
+            
+            // 12-1. 새로 추가된 항목이 있고 문서 단위 영수증이 있는 경우 자동 매핑
+            if (insertCount > 0) {
+                // 문서 단위 영수증 조회 (expense_detail_id가 NULL인 것)
+                List<ReceiptDto> unassignedReceipts = expenseMapper.selectReceiptsByExpenseReportId(expenseId, companyId)
+                    .stream()
+                    .filter(r -> r.getExpenseDetailId() == null)
+                    .collect(java.util.stream.Collectors.toList());
+                
+                if (!unassignedReceipts.isEmpty()) {
+                    // 저장 후 상세 내역을 다시 조회하여 새로 생성된 expenseDetailId 확인
+                    List<ExpenseDetailDto> savedDetails = expenseMapper.selectExpenseDetails(expenseId, companyId);
+                    
+                    // 새로 추가된 항목만 필터링 (기존 ID 목록에 없는 것)
+                    List<ExpenseDetailDto> newlyAddedDetails = savedDetails.stream()
+                        .filter(d -> !existingDetailIds.contains(d.getExpenseDetailId()))
+                        .collect(java.util.stream.Collectors.toList());
+                    
+                    // 문서 단위 영수증을 새 항목에 매핑
+                    // 영수증을 uploaded_at 역순으로 정렬 (가장 최근 업로드된 것부터)
+                    unassignedReceipts.sort((a, b) -> {
+                        if (a.getUploadedAt() == null && b.getUploadedAt() == null) return 0;
+                        if (a.getUploadedAt() == null) return 1;
+                        if (b.getUploadedAt() == null) return -1;
+                        return b.getUploadedAt().compareTo(a.getUploadedAt());
+                    });
+                    
+                    // 새 항목을 expense_detail_id 순서로 정렬 (생성 순서)
+                    newlyAddedDetails.sort((a, b) -> {
+                        if (a.getExpenseDetailId() == null && b.getExpenseDetailId() == null) return 0;
+                        if (a.getExpenseDetailId() == null) return 1;
+                        if (b.getExpenseDetailId() == null) return -1;
+                        return a.getExpenseDetailId().compareTo(b.getExpenseDetailId());
+                    });
+                    
+                    // 1:1 매핑 (가장 최근 업로드된 영수증을 가장 최근 생성된 항목에 매핑)
+                    int mappingCount = 0;
+                    for (int i = 0; i < Math.min(unassignedReceipts.size(), newlyAddedDetails.size()); i++) {
+                        ReceiptDto receipt = unassignedReceipts.get(i);
+                        ExpenseDetailDto targetDetail = newlyAddedDetails.get(i);
+                        
+                        // 영수증을 새 항목에 매핑
+                        expenseMapper.updateReceiptDetailId(receipt.getReceiptId(), targetDetail.getExpenseDetailId(), companyId);
+                        mappingCount++;
+                        logger.debug("문서 단위 영수증 매핑 - receiptId: {}, expenseDetailId: {}, category: {}", 
+                            receipt.getReceiptId(), targetDetail.getExpenseDetailId(), targetDetail.getCategory());
+                    }
+                    logger.debug("문서 단위 영수증 자동 매핑 완료 - 매핑된 영수증 수: {}", mappingCount);
+                }
+            }
+        } else {
+            // details가 null이면 모든 기존 항목 삭제
+            expenseMapper.deleteExpenseDetails(expenseId, companyId);
+            logger.debug("모든 상세 항목 삭제");
         }
 
         // 13. 기존 결재 라인 삭제 (WAIT 상태이므로 결재가 시작되지 않았음)

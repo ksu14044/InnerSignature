@@ -1113,3 +1113,120 @@ export const ToastList = styled.ul`
 export const ToastListItem = styled.li`
   margin-bottom: 4px;
 `;
+
+// 영수증 첨부할 항목 선택 모달 스타일
+export const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+`;
+
+export const ModalContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+`;
+
+export const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e0e0e0;
+`;
+
+export const ModalTitle = styled.h3`
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+`;
+
+export const ModalCloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f0f0f0;
+    color: #333;
+  }
+`;
+
+export const ModalBody = styled.div`
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+`;
+
+export const DetailSelectList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+export const DetailSelectItem = styled.button`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+
+  &:hover:not(:disabled) {
+    background: #e9ecef;
+    border-color: var(--primary-color, #007bff);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+export const DetailSelectItemInfo = styled.div`
+  flex: 1;
+`;
+
+export const DetailSelectItemTitle = styled.div`
+  font-weight: 600;
+  font-size: 15px;
+  color: #333;
+  margin-bottom: 4px;
+`;
+
+export const DetailSelectItemDesc = styled.div`
+  font-size: 13px;
+  color: #666;
+  line-height: 1.4;
+`;
