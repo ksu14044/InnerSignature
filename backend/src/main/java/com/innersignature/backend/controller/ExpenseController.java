@@ -479,6 +479,22 @@ public class ExpenseController {
     }
 
     /**
+     * 12-2-1. 상세내역ID만으로 영수증 목록 조회 API (세무사용)
+     * GET /api/expenses/receipts/by-detail-id/{expenseDetailId}
+     * 설명: 상세내역ID만으로 해당 상세 내역에 첨부된 영수증 목록을 조회합니다.
+     */
+    @Operation(summary = "상세내역ID로 영수증 목록 조회", description = "상세내역ID만으로 해당 상세 내역에 첨부된 영수증 목록을 조회합니다.")
+    @GetMapping("/receipts/by-detail-id/{expenseDetailId}")
+    public ApiResponse<List<ReceiptDto>> getReceiptsByDetailIdOnly(@PathVariable Long expenseDetailId) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        logger.debug("상세내역ID로 영수증 목록 조회 요청 - expenseDetailId: {}, userId: {}", 
+                expenseDetailId, currentUserId);
+        
+        List<ReceiptDto> receipts = expenseService.getReceiptsByDetailIdOnly(expenseDetailId, currentUserId);
+        return new ApiResponse<>(true, "영수증 목록 조회 성공", receipts);
+    }
+
+    /**
      * 12-3. 영수증 일괄 다운로드 API
      * POST /api/expenses/receipts/batch-download
      * 설명: 여러 영수증을 ZIP 파일로 압축하여 다운로드합니다.

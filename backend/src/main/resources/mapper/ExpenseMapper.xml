@@ -1056,6 +1056,15 @@
           AND company_id = #{expenseDetail.companyId}
     </update>
 
+    <!-- 상세 항목 ID로 지출결의서 ID 조회 -->
+    <select id="selectExpenseReportIdByDetailId" resultType="java.lang.Long">
+        SELECT expense_report_id
+        FROM expense_detail_tb
+        WHERE expense_detail_id = #{expenseDetailId}
+        AND company_id = #{companyId}
+        LIMIT 1
+    </select>
+
     <!-- 세무 수정 요청 건 조회: 작성자 기준 -->
     <select id="selectTaxRevisionRequestsByDrafter" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT

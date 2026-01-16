@@ -304,7 +304,20 @@ export const getReceiptsByDetail = async (expenseDetailId, expenseReportId) => {
     }
   };
 
-// 13-1. 영수증 일괄 다운로드
+// 13-1. 상세내역ID만으로 영수증 목록 조회 (세무사용)
+export const getReceiptsByDetailIdOnly = async (expenseDetailId) => {
+    try {
+      const response = await axiosInstance.get(
+        `${BASE_URL}/receipts/by-detail-id/${expenseDetailId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("상세내역ID로 영수증 조회 실패:", error);
+      throw error;
+    }
+  };
+
+// 13-2. 영수증 일괄 다운로드
 export const downloadReceiptsBatch = async (receiptIds) => {
   try {
     const response = await axiosInstance.post(

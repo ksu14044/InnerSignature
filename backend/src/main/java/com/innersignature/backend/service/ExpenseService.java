@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -1322,6 +1323,9 @@ public class ExpenseService {
     /**
      * 영수증 목록 조회
      */
+    /**
+     * 영수증 목록 조회 (행 단위 영수증만 반환 - expense_detail_id가 NULL이 아닌 영수증)
+     */
     public List<ReceiptDto> getReceipts(Long expenseReportId, Long userId) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         
@@ -1335,7 +1339,20 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("영수증 조회 권한이 없습니다.");
         }
 
-        return expenseMapper.selectReceiptsByExpenseReportId(expenseReportId, companyId);
+        // 행 단위 영수증만 조회 (expense_detail_id가 NULL이 아닌 영수증)
+        // 해당 문서의 모든 상세 내역을 가져와서 각 내역별 영수증을 조회
+        List<ExpenseDetailDto> details = expenseMapper.selectExpenseDetails(expenseReportId, companyId);
+        List<ReceiptDto> allReceipts = new ArrayList<>();
+        
+        for (ExpenseDetailDto detail : details) {
+            List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseDetailId(
+                detail.getExpenseDetailId(), companyId);
+            if (receipts != null && !receipts.isEmpty()) {
+                allReceipts.addAll(receipts);
+            }
+        }
+        
+        return allReceipts;
     }
 
     /**
@@ -1366,6 +1383,22 @@ public class ExpenseService {
         getExpenseDetail(expenseReportId, userId);
         
         return expenseReceiptService.getReceiptsByDetail(expenseDetailId, expenseReportId, userId);
+    }
+
+    /**
+     * 상세내역ID만으로 영수증 목록 조회 (세무사용)
+     */
+    public List<ReceiptDto> getReceiptsByDetailIdOnly(Long expenseDetailId, Long userId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        
+        // 상세내역ID로 expenseReportId 조회
+        Long expenseReportId = expenseMapper.selectExpenseReportIdByDetailId(expenseDetailId, companyId);
+        if (expenseReportId == null) {
+            throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 상세 내역을 찾을 수 없습니다.");
+        }
+        
+        // 영수증 조회 (권한 검증 포함)
+        return getReceiptsByDetail(expenseDetailId, expenseReportId, userId);
     }
 
     /**
@@ -2079,13 +2112,16 @@ public class ExpenseService {
                     .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
         }
         
-        // 영수증 데이터 조회
-        Map<Long, List<ReceiptDto>> receiptsMap = new HashMap<>();
+        // 영수증 데이터 조회 (상세 내역별로 조회 - 행 단위)
+        Map<Long, List<ReceiptDto>> receiptsByDetailMap = new HashMap<>();
         if (!expenseReportIds.isEmpty()) {
-            for (Long reportId : expenseReportIds) {
-                List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseReportId(reportId, companyId);
+            // 모든 상세 내역을 가져와서 각 내역별로 영수증 조회
+            List<ExpenseDetailDto> allDetails = expenseMapper.selectExpenseDetailsBatch(expenseReportIds, companyId);
+            for (ExpenseDetailDto detail : allDetails) {
+                List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseDetailId(
+                    detail.getExpenseDetailId(), companyId);
                 if (receipts != null && !receipts.isEmpty()) {
-                    receiptsMap.put(reportId, receipts);
+                    receiptsByDetailMap.put(detail.getExpenseDetailId(), receipts);
                 }
             }
         }
@@ -2093,7 +2129,7 @@ public class ExpenseService {
         // 엑셀 파일 생성 분기
         String projectRoot = System.getProperty("user.dir");
         if ("tax-review".equals(exportType)) {
-            return createTaxReviewWorkbook(expenseReports, detailsMap, receiptsMap, projectRoot);
+            return createTaxReviewWorkbook(expenseReports, detailsMap, receiptsByDetailMap, projectRoot);
         } else {
             return createBasicExpenseWorkbook(expenseReports, detailsMap, projectRoot);
         }
@@ -2262,16 +2298,16 @@ public class ExpenseService {
      */
     private File createTaxReviewWorkbook(List<ExpenseReportDto> expenseReports,
                                        Map<Long, List<ExpenseDetailDto>> detailsMap,
-                                       Map<Long, List<ReceiptDto>> receiptsMap,
+                                       Map<Long, List<ReceiptDto>> receiptsByDetailMap,
                                        String projectRoot) throws IOException {
         // 엑셀 파일 생성
         Workbook workbook = new XSSFWorkbook();
 
         // Sheet 1: 전체 증빙 내역
-        createFullDetailSheet(workbook, expenseReports, detailsMap, receiptsMap, projectRoot);
+        createFullDetailSheet(workbook, expenseReports, detailsMap, receiptsByDetailMap, projectRoot);
 
         // Sheet 2: 증빙 누락 체크리스트
-        createMissingReceiptSheet(workbook, expenseReports, receiptsMap);
+        createMissingReceiptSheet(workbook, expenseReports, detailsMap, receiptsByDetailMap);
 
         // Sheet 3: 부가세 검토 항목
         createVatReviewSheet(workbook, expenseReports, detailsMap);
@@ -2648,7 +2684,7 @@ public class ExpenseService {
         
         // 헤더 행 생성
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"전표일자", "적요", "차변계정과목", "차변금액", "대변계정과목", "대변금액", "문서번호", "비고"};
+        String[] headers = {"전표일자", "적요", "차변계정과목", "차변금액", "대변계정과목", "대변금액", "문서번호", "상세내역ID", "비고"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -2835,13 +2871,16 @@ public class ExpenseService {
                     .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
         }
         
-        // 영수증 데이터 조회
-        Map<Long, List<ReceiptDto>> receiptsMap = new HashMap<>();
+        // 영수증 데이터 조회 (상세 내역별로 조회 - 행 단위)
+        Map<Long, List<ReceiptDto>> receiptsByDetailMap = new HashMap<>();
         if (!expenseReportIds.isEmpty()) {
-            for (Long reportId : expenseReportIds) {
-                List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseReportId(reportId, companyId);
+            // 모든 상세 내역을 가져와서 각 내역별로 영수증 조회
+            List<ExpenseDetailDto> allDetails = expenseMapper.selectExpenseDetailsBatch(expenseReportIds, companyId);
+            for (ExpenseDetailDto detail : allDetails) {
+                List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseDetailId(
+                    detail.getExpenseDetailId(), companyId);
                 if (receipts != null && !receipts.isEmpty()) {
-                    receiptsMap.put(reportId, receipts);
+                    receiptsByDetailMap.put(detail.getExpenseDetailId(), receipts);
                 }
             }
         }
@@ -2880,7 +2919,7 @@ public class ExpenseService {
         
         // 헤더 행 생성
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"전표일자", "적요", "차변계정과목", "차변금액", "대변계정과목", "대변금액", "문서번호", "비고"};
+        String[] headers = {"전표일자", "적요", "차변계정과목", "차변금액", "대변계정과목", "대변금액", "문서번호", "상세내역ID", "비고"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -3104,6 +3143,11 @@ public class ExpenseService {
         cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
         cell.setCellStyle(dataStyle);
         
+        // 상세내역ID
+        cell = row.createCell(col++);
+        cell.setCellValue(detail != null && detail.getExpenseDetailId() != null ? detail.getExpenseDetailId().toString() : "");
+        cell.setCellStyle(dataStyle);
+        
         // 비고
         cell = row.createCell(col++);
         String note = detail != null && detail.getNote() != null ? detail.getNote() : "";
@@ -3199,6 +3243,11 @@ public class ExpenseService {
         cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
         cell.setCellStyle(dataStyle);
         
+        // 상세내역ID
+        cell = row.createCell(col++);
+        cell.setCellValue(detail != null && detail.getExpenseDetailId() != null ? detail.getExpenseDetailId().toString() : "");
+        cell.setCellStyle(dataStyle);
+        
         // 비고
         cell = row.createCell(col++);
         String note = detail != null && detail.getNote() != null ? detail.getNote() : "";
@@ -3278,6 +3327,11 @@ public class ExpenseService {
         cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
         cell.setCellStyle(dataStyle);
         
+        // 상세내역ID (잔액 정리는 항목별로 처리되므로 detail이 있을 수 있음, 없으면 빈 값)
+        cell = row.createCell(col++);
+        cell.setCellValue(""); // 잔액 정리는 여러 항목의 합산이므로 상세내역ID 없음
+        cell.setCellStyle(dataStyle);
+        
         // 비고
         cell = row.createCell(col++);
         String note = "결재 금액과 실제 지급 금액 차액";
@@ -3344,6 +3398,11 @@ public class ExpenseService {
         // 문서번호
         cell = row.createCell(col++);
         cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
+        cell.setCellStyle(dataStyle);
+        
+        // 상세내역ID
+        cell = row.createCell(col++);
+        cell.setCellValue(detail != null && detail.getExpenseDetailId() != null ? detail.getExpenseDetailId().toString() : "");
         cell.setCellStyle(dataStyle);
         
         // 비고 (차이 사유 포함)
@@ -3436,7 +3495,7 @@ public class ExpenseService {
      */
     private void createFullDetailSheet(Workbook workbook, List<ExpenseReportDto> expenseReports,
                                       Map<Long, List<ExpenseDetailDto>> detailsMap,
-                                      Map<Long, List<ReceiptDto>> receiptsMap,
+                                      Map<Long, List<ReceiptDto>> receiptsByDetailMap,
                                       String projectRoot) throws IOException {
         Sheet sheet = workbook.createSheet("전체 증빙 내역");
         
@@ -3448,7 +3507,7 @@ public class ExpenseService {
         // 헤더 행
         Row headerRow = sheet.createRow(0);
         String[] headers = {
-            "문서번호", "사용일자", "작성자",
+            "문서번호", "상세내역ID", "사용일자", "작성자",
             "카테고리", "상호명", "적요",
             "결재금액", "계정과목",
             "결제수단", "카드정보",
@@ -3499,6 +3558,11 @@ public class ExpenseService {
         // 문서번호
         cell = row.createCell(col++);
         cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId().toString() : "");
+        cell.setCellStyle(dataStyle);
+
+        // 상세내역ID
+        cell = row.createCell(col++);
+        cell.setCellValue(detail != null && detail.getExpenseDetailId() != null ? detail.getExpenseDetailId().toString() : "");
         cell.setCellStyle(dataStyle);
 
         // 사용일자 (paymentReqDate 사용)
@@ -3597,10 +3661,11 @@ public class ExpenseService {
     }
     
     /**
-     * Sheet 2: 증빙 누락 체크리스트 생성
+     * Sheet 2: 증빙 누락 체크리스트 생성 (상세 내역별로 체크)
      */
     private void createMissingReceiptSheet(Workbook workbook, List<ExpenseReportDto> expenseReports,
-                                          Map<Long, List<ReceiptDto>> receiptsMap) {
+                                          Map<Long, List<ExpenseDetailDto>> detailsMap,
+                                          Map<Long, List<ReceiptDto>> receiptsByDetailMap) {
         Sheet sheet = workbook.createSheet("증빙 누락 체크리스트");
         
         CellStyle headerStyle = createHeaderStyle(workbook);
@@ -3610,8 +3675,8 @@ public class ExpenseService {
         // 헤더 행
         Row headerRow = sheet.createRow(0);
         String[] headers = {
-            "문서번호", "작성일", "작성자", "연락처",
-            "제목", "금액", "누락사유", "요청일", "처리상태"
+            "문서번호", "상세내역ID", "작성일", "작성자", "연락처",
+            "카테고리", "적요", "금액", "누락사유", "요청일", "처리상태"
         };
         
         for (int i = 0; i < headers.length; i++) {
@@ -3620,17 +3685,24 @@ public class ExpenseService {
             cell.setCellStyle(headerStyle);
         }
         
-        // 영수증 없는 항목만 필터링
+        // 영수증 없는 항목만 필터링 (상세 내역별로 체크)
         int rowNum = 1;
         for (ExpenseReportDto report : expenseReports) {
-            List<ReceiptDto> receipts = receiptsMap.get(report.getExpenseReportId());
-            if (receipts == null || receipts.isEmpty()) {
+            List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
+            
+            if (details.isEmpty()) {
+                // 상세 내역이 없는 경우 문서 레벨로 체크 (레거시 대응)
+                // 하지만 행 단위 영수증만 있으므로 모든 항목이 누락으로 표시됨
                 Row row = sheet.createRow(rowNum++);
                 int col = 0;
                 Cell cell;
                 
                 cell = row.createCell(col++);
                 cell.setCellValue(report.getExpenseReportId().toString());
+                cell.setCellStyle(warningStyle);
+                
+                cell = row.createCell(col++);
+                cell.setCellValue("-");
                 cell.setCellStyle(warningStyle);
                 
                 cell = row.createCell(col++);
@@ -3643,6 +3715,10 @@ public class ExpenseService {
                 
                 cell = row.createCell(col++);
                 cell.setCellValue(""); // 연락처 필드 없음
+                cell.setCellStyle(warningStyle);
+                
+                cell = row.createCell(col++);
+                cell.setCellValue("-");
                 cell.setCellStyle(warningStyle);
                 
                 cell = row.createCell(col++);
@@ -3664,6 +3740,60 @@ public class ExpenseService {
                 cell = row.createCell(col++);
                 cell.setCellValue("미요청");
                 cell.setCellStyle(warningStyle);
+            } else {
+                // 각 상세 내역별로 영수증 체크
+                for (ExpenseDetailDto detail : details) {
+                    List<ReceiptDto> receipts = receiptsByDetailMap.get(detail.getExpenseDetailId());
+                    if (receipts == null || receipts.isEmpty()) {
+                        Row row = sheet.createRow(rowNum++);
+                        int col = 0;
+                        Cell cell;
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue(report.getExpenseReportId().toString());
+                        cell.setCellStyle(warningStyle);
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue(detail.getExpenseDetailId().toString());
+                        cell.setCellStyle(warningStyle);
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue(report.getReportDate() != null ? report.getReportDate().toString() : "");
+                        cell.setCellStyle(warningStyle);
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue(report.getDrafterName() != null ? report.getDrafterName() : "");
+                        cell.setCellStyle(warningStyle);
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue(""); // 연락처 필드 없음
+                        cell.setCellStyle(warningStyle);
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue(detail.getCategory() != null ? detail.getCategory() : "-");
+                        cell.setCellStyle(warningStyle);
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue(detail.getDescription() != null ? detail.getDescription() : "-");
+                        cell.setCellStyle(warningStyle);
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue(detail.getAmount() != null ? detail.getAmount().doubleValue() : 0);
+                        cell.setCellStyle(numberStyle);
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue("영수증 미제출");
+                        cell.setCellStyle(warningStyle);
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue("");
+                        cell.setCellStyle(warningStyle);
+                        
+                        cell = row.createCell(col++);
+                        cell.setCellValue("미요청");
+                        cell.setCellStyle(warningStyle);
+                    }
+                }
             }
         }
         

@@ -6,7 +6,7 @@ import {
   fetchTaxStatus,
   fetchMonthlyTaxSummary,
   collectTaxData,
-  getReceipts,
+  getReceiptsByDetailIdOnly,
   downloadReceipt
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
@@ -176,26 +176,26 @@ const TaxSummaryPage = () => {
     }
   };
 
-  // 영수증 검색 핸들러
+  // 영수증 검색 핸들러 (상세내역ID만 사용)
   const handleReceiptSearch = async () => {
     if (!receiptSearchId.trim()) {
-      alert('결의서 ID를 입력해주세요.');
+      alert('상세내역 ID를 입력해주세요.');
       return;
     }
 
     try {
-      const response = await getReceipts(receiptSearchId.trim());
+      const response = await getReceiptsByDetailIdOnly(receiptSearchId.trim());
       if (response.success) {
         setSearchedReceipts(response.data || []);
         if (!response.data || response.data.length === 0) {
-          alert('해당 결의서에 첨부된 영수증이 없습니다.');
+          alert('해당 상세내역ID에 첨부된 영수증이 없습니다.');
         }
       } else {
         alert('영수증을 찾을 수 없습니다.');
         setSearchedReceipts([]);
       }
     } catch (error) {
-      alert('영수증 검색 중 오류가 발생했습니다.');
+      alert('영수증 검색 중 오류가 발생했습니다. 상세내역ID를 확인해주세요.');
       setSearchedReceipts([]);
     }
   };
@@ -573,17 +573,17 @@ const TaxSummaryPage = () => {
         <S.CardTitle style={{ color: '#6366f1' }}>
           🔍 영수증 검색
           <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666', marginLeft: '12px' }}>
-            (세무 자료 엑셀의 결의서ID로 영수증 찾기)
+            (세무 자료 엑셀의 상세내역ID로 영수증 찾기)
           </span>
         </S.CardTitle>
 
         <div style={{ marginBottom: '20px' }}>
           <S.FilterGrid style={{ gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'end' }}>
             <div>
-              <S.Label>결의서 ID</S.Label>
+              <S.Label>상세내역 ID</S.Label>
               <S.Input
                 type="text"
-                placeholder="예: 12345"
+                placeholder="예: 92 (엑셀의 상세내역ID)"
                 value={receiptSearchId}
                 onChange={(e) => setReceiptSearchId(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleReceiptSearch()}
@@ -603,7 +603,7 @@ const TaxSummaryPage = () => {
         {searchedReceipts.length > 0 && (
           <div>
             <h4 style={{ marginBottom: '12px', color: '#333', fontSize: '16px' }}>
-              결의서 ID {receiptSearchId}의 영수증 목록 ({searchedReceipts.length}개)
+              상세내역 ID {receiptSearchId}의 영수증 목록 ({searchedReceipts.length}개)
             </h4>
             <div style={{ display: 'grid', gap: '12px' }}>
               {searchedReceipts.map((receipt) => (
@@ -624,6 +624,11 @@ const TaxSummaryPage = () => {
                       {receipt.originalFilename}
                     </div>
                     <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                      {receipt.expenseDetailId && (
+                        <span style={{ color: '#6366f1', fontWeight: '500', marginRight: '8px' }}>
+                          상세내역ID: {receipt.expenseDetailId} |
+                        </span>
+                      )}
                       업로드: {receipt.uploadedByName} |
                       {receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''}
                       {receipt.fileSize && ` | ${(receipt.fileSize / 1024).toFixed(2)} KB`}
@@ -649,8 +654,9 @@ const TaxSummaryPage = () => {
         <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '4px', fontSize: '13px', color: '#92400e' }}>
           💡 <strong>사용법:</strong>
           <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
-            <li>세무 자료 엑셀에서 확인한 결의서ID를 입력하세요</li>
-            <li>Enter 키 또는 검색 버튼으로 해당 결의서의 영수증을 찾을 수 있습니다</li>
+            <li>세무 자료 엑셀의 "상세내역ID" 컬럼에서 확인한 값을 입력하세요</li>
+            <li>Enter 키 또는 검색 버튼으로 해당 상세내역의 영수증을 찾을 수 있습니다</li>
+            <li>영수증은 행 단위(상세 내역별)로 조회됩니다</li>
             <li>영수증이 없으면 "첨부된 영수증이 없습니다" 메시지가 표시됩니다</li>
           </ul>
         </div>
