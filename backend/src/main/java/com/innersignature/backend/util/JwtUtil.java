@@ -16,7 +16,7 @@ public class JwtUtil {
     @Value("${jwt.secret:inner-signature-jwt-secret-key-2024-minimum-256-bits-required-for-security}")
     private String secret;
     
-    @Value("${jwt.expiration:3600000}") // 1시간
+    @Value("${jwt.expiration:43200000}") // 12시간
     private Long expiration;
 
     @Value("${jwt.refresh-expiration:1209600000}") // 14일

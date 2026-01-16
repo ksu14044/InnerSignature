@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
         const response = await getMyCompanies();
         if (response.success && response.data) {
           setCompanies(response.data);
-          setCookie('companies', response.data, { path: '/', maxAge: 3600 });
+          setCookie('companies', response.data, { path: '/', maxAge: 43200 });
         }
       } catch (error) {
         console.error('회사 목록 로드 실패:', error);
@@ -50,9 +50,9 @@ export const AuthProvider = ({ children }) => {
   // 로그인 함수
   const login = (userData, token, refreshToken) => {
     // 쿠키에 저장 (path: '/'는 모든 페이지에서 접근 가능하게 함)
-    // maxAge: 3600초 (1시간 뒤 자동 만료/로그아웃) -> 원하는 시간으로 조절 가능
-    setCookie('user', userData, { path: '/', maxAge: 3600 });
-    setCookie('token', token, { path: '/', maxAge: 3600 }); // JWT 토큰 저장
+    // maxAge: 43200초 (12시간 뒤 자동 만료/로그아웃)
+    setCookie('user', userData, { path: '/', maxAge: 43200 });
+    setCookie('token', token, { path: '/', maxAge: 43200 }); // JWT 토큰 저장
     if (refreshToken) {
       setCookie('refreshToken', refreshToken, { path: '/', maxAge: 1209600 }); // 리프레시 토큰 (14일)
     }
@@ -73,8 +73,8 @@ export const AuthProvider = ({ children }) => {
         const { user: updatedUser, token: newToken, refreshToken: newRefreshToken } = response.data;
         
         // 쿠키 업데이트
-        setCookie('user', updatedUser, { path: '/', maxAge: 3600 });
-        setCookie('token', newToken, { path: '/', maxAge: 3600 });
+        setCookie('user', updatedUser, { path: '/', maxAge: 43200 });
+        setCookie('token', newToken, { path: '/', maxAge: 43200 });
         if (newRefreshToken) {
           setCookie('refreshToken', newRefreshToken, { path: '/', maxAge: 1209600 });
         }

@@ -64,7 +64,7 @@ jwt:
   # 최소 32바이트(256비트) 이상의 키가 필요합니다
   # 프로덕션 환경에서는 반드시 환경변수로 설정하세요
   secret: ${JWT_SECRET:c206e4d5a5fb9c12c6e4615f6ffc9128185b3e35085b212acd2c53dd9c531702}
-  expiration: ${JWT_EXPIRATION:3600000} # 1시간 (밀리초)
+  expiration: ${JWT_EXPIRATION:43200000} # 12시간 (밀리초)
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:1209600000} # 14일 (밀리초)
 
 # 파일 업로드 설정

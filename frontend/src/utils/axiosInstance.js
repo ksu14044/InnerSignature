@@ -11,6 +11,10 @@ const getCookie = (name) => {
   return null;
 };
 
+const removeCookie = (name) => {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+};
+
 // 공통 axios 인스턴스 생성
 const axiosInstance = axios.create();
 
@@ -28,12 +32,23 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// 응답 인터셉터 - 에러 처리 통합 (선택사항)
+// 응답 인터셉터 - 에러 처리 통합
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 401 에러 처리 등을 여기서 할 수 있음
-    // 필요시 로그아웃 처리 등 추가 가능
+    // 401 에러 (인증 실패) 처리
+    if (error.response?.status === 401) {
+      // 쿠키 삭제
+      removeCookie('user');
+      removeCookie('token');
+      removeCookie('refreshToken');
+      removeCookie('companies');
+      
+      // 로그인 페이지로 리다이렉트 (현재 경로가 로그인 페이지가 아닌 경우만)
+      if (window.location.pathname !== '/' && !window.location.pathname.startsWith('/find-') && !window.location.pathname.startsWith('/reset-password')) {
+        window.location.href = '/';
+      }
+    }
     return Promise.reject(error);
   }
 );

@@ -49,7 +49,7 @@ mybatis:
 # JWT 설정 (프로덕션에서는 환경변수 필수)
 jwt:
   secret: ${JWT_SECRET}  # 환경변수로 반드시 설정해야 함
-  expiration: ${JWT_EXPIRATION:3600000} # 1시간 (밀리초)
+  expiration: ${JWT_EXPIRATION:43200000} # 12시간 (밀리초)
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:1209600000} # 14일 (밀리초)
 
 # 파일 업로드 설정

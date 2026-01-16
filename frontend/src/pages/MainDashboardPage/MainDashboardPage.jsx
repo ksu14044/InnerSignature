@@ -112,7 +112,11 @@ const MainDashboardPage = () => {
         }
       } catch (error) {
         console.error('대시보드 데이터 로드 실패:', error);
-        alert('대시보드 데이터를 불러오는 중 오류가 발생했습니다.');
+        // 401 에러는 axiosInstance에서 이미 로그인 페이지로 리다이렉트 처리
+        // 따라서 401 에러가 아닐 때만 alert 표시
+        if (error?.response?.status !== 401) {
+          alert('대시보드 데이터를 불러오는 중 오류가 발생했습니다.');
+        }
       } finally {
         setLoading(false);
       }
