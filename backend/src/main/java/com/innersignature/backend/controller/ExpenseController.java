@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,6 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,6 +58,26 @@ public class ExpenseController {
 
     private static final Logger logger = LoggerFactory.getLogger(ExpenseController.class);
     private final ExpenseService expenseService;
+
+    /**
+     * 한글 파일명을 RFC 5987 형식으로 인코딩하여 Content-Disposition 헤더값을 생성합니다.
+     * @param filename 파일명 (한글 포함 가능)
+     * @return RFC 5987 형식으로 인코딩된 Content-Disposition 헤더값
+     */
+    private String createContentDispositionHeader(String filename) {
+        try {
+            // Spring의 ContentDisposition을 사용하여 UTF-8 파일명 자동 처리
+            ContentDisposition contentDisposition = ContentDisposition.attachment()
+                    .filename(filename, StandardCharsets.UTF_8)
+                    .build();
+            return contentDisposition.toString();
+        } catch (Exception e) {
+            logger.warn("파일명 인코딩 실패, 기본 형식 사용: {}", filename, e);
+            // 실패 시 ASCII만 사용
+            String safeFilename = filename.replaceAll("[^\\x00-\\x7F]", "_");
+            return "attachment; filename=\"" + safeFilename + "\"";
+        }
+    }
 
     /**
      * 1. 목록 조회 API (페이지네이션 + 필터링)
@@ -412,7 +434,7 @@ public class ExpenseController {
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + receipt.getOriginalFilename() + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(receipt.getOriginalFilename()))
                     .body(resource);
         } catch (com.innersignature.backend.exception.BusinessException e) {
             // 권한 관련 예외는 JSON 응답으로 반환
@@ -522,7 +544,7 @@ public class ExpenseController {
             
             return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/zip"))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(filename))
                 .body(resource);
         } catch (com.innersignature.backend.exception.BusinessException e) {
             logger.warn("영수증 일괄 다운로드 실패: {}", e.getMessage());
@@ -907,7 +929,7 @@ public class ExpenseController {
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(filename))
                     .body(resource);
         } catch (com.innersignature.backend.exception.BusinessException e) {
             logger.warn("세무 자료 일괄 수집 실패 - userId: {}, error: {}", currentUserId, e.getMessage());
@@ -982,7 +1004,7 @@ public class ExpenseController {
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(filename))
                     .body(resource);
         } catch (Exception e) {
             logger.error("엑셀 다운로드 실패", e);
@@ -1037,7 +1059,7 @@ public class ExpenseController {
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(filename))
                     .body(resource);
         } catch (Exception e) {
             logger.error("전표 다운로드 실패", e);
@@ -1090,7 +1112,7 @@ public class ExpenseController {
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(filename))
                     .body(resource);
         } catch (Exception e) {
             logger.error("부가세 신고 서식 다운로드 실패", e);
@@ -1147,7 +1169,7 @@ public class ExpenseController {
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(filename))
                     .body(resource);
         } catch (Exception e) {
             logger.error("세무 검토 자료 다운로드 실패", e);

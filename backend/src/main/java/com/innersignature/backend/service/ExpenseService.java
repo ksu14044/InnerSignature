@@ -593,8 +593,8 @@ public class ExpenseService {
                     }
                 }
                 
-                // 지급 요청일과 가승인은 결의서 단위이므로 detail에서는 null로 설정
-                detail.setPaymentReqDate(null);
+                // 가승인은 결의서 단위이므로 detail에서는 null로 설정
+                // paymentReqDate는 상세 항목별로 사용하므로 그대로 유지
                 detail.setIsPreApproval(null);
                 
                 totalAmount += detail.getAmount();
@@ -898,8 +898,8 @@ public class ExpenseService {
             for (ExpenseDetailDto detail : details) {
                 detail.setExpenseReportId(expenseId);
                 detail.setCompanyId(companyId);
-                // 지급 요청일과 가승인은 결의서 단위이므로 detail에서는 null로 설정
-                detail.setPaymentReqDate(null);
+                // 가승인은 결의서 단위이므로 detail에서는 null로 설정
+                // paymentReqDate는 상세 항목별로 사용하므로 그대로 유지
                 detail.setIsPreApproval(null);
                 
                 if (detail.getExpenseDetailId() != null && existingDetailIds.contains(detail.getExpenseDetailId())) {
@@ -2306,10 +2306,7 @@ public class ExpenseService {
         // Sheet 1: 전체 증빙 내역
         createFullDetailSheet(workbook, expenseReports, detailsMap, receiptsByDetailMap, projectRoot);
 
-        // Sheet 2: 증빙 누락 체크리스트
-        createMissingReceiptSheet(workbook, expenseReports, detailsMap, receiptsByDetailMap);
-
-        // Sheet 3: 부가세 검토 항목
+        // Sheet 2: 부가세 검토 항목
         createVatReviewSheet(workbook, expenseReports, detailsMap);
 
         // Sheet 4: 카테고리별 집계
@@ -3565,9 +3562,17 @@ public class ExpenseService {
         cell.setCellValue(detail != null && detail.getExpenseDetailId() != null ? detail.getExpenseDetailId().toString() : "");
         cell.setCellStyle(dataStyle);
 
-        // 사용일자 (paymentReqDate 사용)
+        // 사용일자 (상세 항목별 paymentReqDate 사용, 없으면 문서 단위 paymentReqDate 또는 작성일)
         cell = row.createCell(col++);
-        cell.setCellValue(report.getPaymentReqDate() != null ? report.getPaymentReqDate().toString() : "");
+        LocalDate usageDate = null;
+        if (detail != null && detail.getPaymentReqDate() != null) {
+            usageDate = detail.getPaymentReqDate();
+        } else if (report.getPaymentReqDate() != null) {
+            usageDate = report.getPaymentReqDate();
+        } else if (report.getReportDate() != null) {
+            usageDate = report.getReportDate();
+        }
+        cell.setCellValue(usageDate != null ? usageDate.toString() : "");
         cell.setCellStyle(dataStyle);
 
         // 작성자
@@ -3818,7 +3823,7 @@ public class ExpenseService {
         // 헤더 행
         Row headerRow = sheet.createRow(0);
         String[] headers = {
-            "문서번호", "작성일", "지급일", "거래처",
+            "문서번호", "사용일자", "거래처",
             "총금액", "공급가액", "부가세",
             "공제가능", "공제불가", "불가사유",
             "계정과목", "비고"
@@ -3846,12 +3851,17 @@ public class ExpenseService {
                     cell.setCellValue(report.getExpenseReportId().toString());
                     cell.setCellStyle(dataStyle);
                     
+                    // 사용일자 (상세 항목별 paymentReqDate 우선, 없으면 문서 단위 paymentReqDate 또는 작성일)
                     cell = row.createCell(col++);
-                    cell.setCellValue(report.getReportDate() != null ? report.getReportDate().toString() : "");
-                    cell.setCellStyle(dataStyle);
-                    
-                    cell = row.createCell(col++);
-                    cell.setCellValue(report.getPaymentReqDate() != null ? report.getPaymentReqDate().toString() : "");
+                    LocalDate usageDate = null;
+                    if (detail != null && detail.getPaymentReqDate() != null) {
+                        usageDate = detail.getPaymentReqDate();
+                    } else if (report.getPaymentReqDate() != null) {
+                        usageDate = report.getPaymentReqDate();
+                    } else if (report.getReportDate() != null) {
+                        usageDate = report.getReportDate();
+                    }
+                    cell.setCellValue(usageDate != null ? usageDate.toString() : "");
                     cell.setCellStyle(dataStyle);
                     
                     cell = row.createCell(col++);
@@ -4014,7 +4024,7 @@ public class ExpenseService {
         // 헤더 행
         Row headerRow = sheet.createRow(0);
         String[] headers = {
-            "전표일자", "계정코드", "계정과목", "거래처",
+            "사용일자", "계정코드", "계정과목", "거래처",
             "적요", "공급가액", "부가세",
             "차변금액", "대변금액", "증빙유형", "비고"
         };
@@ -4056,10 +4066,17 @@ public class ExpenseService {
         int col = 0;
         Cell cell;
         
-        // 전표일자 (지급 요청일 또는 작성일)
+        // 사용일자 (상세 항목별 paymentReqDate 우선, 없으면 문서 단위 paymentReqDate 또는 작성일)
         cell = row.createCell(col++);
-        LocalDate journalDate = report.getPaymentReqDate() != null ? report.getPaymentReqDate() : report.getReportDate();
-        cell.setCellValue(journalDate != null ? journalDate.toString() : "");
+        LocalDate usageDate = null;
+        if (detail != null && detail.getPaymentReqDate() != null) {
+            usageDate = detail.getPaymentReqDate();
+        } else if (report.getPaymentReqDate() != null) {
+            usageDate = report.getPaymentReqDate();
+        } else if (report.getReportDate() != null) {
+            usageDate = report.getReportDate();
+        }
+        cell.setCellValue(usageDate != null ? usageDate.toString() : "");
         cell.setCellStyle(dataStyle);
         
         if (detail != null) {

@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,6 +32,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -53,6 +55,26 @@ public class SuperAdminController {
     private final PaymentService paymentService;
     private final AdminReportService adminReportService;
     private final ExpenseService expenseService;
+
+    /**
+     * 한글 파일명을 RFC 5987 형식으로 인코딩하여 Content-Disposition 헤더값을 생성합니다.
+     * @param filename 파일명 (한글 포함 가능)
+     * @return RFC 5987 형식으로 인코딩된 Content-Disposition 헤더값
+     */
+    private String createContentDispositionHeader(String filename) {
+        try {
+            // Spring의 ContentDisposition을 사용하여 UTF-8 파일명 자동 처리
+            ContentDisposition contentDisposition = ContentDisposition.attachment()
+                    .filename(filename, StandardCharsets.UTF_8)
+                    .build();
+            return contentDisposition.toString();
+        } catch (Exception e) {
+            logger.warn("파일명 인코딩 실패, 기본 형식 사용: {}", filename, e);
+            // 실패 시 ASCII만 사용
+            String safeFilename = filename.replaceAll("[^\\x00-\\x7F]", "_");
+            return "attachment; filename=\"" + safeFilename + "\"";
+        }
+    }
     
     /**
      * 전체 사용자 목록 조회 (SUPERADMIN 전용)
@@ -304,7 +326,7 @@ public class SuperAdminController {
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(filename))
                     .body(resource);
         } catch (Exception e) {
             logger.error("엑셀 다운로드 실패 (SUPERADMIN)", e);
