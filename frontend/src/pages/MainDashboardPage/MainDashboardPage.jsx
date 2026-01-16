@@ -25,8 +25,7 @@ const MainDashboardPage = () => {
     totalAmount: 0,
     waitCount: 0,
     rejectedCount: 0,
-    approvedCount: 0,
-    paidCount: 0
+    approvedCount: 0
   });
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const checkedCompanyModalRef = useRef(false);

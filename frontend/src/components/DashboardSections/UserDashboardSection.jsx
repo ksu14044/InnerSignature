@@ -13,12 +13,6 @@ const UserDashboardSection = ({ filters }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [stats, setStats] = useState({
-    totalAmount: 0,
-    waitCount: 0,
-    rejectedCount: 0,
-    approvedCount: 0
-  });
   const [recentExpenses, setRecentExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -38,18 +32,6 @@ const UserDashboardSection = ({ filters }) => {
         if (response.success && response.data) {
           const expenses = response.data.content || [];
           const filteredExpenses = expenses.filter(exp => exp.drafterId === user.userId);
-          
-          // 통계 계산
-          const totalAmount = filteredExpenses.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0);
-          const waitCount = filteredExpenses.filter(exp => exp.status === 'WAIT').length;
-          const rejectedCount = filteredExpenses.filter(exp => exp.status === 'REJECTED').length;
-          const approvedCount = filteredExpenses.filter(exp => exp.status === 'APPROVED').length;
-          setStats({
-            totalAmount,
-            waitCount,
-            rejectedCount,
-            approvedCount
-          });
 
           // 최근 결의서 (최대 5개)
           setRecentExpenses(
@@ -77,7 +59,6 @@ const UserDashboardSection = ({ filters }) => {
     return (
       <Suspense fallback={<S.LoadingMessage>로딩 중...</S.LoadingMessage>}>
         <MobileUserDashboard
-          stats={stats}
           recentExpenses={recentExpenses}
         />
       </Suspense>

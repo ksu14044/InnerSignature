@@ -1,82 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination } from 'swiper/modules';
 import { FaPlus, FaList } from 'react-icons/fa';
-import 'swiper/css';
-import 'swiper/css/pagination';
 import * as S from './style';
 
-const MobileUserDashboard = ({ stats, recentExpenses }) => {
+const MobileUserDashboard = ({ recentExpenses }) => {
   const navigate = useNavigate();
 
   return (
     <S.MobileContainer>
-      {/* 스와이프 가능한 통계 카드 */}
-      <S.Section>
-        <S.SectionHeader>
-          <S.SectionTitle>내 지출 현황</S.SectionTitle>
-        </S.SectionHeader>
-        
-        <S.SwiperWrapper>
-          <Swiper
-            slidesPerView={2.2}
-            spaceBetween={12}
-            pagination={{ clickable: true }}
-            modules={[Pagination]}
-          >
-            <SwiperSlide>
-              <S.StatCard color="#4CAF50">
-                <S.StatIcon>💰</S.StatIcon>
-                <S.StatLabel>총 지출</S.StatLabel>
-                <S.StatValue>
-                  {(stats.totalAmount || 0).toLocaleString()}원
-                </S.StatValue>
-              </S.StatCard>
-            </SwiperSlide>
-            
-            <SwiperSlide>
-              <S.StatCard color="#FF9800">
-                <S.StatIcon>⏳</S.StatIcon>
-                <S.StatLabel>대기 중</S.StatLabel>
-                <S.StatValue>
-                  {(stats.waitCount || 0)}건
-                </S.StatValue>
-              </S.StatCard>
-            </SwiperSlide>
-            
-            <SwiperSlide>
-              <S.StatCard color="#2196F3">
-                <S.StatIcon>✅</S.StatIcon>
-                <S.StatLabel>승인 완료</S.StatLabel>
-                <S.StatValue>
-                  {(stats.approvedCount || 0)}건
-                </S.StatValue>
-              </S.StatCard>
-            </SwiperSlide>
-            
-            <SwiperSlide>
-              <S.StatCard color="#F44336">
-                <S.StatIcon>❌</S.StatIcon>
-                <S.StatLabel>반려</S.StatLabel>
-                <S.StatValue>
-                  {(stats.rejectedCount || 0)}건
-                </S.StatValue>
-              </S.StatCard>
-            </SwiperSlide>
-            
-            <SwiperSlide>
-              <S.StatCard color="#9C27B0">
-                <S.StatIcon>💳</S.StatIcon>
-                <S.StatLabel>결제 완료</S.StatLabel>
-                <S.StatValue>
-                  {(stats.paidCount || 0)}건
-                </S.StatValue>
-              </S.StatCard>
-            </SwiperSlide>
-          </Swiper>
-        </S.SwiperWrapper>
-      </S.Section>
-
       {/* 최근 내역 */}
       {recentExpenses && recentExpenses.length > 0 && (
         <S.Section>

@@ -62,7 +62,7 @@ const TaxAccountantDashboardSection = ({ filters }) => {
         setMonthlySummary(monthlyRes.data || []);
       }
     } catch (error) {
-      console.error('세무 데이터 로드 실패:', error);
+      console.error('세무 데이터 로드 실패:', error?.message || String(error) || error);
     } finally {
       setLoading(false);
     }
@@ -246,17 +246,7 @@ const TaxAccountantDashboardSection = ({ filters }) => {
         </S.SummarySection>
       )}
 
-      {/* 빠른 액션 */}
-      <S.ManagementSection>
-        <S.SectionTitle>빠른 액션</S.SectionTitle>
-        <S.ManagementGrid>
-          <S.ManagementCard onClick={() => navigate('/tax/summary')}>
-            <S.ManagementIcon>📊</S.ManagementIcon>
-            <S.ManagementTitle>상세 분석</S.ManagementTitle>
-            <S.ManagementDesc>결의서 목록, 카테고리/월별 집계</S.ManagementDesc>
-          </S.ManagementCard>
-        </S.ManagementGrid>
-      </S.ManagementSection>
+      
 
       {/* 자료 수집 및 전표 다운로드 */}
       <S.ManagementSection>
