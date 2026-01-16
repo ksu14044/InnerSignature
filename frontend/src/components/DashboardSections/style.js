@@ -88,18 +88,33 @@ export const StatValue = styled.div`
 
 export const ChartsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   margin-bottom: 24px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
 
   @media (max-width: 480px) {
-    gap: 8px;
-    margin-bottom: 16px;
-    padding: 0 8px;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 16px;
+    margin-bottom: 8px;
+    padding: 0 16px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
 `;
 
@@ -111,11 +126,15 @@ export const ChartCard = styled.div`
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 
   @media (max-width: 480px) {
-    padding: 16px;
+    flex: 0 0 calc(100vw - 32px);
+    min-width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+    padding: 20px;
     border-radius: 16px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border: none;
     margin-bottom: 8px;
+    scroll-snap-align: center;
   }
 `;
 
@@ -459,10 +478,14 @@ export const SummaryTable = styled.table`
   }
 
   @media (max-width: 480px) {
-    font-size: 12px;
+    font-size: 14px;
     
     th, td {
-      padding: 8px;
+      padding: 10px 8px;
+    }
+    
+    th {
+      font-size: 13px;
     }
   }
 `;
@@ -665,6 +688,51 @@ export const StatusAmount = styled.div`
 
   @media (max-width: 480px) {
     font-size: 16px;
+  }
+`;
+
+export const PaginationDots = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  padding: 0 8px;
+
+  @media (min-width: 481px) {
+    display: none;
+  }
+`;
+
+export const PaginationDot = styled.button`
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  border: none;
+  background-color: ${props => props.active ? 'var(--primary-color)' : '#d0d0d0'};
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+  min-width: 4px;
+  min-height: 4px;
+  
+  &:hover {
+    background-color: ${props => props.active ? 'var(--primary-hover)' : '#a0a0a0'};
+  }
+  
+  @media (min-width: 481px) {
+    display: none;
+  }
+`;
+
+export const ScrollSpacer = styled.div`
+  flex: 0 0 16px;
+  min-width: 16px;
+  scroll-snap-align: start;
+  
+  @media (min-width: 481px) {
+    display: none;
   }
 `;
 

@@ -246,8 +246,6 @@ const TaxAccountantDashboardSection = ({ filters }) => {
         </S.SummarySection>
       )}
 
-      
-
       {/* 자료 수집 및 전표 다운로드 */}
       <S.ManagementSection>
         <S.SectionTitle>기간별 자료 수집</S.SectionTitle>

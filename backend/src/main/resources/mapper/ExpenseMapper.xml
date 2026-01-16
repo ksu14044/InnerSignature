@@ -222,6 +222,45 @@
         ORDER BY totalAmount DESC
     </select>
 
+    <!-- 지출 수단별 합계/건수 요약 (ACCOUNTANT, ADMIN, CEO용) -->
+    <select id="selectPaymentMethodSummary" resultType="com.innersignature.backend.dto.PaymentMethodSummaryDto">
+        SELECT
+            CASE 
+                WHEN d.payment_method = 'BANK_TRANSFER' THEN 'CASH'
+                WHEN d.payment_method IS NULL THEN 'CASH'
+                ELSE d.payment_method
+            END AS paymentMethod,
+            COALESCE(SUM(COALESCE(d.actual_paid_amount, d.amount)), 0) AS totalAmount,
+            COUNT(*) AS itemCount
+        FROM expense_detail_tb d
+        JOIN expense_report_tb r ON d.expense_report_id = r.expense_report_id
+        <where>
+            r.company_id = #{companyId}
+            <if test="startDate != null">
+                AND r.report_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND r.report_date &lt;= #{endDate}
+            </if>
+            <if test="statuses != null and statuses.size() > 0">
+                AND r.status IN
+                <foreach collection="statuses" item="status" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="taxProcessed != null">
+                AND r.tax_processed = #{taxProcessed}
+            </if>
+        </where>
+        GROUP BY 
+            CASE 
+                WHEN d.payment_method = 'BANK_TRANSFER' THEN 'CASH'
+                WHEN d.payment_method IS NULL THEN 'CASH'
+                ELSE d.payment_method
+            END
+        ORDER BY totalAmount DESC
+    </select>
+
     <select id="selectExpenseReportById" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT 
             r.*, 
@@ -719,7 +758,8 @@
         SELECT
             u.user_id AS userId,
             u.korean_name AS userName,
-            COALESCE(SUM(COALESCE(r.actual_paid_amount, r.total_amount)), 0) AS totalAmount
+            COALESCE(SUM(COALESCE(r.actual_paid_amount, r.total_amount)), 0) AS totalAmount,
+            COUNT(r.expense_report_id) AS itemCount
         FROM user_tb u
         LEFT JOIN expense_report_tb r ON u.user_id = r.drafter_id
             AND r.company_id = #{companyId}

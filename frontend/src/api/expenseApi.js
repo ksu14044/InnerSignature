@@ -557,6 +557,26 @@ export const fetchMonthlyTaxSummary = async (startDate = null, endDate = null) =
   }
 };
 
+// 21-1. 지출 수단별 합계 조회 (ACCOUNTANT, ADMIN, CEO 전용)
+export const fetchPaymentMethodSummary = async (startDate = null, endDate = null, status = null, taxProcessed = null) => {
+  try {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (status && Array.isArray(status) && status.length > 0) {
+      params.status = status;
+    }
+    if (taxProcessed !== null && taxProcessed !== undefined) {
+      params.taxProcessed = taxProcessed;
+    }
+    const response = await axiosInstance.get(`${BASE_URL}/payment-method-summary`, { params });
+    return response.data;
+  } catch (error) {
+    console.error("지출 수단별 합계 조회 실패:", error);
+    throw error;
+  }
+};
+
 // 22-1. 기간별 세무 자료 일괄 수집 및 전표 다운로드 (TAX_ACCOUNTANT 전용)
 export const collectTaxData = async (startDate = null, endDate = null) => {
   try {

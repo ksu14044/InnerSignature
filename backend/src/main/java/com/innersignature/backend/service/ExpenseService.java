@@ -10,6 +10,7 @@ import com.innersignature.backend.dto.UserCardDto;
 import com.innersignature.backend.dto.MonthlyTaxSummaryDto;
 import com.innersignature.backend.dto.MonthlyTrendDto;
 import com.innersignature.backend.dto.PagedResponse;
+import com.innersignature.backend.dto.PaymentMethodSummaryDto;
 import com.innersignature.backend.dto.ReceiptDto;
 import com.innersignature.backend.dto.StatusStatsDto;
 import com.innersignature.backend.dto.TaxStatusDto;
@@ -1992,6 +1993,18 @@ public class ExpenseService {
     public List<MonthlyTaxSummaryDto> getMonthlyTaxSummary(LocalDate startDate, LocalDate endDate) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
         return expenseMapper.selectMonthlyTaxSummary(startDate, endDate, companyId);
+    }
+
+    /**
+     * 지출 수단별 합계 조회 (세무사용)
+     */
+    public List<PaymentMethodSummaryDto> getPaymentMethodSummary(
+            LocalDate startDate, 
+            LocalDate endDate, 
+            List<String> statuses, 
+            Boolean taxProcessed) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        return expenseMapper.selectPaymentMethodSummary(startDate, endDate, statuses, taxProcessed, companyId);
     }
 
     /**

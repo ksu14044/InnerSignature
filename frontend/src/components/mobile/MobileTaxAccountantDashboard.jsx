@@ -102,8 +102,6 @@ const MobileTaxAccountantDashboard = ({ taxStatus, pendingReports, summary }) =>
         </S.Section>
       )}
 
-      
-
       {/* 빈 상태 */}
       {(!taxStatus && (!summary || summary.length === 0)) && (
         <S.Section>

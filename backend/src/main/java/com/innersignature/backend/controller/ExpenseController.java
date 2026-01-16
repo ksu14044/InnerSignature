@@ -9,6 +9,7 @@ import com.innersignature.backend.dto.ExpenseReportDto;
 import com.innersignature.backend.dto.MonthlyTaxSummaryDto;
 import com.innersignature.backend.dto.MonthlyTrendDto;
 import com.innersignature.backend.dto.PagedResponse;
+import com.innersignature.backend.dto.PaymentMethodSummaryDto;
 import com.innersignature.backend.dto.ReceiptDto;
 import com.innersignature.backend.dto.StatusStatsDto;
 import com.innersignature.backend.dto.TaxStatusDto;
@@ -869,6 +870,49 @@ public class ExpenseController {
 
         List<MonthlyTaxSummaryDto> summary = expenseService.getMonthlyTaxSummary(startDateParsed, endDateParsed);
         return new ApiResponse<>(true, "월별 집계 조회 성공", summary);
+    }
+
+    /**
+     * 21-1. 지출 수단별 합계 조회 API
+     * GET /api/expenses/payment-method-summary?startDate=2024-01-01&endDate=2024-12-31&status=APPROVED
+     * 설명: ACCOUNTANT, ADMIN, CEO 권한 사용자만 접근 가능
+     */
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'ADMIN', 'CEO')")
+    @Operation(summary = "지출 수단별 합계", description = "지출 수단별 총 결제 금액을 조회합니다. (ACCOUNTANT, ADMIN, CEO)")
+    @GetMapping("/payment-method-summary")
+    public ApiResponse<List<PaymentMethodSummaryDto>> getPaymentMethodSummary(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String[] status,
+            @RequestParam(required = false) Boolean taxProcessed) {
+        
+        LocalDate startDateParsed = null;
+        LocalDate endDateParsed = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        List<String> statusList = null;
+
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                startDateParsed = LocalDate.parse(startDate, formatter);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                endDateParsed = LocalDate.parse(endDate, formatter);
+            }
+            if (status != null && status.length > 0) {
+                statusList = Arrays.stream(status)
+                        .filter(s -> s != null && !s.isEmpty())
+                        .collect(Collectors.toList());
+                if (statusList.isEmpty()) {
+                    statusList = null;
+                }
+            }
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "날짜 형식이 올바르지 않습니다. (형식: YYYY-MM-DD)", null);
+        }
+
+        List<PaymentMethodSummaryDto> summary = expenseService.getPaymentMethodSummary(
+                startDateParsed, endDateParsed, statusList, taxProcessed);
+        return new ApiResponse<>(true, "지출 수단별 합계 조회 성공", summary);
     }
 
     /**

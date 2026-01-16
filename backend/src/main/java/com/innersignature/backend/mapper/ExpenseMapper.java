@@ -7,6 +7,7 @@ import com.innersignature.backend.dto.ExpenseDetailDto;
 import com.innersignature.backend.dto.ExpenseReportDto;
 import com.innersignature.backend.dto.MonthlyTaxSummaryDto;
 import com.innersignature.backend.dto.MonthlyTrendDto;
+import com.innersignature.backend.dto.PaymentMethodSummaryDto;
 import com.innersignature.backend.dto.ReceiptDto;
 import com.innersignature.backend.dto.StatusStatsDto;
 import com.innersignature.backend.dto.TaxStatusDto;
@@ -266,6 +267,15 @@ public interface ExpenseMapper {
     List<MonthlyTaxSummaryDto> selectMonthlyTaxSummary(
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
+            @Param("companyId") Long companyId
+    );
+
+    // 지출 수단별 합계 조회 (세무사용)
+    List<PaymentMethodSummaryDto> selectPaymentMethodSummary(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("statuses") List<String> statuses,
+            @Param("taxProcessed") Boolean taxProcessed,
             @Param("companyId") Long companyId
     );
     
