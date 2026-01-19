@@ -388,18 +388,51 @@ export const downloadReceipt = async (receiptId, filename) => {
         responseType: 'blob', // 파일 다운로드를 위해 blob으로 받기
       });
       
-      // Content-Disposition 헤더에서 파일명 추출
+      // Content-Disposition 헤더에서 파일명 추출 (RFC 5987, RFC 2231 모두 지원)
       let downloadFilename = filename || 'receipt.pdf';
       const contentDisposition = response.headers['content-disposition'];
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (filenameMatch && filenameMatch[1]) {
-          downloadFilename = filenameMatch[1].replace(/['"]/g, '');
-          // UTF-8 디코딩 처리 (필요시)
+        // RFC 5987 형식: filename*=UTF-8''encoded (우선 처리)
+        const rfc5987Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (rfc5987Match && rfc5987Match[1]) {
           try {
-            downloadFilename = decodeURIComponent(escape(downloadFilename));
+            downloadFilename = decodeURIComponent(rfc5987Match[1]);
           } catch (e) {
-            // 디코딩 실패 시 원본 사용
+            console.warn('RFC 5987 디코딩 실패', e);
+          }
+        }
+        
+        // RFC 2231 형식: =?UTF-8?Q?...?= 또는 =_UTF-8_Q_... (대체 처리)
+        if (downloadFilename === (filename || 'receipt.pdf') || 
+            downloadFilename.includes('=_UTF-8_Q_') || 
+            downloadFilename.includes('=?UTF-8?Q?')) {
+          try {
+            const rfc2231Match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (rfc2231Match && rfc2231Match[1]) {
+              let extracted = rfc2231Match[1].replace(/['"]/g, '');
+              
+              // RFC 2231 디코딩
+              if (extracted.includes('=_UTF-8_Q_') || extracted.includes('=?UTF-8?Q?')) {
+                extracted = extracted
+                  .replace(/=\?UTF-8\?Q\?/gi, '')
+                  .replace(/\?=/g, '')
+                  .replace(/=_UTF-8_Q_/gi, '')
+                  .replace(/_/g, ' ')
+                  .replace(/=([0-9A-F]{2})/gi, (match, hex) => 
+                    String.fromCharCode(parseInt(hex, 16))
+                  );
+                downloadFilename = extracted;
+              } else {
+                // 일반 디코딩
+                try {
+                  downloadFilename = decodeURIComponent(escape(extracted));
+                } catch (e) {
+                  downloadFilename = extracted;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('RFC 2231 디코딩 실패', e);
           }
         }
       }

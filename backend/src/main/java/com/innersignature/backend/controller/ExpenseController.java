@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -66,11 +65,14 @@ public class ExpenseController {
      */
     private String createContentDispositionHeader(String filename) {
         try {
-            // Spring의 ContentDisposition을 사용하여 UTF-8 파일명 자동 처리
-            ContentDisposition contentDisposition = ContentDisposition.attachment()
-                    .filename(filename, StandardCharsets.UTF_8)
-                    .build();
-            return contentDisposition.toString();
+            // RFC 5987 형식으로 명시적 인코딩 (Nginx 프록시 환경에서도 안정적)
+            String encoded = java.net.URLEncoder.encode(filename, StandardCharsets.UTF_8)
+                    .replace("+", "%20"); // 공백을 %20으로 변환
+            String asciiFallback = filename.replaceAll("[^\\x00-\\x7F]", "_"); // ASCII fallback
+            
+            // RFC 5987 형식: filename="fallback"; filename*=UTF-8''encoded
+            return String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s", 
+                    asciiFallback, encoded);
         } catch (Exception e) {
             logger.warn("파일명 인코딩 실패, 기본 형식 사용: {}", filename, e);
             // 실패 시 ASCII만 사용
