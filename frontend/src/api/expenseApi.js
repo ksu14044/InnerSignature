@@ -239,7 +239,7 @@ export const fetchMyApprovedReports = async () => {
 // };
 
 // 9. 영수증 업로드
-export const uploadReceipt = async (expenseId, userId, file) => {
+export const uploadReceipt = async (expenseId, userId, file, onProgress = null) => {
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -249,6 +249,12 @@ export const uploadReceipt = async (expenseId, userId, file) => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            onProgress(percentCompleted);
+          }
+        }
       });
       return response.data;
     } catch (error) {
@@ -280,7 +286,7 @@ export const deleteReceipt = async (receiptId, userId) => {
   };
 
 // 12. 상세 내역별 영수증 업로드
-export const uploadReceiptForDetail = async (expenseDetailId, expenseReportId, userId, file) => {
+export const uploadReceiptForDetail = async (expenseDetailId, expenseReportId, userId, file, onProgress = null) => {
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -293,6 +299,12 @@ export const uploadReceiptForDetail = async (expenseDetailId, expenseReportId, u
           headers: {
             'Content-Type': 'multipart/form-data',
           },
+          onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.total) {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              onProgress(percentCompleted);
+            }
+          }
         }
       );
       return response.data;
@@ -858,7 +870,75 @@ export const downloadJournalEntries = async (startDate = null, endDate = null, o
   }
 };
 
-// 27. 세무 검토용 증빙 리스트 다운로드 (ACCOUNTANT, TAX_ACCOUNTANT 전용)
+// 27-1. 세무 검토용 증빙 리스트 다운로드 작업 시작 (비동기, 진행률 추적)
+export const startTaxReviewExport = async (startDate = null, endDate = null) => {
+  try {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    
+    const response = await axiosInstance.post(`${BASE_URL}/export/tax-review/start`, null, { params });
+    return response.data;
+  } catch (error) {
+    console.error("세무 검토 자료 다운로드 작업 시작 실패:", error);
+    throw error;
+  }
+};
+
+// 27-2. 세무 검토용 증빙 리스트 파일 다운로드
+export const downloadTaxReviewFile = async (jobId, startDate = null, endDate = null) => {
+  try {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    
+    const response = await axiosInstance.get(`${BASE_URL}/export/tax-review/download/${jobId}`, {
+      params,
+      responseType: 'blob'
+    });
+    
+    // Blob을 다운로드 링크로 변환
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // 파일명 생성
+    const filename = `세무검토_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true };
+  } catch (error) {
+    console.error("세무 검토 자료 파일 다운로드 실패:", error);
+    let message = "세무 검토 자료 파일 다운로드 중 오류가 발생했습니다.";
+    const data = error?.response?.data;
+    try {
+      if (data instanceof Blob) {
+        const text = await data.text();
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed?.message) message = parsed.message;
+        } catch {
+          if (text) message = text;
+        }
+      } else if (typeof data === 'string' && data) {
+        message = data;
+      } else if (data?.message) {
+        message = data.message;
+      }
+    } catch (e) {
+      // ignore parsing errors
+    }
+    const err = new Error(message);
+    err.userMessage = message;
+    throw err;
+  }
+};
+
+// 27. 세무 검토용 증빙 리스트 다운로드 (기존 동기 방식 - 호환성 유지)
 export const downloadTaxReviewList = async (startDate = null, endDate = null, format = 'full', onProgress = null) => {
   try {
     const params = {};

@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -81,6 +82,9 @@ public class ExpenseService {
     private final ExpenseAnalyticsService expenseAnalyticsService;
     private final ExpenseTaxService expenseTaxService;
     private final com.innersignature.backend.service.ProgressService progressService;
+
+    // 세무 자료 다운로드 파일 저장 (jobId -> File)
+    private final Map<String, File> taxReviewFiles = new ConcurrentHashMap<>();
 
     @Value("${file.upload.base-dir:uploads}")
     private String fileUploadBaseDir;
@@ -3542,6 +3546,122 @@ public class ExpenseService {
      */
     public File exportFullTaxReview(LocalDate startDate, LocalDate endDate, Long userId) throws IOException {
         return exportExpensesToExcel(startDate, endDate, userId, "tax-review");
+    }
+
+    /**
+     * 세무 검토 자료 다운로드 비동기 작업 (진행률 추적)
+     */
+    @Async("taskExecutor")
+    public void exportFullTaxReviewAsync(LocalDate startDate, LocalDate endDate, Long userId, String jobId) {
+        try {
+            Long companyId = SecurityUtil.getCurrentCompanyId();
+
+            // 진행률 업데이트: 10% - 데이터 조회 시작
+            progressService.updateProgress(jobId, 10, "지출결의서 데이터를 조회하는 중...");
+
+            // 상태 필터링: tax-review는 APPROVED만
+            List<String> statuses = List.of("APPROVED");
+
+            // 기간별 지출결의서 목록 조회
+            List<ExpenseReportDto> expenseReports = expenseMapper.selectExpenseListWithFilters(
+                    0, Integer.MAX_VALUE,
+                    startDate, endDate,
+                    null, null, statuses, null, null, null,
+                    companyId, null, null);
+
+            // 권한 필터링 적용
+            filterSalaryExpenses(expenseReports, userId);
+
+            // 진행률 업데이트: 30% - 데이터 조회 완료
+            progressService.updateProgress(jobId, 30, "데이터 조회 완료. 엑셀 파일을 생성하는 중...");
+
+            // tax-review 전용 정렬
+            expenseReports.sort((a, b) -> {
+                LocalDate aDate = a.getReportDate();
+                LocalDate bDate = b.getReportDate();
+                if (aDate != null && bDate != null) {
+                    int dateCompare = aDate.compareTo(bDate);
+                    if (dateCompare != 0) return dateCompare;
+                }
+                return Long.compare(
+                    a.getExpenseReportId() != null ? a.getExpenseReportId() : 0L,
+                    b.getExpenseReportId() != null ? b.getExpenseReportId() : 0L
+                );
+            });
+
+            // 각 지출결의서의 상세 내역 조회
+            List<Long> expenseReportIds = expenseReports.stream()
+                    .map(ExpenseReportDto::getExpenseReportId)
+                    .collect(Collectors.toList());
+
+            // 진행률 업데이트: 40% - 상세 내역 조회 시작
+            progressService.updateProgress(jobId, 40, "상세 내역을 조회하는 중...");
+
+            Map<Long, List<ExpenseDetailDto>> detailsMap = new HashMap<>();
+            if (!expenseReportIds.isEmpty()) {
+                List<ExpenseDetailDto> allDetails = expenseMapper.selectExpenseDetailsBatch(expenseReportIds, companyId);
+                detailsMap = allDetails.stream()
+                        .collect(Collectors.groupingBy(ExpenseDetailDto::getExpenseReportId));
+            }
+
+            // 진행률 업데이트: 50% - 영수증 조회 시작
+            progressService.updateProgress(jobId, 50, "영수증 데이터를 조회하는 중...");
+
+            // 영수증 데이터 조회
+            Map<Long, List<ReceiptDto>> receiptsByDetailMap = new HashMap<>();
+            if (!expenseReportIds.isEmpty()) {
+                List<ExpenseDetailDto> allDetails = expenseMapper.selectExpenseDetailsBatch(expenseReportIds, companyId);
+                for (ExpenseDetailDto detail : allDetails) {
+                    List<ReceiptDto> receipts = expenseMapper.selectReceiptsByExpenseDetailId(
+                        detail.getExpenseDetailId(), companyId);
+                    if (receipts != null && !receipts.isEmpty()) {
+                        receiptsByDetailMap.put(detail.getExpenseDetailId(), receipts);
+                    }
+                }
+            }
+
+            // 진행률 업데이트: 60% - 엑셀 파일 생성 시작
+            progressService.updateProgress(jobId, 60, "엑셀 파일을 생성하는 중...");
+
+            String projectRoot = System.getProperty("user.dir");
+            File excelFile = createTaxReviewWorkbook(expenseReports, detailsMap, receiptsByDetailMap, projectRoot);
+
+            // 진행률 업데이트: 90% - 파일 생성 완료
+            progressService.updateProgress(jobId, 90, "파일 생성 완료. 준비 중...");
+
+            // 파일을 Map에 저장
+            taxReviewFiles.put(jobId, excelFile);
+
+            // 진행률 업데이트: 100% - 완료
+            progressService.updateProgress(jobId, 100, "완료!");
+            progressService.completeProgress(jobId, null);
+
+            logger.info("세무 검토 자료 비동기 생성 완료 - jobId: {}, 건수: {}", jobId, expenseReports.size());
+        } catch (Exception e) {
+            logger.error("세무 검토 자료 비동기 생성 실패 - jobId: {}", jobId, e);
+            progressService.failProgress(jobId, e.getMessage());
+        }
+    }
+
+    /**
+     * 세무 검토 자료 파일 조회
+     */
+    public File getTaxReviewFile(String jobId) {
+        return taxReviewFiles.get(jobId);
+    }
+
+    /**
+     * 세무 검토 자료 파일 삭제
+     */
+    public void removeTaxReviewFile(String jobId) {
+        File file = taxReviewFiles.remove(jobId);
+        if (file != null && file.exists()) {
+            try {
+                file.delete();
+            } catch (Exception e) {
+                logger.warn("세무 검토 자료 파일 삭제 실패 - jobId: {}, 파일: {}", jobId, file.getAbsolutePath(), e);
+            }
+        }
     }
     
     /**

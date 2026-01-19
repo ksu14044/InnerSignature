@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, deleteExpense, downloadReceiptsBatch } from '../../api/expenseApi';
+import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, deleteExpense, downloadReceiptsBatch, uploadReceiptForDetail } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
 import { getMySignatures } from '../../api/signatureApi';
 import * as S from './style'; // 스타일 가져오기
@@ -32,6 +32,9 @@ const ExpenseDetailPage = () => {
   const [isCompletingTax, setIsCompletingTax] = useState(false);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [deletingReceiptId, setDeletingReceiptId] = useState(null);
+  const [updatingReceiptId, setUpdatingReceiptId] = useState(null);
+  const [receiptUpdateProgress, setReceiptUpdateProgress] = useState(0);
+  const receiptUpdateInputRef = useRef({});
   const [editingTaxInfo, setEditingTaxInfo] = useState(null);
   const [isDeletingExpense, setIsDeletingExpense] = useState(false);
   const [taxInfoForm, setTaxInfoForm] = useState({ isTaxDeductible: true, nonDeductibleReason: '' });
@@ -83,6 +86,16 @@ const ExpenseDetailPage = () => {
         }
       })
       .catch(() => navigate('/'));
+
+    // cleanup: 컴포넌트 언마운트 시 생성한 파일 입력 요소 제거
+    return () => {
+      Object.values(receiptUpdateInputRef.current).forEach(input => {
+        if (input && input.parentNode) {
+          input.parentNode.removeChild(input);
+        }
+      });
+      receiptUpdateInputRef.current = {};
+    };
   }, [id, navigate, user]);
 
   // 저장된 서명/도장 조회
@@ -678,16 +691,159 @@ const ExpenseDetailPage = () => {
     }
   };
 
-  // 영수증 첨부 권한 체크
+  // 영수증 수정 (대기 상태에서만 가능)
+  const handleReceiptModify = (receiptId, expenseDetailId) => {
+    if(updatingReceiptId === receiptId) return;
+    if(!user) {
+        alert("로그인 후 진행할 수 있습니다.");
+        return;
+    }
+
+    // 파일 입력 트리거
+    const inputId = `receipt-update-${receiptId}`;
+    if (!receiptUpdateInputRef.current[inputId]) {
+      receiptUpdateInputRef.current[inputId] = document.createElement('input');
+      receiptUpdateInputRef.current[inputId].type = 'file';
+      receiptUpdateInputRef.current[inputId].accept = 'image/*,application/pdf';
+      receiptUpdateInputRef.current[inputId].style.display = 'none';
+      document.body.appendChild(receiptUpdateInputRef.current[inputId]);
+      
+      receiptUpdateInputRef.current[inputId].addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+          setUpdatingReceiptId(null);
+          return;
+        }
+
+        // 파일 크기 제한 (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          alert("파일 크기는 10MB를 초과할 수 없습니다.");
+          setUpdatingReceiptId(null);
+          return;
+        }
+
+        // 파일 타입 검증
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+        if (!allowedTypes.includes(file.type)) {
+          alert("지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, pdf만 허용)");
+          setUpdatingReceiptId(null);
+          return;
+        }
+
+        setUpdatingReceiptId(receiptId);
+        setIsUploadingReceipt(true);
+        setReceiptUpdateProgress(0);
+
+        try {
+          // 1. 기존 영수증 삭제 (0-20%)
+          setReceiptUpdateProgress(10);
+          const deleteRes = await deleteReceipt(receiptId, user.userId);
+          if (!deleteRes.success) {
+            alert("기존 영수증 삭제 실패: " + deleteRes.message);
+            setUpdatingReceiptId(null);
+            setIsUploadingReceipt(false);
+            setReceiptUpdateProgress(0);
+            return;
+          }
+          setReceiptUpdateProgress(20);
+
+          // 2. 새 영수증 업로드 (20-100%)
+          let uploadRes;
+          const onUploadProgress = (percent) => {
+            // 20% + (업로드 진행률 * 0.8)
+            const totalProgress = 20 + Math.round(percent * 0.8);
+            setReceiptUpdateProgress(totalProgress);
+          };
+
+          if (expenseDetailId) {
+            // 항목 단위 영수증인 경우
+            uploadRes = await uploadReceiptForDetail(
+              expenseDetailId, 
+              id, 
+              user.userId, 
+              file,
+              onUploadProgress
+            );
+          } else {
+            // 문서 단위 영수증인 경우
+            uploadRes = await uploadReceipt(
+              id, 
+              user.userId, 
+              file,
+              onUploadProgress
+            );
+          }
+
+          if (uploadRes.success) {
+            setReceiptUpdateProgress(100);
+            
+            // 상세 정보 다시 조회하여 영수증 목록 갱신
+            const fetchDetail = user?.role === 'SUPERADMIN' 
+              ? getExpenseDetailForSuperAdmin(id)
+              : fetchExpenseDetail(id);
+            const res = await fetchDetail;
+            if (res.success && res.data) {
+              setDetail(res.data);
+              if (res.data.receipts) {
+                setReceipts(res.data.receipts || []);
+              }
+            }
+            
+            // 진행률 바가 100%에 도달할 시간을 주기 위해 약간의 딜레이
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // 상세 정보 조회 완료 후 alert 표시
+            alert("영수증이 수정되었습니다!");
+          } else {
+            alert("영수증 업로드 실패: " + uploadRes.message);
+          }
+        } catch (error) {
+          alert("영수증 수정 중 오류가 발생했습니다.");
+          console.error("영수증 수정 오류:", error);
+        } finally {
+          setUpdatingReceiptId(null);
+          setIsUploadingReceipt(false);
+          setReceiptUpdateProgress(0);
+          // 파일 입력 초기화
+          if (receiptUpdateInputRef.current[inputId]) {
+            receiptUpdateInputRef.current[inputId].value = '';
+          }
+        }
+      });
+    }
+
+    receiptUpdateInputRef.current[inputId].click();
+  };
+
+  // 영수증 첨부 권한 체크 - 승인 상태에서는 추가 불가
   const canUploadReceipt = () => {
     if (!user || !detail) return false;
-    if (detail.status !== 'APPROVED') return false;
+    // 승인된 결의서에서는 영수증 추가 불가
+    // 작성 시 항목 단위로 영수증이 이미 첨부되므로 승인 후 추가는 불필요
+    return false;
+  };
+
+  // 영수증 수정 권한 체크 (대기 상태에서만)
+  const canModifyReceipt = (receipt) => {
+    if (!user || !detail) return false;
+    // 대기 상태가 아니면 수정 불가
+    if (detail.status !== 'WAIT') return false;
     
-    // 작성자 본인 또는 ACCOUNTANT
-    const isOwner = detail.drafterId === user.userId;
-    const isAccountant = user.role === 'ACCOUNTANT';
+    // 작성자 본인만 수정 가능
+    if (detail.drafterId !== user.userId) return false;
     
-    return isOwner || isAccountant;
+    // 세무 수집된 문서는 수정 불가
+    if (detail.taxCollectedAt) return false;
+    
+    return true;
+  };
+
+  // 영수증 삭제 권한 체크 - 승인 상태에서는 삭제 불가
+  const canDeleteReceipt = () => {
+    if (!user || !detail) return false;
+    // 승인된 결의서에서는 영수증 삭제 불가
+    // 승인 후 영수증 삭제는 무결성 문제를 야기할 수 있음
+    return false;
   };
 
   // 영수증 조회 권한 체크 (작성자, 결재자, ACCOUNTANT, CEO 등)
@@ -714,7 +870,16 @@ const ExpenseDetailPage = () => {
 
   // console.log(detail);
   return (
-    <S.Container>
+    <>
+      {/* 영수증 수정 중 로딩바 모달 */}
+      {updatingReceiptId !== null && (
+        <LoadingOverlay 
+          modal={true} 
+          message="영수증을 수정하는 중입니다..." 
+          progress={receiptUpdateProgress}
+        />
+      )}
+      <S.Container>
       {/* 1. 상단 헤더 */}
       <S.Header>
         <S.TitleInfo>
@@ -1147,7 +1312,8 @@ const ExpenseDetailPage = () => {
             ...receipt,
             description: item.description || '-',
             category: item.category || '-',
-            amount: item.amount || 0
+            amount: item.amount || 0,
+            expenseDetailId: item.expenseDetailId // 항목 단위 영수증 구분을 위해 추가
           }))
         ) || [];
 
@@ -1167,7 +1333,8 @@ const ExpenseDetailPage = () => {
               // 문서 단위 영수증임을 구분할 수 있도록 기본 라벨 제공
               description: r.description || '문서 단위 영수증',
               category: r.category || '-',
-              amount: detail.totalAmount || 0
+              amount: detail.totalAmount || 0,
+              expenseDetailId: null // 문서 단위 영수증은 expenseDetailId가 null
             }));
 
           allReceiptsWithDescription = [
@@ -1235,9 +1402,42 @@ const ExpenseDetailPage = () => {
                       )}
                     </S.ReceiptInfo>
                     <S.ReceiptActions>
-                      <button onClick={() => handleReceiptDownload(receipt.receiptId, receipt.originalFilename)} disabled={isUploadingReceipt || deletingReceiptId !== null}>다운로드</button>
-                      {canUploadReceipt() && (
-                        <button onClick={() => handleReceiptDelete(receipt.receiptId)} disabled={isUploadingReceipt || deletingReceiptId === receipt.receiptId || deletingReceiptId !== null}>
+                      <button onClick={() => handleReceiptDownload(receipt.receiptId, receipt.originalFilename)} disabled={isUploadingReceipt || deletingReceiptId !== null || updatingReceiptId !== null}>다운로드</button>
+                      {/* 대기 상태: 수정 버튼 표시 */}
+                      {canModifyReceipt(receipt) && (
+                        <button 
+                          onClick={() => handleReceiptModify(receipt.receiptId, receipt.expenseDetailId)} 
+                          disabled={isUploadingReceipt || updatingReceiptId === receipt.receiptId || updatingReceiptId !== null || deletingReceiptId !== null}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#17a2b8',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: (isUploadingReceipt || updatingReceiptId === receipt.receiptId || updatingReceiptId !== null || deletingReceiptId !== null) ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            opacity: (isUploadingReceipt || updatingReceiptId === receipt.receiptId || updatingReceiptId !== null || deletingReceiptId !== null) ? 0.6 : 1
+                          }}
+                        >
+                          {updatingReceiptId === receipt.receiptId ? '수정 중...' : '수정'}
+                        </button>
+                      )}
+                      {/* 승인 상태: 삭제 버튼 표시 */}
+                      {canDeleteReceipt() && (
+                        <button 
+                          onClick={() => handleReceiptDelete(receipt.receiptId)} 
+                          disabled={isUploadingReceipt || deletingReceiptId === receipt.receiptId || deletingReceiptId !== null || updatingReceiptId !== null}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: (isUploadingReceipt || deletingReceiptId === receipt.receiptId || deletingReceiptId !== null || updatingReceiptId !== null) ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            opacity: (isUploadingReceipt || deletingReceiptId === receipt.receiptId || deletingReceiptId !== null || updatingReceiptId !== null) ? 0.6 : 1
+                          }}
+                        >
                           {deletingReceiptId === receipt.receiptId ? '삭제 중...' : '삭제'}
                         </button>
                       )}
@@ -1580,6 +1780,7 @@ const ExpenseDetailPage = () => {
        )}
 
     </S.Container>
+    </>
   );
 };
 

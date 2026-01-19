@@ -50,6 +50,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Tag(name = "Expense", description = "지출결의서 관리 API")
@@ -1200,13 +1201,124 @@ public class ExpenseController {
     }
     
     /**
-     * 26. 세무 검토용 증빙 리스트 다운로드 API
+     * 26-1. 세무 검토용 증빙 리스트 다운로드 작업 시작 API (비동기, 진행률 추적)
+     * POST /api/expenses/export/tax-review/start?startDate=2024-01-01&endDate=2024-12-31
+     * 설명: ACCOUNTANT 또는 TAX_ACCOUNTANT 권한 사용자만 접근 가능
+     * 반환: jobId (진행률 조회 및 파일 다운로드에 사용)
+     */
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'TAX_ACCOUNTANT')")
+    @Operation(summary = "세무 검토용 증빙 리스트 다운로드 작업 시작", description = "세무 검토 자료 생성을 시작하고 jobId를 반환합니다. (ACCOUNTANT, TAX_ACCOUNTANT)")
+    @PostMapping("/export/tax-review/start")
+    public ApiResponse<ExpenseCreationResponse> startTaxReviewExport(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        
+        LocalDate startDateParsed = null;
+        LocalDate endDateParsed = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                startDateParsed = LocalDate.parse(startDate, formatter);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                endDateParsed = LocalDate.parse(endDate, formatter);
+            }
+        } catch (Exception e) {
+            logger.error("날짜 파싱 실패", e);
+            return new ApiResponse<>(false, "날짜 형식이 올바르지 않습니다. (형식: YYYY-MM-DD)", null);
+        }
+        
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        String jobId = UUID.randomUUID().toString();
+        
+        logger.info("세무 검토 자료 다운로드 작업 시작 - userId: {}, startDate: {}, endDate: {}, jobId: {}", 
+                currentUserId, startDateParsed, endDateParsed, jobId);
+        
+        // 비동기 작업 시작
+        expenseService.exportFullTaxReviewAsync(startDateParsed, endDateParsed, currentUserId, jobId);
+        
+        return new ApiResponse<>(true, "처리 중", new ExpenseCreationResponse(jobId));
+    }
+
+    /**
+     * 26-2. 세무 검토용 증빙 리스트 파일 다운로드 API
+     * GET /api/expenses/export/tax-review/download/{jobId}?startDate=2024-01-01&endDate=2024-12-31
+     * 설명: 작업이 완료된 후 파일을 다운로드합니다.
+     */
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'TAX_ACCOUNTANT')")
+    @Operation(summary = "세무 검토용 증빙 리스트 파일 다운로드", description = "생성된 파일을 다운로드합니다. (ACCOUNTANT, TAX_ACCOUNTANT)")
+    @GetMapping("/export/tax-review/download/{jobId}")
+    public ResponseEntity<?> downloadTaxReviewFile(
+            @PathVariable String jobId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        
+        try {
+            File excelFile = expenseService.getTaxReviewFile(jobId);
+            
+            if (excelFile == null || !excelFile.exists()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(new ApiResponse<>(false, "파일을 찾을 수 없습니다. 작업이 완료되지 않았거나 만료되었습니다.", null));
+            }
+            
+            Resource resource = new FileSystemResource(excelFile);
+            
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate startDateParsed = null;
+            LocalDate endDateParsed = null;
+            
+            try {
+                if (startDate != null && !startDate.isEmpty()) {
+                    startDateParsed = LocalDate.parse(startDate, formatter);
+                }
+                if (endDate != null && !endDate.isEmpty()) {
+                    endDateParsed = LocalDate.parse(endDate, formatter);
+                }
+            } catch (Exception e) {
+                // 날짜 파싱 실패해도 파일명은 기본값 사용
+            }
+            
+            String filename = String.format("세무검토_%s_%s.xlsx",
+                    startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                    endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            
+            logger.info("세무 검토 자료 파일 다운로드 - jobId: {}, filename: {}", jobId, filename);
+            
+            // 파일 다운로드 후 삭제
+            ResponseEntity<Resource> response = ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(filename))
+                    .body(resource);
+            
+            // 비동기로 파일 삭제 (다운로드 완료 후)
+            new Thread(() -> {
+                try {
+                    Thread.sleep(5000); // 5초 대기
+                    expenseService.removeTaxReviewFile(jobId);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }).start();
+            
+            return response;
+        } catch (Exception e) {
+            logger.error("세무 검토 자료 파일 다운로드 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ApiResponse<>(false, "파일 다운로드 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
+    }
+
+    /**
+     * 26. 세무 검토용 증빙 리스트 다운로드 API (기존 동기 방식 - 호환성 유지)
      * GET /api/expenses/export/tax-review?startDate=2024-01-01&endDate=2024-12-31&format=full
      * 설명: ACCOUNTANT 또는 TAX_ACCOUNTANT 권한 사용자만 접근 가능
      * format: full(전체 5시트), simple(간단 요약), import(더존 Import)
      */
     @PreAuthorize("hasAnyRole('ACCOUNTANT', 'TAX_ACCOUNTANT')")
-    @Operation(summary = "세무 검토용 증빙 리스트 다운로드", description = "세무사가 검토하기 쉬운 형식의 증빙 리스트를 다운로드합니다. (ACCOUNTANT, TAX_ACCOUNTANT)")
+    @Operation(summary = "세무 검토용 증빙 리스트 다운로드 (동기)", description = "세무사가 검토하기 쉬운 형식의 증빙 리스트를 다운로드합니다. (ACCOUNTANT, TAX_ACCOUNTANT)")
     @GetMapping("/export/tax-review")
     public ResponseEntity<?> exportTaxReview(
             @RequestParam(required = false) String startDate,

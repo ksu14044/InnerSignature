@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo, lazy, Suspense } from 'react';
-import { deleteExpense, downloadTaxReviewList, fetchPendingApprovals } from '../../api/expenseApi';
+import { deleteExpense, downloadTaxReviewList, fetchPendingApprovals, startTaxReviewExport, downloadTaxReviewFile, getExpenseCreationProgress } from '../../api/expenseApi';
 import { getUserCompanies, getPendingUsers, approveUser } from '../../api/userApi';
 import * as S from './style';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -132,7 +132,7 @@ const ExpenseListPage = () => {
     }
   };
 
-  // 세무 자료 다운로드 핸들러
+  // 세무 자료 다운로드 핸들러 (비동기 작업, 진행률 추적)
   const handleExportTaxReview = async () => {
     if (
       !user ||
@@ -145,40 +145,94 @@ const ExpenseListPage = () => {
     try {
       setIsDownloadingTaxReview(true);
       setDownloadProgress(0);
-      setProgressMessage('세무 자료를 다운로드하는 중...');
+      setProgressMessage('세무 자료 다운로드를 시작하는 중...');
       
       // 현재 필터 조건의 기간을 사용
       const startDate = filters.startDate || null;
       const endDate = filters.endDate || null;
       
-      await downloadTaxReviewList(
-        startDate, 
-        endDate, 
-        'full',
-        (progress) => {
-          setDownloadProgress(progress);
-          if (progress < 50) {
-            setProgressMessage('세무 자료를 준비하는 중...');
-          } else if (progress < 90) {
-            setProgressMessage('세무 자료를 다운로드하는 중...');
-          } else {
-            setProgressMessage('다운로드 완료 중...');
+      // 1. 작업 시작
+      const startResponse = await startTaxReviewExport(startDate, endDate);
+      if (!startResponse.success || !startResponse.data?.jobId) {
+        throw new Error('작업 시작에 실패했습니다.');
+      }
+      
+      const jobId = startResponse.data.jobId;
+      
+      // 2. 진행률 폴링
+      const pollProgress = async () => {
+        const maxAttempts = 120; // 최대 120번 시도 (약 60초)
+        let attempts = 0;
+        
+        const interval = setInterval(async () => {
+          try {
+            attempts++;
+            const progressResponse = await getExpenseCreationProgress(jobId);
+            
+            if (progressResponse.success && progressResponse.data) {
+              const progress = progressResponse.data;
+              
+              // 진행률 업데이트
+              setDownloadProgress(progress.percentage || 0);
+              setProgressMessage(progress.message || '처리 중...');
+              
+              // 완료 또는 실패 시
+              if (progress.completed) {
+                clearInterval(interval);
+                
+                // 3. 파일 다운로드
+                try {
+                  await downloadTaxReviewFile(jobId, startDate, endDate);
+                  
+                  // 4. 성공창 표시
+                  setDownloadProgress(100);
+                  setProgressMessage('완료!');
+                  
+                  setTimeout(() => {
+                    alert('✅ 세무 자료 다운로드가 완료되었습니다.');
+                    setIsDownloadingTaxReview(false);
+                    setDownloadProgress(0);
+                  }, 500);
+                } catch (downloadError) {
+                  setIsDownloadingTaxReview(false);
+                  setDownloadProgress(0);
+                  alert(downloadError.userMessage || '파일 다운로드 중 오류가 발생했습니다.');
+                }
+              } else if (progress.failed) {
+                clearInterval(interval);
+                setIsDownloadingTaxReview(false);
+                setDownloadProgress(0);
+                alert(progress.errorMessage || '세무 자료 생성 중 오류가 발생했습니다.');
+              }
+            }
+            
+            // 최대 시도 횟수 초과
+            if (attempts >= maxAttempts) {
+              clearInterval(interval);
+              setIsDownloadingTaxReview(false);
+              setDownloadProgress(0);
+              alert('작업 시간이 초과되었습니다. 다시 시도해주세요.');
+            }
+          } catch (error) {
+            console.error('진행률 조회 실패:', error);
+            // 에러가 발생해도 계속 시도 (네트워크 오류 등)
+            if (attempts >= maxAttempts) {
+              clearInterval(interval);
+              setIsDownloadingTaxReview(false);
+              setDownloadProgress(0);
+              alert('진행률 조회 중 오류가 발생했습니다.');
+            }
           }
-        }
-      );
+        }, 500); // 0.5초마다 조회
+      };
       
-      setDownloadProgress(100);
-      setProgressMessage('완료!');
+      // 폴링 시작
+      pollProgress();
       
-      setTimeout(() => {
-        alert('✅ 세무 자료 다운로드가 완료되었습니다.');
-        setIsDownloadingTaxReview(false);
-        setDownloadProgress(0);
-      }, 500);
     } catch (error) {
       setIsDownloadingTaxReview(false);
       setDownloadProgress(0);
-      alert(error.userMessage || '세무 자료 다운로드 중 오류가 발생했습니다.');
+      alert(error.userMessage || error.message || '세무 자료 다운로드 중 오류가 발생했습니다.');
     }
   };
 
