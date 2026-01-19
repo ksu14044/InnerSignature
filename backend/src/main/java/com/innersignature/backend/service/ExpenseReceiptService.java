@@ -2,6 +2,7 @@ package com.innersignature.backend.service;
 
 import com.innersignature.backend.dto.ReceiptDto;
 import com.innersignature.backend.mapper.ExpenseMapper;
+import com.innersignature.backend.util.ReceiptCompressor;
 import com.innersignature.backend.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -40,17 +41,30 @@ public class ExpenseReceiptService {
         // 파일 검증
         validateReceiptFile(file);
 
-        // 파일 저장
-        String fileName = generateUniqueFileName(file.getOriginalFilename());
+        // 파일을 PDF로 변환하고 압축하여 저장
+        String originalFilename = file.getOriginalFilename();
+        String fileName = generateUniqueFileName(originalFilename);
+        // 확장자를 .pdf로 변경
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            fileName = fileName.substring(0, lastDotIndex) + ".pdf";
+        } else {
+            fileName = fileName + ".pdf";
+        }
         String filePath = saveFile(file, fileName);
 
         // 데이터베이스 저장
         ReceiptDto receipt = new ReceiptDto();
         receipt.setExpenseReportId(expenseReportId);
         receipt.setExpenseDetailId(null); // 문서 단위는 null
-        receipt.setOriginalFilename(file.getOriginalFilename());
+        receipt.setOriginalFilename(originalFilename); // 원본 파일명 유지
         receipt.setFilePath(filePath);
-        receipt.setFileSize(file.getSize());
+        // 압축된 파일 크기 저장
+        try {
+            receipt.setFileSize(ReceiptCompressor.getCompressedSize(file));
+        } catch (IOException e) {
+            receipt.setFileSize(file.getSize()); // 실패 시 원본 크기
+        }
         receipt.setUploadedBy(userId);
 
         Long companyId = SecurityUtil.getCurrentCompanyId();
@@ -69,17 +83,30 @@ public class ExpenseReceiptService {
         // 파일 검증
         validateReceiptFile(file);
 
-        // 파일 저장
-        String fileName = generateUniqueFileName(file.getOriginalFilename());
+        // 파일을 PDF로 변환하고 압축하여 저장
+        String originalFilename = file.getOriginalFilename();
+        String fileName = generateUniqueFileName(originalFilename);
+        // 확장자를 .pdf로 변경
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            fileName = fileName.substring(0, lastDotIndex) + ".pdf";
+        } else {
+            fileName = fileName + ".pdf";
+        }
         String filePath = saveFile(file, fileName);
 
         // 데이터베이스 저장
         ReceiptDto receipt = new ReceiptDto();
         receipt.setExpenseReportId(expenseReportId);
         receipt.setExpenseDetailId(expenseDetailId);
-        receipt.setOriginalFilename(file.getOriginalFilename());
+        receipt.setOriginalFilename(originalFilename); // 원본 파일명 유지
         receipt.setFilePath(filePath);
-        receipt.setFileSize(file.getSize());
+        // 압축된 파일 크기 저장
+        try {
+            receipt.setFileSize(ReceiptCompressor.getCompressedSize(file));
+        } catch (IOException e) {
+            receipt.setFileSize(file.getSize()); // 실패 시 원본 크기
+        }
         receipt.setUploadedBy(userId);
 
         Long companyId = SecurityUtil.getCurrentCompanyId();
@@ -206,9 +233,10 @@ public class ExpenseReceiptService {
             Files.createDirectories(uploadDir);
         }
 
-        // 파일 저장
+        // 파일을 PDF로 변환하고 5MB 이하로 압축하여 저장
+        byte[] compressedPdf = ReceiptCompressor.compressToPdf(file);
         Path filePath = uploadDir.resolve(fileName);
-        Files.copy(file.getInputStream(), filePath);
+        Files.write(filePath, compressedPdf);
 
         return filePath.toString();
     }

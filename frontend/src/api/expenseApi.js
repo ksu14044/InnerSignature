@@ -388,11 +388,38 @@ export const downloadReceipt = async (receiptId, filename) => {
         responseType: 'blob', // 파일 다운로드를 위해 blob으로 받기
       });
       
-      // Blob을 다운로드 링크로 변환
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // Content-Disposition 헤더에서 파일명 추출
+      let downloadFilename = filename || 'receipt.pdf';
+      const contentDisposition = response.headers['content-disposition'];
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          downloadFilename = filenameMatch[1].replace(/['"]/g, '');
+          // UTF-8 디코딩 처리 (필요시)
+          try {
+            downloadFilename = decodeURIComponent(escape(downloadFilename));
+          } catch (e) {
+            // 디코딩 실패 시 원본 사용
+          }
+        }
+      }
+      
+      // 확장자가 없거나 .pdf가 아니면 .pdf 추가
+      if (!downloadFilename.toLowerCase().endsWith('.pdf')) {
+        const lastDot = downloadFilename.lastIndexOf('.');
+        if (lastDot > 0) {
+          downloadFilename = downloadFilename.substring(0, lastDot) + '.pdf';
+        } else {
+          downloadFilename = downloadFilename + '.pdf';
+        }
+      }
+      
+      // PDF MIME 타입으로 Blob 생성
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', filename || 'receipt');
+      link.setAttribute('download', downloadFilename);
       document.body.appendChild(link);
       link.click();
       link.remove();

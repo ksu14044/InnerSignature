@@ -18,6 +18,7 @@ import com.innersignature.backend.dto.UserDto;
 import com.innersignature.backend.dto.UserExpenseStatsDto;
 import com.innersignature.backend.mapper.ExpenseMapper;
 import com.innersignature.backend.util.PermissionUtil;
+import com.innersignature.backend.util.ReceiptCompressor;
 import com.innersignature.backend.util.SecurityLogger;
 import com.innersignature.backend.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -1246,16 +1247,23 @@ public class ExpenseService {
             throw new IOException("디렉토리 생성 중 오류가 발생했습니다: " + uploadPath.toAbsolutePath() + " - " + e.getMessage(), e);
         }
 
-        // 8. 파일명 생성: receipt_{timestamp}_{sanitizedFilename}
+        // 8. 파일명 생성: receipt_{timestamp}_{sanitizedFilename}.pdf (모든 파일을 PDF로 변환)
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String fileName = "receipt_" + timestamp + "_" + sanitizedFilename;
+        // 원본 확장자를 제거하고 .pdf로 변경
+        String baseName = sanitizedFilename;
+        int lastDotIndex = baseName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            baseName = baseName.substring(0, lastDotIndex);
+        }
+        String fileName = "receipt_" + timestamp + "_" + baseName + ".pdf";
         Path filePath = uploadPath.resolve(fileName);
 
         boolean fileSaved = false;
         
         try {
-            // 9. 파일 저장
-            file.transferTo(filePath.toFile());
+            // 9. 파일을 PDF로 변환하고 5MB 이하로 압축하여 저장
+            byte[] compressedPdf = ReceiptCompressor.compressToPdf(file);
+            Files.write(filePath, compressedPdf);
             fileSaved = true;
             
             // 10. DB에 영수증 정보 저장 (receipt_tb에 저장)
@@ -1263,12 +1271,18 @@ public class ExpenseService {
             ReceiptDto receiptDto = new ReceiptDto();
             receiptDto.setExpenseReportId(expenseReportId);
             receiptDto.setFilePath(relativePath);
-            receiptDto.setOriginalFilename(originalFilename);
-            receiptDto.setFileSize(file.getSize());
+            receiptDto.setOriginalFilename(originalFilename); // 원본 파일명 유지
+            receiptDto.setFileSize((long) compressedPdf.length); // 압축된 크기 저장
             receiptDto.setUploadedBy(userId);
             receiptDto.setUploadedAt(LocalDateTime.now());
             receiptDto.setCompanyId(companyId);
             expenseMapper.insertReceipt(receiptDto);
+            
+            logger.info("영수증 업로드 완료 - 원본: {} ({}MB), 압축: {} ({}MB)", 
+                originalFilename, 
+                String.format("%.2f", file.getSize() / (1024.0 * 1024.0)),
+                fileName,
+                String.format("%.2f", compressedPdf.length / (1024.0 * 1024.0)));
             
             SecurityLogger.fileAccess("UPLOAD", userId, expenseReportId, sanitizedFilename);
         } catch (Exception e) {

@@ -40,7 +40,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -421,21 +420,25 @@ public class ExpenseController {
             }
 
             Resource resource = new FileSystemResource(file);
-            String contentType = "application/octet-stream";
-            try {
-                String probed = Files.probeContentType(filePath);
-                if (probed != null) {
-                    contentType = probed;
+            // 모든 영수증은 PDF로 저장되므로 Content-Type을 PDF로 설정
+            String contentType = "application/pdf";
+            
+            // 다운로드 파일명: 원본 파일명의 확장자를 .pdf로 변경
+            String downloadFilename = receipt.getOriginalFilename();
+            if (downloadFilename != null && !downloadFilename.toLowerCase().endsWith(".pdf")) {
+                int lastDotIndex = downloadFilename.lastIndexOf('.');
+                if (lastDotIndex > 0) {
+                    downloadFilename = downloadFilename.substring(0, lastDotIndex) + ".pdf";
+                } else {
+                    downloadFilename = downloadFilename + ".pdf";
                 }
-            } catch (IOException ignore) {
-                // fallback to default content type
             }
 
             SecurityLogger.fileAccess("DOWNLOAD", currentUserId, receipt.getExpenseReportId(), receipt.getOriginalFilename());
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(receipt.getOriginalFilename()))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, createContentDispositionHeader(downloadFilename))
                     .body(resource);
         } catch (com.innersignature.backend.exception.BusinessException e) {
             // 권한 관련 예외는 JSON 응답으로 반환
