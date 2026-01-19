@@ -391,28 +391,34 @@ export const downloadReceipt = async (receiptId, filename) => {
       // Content-Disposition 헤더에서 파일명 추출 (RFC 5987, RFC 2231 모두 지원)
       let downloadFilename = filename || 'receipt.pdf';
       const contentDisposition = response.headers['content-disposition'];
+      
       if (contentDisposition) {
-        // RFC 5987 형식: filename*=UTF-8''encoded (우선 처리)
-        const rfc5987Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+        console.log('Content-Disposition 헤더:', contentDisposition); // 디버깅
+        
+        // RFC 5987 형식: filename*=UTF-8''encoded (개선된 정규식)
+        // 세미콜론이나 헤더 끝까지 매칭
+        const rfc5987Match = contentDisposition.match(/filename\*=UTF-8''(.+?)(?:;|$)/i);
         if (rfc5987Match && rfc5987Match[1]) {
           try {
-            downloadFilename = decodeURIComponent(rfc5987Match[1]);
+            downloadFilename = decodeURIComponent(rfc5987Match[1].trim());
+            console.log('RFC 5987 디코딩 성공:', downloadFilename);
           } catch (e) {
-            console.warn('RFC 5987 디코딩 실패', e);
+            console.warn('RFC 5987 디코딩 실패', e, '인코딩된 값:', rfc5987Match[1]);
           }
+        } else {
+          console.warn('RFC 5987 매칭 실패, 헤더:', contentDisposition);
         }
         
-        // RFC 2231 형식: =?UTF-8?Q?...?= 또는 =_UTF-8_Q_... (대체 처리)
-        if (downloadFilename === (filename || 'receipt.pdf') || 
-            downloadFilename.includes('=_UTF-8_Q_') || 
-            downloadFilename.includes('=?UTF-8?Q?')) {
-          try {
-            const rfc2231Match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-            if (rfc2231Match && rfc2231Match[1]) {
-              let extracted = rfc2231Match[1].replace(/['"]/g, '');
-              
-              // RFC 2231 디코딩
-              if (extracted.includes('=_UTF-8_Q_') || extracted.includes('=?UTF-8?Q?')) {
+        // RFC 5987이 실패한 경우에만 fallback 처리
+        if (downloadFilename === (filename || 'receipt.pdf')) {
+          // 일반 filename="..." 파라미터 처리
+          const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+          if (filenameMatch && filenameMatch[1]) {
+            let extracted = filenameMatch[1].replace(/['"]/g, '');
+            
+            // RFC 2231 형식 체크
+            if (extracted.includes('=_UTF-8_Q_') || extracted.includes('=?UTF-8?Q?')) {
+              try {
                 extracted = extracted
                   .replace(/=\?UTF-8\?Q\?/gi, '')
                   .replace(/\?=/g, '')
@@ -422,20 +428,24 @@ export const downloadReceipt = async (receiptId, filename) => {
                     String.fromCharCode(parseInt(hex, 16))
                   );
                 downloadFilename = extracted;
-              } else {
-                // 일반 디코딩
-                try {
-                  downloadFilename = decodeURIComponent(escape(extracted));
-                } catch (e) {
-                  downloadFilename = extracted;
-                }
+                console.log('RFC 2231 디코딩 성공:', downloadFilename);
+              } catch (e) {
+                console.warn('RFC 2231 디코딩 실패', e);
               }
+            } else {
+              // 일반 인코딩
+              try {
+                downloadFilename = decodeURIComponent(extracted);
+              } catch (e) {
+                downloadFilename = extracted;
+              }
+              console.log('일반 filename 파라미터 사용:', downloadFilename);
             }
-          } catch (e) {
-            console.warn('RFC 2231 디코딩 실패', e);
           }
         }
       }
+      
+      console.log('최종 다운로드 파일명:', downloadFilename);
       
       // 확장자가 없거나 .pdf가 아니면 .pdf 추가
       if (!downloadFilename.toLowerCase().endsWith('.pdf')) {
