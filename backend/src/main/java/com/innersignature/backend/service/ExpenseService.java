@@ -26,6 +26,7 @@ import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,6 +80,7 @@ public class ExpenseService {
     private final ExpenseReceiptService expenseReceiptService;
     private final ExpenseAnalyticsService expenseAnalyticsService;
     private final ExpenseTaxService expenseTaxService;
+    private final com.innersignature.backend.service.ProgressService progressService;
 
     @Value("${file.upload.base-dir:uploads}")
     private String fileUploadBaseDir;
@@ -706,6 +708,34 @@ public class ExpenseService {
         // 생성된 문서 ID 반환
         logger.info("지출결의서 생성 완료 - expenseReportId: {}", newId);
         return newId;
+    }
+
+    /**
+     * 3-0. 기안서 비동기 생성 (진행률 추적)
+     * 설명: 비동기로 처리하여 진행률을 추적할 수 있습니다.
+     * SecurityContext가 자동으로 전파됩니다 (AsyncConfig에서 설정).
+     */
+    @Async("taskExecutor")
+    public void createExpenseAsync(ExpenseReportDto request, Long currentUserId, String jobId) {
+        try {
+            // 진행률 업데이트: 10%
+            progressService.updateProgress(jobId, 10, "지출결의서 정보를 저장하는 중...");
+            
+            // 지출결의서 생성 (기존 메서드 사용)
+            // SecurityContext가 전파되어 getCurrentCompanyId()가 정상 작동합니다.
+            Long expenseId = createExpense(request, currentUserId);
+            
+            // 진행률 업데이트: 50%
+            progressService.updateProgress(jobId, 50, "처리 완료");
+            
+            // 완료 처리
+            progressService.completeProgress(jobId, expenseId);
+            
+            logger.info("지출결의서 비동기 생성 완료 - expenseId: {}, jobId: {}", expenseId, jobId);
+        } catch (Exception e) {
+            logger.error("지출결의서 비동기 생성 실패 - jobId: {}", jobId, e);
+            progressService.failProgress(jobId, e.getMessage());
+        }
     }
 
     /**

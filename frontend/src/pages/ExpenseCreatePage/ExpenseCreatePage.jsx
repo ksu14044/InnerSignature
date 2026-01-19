@@ -6,7 +6,7 @@ import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck, FaEdit, FaFileUpload
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
 import * as S from './style';
 import { useAuth } from '../../contexts/AuthContext';
-import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail } from '../../api/expenseApi';
+import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail, getExpenseCreationProgress } from '../../api/expenseApi';
 import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole, filterCategoriesByRole } from '../../constants/categories';
@@ -25,6 +25,8 @@ const ExpenseCreatePage = () => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submitProgress, setSubmitProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('지출결의서를 작성하는 중...');
   const isEditMode = !!id; // id가 있으면 수정 모드
 
   // 1. 문서 기본 정보 상태
@@ -531,6 +533,124 @@ const ExpenseCreatePage = () => {
     }
   };
 
+  // 영수증 업로드 처리 함수 (생성 모드용)
+  const handleReceiptUploadsForExpense = async (expenseId, formattedDetails, receiptFilesByIndex) => {
+    setIsUploadingReceipt(true);
+    setSubmitProgress(70);
+    setProgressMessage('영수증을 업로드하는 중...');
+    let totalUploadSuccessCount = 0;
+    let totalUploadFailCount = 0;
+
+    // 상세 내역 ID 조회를 위해 상세 정보 다시 가져오기
+    try {
+      console.log('상세 내역 조회 시작, expenseId:', expenseId);
+      const detailResponse = await fetchExpenseDetail(expenseId);
+      
+      if (!detailResponse.success) {
+        console.error('상세 내역 조회 실패:', detailResponse);
+        alert('상세 내역 조회에 실패했습니다. 영수증은 상세 페이지에서 업로드해주세요.');
+        setIsUploadingReceipt(false);
+        return;
+      }
+      
+      if (!detailResponse.data || !detailResponse.data.details) {
+        console.error('상세 내역 데이터가 없습니다:', detailResponse.data);
+        alert('상세 내역 데이터를 찾을 수 없습니다. 영수증은 상세 페이지에서 업로드해주세요.');
+        setIsUploadingReceipt(false);
+        return;
+      }
+      
+      const savedDetails = detailResponse.data.details;
+      
+      // 전체 영수증 파일 수 계산
+      const totalReceiptFiles = receiptFilesByIndex.reduce((sum, files) => sum + (files?.length || 0), 0);
+      let uploadedFileCount = 0;
+      
+      // 각 상세 내역별로 영수증 업로드
+      for (let i = 0; i < formattedDetails.length; i++) {
+        const detail = formattedDetails[i];
+        const receiptFiles = receiptFilesByIndex[i];
+        
+        if (receiptFiles && receiptFiles.length > 0) {
+          const savedDetail = savedDetails.find(saved => 
+            saved.description === detail.description && 
+            saved.category === detail.category &&
+            Math.abs(saved.amount - detail.amount) < 1
+          );
+          
+          if (!savedDetail || !savedDetail.expenseDetailId) {
+            totalUploadFailCount += receiptFiles.length;
+            uploadedFileCount += receiptFiles.length;
+            continue;
+          }
+          
+          for (const file of receiptFiles) {
+            try {
+              const uploadResponse = await uploadReceiptForDetail(
+                savedDetail.expenseDetailId, 
+                expenseId, 
+                user.userId, 
+                file
+              );
+              if (uploadResponse.success) {
+                totalUploadSuccessCount++;
+              } else {
+                totalUploadFailCount++;
+              }
+              
+              uploadedFileCount++;
+              // 영수증 업로드 진행률: 70% ~ 95%
+              if (totalReceiptFiles > 0) {
+                const receiptProgress = 70 + Math.round((uploadedFileCount / totalReceiptFiles) * 25);
+                setSubmitProgress(Math.min(receiptProgress, 95));
+                setProgressMessage(`영수증 업로드 중... (${uploadedFileCount}/${totalReceiptFiles})`);
+              }
+            } catch (error) {
+              totalUploadFailCount++;
+              uploadedFileCount++;
+              if (totalReceiptFiles > 0) {
+                const receiptProgress = 70 + Math.round((uploadedFileCount / totalReceiptFiles) * 25);
+                setSubmitProgress(Math.min(receiptProgress, 95));
+              }
+            }
+          }
+        }
+      }
+      
+      setIsUploadingReceipt(false);
+      setSubmitProgress(100);
+      setProgressMessage('완료!');
+
+      // 성공 메시지 표시 전에 잠시 대기
+      setTimeout(() => {
+        if (totalUploadSuccessCount > 0) {
+          if (totalUploadFailCount > 0) {
+            alert(`⚠️ ${totalUploadSuccessCount}개의 영수증이 업로드되었습니다.\n${totalUploadFailCount}개의 영수증 업로드에 실패했습니다.\n상세 페이지에서 다시 업로드해주세요.`);
+          }
+        } else if (totalUploadFailCount > 0) {
+          alert(`❌ 모든 영수증 업로드에 실패했습니다.\n상세 페이지에서 다시 업로드해주세요.\n\n실패한 영수증 수: ${totalUploadFailCount}개`);
+        }
+
+        // 성공 메시지
+        if (!hasSalaryCategory) {
+          alert('✅ 지출결의서가 작성되고 결재 라인이 설정되었습니다!');
+        } else {
+          alert('✅ 급여 지출결의서가 작성되었습니다!');
+        }
+
+        setIsSubmitting(false);
+        setSubmitProgress(0);
+        navigate(`/detail/${expenseId}`);
+      }, 500);
+    } catch (error) {
+      console.error('상세 내역 조회 실패:', error);
+      alert('상세 내역 조회에 실패했습니다. 영수증은 상세 페이지에서 업로드해주세요.');
+      setIsUploadingReceipt(false);
+      setIsSubmitting(false);
+      setSubmitProgress(0);
+    }
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
     
@@ -669,9 +789,13 @@ const ExpenseCreatePage = () => {
 
     try {
       setIsSubmitting(true);
+      setSubmitProgress(0);
+      setProgressMessage('지출결의서 정보를 전송하는 중...');
 
       if (isEditMode) {
         // 수정 모드
+        setSubmitProgress(20);
+        setProgressMessage('지출결의서를 수정하는 중...');
         const response = await updateExpense(id, payload);
         if (response.success) {
           // 저장 후 영수증 업로드 (생성 모드와 동일한 방식)
@@ -798,165 +922,132 @@ const ExpenseCreatePage = () => {
         }
       } else {
         // 생성 모드
-        const response = await axiosInstance.post(`${API_CONFIG.EXPENSES_BASE_URL}/create`, payload);
-
-        if (response.data.success) {
-          // 생성된 지출 결의서의 ID를 받아서 Detail 페이지로 이동
-          const expenseId = response.data.data;
-
-          if (expenseId) {
-            // 급여가 아닌 경우에만 결재 라인 설정
-            if (!hasSalaryCategory) {
-              // 선택된 결재자들을 approvalLines로 변환 (순서 보장)
-              const approvalLines = selectedApprovers.map(userId => {
-                const adminUser = adminUsers.find(user => user.userId === userId);
-                return {
-                  approverId: userId,
-                  approverPosition: adminUser?.position || DEFAULT_VALUES.APPROVER_DEFAULTS.position,
-                  approverName: adminUser?.koreanName || DEFAULT_VALUES.APPROVER_DEFAULTS.name,
-                  status: APPROVAL_STATUS.WAIT
-                };
-              });
-
-              try {
-                await setApprovalLines(expenseId, approvalLines);
-              } catch (approvalError) {
-                console.error('결재 라인 설정 실패:', approvalError);
-                alert('지출결의서는 작성되었으나 결재 라인 설정에 실패했습니다.');
+        setSubmitProgress(5);
+        setProgressMessage('지출결의서 정보를 전송하는 중...');
+        
+        const response = await axiosInstance.post(
+          `${API_CONFIG.EXPENSES_BASE_URL}/create`, 
+          payload,
+          {
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total) {
+                const uploadPercent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                // 업로드는 0-30%까지
+                const totalPercent = Math.round(uploadPercent * 0.3);
+                setSubmitProgress(totalPercent);
+                setProgressMessage('데이터를 전송하는 중...');
               }
             }
-
-            // 각 상세 내역의 영수증 파일들을 업로드
-            setIsUploadingReceipt(true);
-            let totalUploadSuccessCount = 0;
-            let totalUploadFailCount = 0;
-
-            // 상세 내역 ID 조회를 위해 상세 정보 다시 가져오기
-            try {
-              console.log('상세 내역 조회 시작, expenseId:', expenseId);
-              const detailResponse = await fetchExpenseDetail(expenseId);
-              
-              if (!detailResponse.success) {
-                console.error('상세 내역 조회 실패:', detailResponse);
-                alert('상세 내역 조회에 실패했습니다. 영수증은 상세 페이지에서 업로드해주세요.');
-                setIsUploadingReceipt(false);
-                return;
-              }
-              
-              if (!detailResponse.data || !detailResponse.data.details) {
-                console.error('상세 내역 데이터가 없습니다:', detailResponse.data);
-                alert('상세 내역 데이터를 찾을 수 없습니다. 영수증은 상세 페이지에서 업로드해주세요.');
-                setIsUploadingReceipt(false);
-                return;
-              }
-              
-              const savedDetails = detailResponse.data.details;
-              console.log('저장된 상세 내역:', savedDetails.map(d => ({
-                id: d.expenseDetailId,
-                category: d.category,
-                description: d.description,
-                amount: d.amount
-              })));
-              console.log('업로드할 영수증이 있는 내역:', formattedDetails.map((d, idx) => ({
-                index: idx,
-                category: d.category,
-                description: d.description,
-                amount: d.amount,
-                receiptCount: receiptFilesByIndex[idx]?.length || 0
-              })));
-
-              // 각 상세 내역별로 영수증 업로드 (description, category, amount로 매칭)
-              for (let i = 0; i < formattedDetails.length; i++) {
-                const detail = formattedDetails[i];
-                const receiptFiles = receiptFilesByIndex[i];
+          }
+        );
+        
+        if (response.data.success && response.data.data) {
+          // jobId 받기
+          const jobId = response.data.data.jobId;
+          
+          // 폴링으로 진행률 조회
+          const pollProgress = async () => {
+            const maxAttempts = 60; // 최대 60번 시도 (약 30초)
+            let attempts = 0;
+            
+            const interval = setInterval(async () => {
+              try {
+                attempts++;
+                const progressResponse = await getExpenseCreationProgress(jobId);
                 
-                if (receiptFiles && receiptFiles.length > 0) {
-                  // description, category, amount로 매칭하여 더 정확한 내역 찾기
-                  const savedDetail = savedDetails.find(saved => 
-                    saved.description === detail.description && 
-                    saved.category === detail.category &&
-                    Math.abs(saved.amount - detail.amount) < 1 // 금액이 정확히 일치하는지 확인
-                  );
+                if (progressResponse.success && progressResponse.data) {
+                  const progress = progressResponse.data;
                   
-                  if (!savedDetail) {
-                    console.error(`상세 내역을 찾을 수 없습니다:`, {
-                      category: detail.category,
-                      description: detail.description,
-                      amount: detail.amount
-                    });
-                    totalUploadFailCount += receiptFiles.length;
-                    continue;
-                  }
+                  // 진행률 업데이트: 30% + (백엔드 진행률 * 0.3)
+                  const backendProgress = progress.percentage || 0;
+                  const totalProgress = 30 + Math.round(backendProgress * 0.3);
+                  setSubmitProgress(totalProgress);
+                  setProgressMessage(progress.message || '백엔드에서 처리하는 중...');
                   
-                  if (!savedDetail.expenseDetailId) {
-                    console.error(`expenseDetailId가 없습니다:`, savedDetail);
-                    totalUploadFailCount += receiptFiles.length;
-                    continue;
-                  }
-                  
-                  console.log(`영수증 업로드 시작: expenseDetailId=${savedDetail.expenseDetailId}, 파일 수=${receiptFiles.length}`);
-                  
-                  for (const file of receiptFiles) {
-                    try {
-                      console.log(`영수증 업로드 시도: expenseDetailId=${savedDetail.expenseDetailId}, filename=${file.name}`);
-                      const uploadResponse = await uploadReceiptForDetail(
-                        savedDetail.expenseDetailId, 
-                        expenseId, 
-                        user.userId, 
-                        file
-                      );
-                      if (uploadResponse.success) {
-                        totalUploadSuccessCount++;
-                        console.log(`영수증 업로드 성공: ${file.name}`);
-                      } else {
-                        totalUploadFailCount++;
-                        console.error('영수증 업로드 실패:', uploadResponse.message);
+                  // 완료 또는 실패 시
+                  if (progress.completed) {
+                    clearInterval(interval);
+                    const expenseId = progress.expenseId;
+                    
+                    if (expenseId) {
+                      setSubmitProgress(60);
+                      setProgressMessage('결재 라인을 설정하는 중...');
+                      
+                      // 급여가 아닌 경우에만 결재 라인 설정
+                      if (!hasSalaryCategory) {
+                        // 선택된 결재자들을 approvalLines로 변환 (순서 보장)
+                        const approvalLines = selectedApprovers.map(userId => {
+                          const adminUser = adminUsers.find(user => user.userId === userId);
+                          return {
+                            approverId: userId,
+                            approverPosition: adminUser?.position || DEFAULT_VALUES.APPROVER_DEFAULTS.position,
+                            approverName: adminUser?.koreanName || DEFAULT_VALUES.APPROVER_DEFAULTS.name,
+                            status: APPROVAL_STATUS.WAIT
+                          };
+                        });
+
+                        try {
+                          await setApprovalLines(expenseId, approvalLines);
+                          setSubmitProgress(70);
+                        } catch (approvalError) {
+                          console.error('결재 라인 설정 실패:', approvalError);
+                          alert('지출결의서는 작성되었으나 결재 라인 설정에 실패했습니다.');
+                        }
                       }
-                    } catch (error) {
-                      totalUploadFailCount++;
-                      console.error('영수증 업로드 오류:', error);
-                      console.error('에러 상세:', error.response?.data || error.message);
+
+                      // 각 상세 내역의 영수증 파일들을 업로드
+                      await handleReceiptUploadsForExpense(expenseId, formattedDetails, receiptFilesByIndex);
+                    } else {
+                      setIsSubmitting(false);
+                      setSubmitProgress(0);
+                      alert('지출결의서가 작성되었으나 ID를 확인할 수 없습니다.');
+                      navigate('/expenses');
                     }
+                  } else if (progress.failed) {
+                    clearInterval(interval);
+                    setIsSubmitting(false);
+                    setSubmitProgress(0);
+                    alert('작성 실패: ' + (progress.errorMessage || '알 수 없는 오류가 발생했습니다.'));
                   }
                 }
+                
+                // 최대 시도 횟수 초과
+                if (attempts >= maxAttempts) {
+                  clearInterval(interval);
+                  setIsSubmitting(false);
+                  setSubmitProgress(0);
+                  alert('작업이 시간 초과되었습니다. 잠시 후 다시 시도해주세요.');
+                }
+              } catch (error) {
+                console.error('진행률 조회 실패:', error);
+                // 에러가 발생해도 계속 시도
+                if (attempts >= maxAttempts) {
+                  clearInterval(interval);
+                  setIsSubmitting(false);
+                  setSubmitProgress(0);
+                  alert('진행률 조회 중 오류가 발생했습니다.');
+                }
               }
-            } catch (error) {
-              console.error('상세 내역 조회 실패:', error);
-              alert('상세 내역 조회에 실패했습니다. 영수증은 상세 페이지에서 업로드해주세요.');
-            }
-
-            setIsUploadingReceipt(false);
-
-            if (totalUploadSuccessCount > 0) {
-              if (totalUploadFailCount > 0) {
-                alert(`⚠️ ${totalUploadSuccessCount}개의 영수증이 업로드되었습니다.\n${totalUploadFailCount}개의 영수증 업로드에 실패했습니다.\n상세 페이지에서 다시 업로드해주세요.`);
-              }
-            } else if (totalUploadFailCount > 0) {
-              alert(`❌ 모든 영수증 업로드에 실패했습니다.\n상세 페이지에서 다시 업로드해주세요.\n\n실패한 영수증 수: ${totalUploadFailCount}개`);
-            }
-
-            // 성공 메시지
-            if (!hasSalaryCategory) {
-              alert('지출결의서가 작성되고 결재 라인이 설정되었습니다!');
-            } else {
-              alert('급여 지출결의서가 작성되었습니다!');
-            }
-
-            navigate(`/detail/${expenseId}`);
-          } else {
-            alert('지출결의서가 작성되었으나 ID를 확인할 수 없습니다.');
-            navigate('/expenses');
-          }
+            }, 500); // 0.5초마다 조회
+          };
+          
+          // 폴링 시작
+          pollProgress();
+          
+          return; // 폴링이 처리하므로 여기서 종료
         } else {
-          alert('작성 실패: ' + response.data.message);
+          setIsSubmitting(false);
+          setSubmitProgress(0);
+          alert('작성 실패: ' + (response.data?.message || '알 수 없는 오류가 발생했습니다.'));
         }
       }
     } catch (error) {
       console.error('에러 발생:', error);
       const errorMessage = error?.response?.data?.message || error?.message || '서버 통신 중 오류가 발생했습니다.';
-      alert(errorMessage);
-    } finally {
       setIsSubmitting(false);
+      setSubmitProgress(0);
+      setProgressMessage('지출결의서를 작성하는 중...');
+      alert(errorMessage);
     }
   };
 
@@ -965,7 +1056,8 @@ const ExpenseCreatePage = () => {
   }
 
   return (
-    <S.Container>
+    <>
+      <S.Container>
       {/* 2. 결재자 선택 섹션 - 급여가 아닌 경우에만 표시 */}
       {!hasSalaryCategory && (
         <S.Section ref={approverSectionRef} data-tourid="tour-approver-selection">
@@ -1263,6 +1355,16 @@ const ExpenseCreatePage = () => {
         </S.ToastMessage>
       )}
     </S.Container>
+    
+    {/* 제출 중이거나 영수증 업로드 중일 때 로딩 모달 표시 */}
+    {(isSubmitting || isUploadingReceipt) && (
+      <LoadingOverlay 
+        modal={true}
+        message={progressMessage} 
+        progress={submitProgress > 0 ? submitProgress : null}
+      />
+    )}
+    </>
   );
 };
 

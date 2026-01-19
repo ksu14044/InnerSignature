@@ -10,17 +10,20 @@ import com.innersignature.backend.dto.MonthlyTaxSummaryDto;
 import com.innersignature.backend.dto.MonthlyTrendDto;
 import com.innersignature.backend.dto.PagedResponse;
 import com.innersignature.backend.dto.PaymentMethodSummaryDto;
+import com.innersignature.backend.dto.ProgressDto;
 import com.innersignature.backend.dto.ReceiptDto;
 import com.innersignature.backend.dto.StatusStatsDto;
 import com.innersignature.backend.dto.TaxStatusDto;
 import com.innersignature.backend.dto.UserExpenseStatsDto;
 import com.innersignature.backend.service.ExpenseService;
+import com.innersignature.backend.service.ProgressService;
 import com.innersignature.backend.util.SecurityUtil;
 import com.innersignature.backend.util.SecurityLogger;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -57,6 +60,7 @@ public class ExpenseController {
 
     private static final Logger logger = LoggerFactory.getLogger(ExpenseController.class);
     private final ExpenseService expenseService;
+    private final ProgressService progressService;
 
     /**
      * 한글 파일명을 RFC 5987 형식으로 인코딩하여 Content-Disposition 헤더값을 생성합니다.
@@ -235,20 +239,44 @@ public class ExpenseController {
         private String signatureData;
     }
 
+    @Data
+    @AllArgsConstructor
+    static class ExpenseCreationResponse {
+        private String jobId;
+    }
+
     /**
      * 4. 기안서 작성(생성) API
-     * 주소: POST /api/expenses
+     * 주소: POST /api/expenses/create
      * 설명: 프론트에서 작성한 데이터를 받아서 저장합니다.
      */
     @Operation(summary = "지출결의서 생성", description = "기안서를 생성합니다.")
     @PostMapping("/create")
-    public ApiResponse<Long> createExpense(@Valid @RequestBody ExpenseReportDto request) {
+    public ApiResponse<ExpenseCreationResponse> createExpense(@Valid @RequestBody ExpenseReportDto request) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
         logger.info("지출결의서 생성 요청 - drafterId: {}, currentUserId: {}, totalAmount: {}", 
                 request.getDrafterId(), currentUserId, request.getTotalAmount());
-        Long expenseId = expenseService.createExpense(request, currentUserId);
-        logger.info("지출결의서 생성 완료 - expenseId: {}", expenseId);
-        return new ApiResponse<>(true, "기안서 저장 성공", expenseId);
+        
+        // 작업 ID 생성
+        String jobId = java.util.UUID.randomUUID().toString();
+        
+        // 비동기로 처리 시작
+        expenseService.createExpenseAsync(request, currentUserId, jobId);
+        
+        logger.info("지출결의서 생성 작업 시작 - jobId: {}", jobId);
+        return new ApiResponse<>(true, "처리 중", new ExpenseCreationResponse(jobId));
+    }
+
+    /**
+     * 4-0. 지출결의서 생성 진행률 조회 API
+     * 주소: GET /api/expenses/progress/{jobId}
+     * 설명: 작업 진행률을 조회합니다.
+     */
+    @Operation(summary = "지출결의서 생성 진행률 조회", description = "작업 진행률을 조회합니다.")
+    @GetMapping("/progress/{jobId}")
+    public ApiResponse<ProgressDto> getProgress(@PathVariable String jobId) {
+        ProgressDto progress = progressService.getProgress(jobId);
+        return new ApiResponse<>(true, "진행률 조회", progress);
     }
 
     /**

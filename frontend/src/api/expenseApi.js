@@ -102,6 +102,17 @@ export const updateExpense = async (expenseId, data) => {
   }
 };
 
+// 2-2. 지출결의서 생성 진행률 조회
+export const getExpenseCreationProgress = async (jobId) => {
+  try {
+    const response = await axiosInstance.get(`${BASE_URL}/progress/${jobId}`);
+    return response.data;
+  } catch (error) {
+    console.error("진행률 조회 실패:", error);
+    throw error;
+  }
+};
+
 // 3. 결재 라인 설정
 export const setApprovalLines = async (expenseId, approvalLines) => {
     try {
@@ -647,8 +658,8 @@ export const fetchPaymentMethodSummary = async (startDate = null, endDate = null
   }
 };
 
-// 22-1. 기간별 세무 자료 일괄 수집 및 전표 다운로드 (TAX_ACCOUNTANT 전용)
-export const collectTaxData = async (startDate = null, endDate = null) => {
+// 22-1. 기간별 세무 자료 일괄 수집 및 전표 다운로드 (TAX_ACCOUNTANT 전용) - 진행률 콜백 추가
+export const collectTaxData = async (startDate = null, endDate = null, onProgress = null) => {
   try {
     const params = {};
     if (startDate) params.startDate = startDate;
@@ -656,7 +667,13 @@ export const collectTaxData = async (startDate = null, endDate = null) => {
     
     const response = await axiosInstance.post(`${BASE_URL}/tax/collect`, null, { 
       params,
-      responseType: 'blob' // 파일 다운로드를 위해 blob으로 받기
+      responseType: 'blob', // 파일 다운로드를 위해 blob으로 받기
+      onDownloadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        }
+      }
     });
     
     // Blob을 다운로드 링크로 변환
@@ -782,8 +799,8 @@ export const updateExpenseDetailTaxInfo = async (expenseDetailId, isTaxDeductibl
   }
 };
 
-// 24. 전표 다운로드 (ACCOUNTANT 전용)
-export const downloadJournalEntries = async (startDate = null, endDate = null) => {
+// 24. 전표 다운로드 (ACCOUNTANT 전용) - 진행률 콜백 추가
+export const downloadJournalEntries = async (startDate = null, endDate = null, onProgress = null) => {
   try {
     const params = {};
     if (startDate) params.startDate = startDate;
@@ -792,6 +809,12 @@ export const downloadJournalEntries = async (startDate = null, endDate = null) =
     const response = await axiosInstance.get(`${BASE_URL}/export/journal`, {
       params,
       responseType: 'blob', // 파일 다운로드를 위해 blob으로 받기
+      onDownloadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        }
+      }
     });
     
     // Blob을 다운로드 링크로 변환
@@ -836,7 +859,7 @@ export const downloadJournalEntries = async (startDate = null, endDate = null) =
 };
 
 // 27. 세무 검토용 증빙 리스트 다운로드 (ACCOUNTANT, TAX_ACCOUNTANT 전용)
-export const downloadTaxReviewList = async (startDate = null, endDate = null, format = 'full') => {
+export const downloadTaxReviewList = async (startDate = null, endDate = null, format = 'full', onProgress = null) => {
   try {
     const params = {};
     if (startDate) params.startDate = startDate;
@@ -846,6 +869,12 @@ export const downloadTaxReviewList = async (startDate = null, endDate = null, fo
     const response = await axiosInstance.get(`${BASE_URL}/export/tax-review`, {
       params,
       responseType: 'blob', // 파일 다운로드를 위해 blob으로 받기
+      onDownloadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        }
+      }
     });
     
     // Blob을 다운로드 링크로 변환

@@ -40,6 +40,9 @@ const ExpenseListPage = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [pendingApprovalsLoading, setPendingApprovalsLoading] = useState(false);
   const checkedCompanyModalRef = useRef(false);
+  const [isDownloadingTaxReview, setIsDownloadingTaxReview] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('세무 자료를 다운로드하는 중...');
 
   // 편의 변수들
   const { filters, setFilters, filterRefs, localStatus, handleStatusChange, handleApplyFilters, handleResetFilters, handleFilterToggle } = filtersHook;
@@ -140,13 +143,41 @@ const ExpenseListPage = () => {
     }
 
     try {
+      setIsDownloadingTaxReview(true);
+      setDownloadProgress(0);
+      setProgressMessage('세무 자료를 다운로드하는 중...');
+      
       // 현재 필터 조건의 기간을 사용
       const startDate = filters.startDate || null;
       const endDate = filters.endDate || null;
       
-      await downloadTaxReviewList(startDate, endDate, 'full');
-      alert('세무 자료 다운로드가 시작되었습니다.');
+      await downloadTaxReviewList(
+        startDate, 
+        endDate, 
+        'full',
+        (progress) => {
+          setDownloadProgress(progress);
+          if (progress < 50) {
+            setProgressMessage('세무 자료를 준비하는 중...');
+          } else if (progress < 90) {
+            setProgressMessage('세무 자료를 다운로드하는 중...');
+          } else {
+            setProgressMessage('다운로드 완료 중...');
+          }
+        }
+      );
+      
+      setDownloadProgress(100);
+      setProgressMessage('완료!');
+      
+      setTimeout(() => {
+        alert('✅ 세무 자료 다운로드가 완료되었습니다.');
+        setIsDownloadingTaxReview(false);
+        setDownloadProgress(0);
+      }, 500);
     } catch (error) {
+      setIsDownloadingTaxReview(false);
+      setDownloadProgress(0);
       alert(error.userMessage || '세무 자료 다운로드 중 오류가 발생했습니다.');
     }
   };
@@ -735,6 +766,15 @@ const ExpenseListPage = () => {
             }}
           />
         </Suspense>
+      )}
+      
+      {/* 세무 자료 다운로드 중일 때 로딩 모달 표시 */}
+      {isDownloadingTaxReview && (
+        <LoadingOverlay 
+          modal={true}
+          message={progressMessage} 
+          progress={downloadProgress > 0 ? downloadProgress : null}
+        />
       )}
     </S.Container>
   );

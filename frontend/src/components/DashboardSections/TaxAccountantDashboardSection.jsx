@@ -9,6 +9,7 @@ import {
   collectTaxData
 } from '../../api/expenseApi';
 import { useIsMobile } from '../../hooks/useMediaQuery';
+import LoadingOverlay from '../LoadingOverlay/LoadingOverlay';
 import * as S from './style';
 
 // Lazy load 모바일 컴포넌트
@@ -23,6 +24,8 @@ const TaxAccountantDashboardSection = ({ filters }) => {
   const [summary, setSummary] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('전표를 생성하는 중...');
   const debounceTimer = useRef(null);
   
   const [collectMode, setCollectMode] = useState('date'); // 'date' 또는 'month'
@@ -92,13 +95,37 @@ const TaxAccountantDashboardSection = ({ filters }) => {
 
     try {
       setLoading(true);
-      await collectTaxData(filters.startDate, filters.endDate);
-      alert('✅ 세무 자료가 수집되었고 전표가 다운로드되었습니다.');
-      loadTaxData();
+      setDownloadProgress(0);
+      setProgressMessage('세무 자료를 수집하고 전표를 생성하는 중...');
+      
+      await collectTaxData(
+        filters.startDate, 
+        filters.endDate,
+        (progress) => {
+          setDownloadProgress(progress);
+          if (progress < 50) {
+            setProgressMessage('세무 자료를 수집하는 중...');
+          } else if (progress < 90) {
+            setProgressMessage('전표를 생성하는 중...');
+          } else {
+            setProgressMessage('전표를 다운로드하는 중...');
+          }
+        }
+      );
+      
+      setDownloadProgress(100);
+      setProgressMessage('완료!');
+      
+      setTimeout(() => {
+        alert('✅ 세무 자료가 수집되었고 전표가 다운로드되었습니다.');
+        setLoading(false);
+        setDownloadProgress(0);
+        loadTaxData();
+      }, 500);
     } catch (error) {
-      alert(error?.userMessage || error?.response?.data?.message || error?.message || '세무 자료 수집 중 오류가 발생했습니다.');
-    } finally {
       setLoading(false);
+      setDownloadProgress(0);
+      alert(error?.userMessage || error?.response?.data?.message || error?.message || '세무 자료 수집 중 오류가 발생했습니다.');
     }
   };
 
@@ -121,13 +148,37 @@ const TaxAccountantDashboardSection = ({ filters }) => {
     
     try {
       setLoading(true);
-      await collectTaxData(startDate, endDate);
-      alert('✅ 세무 자료가 수집되었고 전표가 다운로드되었습니다.');
-      loadTaxData();
+      setDownloadProgress(0);
+      setProgressMessage('세무 자료를 수집하고 전표를 생성하는 중...');
+      
+      await collectTaxData(
+        startDate, 
+        endDate,
+        (progress) => {
+          setDownloadProgress(progress);
+          if (progress < 50) {
+            setProgressMessage('세무 자료를 수집하는 중...');
+          } else if (progress < 90) {
+            setProgressMessage('전표를 생성하는 중...');
+          } else {
+            setProgressMessage('전표를 다운로드하는 중...');
+          }
+        }
+      );
+      
+      setDownloadProgress(100);
+      setProgressMessage('완료!');
+      
+      setTimeout(() => {
+        alert('✅ 세무 자료가 수집되었고 전표가 다운로드되었습니다.');
+        setLoading(false);
+        setDownloadProgress(0);
+        loadTaxData();
+      }, 500);
     } catch (error) {
-      alert(error?.userMessage || error?.response?.data?.message || error?.message || '세무 자료 수집 중 오류가 발생했습니다.');
-    } finally {
       setLoading(false);
+      setDownloadProgress(0);
+      alert(error?.userMessage || error?.response?.data?.message || error?.message || '세무 자료 수집 중 오류가 발생했습니다.');
     }
   };
 
@@ -162,20 +213,32 @@ const TaxAccountantDashboardSection = ({ filters }) => {
     }), { totalAmount: 0, totalItemCount: 0, totalReportCount: 0 });
   }, [summary]);
 
-  if (loading) {
+  // 일반 로딩 중일 때
+  if (loading && !downloadProgress) {
     return <S.LoadingMessage>로딩 중...</S.LoadingMessage>;
   }
 
   // 모바일 버전 렌더링 (Suspense로 래핑)
   if (isMobile) {
     return (
-      <Suspense fallback={<S.LoadingMessage>로딩 중...</S.LoadingMessage>}>
-        <MobileTaxAccountantDashboard
-          taxStatus={taxStatus}
-          pendingReports={pendingReports}
-          summary={summary}
-        />
-      </Suspense>
+      <>
+        <Suspense fallback={<S.LoadingMessage>로딩 중...</S.LoadingMessage>}>
+          <MobileTaxAccountantDashboard
+            taxStatus={taxStatus}
+            pendingReports={pendingReports}
+            summary={summary}
+          />
+        </Suspense>
+        
+        {/* 다운로드 중일 때는 진행률 모달 표시 */}
+        {loading && downloadProgress > 0 && (
+          <LoadingOverlay 
+            modal={true}
+            message={progressMessage} 
+            progress={downloadProgress}
+          />
+        )}
+      </>
     );
   }
 
@@ -388,6 +451,14 @@ const TaxAccountantDashboardSection = ({ filters }) => {
         </div>
       </S.ManagementSection>
 
+      {/* 다운로드 중일 때는 진행률 모달 표시 */}
+      {loading && downloadProgress > 0 && (
+        <LoadingOverlay 
+          modal={true}
+          message={progressMessage} 
+          progress={downloadProgress}
+        />
+      )}
     </>
   );
 };
