@@ -488,7 +488,7 @@ const ExpenseListPage = () => {
             type="button"
             active={isMyReportsTab}
             onClick={() => setActiveTab('MY_REPORTS')}
-            aria-label="내 결의서"
+            aria-label="지출 결의서"
           >
             내 결의서
           </S.TabButton>
