@@ -125,7 +125,10 @@ const AccountantDashboardSection = ({ filters }) => {
         <S.SectionTitle>최근 승인된 결의서</S.SectionTitle>
         <S.RecentActivityList>
           {approvedExpenses.slice(0, 5).map((expense, index) => (
-            <S.RecentActivityItem key={expense.expenseReportId || index}>
+            <S.RecentActivityItem 
+              key={expense.expenseReportId || index}
+              onClick={() => navigate(`/detail/${expense.expenseReportId}`)}
+            >
               <S.ActivityInfo>
                 <S.ActivityTitle title={expense.title || `결의서 #${expense.expenseReportId}`}>
                   {expense.title || `결의서 #${expense.expenseReportId}`}
