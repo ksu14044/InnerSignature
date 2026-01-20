@@ -1,12 +1,14 @@
 import { useRef, useState, useEffect } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
-import { FaTimes, FaEraser, FaCheck } from 'react-icons/fa';
+import { FaTimes, FaEraser, FaCheck, FaImage } from 'react-icons/fa';
 import * as S from './style';
 
 const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [] }) => {
   const sigCanvas = useRef(null);
-  const [mode, setMode] = useState('select'); // 'select' 또는 'draw'
+  const fileInputRef = useRef(null);
+  const [mode, setMode] = useState('select'); // 'select', 'draw', 'upload'
   const [selectedSignature, setSelectedSignature] = useState(null);
+  const [uploadedImage, setUploadedImage] = useState(null);
 
   useEffect(() => {
     if (isOpen && savedSignatures.length > 0) {
@@ -22,6 +24,14 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
       // 저장된 서명이 없으면 그리기 모드로
       setMode('draw');
     }
+    
+    // 모달이 열릴 때 상태 초기화
+    if (isOpen) {
+      setUploadedImage(null);
+      if (sigCanvas.current) {
+        sigCanvas.current.clear();
+      }
+    }
   }, [isOpen, savedSignatures]);
 
   if (!isOpen) return null;
@@ -32,12 +42,46 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
     }
   };
 
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('파일 크기는 5MB 이하여야 합니다.');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setUploadedImage(reader.result);
+      setMode('upload');
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   const save = () => {
     if (isSaving) return;
     
     if (mode === 'select' && selectedSignature) {
       // 저장된 서명 사용
       onSave(selectedSignature.signatureData);
+    } else if (mode === 'upload' && uploadedImage) {
+      // 업로드한 이미지 사용
+      onSave(uploadedImage);
     } else {
       // 새로 그린 서명 사용
       if (!sigCanvas.current || sigCanvas.current.isEmpty()) {
@@ -48,6 +92,13 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
       const dataURL = sigCanvas.current.getCanvas().toDataURL('image/png');
       onSave(dataURL);
     }
+  };
+
+  const getCanSave = () => {
+    if (mode === 'select') return selectedSignature !== null;
+    if (mode === 'upload') return uploadedImage !== null;
+    if (mode === 'draw') return sigCanvas.current && !sigCanvas.current.isEmpty();
+    return false;
   };
 
   return (
@@ -61,13 +112,25 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
         </S.Header>
 
         {/* 모드 선택 탭 */}
-        {savedSignatures.length > 0 && (
+        {savedSignatures.length > 0 ? (
           <S.TabGroup>
             <S.Tab active={mode === 'select'} onClick={() => setMode('select')}>
               저장된 서명/도장
             </S.Tab>
             <S.Tab active={mode === 'draw'} onClick={() => setMode('draw')}>
               새로 그리기
+            </S.Tab>
+            <S.Tab active={mode === 'upload'} onClick={() => setMode('upload')}>
+              <FaImage /> 이미지 업로드
+            </S.Tab>
+          </S.TabGroup>
+        ) : (
+          <S.TabGroup>
+            <S.Tab active={mode === 'draw'} onClick={() => setMode('draw')}>
+              직접 그리기
+            </S.Tab>
+            <S.Tab active={mode === 'upload'} onClick={() => setMode('upload')}>
+              <FaImage /> 이미지 업로드
             </S.Tab>
           </S.TabGroup>
         )}
@@ -96,6 +159,37 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
               ))}
             </S.SavedSignatureList>
           </>
+        ) : mode === 'upload' ? (
+          <>
+            <S.Instruction>
+              서명 이미지 파일을 업로드해주세요
+            </S.Instruction>
+            <S.UploadContainer>
+              {uploadedImage ? (
+                <S.UploadedImageWrapper>
+                  <S.UploadedImage src={uploadedImage} alt="업로드된 서명" />
+                  <S.RemoveImageButton onClick={() => setUploadedImage(null)}>
+                    <FaTimes /> 이미지 제거
+                  </S.RemoveImageButton>
+                </S.UploadedImageWrapper>
+              ) : (
+                <S.UploadArea onClick={handleUploadClick}>
+                  <FaImage style={{ fontSize: '48px', color: '#007bff', marginBottom: '16px' }} />
+                  <p>이미지를 클릭하거나 드래그하여 업로드</p>
+                  <p style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                    JPG, PNG, GIF (최대 5MB)
+                  </p>
+                </S.UploadArea>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+              />
+            </S.UploadContainer>
+          </>
         ) : (
           <>
             <S.Instruction>
@@ -118,7 +212,11 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
               <span>지우기</span>
             </S.ActionButton>
           )}
-          <S.ActionButton onClick={save} variant="primary" disabled={isSaving || (mode === 'select' && !selectedSignature)}>
+          <S.ActionButton 
+            onClick={save} 
+            variant="primary" 
+            disabled={isSaving || !getCanSave()}
+          >
             <FaCheck />
             <span>{isSaving ? '저장 중...' : '승인 및 저장'}</span>
           </S.ActionButton>

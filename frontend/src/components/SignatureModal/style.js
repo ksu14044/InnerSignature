@@ -258,3 +258,76 @@ export const DefaultBadge = styled.span`
   margin-top: 4px;
   width: fit-content;
 `;
+
+export const UploadContainer = styled.div`
+  padding: 0 24px 24px 24px;
+  margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    padding: 0 16px 20px 16px;
+  }
+`;
+
+export const UploadArea = styled.div`
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #fafafa;
+
+  &:hover {
+    border-color: var(--primary-color);
+    background-color: #f0f7ff;
+  }
+
+  p {
+    margin: 0;
+    color: var(--secondary-color);
+    font-size: 14px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 36px 16px;
+  }
+`;
+
+export const UploadedImageWrapper = styled.div`
+  position: relative;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #fafafa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+`;
+
+export const UploadedImage = styled.img`
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 4px;
+`;
+
+export const RemoveImageButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: white;
+  color: var(--dark-color);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #ffebee;
+    border-color: #f44336;
+    color: #f44336;
+  }
+`;
