@@ -63,10 +63,17 @@
 
     <update id="update" parameterType="com.innersignature.backend.dto.CompanyCardDto">
         UPDATE company_card_tb
-        SET card_name = #{cardName},
-            card_number_encrypted = #{cardNumberEncrypted},
-            card_last_four = #{cardLastFour},
-            is_active = #{isActive},
+        SET 
+            card_name = #{cardName},
+            <if test="cardNumberEncrypted != null">
+                card_number_encrypted = #{cardNumberEncrypted},
+            </if>
+            <if test="cardLastFour != null">
+                card_last_four = #{cardLastFour},
+            </if>
+            <if test="isActive != null">
+                is_active = #{isActive},
+            </if>
             updated_at = NOW()
         WHERE card_id = #{cardId}
     </update>
@@ -85,12 +92,3 @@
         WHERE card_id = #{cardId}
     </update>
 </mapper>
-
-
-
-
-
-
-
-
-
