@@ -151,17 +151,52 @@ export const CategoryList = styled.div`
 `;
 
 export const CategoryItem = styled.div`
+  position: relative; /* 삽입선 표시를 위해 */
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: ${props => props.isActive ? 'white' : 'var(--light-color)'};
+  background: ${props => {
+    if (props.isDragOver) return '#f0f7ff';
+    return props.isActive ? 'white' : 'var(--light-color)';
+  }};
   border: 1px solid var(--border-color);
   border-radius: 12px;
   cursor: ${props => props.draggable ? 'move' : 'default'};
-  opacity: ${props => props.isActive ? 1 : 0.6};
+  opacity: ${props => {
+    if (props.isDragging) return 0.5;
+    return props.isActive ? 1 : 0.6;
+  }};
   transition: all 0.2s;
   box-shadow: var(--shadow);
+  
+  /* 드롭 위치 표시: 위쪽 삽입선 */
+  &::before {
+    content: '';
+    display: ${props => (props.isDragOver && props.dropPosition === 'before') ? 'block' : 'none'};
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    top: -6px;
+    height: 3px;
+    background: var(--primary-color);
+    border-radius: 9999px;
+    z-index: 1;
+  }
+
+  /* 드롭 위치 표시: 아래쪽 삽입선 */
+  &::after {
+    content: '';
+    display: ${props => (props.isDragOver && props.dropPosition === 'after') ? 'block' : 'none'};
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: -6px;
+    height: 3px;
+    background: var(--primary-color);
+    border-radius: 9999px;
+    z-index: 1;
+  }
   
   &:hover {
     box-shadow: var(--shadow-lg);

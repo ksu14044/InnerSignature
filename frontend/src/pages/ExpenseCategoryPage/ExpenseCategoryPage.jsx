@@ -28,6 +28,8 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
     isActive: true
   });
   const [draggedItem, setDraggedItem] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null); // 드롭 위치 표시용
+  const [dropPosition, setDropPosition] = useState(null); // 'before' | 'after' | null
   const [activeTab, setActiveTab] = useState('categories'); // 'categories' 또는 'accountCodes'
   const [mappingList, setMappingList] = useState([]);
   const [isMappingModalOpen, setIsMappingModalOpen] = useState(false);
@@ -195,28 +197,84 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
   // 드래그 시작
   const handleDragStart = (e, index) => {
     setDraggedItem(index);
+    setDragOverIndex(null);
+    setDropPosition(null);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  // 드래그 오버
-  const handleDragOver = (e) => {
+  // 드래그 종료 (취소 포함)
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverIndex(null);
+    setDropPosition(null);
+  };
+
+  // 드래그 오버 - 드롭 위치 표시
+  const handleDragOver = (e, index) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+
+    if (draggedItem === null || draggedItem === index) {
+      setDragOverIndex(null);
+      setDropPosition(null);
+      return;
+    }
+
+    // 마우스 위치에 따라 위/아래 판별
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    const nextPos = offsetY < rect.height / 2 ? 'before' : 'after';
+
+    setDragOverIndex(index);
+    setDropPosition(nextPos);
+  };
+
+  // 드래그 리브 - 인디케이터 제거
+  const handleDragLeave = (e) => {
+    // 자식 요소로 이동하는 경우는 무시
+    if (e.currentTarget.contains(e.relatedTarget)) {
+      return;
+    }
+    setDragOverIndex(null);
+    setDropPosition(null);
   };
 
   // 드롭
   const handleDrop = async (e, dropIndex) => {
     e.preventDefault();
     
-    if (draggedItem === null || draggedItem === dropIndex) {
+    // 인디케이터 먼저 정리
+    const pos = dropPosition;
+    setDragOverIndex(null);
+    setDropPosition(null);
+
+    if (draggedItem === null) {
+      setDraggedItem(null);
+      return;
+    }
+
+    // before/after에 따라 최종 삽입 인덱스 계산
+    let insertIndex = dropIndex + (pos === 'after' ? 1 : 0);
+    const fromIndex = draggedItem;
+
+    // 원본 삭제 후 인덱스 보정
+    if (fromIndex < insertIndex) {
+      insertIndex -= 1;
+    }
+    
+    // 경계 체크
+    if (insertIndex < 0) insertIndex = 0;
+    if (insertIndex > categories.length - 1) insertIndex = categories.length - 1;
+
+    if (fromIndex === insertIndex) {
       setDraggedItem(null);
       return;
     }
 
     const newCategories = [...categories];
-    const draggedCategory = newCategories[draggedItem];
-    newCategories.splice(draggedItem, 1);
-    newCategories.splice(dropIndex, 0, draggedCategory);
+    const draggedCategory = newCategories[fromIndex];
+    newCategories.splice(fromIndex, 1);
+    newCategories.splice(insertIndex, 0, draggedCategory);
 
     // displayOrder 업데이트
     const updatedCategories = newCategories.map((cat, index) => ({
@@ -434,9 +492,14 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
               key={category.categoryId}
               draggable={canEditCategories}
               onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, index)}
               isActive={category.isActive}
+              isDragging={draggedItem === index}
+              isDragOver={dragOverIndex === index}
+              dropPosition={dragOverIndex === index ? dropPosition : null}
             >
               {canEditCategories && (
                 <S.DragHandle>

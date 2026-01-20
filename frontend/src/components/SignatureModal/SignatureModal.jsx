@@ -9,6 +9,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
   const [mode, setMode] = useState('select'); // 'select', 'draw', 'upload'
   const [selectedSignature, setSelectedSignature] = useState(null);
   const [uploadedImage, setUploadedImage] = useState(null);
+  const [hasDrawn, setHasDrawn] = useState(false); // 그리기 완료 여부 추적
 
   useEffect(() => {
     if (isOpen && savedSignatures.length > 0) {
@@ -28,6 +29,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
     // 모달이 열릴 때 상태 초기화
     if (isOpen) {
       setUploadedImage(null);
+      setHasDrawn(false);
       if (sigCanvas.current) {
         sigCanvas.current.clear();
       }
@@ -40,6 +42,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
     if (sigCanvas.current) {
       sigCanvas.current.clear();
     }
+    setHasDrawn(false);
   };
 
   const handleImageUpload = (event) => {
@@ -97,7 +100,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
   const getCanSave = () => {
     if (mode === 'select') return selectedSignature !== null;
     if (mode === 'upload') return uploadedImage !== null;
-    if (mode === 'draw') return sigCanvas.current && !sigCanvas.current.isEmpty();
+    if (mode === 'draw') return hasDrawn;
     return false;
   };
 
@@ -200,6 +203,12 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
                 ref={sigCanvas}
                 canvasProps={{ width: 360, height: 200, className: 'sigCanvas' }}
                 backgroundColor="#fafafa"
+                onEnd={() => {
+                  // 그리기 완료 시 상태 업데이트
+                  if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
+                    setHasDrawn(true);
+                  }
+                }}
               />
             </S.CanvasContainer>
           </>
