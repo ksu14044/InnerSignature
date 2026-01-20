@@ -265,10 +265,17 @@ const UserManagementPage = () => {
     
     try {
       setIsUpdating(true);
-      const response = await updateUserRole(userId, newRole);
+      // 선택된 회사 ID를 전달 (CEO/ADMIN이 회사를 선택한 경우)
+      const companyId = selectedCompanyId || user?.companyId;
+      const response = await updateUserRole(userId, newRole, companyId);
       if (response.success) {
         alert('권한이 변경되었습니다.');
-        loadUsers();
+        // 현재 선택된 회사의 사용자 목록 다시 로드
+        if (selectedCompanyId) {
+          loadUsers(selectedCompanyId);
+        } else {
+          loadUsers();
+        }
       } else {
         alert(response.message || '권한 변경에 실패했습니다.');
       }

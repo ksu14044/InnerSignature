@@ -342,37 +342,44 @@ public class UserService {
      * @param userId 변경할 사용자 ID
      * @param newRole 새로운 role
      * @param operatorId 작업 수행자 ID (CEO 또는 ADMIN)
+     * @param companyId 회사 ID (null인 경우 JWT 토큰의 companyId 또는 기본 회사 사용)
      * @return 변경 성공 시 1, 실패 시 0
      */
-    public int updateUserRole(Long userId, String newRole, Long operatorId) {
+    public int updateUserRole(Long userId, String newRole, Long operatorId, Long companyId) {
         // 사용자 존재 확인
         UserDto user = userMapper.selectUserById(userId);
         if (user == null) {
             throw new BusinessException("사용자를 찾을 수 없습니다.");
         }
         
-        // 작업 수행자의 회사 정보 조회 (현재 선택된 회사 기준)
-        Long tempCompanyId = com.innersignature.backend.util.SecurityUtil.getCurrentCompanyId();
-        final Long companyId;
-        if (tempCompanyId == null) {
-            // companyId가 없는 경우 작업 수행자의 기본 회사 사용
-            List<UserCompanyDto> operatorCompanies = userMapper.findUserCompanies(operatorId);
-            if (operatorCompanies == null || operatorCompanies.isEmpty()) {
-                throw new BusinessException("작업 수행자가 소속된 회사가 없습니다.");
-            }
-            companyId = operatorCompanies.stream()
-                .filter(uc -> Boolean.TRUE.equals(uc.getIsPrimary()))
-                .map(UserCompanyDto::getCompanyId)
-                .findFirst()
-                .orElse(operatorCompanies.get(0).getCompanyId());
+        // companyId 결정: 파라미터로 전달된 값이 있으면 사용, 없으면 JWT 토큰 또는 기본 회사 사용
+        final Long finalCompanyId;
+        if (companyId != null) {
+            // 프론트엔드에서 명시적으로 전달한 companyId 사용
+            finalCompanyId = companyId;
         } else {
-            companyId = tempCompanyId;
+            // 하위 호환성: JWT 토큰의 companyId 또는 기본 회사 사용
+            Long tempCompanyId = com.innersignature.backend.util.SecurityUtil.getCurrentCompanyId();
+            if (tempCompanyId == null) {
+                // companyId가 없는 경우 작업 수행자의 기본 회사 사용
+                List<UserCompanyDto> operatorCompanies = userMapper.findUserCompanies(operatorId);
+                if (operatorCompanies == null || operatorCompanies.isEmpty()) {
+                    throw new BusinessException("작업 수행자가 소속된 회사가 없습니다.");
+                }
+                finalCompanyId = operatorCompanies.stream()
+                    .filter(uc -> Boolean.TRUE.equals(uc.getIsPrimary()))
+                    .map(UserCompanyDto::getCompanyId)
+                    .findFirst()
+                    .orElse(operatorCompanies.get(0).getCompanyId());
+            } else {
+                finalCompanyId = tempCompanyId;
+            }
         }
         
         // 작업 수행자가 해당 회사에서 CEO 또는 ADMIN인지 확인 (회사별 권한 체크)
         List<UserCompanyDto> operatorCompanies = userMapper.findUserCompanies(operatorId);
         boolean hasPermission = operatorCompanies.stream()
-            .anyMatch(uc -> uc.getCompanyId().equals(companyId) 
+            .anyMatch(uc -> uc.getCompanyId().equals(finalCompanyId) 
                 && "APPROVED".equals(uc.getApprovalStatus())
                 && ("CEO".equals(uc.getRole()) || "ADMIN".equals(uc.getRole())));
         
@@ -383,7 +390,7 @@ public class UserService {
         // 대상 사용자가 해당 회사에 소속되어 있는지 확인
         List<UserCompanyDto> userCompanies = userMapper.findUserCompanies(userId);
         boolean userBelongsToCompany = userCompanies.stream()
-            .anyMatch(uc -> uc.getCompanyId().equals(companyId) && "APPROVED".equals(uc.getApprovalStatus()));
+            .anyMatch(uc -> uc.getCompanyId().equals(finalCompanyId) && "APPROVED".equals(uc.getApprovalStatus()));
         
         if (!userBelongsToCompany) {
             throw new BusinessException("같은 회사의 사용자만 role을 변경할 수 있습니다.");
@@ -400,7 +407,6 @@ public class UserService {
         }
         
         // user_company_tb에서 기존 position 가져오기
-        final Long finalCompanyId = companyId; // 람다에서 사용하기 위해 final 변수
         String existingPosition = userCompanies.stream()
             .filter(uc -> uc.getCompanyId().equals(finalCompanyId))
             .map(UserCompanyDto::getPosition)

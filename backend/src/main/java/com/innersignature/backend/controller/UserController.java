@@ -863,10 +863,12 @@ public class UserController {
             @RequestBody UpdateRoleRequest request) {
         try {
             Long operatorId = SecurityUtil.getCurrentUserId();
-            logger.info("사용자 role 변경 시도 - userId: {}, newRole: {}, operatorId: {}", 
-                userId, request.getRole(), operatorId);
+            Long companyId = request.getCompanyId(); // 프론트엔드에서 전달한 companyId 사용
             
-            int result = userService.updateUserRole(userId, request.getRole(), operatorId);
+            logger.info("사용자 role 변경 시도 - userId: {}, newRole: {}, operatorId: {}, companyId: {}", 
+                userId, request.getRole(), operatorId, companyId);
+            
+            int result = userService.updateUserRole(userId, request.getRole(), operatorId, companyId);
             if (result > 0) {
                 logger.info("사용자 role 변경 완료 - userId: {}, newRole: {}", userId, request.getRole());
                 return new ApiResponse<>(true, "role이 변경되었습니다.", null);
@@ -1231,6 +1233,7 @@ public class UserController {
     static class UpdateRoleRequest {
         @jakarta.validation.constraints.NotBlank(message = "role은 필수입니다.")
         private String role;
+        private Long companyId; // 프론트엔드에서 선택한 회사 ID (선택적)
     }
     
     @Data

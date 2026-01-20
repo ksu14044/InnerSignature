@@ -107,9 +107,13 @@ export const changePassword = async (passwordData) => {
 };
 
 // 사용자 role 변경 (CEO, ADMIN 전용)
-export const updateUserRole = async (userId, role) => {
+export const updateUserRole = async (userId, role, companyId = null) => {
   try {
-    const response = await axiosInstance.put(`${BASE_URL}/${userId}/role`, { role });
+    const requestBody = { role };
+    if (companyId !== null) {
+      requestBody.companyId = companyId;
+    }
+    const response = await axiosInstance.put(`${BASE_URL}/${userId}/role`, requestBody);
     return response.data;
   } catch (error) {
     console.error("role 변경 실패:", error);
