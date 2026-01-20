@@ -883,18 +883,18 @@ const ExpenseDetailPage = () => {
       {/* 1. 상단 헤더 */}
       <S.Header>
         <S.TitleInfo>
-          <h1>
+          <h1 title="지출결의서">
             지출결의서
             {hasSalaryCategory && (
               <S.SecretBadge>비밀</S.SecretBadge>
             )}
           </h1>
-          <p><strong>문서번호:</strong> {detail.expenseReportId}</p>
-          <p><strong>작성자:</strong> {detail.drafterName}</p>
-          <p><strong>작성일:</strong> {detail.reportDate}</p>
+          <p title={`문서번호: ${detail.expenseReportId}`}><strong>문서번호:</strong> {detail.expenseReportId}</p>
+          <p title={`작성자: ${detail.drafterName}`}><strong>작성자:</strong> {detail.drafterName}</p>
+          <p title={`작성일: ${detail.reportDate}`}><strong>작성일:</strong> {detail.reportDate}</p>
           {/* 세무처리 완료 상태 표시 (USER는 숨김) */}
           {user && user.role !== 'USER' && detail.taxProcessed !== null && detail.taxProcessed !== undefined && (
-            <p>
+            <p title={`세무처리: ${detail.taxProcessed ? `완료${detail.taxProcessedAt ? ` (${new Date(detail.taxProcessedAt).toLocaleDateString('ko-KR')})` : ''}` : '미완료'}`}>
               <strong>세무처리:</strong> {detail.taxProcessed ? (
                 <span style={{ color: '#28a745', fontWeight: 'bold' }}>
                   완료 {detail.taxProcessedAt ? `(${new Date(detail.taxProcessedAt).toLocaleDateString('ko-KR')})` : ''}
@@ -1023,7 +1023,7 @@ const ExpenseDetailPage = () => {
 
       {/* 2. 본문 내용 */}
       <S.ContentArea>
-        <S.TotalAmount>
+        <S.TotalAmount title={`총 합계: ${detail.totalAmount.toLocaleString()}원`}>
           총 합계: <span>{detail.totalAmount.toLocaleString()}</span> 원
         </S.TotalAmount>
         {/* 실제 지급 금액이 있는 경우 표시 */}
@@ -1105,7 +1105,7 @@ const ExpenseDetailPage = () => {
 
               return (
               <tr key={item.expenseDetailId}>
-                <td style={{ textAlign: 'center' }} data-label="항목">{item.category}</td>
+                <td style={{ textAlign: 'center' }} data-label="항목" title={item.category}>{item.category}</td>
                 <S.MerchantNameCell
                   data-label="상호명"
                   title={merchantName !== '-' && merchantName.length > 6 ? merchantName : ''}
@@ -1113,19 +1113,37 @@ const ExpenseDetailPage = () => {
                 >
                   {displayMerchantName}
                 </S.MerchantNameCell>
-                <td data-label="적요">{item.description}</td>
-                <td style={{ textAlign: 'right' }} data-label="금액">{item.amount.toLocaleString()}원</td>
+                <td data-label="적요" title={item.description}>{item.description}</td>
+                <td style={{ textAlign: 'right' }} data-label="금액" title={`${item.amount.toLocaleString()}원`}>{item.amount.toLocaleString()}원</td>
                 {detail.status === 'APPROVED' && (
                   <>
-                    <td style={{ textAlign: 'right' }} data-label="승인 금액">
+                    <td 
+                      style={{ textAlign: 'right' }} 
+                      data-label="승인 금액"
+                      title={item.actualPaidAmount !== null && item.actualPaidAmount !== undefined 
+                        ? `${item.actualPaidAmount.toLocaleString()}원`
+                        : `${item.amount.toLocaleString()}원`}
+                    >
                       {item.actualPaidAmount !== null && item.actualPaidAmount !== undefined 
                         ? item.actualPaidAmount.toLocaleString() + '원'
                         : item.amount.toLocaleString() + '원'}
                     </td>
-                    <td style={{ textAlign: 'center' }} data-label="결제수단">
+                    <td 
+                      style={{ textAlign: 'center' }} 
+                      data-label="결제수단"
+                      title={getPaymentMethodLabel(item.paymentMethod)}
+                    >
                       {getPaymentMethodLabel(item.paymentMethod)}
                     </td>
-                    <td style={{ textAlign: 'center', fontSize: '13px', color: '#666' }} data-label="카드번호">
+                    <td 
+                      style={{ textAlign: 'center', fontSize: '13px', color: '#666' }} 
+                      data-label="카드번호"
+                      title={(item.paymentMethod === 'CARD' || item.paymentMethod === 'COMPANY_CARD' || 
+                        item.paymentMethod === 'CREDIT_CARD' || item.paymentMethod === 'DEBIT_CARD') 
+                        && item.cardNumber 
+                        ? item.cardNumber 
+                        : '-'}
+                    >
                       {(item.paymentMethod === 'CARD' || item.paymentMethod === 'COMPANY_CARD' || 
                         item.paymentMethod === 'CREDIT_CARD' || item.paymentMethod === 'DEBIT_CARD') 
                         && item.cardNumber 
@@ -1134,10 +1152,14 @@ const ExpenseDetailPage = () => {
                     </td>
                   </>
                 )}
-                <td style={{ textAlign: 'center' }} data-label="비고">{item.note || '-'}</td>
+                <td style={{ textAlign: 'center' }} data-label="비고" title={item.note || '-'}>{item.note || '-'}</td>
                 {user?.role === 'TAX_ACCOUNTANT' && (
                   <>
-                    <td style={{ textAlign: 'center' }} data-label="부가세 공제">
+                    <td 
+                      style={{ textAlign: 'center' }} 
+                      data-label="부가세 공제"
+                      title={item.isTaxDeductible === false ? '불공제' : '공제'}
+                    >
                       {editingTaxInfo === item.expenseDetailId ? (
                         <select
                           value={taxInfoForm.isTaxDeductible ? 'true' : 'false'}
@@ -1166,7 +1188,11 @@ const ExpenseDetailPage = () => {
                         </span>
                       )}
                     </td>
-                    <td style={{ textAlign: 'center' }} data-label="불공제 사유">
+                    <td 
+                      style={{ textAlign: 'center' }} 
+                      data-label="불공제 사유"
+                      title={item.nonDeductibleReason || '-'}
+                    >
                       {editingTaxInfo === item.expenseDetailId ? (
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                           <select
@@ -1346,7 +1372,7 @@ const ExpenseDetailPage = () => {
         return (
           <S.ReceiptSection>
             <S.ReceiptSectionHeader>
-              <S.SectionTitle>영수증 (전체)</S.SectionTitle>
+              <S.SectionTitle title="영수증 (전체)">영수증 (전체)</S.SectionTitle>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 {allReceiptsWithDescription.length > 0 && (
                   <button
@@ -1388,15 +1414,24 @@ const ExpenseDetailPage = () => {
                 {allReceiptsWithDescription.map((receipt) => (
                   <S.ReceiptItem key={receipt.receiptId}>
                     <S.ReceiptInfo>
-                      <div><strong>{receipt.originalFilename}</strong></div>
-                      <div style={{ marginTop: '4px', color: '#666', fontSize: '14px' }}>
+                      <div title={receipt.originalFilename}><strong>{receipt.originalFilename}</strong></div>
+                      <div 
+                        style={{ marginTop: '4px', color: '#666', fontSize: '14px' }}
+                        title={`적요: ${receipt.description} | 항목: ${receipt.category} | 금액: ${receipt.amount.toLocaleString()}원`}
+                      >
                         <strong>적요:</strong> {receipt.description} | <strong>항목:</strong> {receipt.category} | <strong>금액:</strong> {receipt.amount.toLocaleString()}원
                       </div>
-                      <div style={{ marginTop: '4px', fontSize: '12px', color: '#999' }}>
+                      <div 
+                        style={{ marginTop: '4px', fontSize: '12px', color: '#999' }}
+                        title={`업로드: ${receipt.uploadedByName} (${receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''})`}
+                      >
                         업로드: {receipt.uploadedByName} ({receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''})
                       </div>
                       {receipt.fileSize && (
-                        <div style={{ marginTop: '2px', fontSize: '12px', color: '#999' }}>
+                        <div 
+                          style={{ marginTop: '2px', fontSize: '12px', color: '#999' }}
+                          title={`크기: ${(receipt.fileSize / 1024).toFixed(2)} KB`}
+                        >
                           크기: {(receipt.fileSize / 1024).toFixed(2)} KB
                         </div>
                       )}

@@ -609,7 +609,7 @@ const ExpenseListPage = () => {
               }}
             >
               <S.CardHeader>
-                <S.CardTitle>
+                <S.CardTitle title={`지급 요청일: ${paymentReqDate}`}>
                   지급 요청일: {paymentReqDate}
                 </S.CardTitle>
                 <S.StatusBadge status={item.status}>

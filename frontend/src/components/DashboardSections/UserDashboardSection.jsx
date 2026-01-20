@@ -79,7 +79,7 @@ const UserDashboardSection = ({ filters }) => {
               >
                 <S.ExpenseItemDate>{expense.reportDate}</S.ExpenseItemDate>
                 <S.ExpenseItemContent>
-                  <S.ExpenseItemTitle>
+                  <S.ExpenseItemTitle title={expense.summaryDescription || expense.firstDescription || '-'}>
                     {expense.summaryDescription || expense.firstDescription || '-'}
                   </S.ExpenseItemTitle>
                   <S.ExpenseItemMeta>

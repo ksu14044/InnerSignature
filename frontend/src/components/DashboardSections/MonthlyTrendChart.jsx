@@ -59,7 +59,7 @@ const MonthlyTrendChart = ({ filters = null }) => {
 
   return (
     <S.ChartCard>
-      <S.ChartTitle>월별 지출 추이</S.ChartTitle>
+      <S.ChartTitle title="월별 지출 추이">월별 지출 추이</S.ChartTitle>
       <S.ChartContainer>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={monthlyData} margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>

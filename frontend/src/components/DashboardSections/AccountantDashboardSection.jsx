@@ -127,8 +127,10 @@ const AccountantDashboardSection = ({ filters }) => {
           {approvedExpenses.slice(0, 5).map((expense, index) => (
             <S.RecentActivityItem key={expense.expenseReportId || index}>
               <S.ActivityInfo>
-                <S.ActivityTitle>{expense.title || `결의서 #${expense.expenseReportId}`}</S.ActivityTitle>
-                <S.ActivityMeta>
+                <S.ActivityTitle title={expense.title || `결의서 #${expense.expenseReportId}`}>
+                  {expense.title || `결의서 #${expense.expenseReportId}`}
+                </S.ActivityTitle>
+                <S.ActivityMeta title={`${expense.drafterName} • ${expense.totalAmount?.toLocaleString()}원`}>
                   {expense.drafterName} • {expense.totalAmount?.toLocaleString()}원
                 </S.ActivityMeta>
               </S.ActivityInfo>

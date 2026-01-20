@@ -24,7 +24,7 @@ const PaymentMethodSummaryTable = ({ data, title = '지출 수단별 합계' }) 
 
   return (
     <S.ChartCard>
-      <S.ChartTitle>{title}</S.ChartTitle>
+      <S.ChartTitle title={title}>{title}</S.ChartTitle>
       <S.SummaryTable style={{ marginTop: '0' }}>
         <thead>
           <tr>
@@ -34,15 +34,18 @@ const PaymentMethodSummaryTable = ({ data, title = '지출 수단별 합계' }) 
           </tr>
         </thead>
         <tbody>
-          {displayData.map((item, index) => (
-            <tr key={index}>
-              <td style={{ textAlign: 'center' }}>{getPaymentMethodLabel(item.paymentMethod)}</td>
-              <td style={{ fontWeight: '600', color: '#007bff', textAlign: 'center' }}>
-                {item.totalAmount?.toLocaleString() || 0}원
-              </td>
-              <td style={{ textAlign: 'center' }}>{item.itemCount || 0}건</td>
-            </tr>
-          ))}
+          {displayData.map((item, index) => {
+            const paymentMethodLabel = getPaymentMethodLabel(item.paymentMethod);
+            return (
+              <tr key={index}>
+                <td style={{ textAlign: 'center' }} title={paymentMethodLabel}>{paymentMethodLabel}</td>
+                <td style={{ fontWeight: '600', color: '#007bff', textAlign: 'center' }}>
+                  {item.totalAmount?.toLocaleString() || 0}원
+                </td>
+                <td style={{ textAlign: 'center' }}>{item.itemCount || 0}건</td>
+              </tr>
+            );
+          })}
         </tbody>
         <tfoot>
           <tr>

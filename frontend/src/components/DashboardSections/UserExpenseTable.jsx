@@ -26,7 +26,7 @@ const UserExpenseTable = ({ data, title = '사용자별 지출 합계' }) => {
 
   return (
     <S.ChartCard>
-      <S.ChartTitle>{title}</S.ChartTitle>
+      <S.ChartTitle title={title}>{title}</S.ChartTitle>
       <S.SummaryTable style={{ marginTop: '0' }}>
         <thead>
           <tr>
@@ -38,7 +38,7 @@ const UserExpenseTable = ({ data, title = '사용자별 지출 합계' }) => {
         <tbody>
           {displayData.map((item, index) => (
             <tr key={index}>
-              <td style={{ textAlign: 'center' }}>{item.userName}</td>
+              <td style={{ textAlign: 'center' }} title={item.userName}>{item.userName}</td>
               <td style={{ fontWeight: '600', color: '#007bff', textAlign: 'center' }}>
                 {item.totalAmount?.toLocaleString() || 0}원
               </td>

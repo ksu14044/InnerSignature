@@ -151,7 +151,7 @@ const CommonDashboardSection = ({
         const config = CHART_CONFIGS[type];
         return (
           <S.ChartCard key={type}>
-            <S.ChartTitle>{config.title}</S.ChartTitle>
+            <S.ChartTitle title={config.title}>{config.title}</S.ChartTitle>
             <S.SummaryTable style={{ marginTop: '0' }}>
               <thead>
                 <tr>
@@ -162,7 +162,7 @@ const CommonDashboardSection = ({
               <tbody>
                 {chartData.map((item, index) => (
                   <tr key={index}>
-                    <td style={{ textAlign: 'center' }}>{item.name}</td>
+                    <td style={{ textAlign: 'center' }} title={item.name}>{item.name}</td>
                     <td style={{ fontWeight: '600', color: '#007bff', textAlign: 'center' }}>
                       {item.amount?.toLocaleString() || 0}원
                     </td>

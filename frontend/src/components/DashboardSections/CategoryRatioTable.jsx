@@ -17,7 +17,7 @@ const CategoryRatioTable = ({ data, title = '카테고리별 비율' }) => {
 
   return (
     <S.ChartCard>
-      <S.ChartTitle>{title}</S.ChartTitle>
+      <S.ChartTitle title={title}>{title}</S.ChartTitle>
       <S.SummaryTable style={{ marginTop: '0' }}>
         <thead>
           <tr>
@@ -29,7 +29,7 @@ const CategoryRatioTable = ({ data, title = '카테고리별 비율' }) => {
         <tbody>
           {displayData.map((item, index) => (
             <tr key={index}>
-              <td style={{ textAlign: 'center' }}>{item.category}</td>
+              <td style={{ textAlign: 'center' }} title={item.category}>{item.category}</td>
               <td style={{ fontWeight: '600', color: '#007bff', textAlign: 'center' }}>
                 {item.amount?.toLocaleString() || 0}원
               </td>
