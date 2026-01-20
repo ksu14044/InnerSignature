@@ -104,7 +104,7 @@ const AccountantDashboardSection = ({ filters }) => {
       {pendingApprovals.length > 0 && (
         <S.AlertSection>
           <S.AlertTitle>⏳ 결재 대기: {pendingApprovals.length}건</S.AlertTitle>
-          <S.AlertButton onClick={() => navigate('/expenses')}>
+          <S.AlertButton onClick={() => navigate('/expenses?tab=MY_APPROVALS')}>
             결재 대기 목록 보기 →
           </S.AlertButton>
         </S.AlertSection>
