@@ -93,6 +93,23 @@ const AppHeader = ({
     };
   }, [isManagementDropdownOpen]);
 
+  // 회사 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isCompanyDropdownOpen && !event.target.closest('[data-company-dropdown]')) {
+        setIsCompanyDropdownOpen(false);
+      }
+    };
+
+    if (isCompanyDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCompanyDropdownOpen]);
+
   return (
     <>
       <S.Header>
@@ -129,7 +146,7 @@ const AppHeader = ({
 
           {/* 회사 선택 드롭다운 */}
           {companies && companies.length > 1 && (
-            <S.CompanySelector>
+            <S.CompanySelector data-company-dropdown>
               <S.CompanySelectorButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>
                 <FaBuilding />
                 <span>
