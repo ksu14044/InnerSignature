@@ -20,7 +20,7 @@
             useGeneratedKeys="true" keyProperty="cardId">
         INSERT INTO user_card_tb (user_id, card_name, card_number_encrypted, card_last_four, is_active, is_default, created_at, updated_at)
         VALUES (#{userId}, #{cardName}, #{cardNumberEncrypted}, #{cardLastFour}, 
-                COALESCE(#{isActive}, 1), COALESCE(#{isDefault}, 0), NOW(), NOW())
+                COALESCE(#{isActive}, 1), 0, NOW(), NOW())
     </insert>
 
     <select id="findById" resultMap="UserCardResultMap">
@@ -40,7 +40,7 @@
         FROM user_card_tb uc
         LEFT JOIN user_tb u ON uc.user_id = u.user_id
         WHERE uc.user_id = #{userId}
-        ORDER BY uc.is_default DESC, uc.created_at DESC
+        ORDER BY uc.created_at DESC
     </select>
 
     <select id="findActiveByUserId" resultMap="UserCardResultMap">
@@ -51,7 +51,7 @@
         LEFT JOIN user_tb u ON uc.user_id = u.user_id
         WHERE uc.user_id = #{userId}
           AND uc.is_active = 1
-        ORDER BY uc.is_default DESC, uc.created_at DESC
+        ORDER BY uc.created_at DESC
     </select>
 
     <select id="findDefaultByUserId" resultMap="UserCardResultMap">
@@ -76,13 +76,10 @@
             <if test="cardLastFour != null">
                 card_last_four = #{cardLastFour},
             </if>
-            <if test="isActive != null">
-                is_active = #{isActive},
-            </if>
-            <if test="isDefault != null">
-                is_default = #{isDefault},
-            </if>
-            updated_at = NOW()
+        <if test="isActive != null">
+            is_active = #{isActive},
+        </if>
+        updated_at = NOW()
         WHERE card_id = #{cardId}
     </update>
 

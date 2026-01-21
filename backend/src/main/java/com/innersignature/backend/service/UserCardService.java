@@ -46,12 +46,6 @@ public class UserCardService {
         // 카드번호 암호화
         String encryptedCardNumber = encryptionUtil.encrypt(numericCardNumber);
         
-        // 기본 카드 설정 처리
-        if (Boolean.TRUE.equals(cardDto.getIsDefault())) {
-            // 다른 카드들의 기본 카드 해제
-            userCardMapper.clearDefaultByUserId(currentUserId);
-        }
-        
         // DTO 설정
         cardDto.setUserId(currentUserId);
         cardDto.setCardNumberEncrypted(encryptedCardNumber);
@@ -168,12 +162,6 @@ public class UserCardService {
             // 카드번호가 변경되지 않은 경우 기존 값 유지
             cardDto.setCardNumberEncrypted(existingCard.getCardNumberEncrypted());
             cardDto.setCardLastFour(existingCard.getCardLastFour());
-        }
-        
-        // 기본 카드 설정 처리
-        if (Boolean.TRUE.equals(cardDto.getIsDefault())) {
-            // 다른 카드들의 기본 카드 해제
-            userCardMapper.clearDefaultByUserId(currentUserId);
         }
         
         cardDto.setCardId(cardId);

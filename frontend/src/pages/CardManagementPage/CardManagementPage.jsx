@@ -27,8 +27,7 @@ const CardManagementPage = () => {
   const [editingCard, setEditingCard] = useState(null);
   const [formData, setFormData] = useState({
     cardName: '',
-    cardNumber: '',
-    isDefault: false
+    cardNumber: ''
   });
 
   useEffect(() => {
@@ -63,8 +62,7 @@ const CardManagementPage = () => {
     setEditingCard(null);
     setFormData({
       cardName: '',
-      cardNumber: '',
-      isDefault: false
+      cardNumber: ''
     });
     setIsModalOpen(true);
   };
@@ -74,8 +72,7 @@ const CardManagementPage = () => {
     setEditingCard(card);
     setFormData({
       cardName: card.cardName || '',
-      cardNumber: '', // 보안상 카드번호는 다시 입력받음
-      isDefault: card.isDefault || false
+      cardNumber: '' // 보안상 카드번호는 다시 입력받음
     });
     setIsModalOpen(true);
   };
@@ -86,8 +83,7 @@ const CardManagementPage = () => {
     setEditingCard(null);
     setFormData({
       cardName: '',
-      cardNumber: '',
-      isDefault: false
+      cardNumber: ''
     });
   };
 
@@ -161,8 +157,7 @@ const CardManagementPage = () => {
         if (isEditMode) {
           const response = await updateUserCard(editingCard.cardId, {
             cardName: formData.cardName,
-            cardNumber: formData.cardNumber || undefined,
-            isDefault: formData.isDefault
+            cardNumber: formData.cardNumber || undefined
           });
           if (response.success) {
             alert('개인 카드가 수정되었습니다.');
@@ -174,8 +169,7 @@ const CardManagementPage = () => {
         } else {
           const response = await createUserCard({
             cardName: formData.cardName,
-            cardNumber: formData.cardNumber,
-            isDefault: formData.isDefault
+            cardNumber: formData.cardNumber
           });
           if (response.success) {
             alert('개인 카드가 추가되었습니다.');
@@ -327,7 +321,6 @@ const CardManagementPage = () => {
                   <S.CardHeader>
                     <S.CardName>
                       {card.cardName}
-                      {card.isDefault && <S.DefaultBadge>기본</S.DefaultBadge>}
                     </S.CardName>
                     <S.CardActions>
                       <S.EditButton onClick={() => handleOpenEditModal(card)} title="수정">
@@ -393,20 +386,6 @@ const CardManagementPage = () => {
                       : '카드번호는 암호화되어 안전하게 저장됩니다.'}
                   </S.HelpText>
                 </S.FormGroup>
-                {activeTab === 'user' && (
-                  <S.FormGroup>
-                    <S.CheckboxLabel>
-                      <input
-                        type="checkbox"
-                        name="isDefault"
-                        checked={formData.isDefault}
-                        onChange={handleInputChange}
-                      />
-                      기본 카드로 설정
-                    </S.CheckboxLabel>
-                    <S.HelpText>기본 카드는 지출결의서 작성 시 기본으로 선택됩니다.</S.HelpText>
-                  </S.FormGroup>
-                )}
                 <S.ModalFooter>
                   <S.CancelButton type="button" onClick={handleCloseModal}>
                     취소

@@ -31,45 +31,12 @@ public class ExpenseReceiptService {
     private static final String RECEIPT_UPLOAD_DIR = "uploads/receipts/";
 
     /**
-     * 영수증 업로드 (문서 단위 - 기존 호환성 유지)
+     * 영수증 업로드 (문서 단위 - 더 이상 사용 금지)
      */
     @Transactional
     public void uploadReceipt(Long expenseReportId, Long userId, MultipartFile file) throws IOException {
-        // 결의서 접근 권한 검증
-        expenseReportService.getExpenseDetail(expenseReportId, userId);
-
-        // 파일 검증
-        validateReceiptFile(file);
-
-        // 파일을 PDF로 변환하고 압축하여 저장
-        String originalFilename = file.getOriginalFilename();
-        String fileName = generateUniqueFileName(originalFilename);
-        // 확장자를 .pdf로 변경
-        int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex > 0) {
-            fileName = fileName.substring(0, lastDotIndex) + ".pdf";
-        } else {
-            fileName = fileName + ".pdf";
-        }
-        String filePath = saveFile(file, fileName);
-
-        // 데이터베이스 저장
-        ReceiptDto receipt = new ReceiptDto();
-        receipt.setExpenseReportId(expenseReportId);
-        receipt.setExpenseDetailId(null); // 문서 단위는 null
-        receipt.setOriginalFilename(originalFilename); // 원본 파일명 유지
-        receipt.setFilePath(filePath);
-        // 압축된 파일 크기 저장
-        try {
-            receipt.setFileSize(ReceiptCompressor.getCompressedSize(file));
-        } catch (IOException e) {
-            receipt.setFileSize(file.getSize()); // 실패 시 원본 크기
-        }
-        receipt.setUploadedBy(userId);
-
-        Long companyId = SecurityUtil.getCurrentCompanyId();
-        receipt.setCompanyId(companyId);
-        expenseMapper.insertReceipt(receipt);
+        // 도메인 정책: 이제는 모든 영수증이 상세 내역 단위로만 업로드되어야 한다.
+        throw new RuntimeException("문서 단위 영수증 업로드는 더 이상 지원하지 않습니다. 상세 내역별 영수증 업로드를 사용하세요.");
     }
 
     /**

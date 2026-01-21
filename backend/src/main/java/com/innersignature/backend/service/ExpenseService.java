@@ -1214,123 +1214,12 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void uploadReceipt(Long expenseReportId, Long userId, MultipartFile file) throws IOException {
-        Long companyId = SecurityUtil.getCurrentCompanyId();
-        
-        // 1. 문서 정보 조회
-        ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
-        if (report == null) {
-            throw new com.innersignature.backend.exception.BusinessException("해당 문서를 찾을 수 없습니다.");
-        }
-
-        // 2. WAIT 또는 APPROVED 상태인지 확인
-        // - WAIT: 작성자가 생성 시 영수증을 첨부할 수 있도록 허용
-        // - APPROVED: 승인 완료 후 영수증을 첨부할 수 있도록 허용
-        if (!"WAIT".equals(report.getStatus()) && !"APPROVED".equals(report.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("WAIT 또는 APPROVED 상태의 문서만 영수증을 첨부할 수 있습니다.");
-        }
-
-        // 3. 권한 체크: 작성자 또는 ACCOUNTANT만 가능
-        permissionUtil.checkReceiptPermission(report, userId);
-
-        // 5. 파일 크기 제한 (10MB)
-        if (file.getSize() > 10 * 1024 * 1024) {
-            throw new com.innersignature.backend.exception.BusinessException("파일 크기는 10MB를 초과할 수 없습니다.");
-        }
-
-        // 6. 파일 타입 검증 (이미지, PDF)
-        String originalFilename = file.getOriginalFilename();
-        if (originalFilename == null) {
-            throw new com.innersignature.backend.exception.BusinessException("파일명이 없습니다.");
-        }
-
-        String extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
-        List<String> allowedExtensions = List.of("jpg", "jpeg", "png", "gif", "pdf");
-        if (!allowedExtensions.contains(extension)) {
-            throw new com.innersignature.backend.exception.BusinessException("지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, pdf만 허용)");
-        }
-
-        // 6-1. 파일명 정규화 (경로 순회 취약점 방지)
-        String sanitizedFilename = sanitizeFilename(originalFilename);
-        
-        // 6-2. 실제 MIME 타입 검증
-        String detectedMimeType = detectMimeType(file);
-        List<String> allowedMimeTypes = List.of(
-            "image/jpeg", "image/jpg", "image/png", "image/gif", "application/pdf"
+        // 문서 단위 영수증 업로드는 더 이상 허용하지 않는다.
+        // 모든 영수증은 상세 내역(expense_detail_id) 기준으로만 업로드해야 한다.
+        throw new com.innersignature.backend.exception.BusinessException(
+                "문서 단위 영수증 업로드는 더 이상 지원하지 않습니다. " +
+                "상세 내역별 영수증 업로드 기능을 사용해 주세요."
         );
-        if (!allowedMimeTypes.contains(detectedMimeType)) {
-            throw new com.innersignature.backend.exception.BusinessException("지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, pdf만 허용)");
-        }
-
-        // 7. 파일 저장 디렉토리 생성 (설정 파일에서 경로 읽기)
-        String projectRoot = System.getProperty("user.dir");
-        String uploadBaseDir = projectRoot + File.separator + fileUploadBaseDir + File.separator + fileUploadReceiptsDir;
-        String uniqueDir = UUID.randomUUID().toString();
-        String uploadDir = uploadBaseDir + File.separator + expenseReportId + File.separator + uniqueDir;
-        Path uploadPath = Paths.get(uploadDir);
-
-        try {
-            // 디렉토리가 없으면 생성
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-            // 디렉토리 생성 확인
-            if (!Files.exists(uploadPath) || !Files.isDirectory(uploadPath)) {
-                throw new IOException("디렉토리 생성에 실패했습니다: " + uploadPath.toAbsolutePath());
-            }
-        } catch (IOException e) {
-            throw new IOException("디렉토리 생성 중 오류가 발생했습니다: " + uploadPath.toAbsolutePath() + " - " + e.getMessage(), e);
-        }
-
-        // 8. 파일명 생성: receipt_{timestamp}_{sanitizedFilename}.pdf (모든 파일을 PDF로 변환)
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        // 원본 확장자를 제거하고 .pdf로 변경
-        String baseName = sanitizedFilename;
-        int lastDotIndex = baseName.lastIndexOf('.');
-        if (lastDotIndex > 0) {
-            baseName = baseName.substring(0, lastDotIndex);
-        }
-        String fileName = "receipt_" + timestamp + "_" + baseName + ".pdf";
-        Path filePath = uploadPath.resolve(fileName);
-
-        boolean fileSaved = false;
-        
-        try {
-            // 9. 파일을 PDF로 변환하고 5MB 이하로 압축하여 저장
-            byte[] compressedPdf = ReceiptCompressor.compressToPdf(file);
-            Files.write(filePath, compressedPdf);
-            fileSaved = true;
-            
-            // 10. DB에 영수증 정보 저장 (receipt_tb에 저장)
-            String relativePath = fileUploadBaseDir + "/" + fileUploadReceiptsDir + "/" + expenseReportId + "/" + uniqueDir + "/" + fileName;
-            ReceiptDto receiptDto = new ReceiptDto();
-            receiptDto.setExpenseReportId(expenseReportId);
-            receiptDto.setFilePath(relativePath);
-            receiptDto.setOriginalFilename(originalFilename); // 원본 파일명 유지
-            receiptDto.setFileSize((long) compressedPdf.length); // 압축된 크기 저장
-            receiptDto.setUploadedBy(userId);
-            receiptDto.setUploadedAt(LocalDateTime.now());
-            receiptDto.setCompanyId(companyId);
-            expenseMapper.insertReceipt(receiptDto);
-            
-            logger.info("영수증 업로드 완료 - 원본: {} ({}MB), 압축: {} ({}MB)", 
-                originalFilename, 
-                String.format("%.2f", file.getSize() / (1024.0 * 1024.0)),
-                fileName,
-                String.format("%.2f", compressedPdf.length / (1024.0 * 1024.0)));
-            
-            SecurityLogger.fileAccess("UPLOAD", userId, expenseReportId, sanitizedFilename);
-        } catch (Exception e) {
-            // DB 저장 실패 시 파일 삭제
-            if (fileSaved && Files.exists(filePath)) {
-                try {
-                    Files.delete(filePath);
-                    logger.warn("DB 저장 실패로 인해 파일 삭제: {}", filePath);
-                } catch (IOException deleteEx) {
-                    logger.error("파일 삭제 실패: {}", filePath, deleteEx);
-                }
-            }
-            throw e;
-        }
     }
 
     /**
@@ -2308,7 +2197,8 @@ public class ExpenseService {
 
         // 헤더 행 생성
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"문서번호", "작성일", "제목", "작성자", "상태", "총액", "항목", "적요", "금액", "비고"};
+        // 상세내역 단위로 매칭할 수 있도록 상세내역ID 컬럼을 추가
+        String[] headers = {"문서번호", "상세내역ID", "작성일", "제목", "작성자", "상태", "총액", "항목", "적요", "금액", "비고"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -2450,7 +2340,8 @@ public class ExpenseService {
         
         // 헤더 행 생성
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"문서번호", "회사명", "작성일", "제목", "작성자", "상태", "총액", "항목", "적요", "금액", "비고"};
+        // SUPERADMIN용 지출내역에서도 상세내역ID를 포함하여 식별 가능하도록 함
+        String[] headers = {"문서번호", "상세내역ID", "회사명", "작성일", "제목", "작성자", "상태", "총액", "항목", "적요", "금액", "비고"};
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -2496,24 +2387,31 @@ public class ExpenseService {
      */
     private void createDataRowForSuperAdmin(Row row, ExpenseReportDto report, ExpenseDetailDto detail, int detailIndex, CellStyle dataStyle) {
         int col = 0;
-        
+
         // 문서번호
         Cell cell = row.createCell(col++);
         cell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
         cell.setCellStyle(dataStyle);
-        
+
+        // 상세내역ID
+        cell = row.createCell(col++);
+        cell.setCellValue(detail != null && detail.getExpenseDetailId() != null
+                ? detail.getExpenseDetailId().toString()
+                : "");
+        cell.setCellStyle(dataStyle);
+
         // 회사명
         cell = row.createCell(col++);
         cell.setCellValue(report.getCompanyName() != null ? report.getCompanyName() : "");
         cell.setCellStyle(dataStyle);
-        
+
         // 작성일
         cell = row.createCell(col++);
         if (detailIndex == 0) {
             cell.setCellValue(report.getReportDate() != null ? report.getReportDate().toString() : "");
         }
         cell.setCellStyle(dataStyle);
-        
+
         // 제목
         cell = row.createCell(col++);
         if (detailIndex == 0) {
@@ -2521,49 +2419,49 @@ public class ExpenseService {
             cell.setCellValue("");
         }
         cell.setCellStyle(dataStyle);
-        
+
         // 작성자
         cell = row.createCell(col++);
         if (detailIndex == 0) {
             cell.setCellValue(report.getDrafterName() != null ? report.getDrafterName() : "");
         }
         cell.setCellStyle(dataStyle);
-        
+
         // 상태
         cell = row.createCell(col++);
         if (detailIndex == 0) {
             cell.setCellValue(report.getStatus() != null ? report.getStatus() : "");
         }
         cell.setCellStyle(dataStyle);
-        
+
         // 총액 (첫 번째 행에만 표시)
         cell = row.createCell(col++);
         if (detailIndex == 0) {
             cell.setCellValue(report.getTotalAmount() != null ? report.getTotalAmount().doubleValue() : 0);
         }
         cell.setCellStyle(dataStyle);
-        
+
         // 항목
         cell = row.createCell(col++);
         if (detail != null) {
             cell.setCellValue(detail.getCategory() != null ? detail.getCategory() : "");
         }
         cell.setCellStyle(dataStyle);
-        
+
         // 적요
         cell = row.createCell(col++);
         if (detail != null) {
             cell.setCellValue(detail.getDescription() != null ? detail.getDescription() : "");
         }
         cell.setCellStyle(dataStyle);
-        
+
         // 금액
         cell = row.createCell(col++);
         if (detail != null && detail.getAmount() != null) {
             cell.setCellValue(detail.getAmount().doubleValue());
         }
         cell.setCellStyle(dataStyle);
-        
+
         // 비고
         cell = row.createCell(col++);
         if (detail != null) {
@@ -2577,69 +2475,83 @@ public class ExpenseService {
      */
     private void createDataRow(Row row, ExpenseReportDto report, ExpenseDetailDto detail, int detailIndex, CellStyle dataStyle) {
         int colNum = 0;
-        
-        // 문서번호
+
+        // 문서번호 (문서 단위 정보이므로 첫 상세 행에만 표시)
+        Cell docCell = row.createCell(colNum++);
         if (detailIndex == 0) {
-            Cell cell1 = row.createCell(colNum++);
-            cell1.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
-            cell1.setCellStyle(dataStyle);
-            
-            // 작성일
-            Cell cell2 = row.createCell(colNum++);
-            if (report.getReportDate() != null) {
-                cell2.setCellValue(report.getReportDate().toString());
-            } else {
-                cell2.setCellValue("");
-            }
-            cell2.setCellStyle(dataStyle);
-            
-            // 제목 (제거됨 - 빈 문자열 사용)
-            Cell cell3 = row.createCell(colNum++);
-            cell3.setCellValue("");
-            cell3.setCellStyle(dataStyle);
-            
-            // 작성자
-            Cell cell4 = row.createCell(colNum++);
-            cell4.setCellValue(report.getDrafterName() != null ? report.getDrafterName() : "");
-            cell4.setCellStyle(dataStyle);
-            
-            // 상태
-            Cell cell5 = row.createCell(colNum++);
-            cell5.setCellValue(report.getStatus() != null ? report.getStatus() : "");
-            cell5.setCellStyle(dataStyle);
-            
-            // 총액
-            Cell cell6 = row.createCell(colNum++);
-            cell6.setCellValue(report.getTotalAmount() != null ? report.getTotalAmount() : 0);
-            cell6.setCellStyle(dataStyle);
+            docCell.setCellValue(report.getExpenseReportId() != null ? report.getExpenseReportId() : 0);
         } else {
-            // 병합된 셀은 비워둠
-            for (int i = 0; i < 6; i++) {
-                Cell cell = row.createCell(colNum++);
-                cell.setCellValue("");
-                cell.setCellStyle(dataStyle);
-            }
+            docCell.setCellValue("");
         }
-        
+        docCell.setCellStyle(dataStyle);
+
+        // 상세내역ID (각 행마다 상세내역ID를 그대로 노출)
+        Cell detailIdCell = row.createCell(colNum++);
+        detailIdCell.setCellValue(detail != null && detail.getExpenseDetailId() != null
+                ? detail.getExpenseDetailId().toString()
+                : "");
+        detailIdCell.setCellStyle(dataStyle);
+
+        // 작성일
+        Cell dateCell = row.createCell(colNum++);
+        if (detailIndex == 0 && report.getReportDate() != null) {
+            dateCell.setCellValue(report.getReportDate().toString());
+        } else {
+            dateCell.setCellValue("");
+        }
+        dateCell.setCellStyle(dataStyle);
+
+        // 제목 (현재는 사용하지 않으므로 빈 문자열)
+        Cell titleCell = row.createCell(colNum++);
+        titleCell.setCellValue("");
+        titleCell.setCellStyle(dataStyle);
+
+        // 작성자
+        Cell drafterCell = row.createCell(colNum++);
+        if (detailIndex == 0) {
+            drafterCell.setCellValue(report.getDrafterName() != null ? report.getDrafterName() : "");
+        } else {
+            drafterCell.setCellValue("");
+        }
+        drafterCell.setCellStyle(dataStyle);
+
+        // 상태
+        Cell statusCell = row.createCell(colNum++);
+        if (detailIndex == 0) {
+            statusCell.setCellValue(report.getStatus() != null ? report.getStatus() : "");
+        } else {
+            statusCell.setCellValue("");
+        }
+        statusCell.setCellStyle(dataStyle);
+
+        // 총액
+        Cell totalCell = row.createCell(colNum++);
+        if (detailIndex == 0) {
+            totalCell.setCellValue(report.getTotalAmount() != null ? report.getTotalAmount() : 0);
+        } else {
+            totalCell.setCellValue(0);
+        }
+        totalCell.setCellStyle(dataStyle);
+
         // 항목
-        Cell cell7 = row.createCell(colNum++);
-        cell7.setCellValue(detail != null && detail.getCategory() != null ? detail.getCategory() : "");
-        cell7.setCellStyle(dataStyle);
-        
+        Cell categoryCell = row.createCell(colNum++);
+        categoryCell.setCellValue(detail != null && detail.getCategory() != null ? detail.getCategory() : "");
+        categoryCell.setCellStyle(dataStyle);
+
         // 적요
-        Cell cell8 = row.createCell(colNum++);
-        cell8.setCellValue(detail != null && detail.getDescription() != null ? detail.getDescription() : "");
-        cell8.setCellStyle(dataStyle);
-        
+        Cell descCell = row.createCell(colNum++);
+        descCell.setCellValue(detail != null && detail.getDescription() != null ? detail.getDescription() : "");
+        descCell.setCellStyle(dataStyle);
+
         // 금액
-        Cell cell9 = row.createCell(colNum++);
-        cell9.setCellValue(detail != null && detail.getAmount() != null ? detail.getAmount() : 0);
-        cell9.setCellStyle(dataStyle);
-        
+        Cell amountCell = row.createCell(colNum++);
+        amountCell.setCellValue(detail != null && detail.getAmount() != null ? detail.getAmount() : 0);
+        amountCell.setCellStyle(dataStyle);
+
         // 비고
-        Cell cell10 = row.createCell(colNum++);
-        cell10.setCellValue(detail != null && detail.getNote() != null ? detail.getNote() : "");
-        cell10.setCellStyle(dataStyle);
+        Cell noteCell = row.createCell(colNum++);
+        noteCell.setCellValue(detail != null && detail.getNote() != null ? detail.getNote() : "");
+        noteCell.setCellStyle(dataStyle);
     }
 
 
