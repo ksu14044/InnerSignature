@@ -609,11 +609,14 @@ export const fetchCategoryRatio = async (startDate = null, endDate = null) => {
 };
 
 // 19. APPROVED 상태 결의서 목록 조회 (TAX_ACCOUNTANT 전용)
-export const fetchTaxPendingReports = async (startDate = null, endDate = null) => {
+export const fetchTaxPendingReports = async (startDate = null, endDate = null, collectionStatus = null) => {
   try {
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
+    if (collectionStatus !== null && collectionStatus !== undefined) {
+      params.collectionStatus = collectionStatus;
+    }
     const response = await axiosInstance.get(`${BASE_URL}/tax/pending`, { params });
     return response.data;
   } catch (error) {

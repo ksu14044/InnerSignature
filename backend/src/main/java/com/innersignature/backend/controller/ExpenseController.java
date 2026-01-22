@@ -815,7 +815,7 @@ public class ExpenseController {
 
     /**
      * 19. APPROVED 상태 결의서 목록 조회 API
-     * GET /api/expenses/tax/pending?startDate=2024-01-01&endDate=2024-12-31
+     * GET /api/expenses/tax/pending?startDate=2024-01-01&endDate=2024-12-31&collectionStatus=true
      * 설명: TAX_ACCOUNTANT 권한 사용자만 접근 가능
      */
     @PreAuthorize("hasRole('TAX_ACCOUNTANT')")
@@ -823,7 +823,8 @@ public class ExpenseController {
     @GetMapping("/tax/pending")
     public ApiResponse<List<ExpenseReportDto>> getTaxPendingReports(
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) Boolean collectionStatus) {
         
         LocalDate startDateParsed = null;
         LocalDate endDateParsed = null;
@@ -840,7 +841,8 @@ public class ExpenseController {
             return new ApiResponse<>(false, "날짜 형식이 올바르지 않습니다. (형식: YYYY-MM-DD)", null);
         }
 
-        List<ExpenseReportDto> pendingReports = expenseService.getTaxPendingReports(startDateParsed, endDateParsed);
+        List<ExpenseReportDto> pendingReports = expenseService.getTaxPendingReports(
+            startDateParsed, endDateParsed, collectionStatus);
         return new ApiResponse<>(true, "세무처리 대기 건 조회 성공", pendingReports);
     }
 

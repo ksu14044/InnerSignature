@@ -797,7 +797,7 @@
         ORDER BY amount DESC
     </select>
 
-    <!-- 세무처리 대기 건 조회 (APPROVED 상태이지만 taxCollectedAt이 없는 건) -->
+    <!-- 세무처리 대기 건 조회 (APPROVED 상태) -->
     <select id="selectTaxPendingReports" resultType="com.innersignature.backend.dto.ExpenseReportDto">
         SELECT
             r.*,
@@ -819,8 +819,17 @@
         FROM expense_report_tb r
         JOIN user_tb u ON r.drafter_id = u.user_id
         WHERE r.status = 'APPROVED'
-          AND r.tax_collected_at IS NULL
           AND r.company_id = #{companyId}
+        <if test="collectionStatus != null">
+            <choose>
+                <when test="collectionStatus == true">
+                    AND r.tax_collected_at IS NOT NULL
+                </when>
+                <otherwise>
+                    AND r.tax_collected_at IS NULL
+                </otherwise>
+            </choose>
+        </if>
         <if test="startDate != null">
             AND r.report_date &gt;= #{startDate}
         </if>

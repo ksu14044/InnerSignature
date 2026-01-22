@@ -10,7 +10,6 @@ import {
   downloadReceipt
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
-import { useDebounce } from '../../hooks/useOptimizedList';
 import { showApiError } from '../../utils/errorHandler';
 import * as S from './style';
 
@@ -37,7 +36,15 @@ const TaxSummaryPage = () => {
   const [loading, setLoading] = useState(false);
 
   // 디바운스된 필터 적용
-  const debouncedFilters = useDebounce(filters, 300);
+  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFilters(filters);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [filters]);
 
   // 영수증 검색 관련 상태
   const [receiptSearchId, setReceiptSearchId] = useState('');
@@ -53,10 +60,14 @@ const TaxSummaryPage = () => {
 
       const [statusRes, pendingRes, summaryRes, monthlyRes] = await Promise.all([
         fetchTaxStatus(debouncedFilters.startDate || null, debouncedFilters.endDate || null),
-        fetchTaxPendingReports(debouncedFilters.startDate || null, debouncedFilters.endDate || null),
+        fetchTaxPendingReports(
+          debouncedFilters.startDate || null, 
+          debouncedFilters.endDate || null,
+          debouncedFilters.collectionStatus
+        ),
         fetchCategorySummary({
-          startDate: debouncedFilters.startDate,
-          endDate: debouncedFilters.endDate,
+          startDate: debouncedFilters.startDate || null,
+          endDate: debouncedFilters.endDate || null,
           status: ['APPROVED'], // APPROVED 상태만
           taxProcessed: debouncedFilters.collectionStatus
         }),
@@ -234,49 +245,7 @@ const TaxSummaryPage = () => {
   return (
     <S.Container>
       {/* 조회 필터 */}
-      <S.FilterCard data-tourid="tour-tax-filter">
-        <S.FilterGrid>
-          <div>
-            <S.Label>시작일</S.Label>
-            <S.Input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-            />
-          </div>
-          <div>
-            <S.Label>종료일</S.Label>
-            <S.Input
-              type="date"
-              value={filters.endDate}
-              min={filters.startDate || undefined}
-              onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-            />
-          </div>
-          <div>
-            <S.Label>수집 상태</S.Label>
-            <S.Input
-              as="select"
-              value={filters.collectionStatus === null ? '' : filters.collectionStatus ? 'true' : 'false'}
-              onChange={(e) => {
-                const value = e.target.value === '' ? null : e.target.value === 'true';
-                setFilters(prev => ({ ...prev, collectionStatus: value }));
-              }}
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-            >
-              <option value="">전체</option>
-              <option value="true">수집됨</option>
-              <option value="false">미수집</option>
-            </S.Input>
-          </div>
-        </S.FilterGrid>
-        <S.ButtonRow style={{ marginTop: 12 }}>
-          <S.Button onClick={loadTaxData}>수동 새로고침</S.Button>
-          <S.Button variant="secondary" onClick={() => setFilters({ startDate: '', endDate: '', collectionStatus: null })}>
-            필터 초기화
-          </S.Button>
-        </S.ButtonRow>
-      </S.FilterCard>
+      
 
       {/* 자료 수집 섹션 */}
       <S.FilterCard style={{ marginTop: '20px', backgroundColor: '#fff9e6', border: '2px solid #ffc107' }}>
@@ -411,6 +380,49 @@ const TaxSummaryPage = () => {
             <li>월별 수집 시: 1월~3월처럼 연속된 여러 달을 한번에 수집 가능</li>
           </ul>
         </div>
+      </S.FilterCard>
+
+      <S.FilterCard data-tourid="tour-tax-filter">
+        <S.FilterGrid>
+          <div>
+            <S.Label>시작일</S.Label>
+            <S.Input
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+            />
+          </div>
+          <div>
+            <S.Label>종료일</S.Label>
+            <S.Input
+              type="date"
+              value={filters.endDate}
+              min={filters.startDate || undefined}
+              onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+            />
+          </div>
+          <div>
+            <S.Label>수집 상태</S.Label>
+            <S.Input
+              as="select"
+              value={filters.collectionStatus === null ? '' : filters.collectionStatus ? 'true' : 'false'}
+              onChange={(e) => {
+                const value = e.target.value === '' ? null : e.target.value === 'true';
+                setFilters(prev => ({ ...prev, collectionStatus: value }));
+              }}
+              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+            >
+              <option value="">전체</option>
+              <option value="true">수집됨</option>
+              <option value="false">미수집</option>
+            </S.Input>
+          </div>
+        </S.FilterGrid>
+        <S.ButtonRow style={{ marginTop: 12, justifyContent: 'flex-end' }}>
+          <S.Button variant="secondary" onClick={() => setFilters({ startDate: '', endDate: '', collectionStatus: null })}>
+            필터 초기화
+          </S.Button>
+        </S.ButtonRow>
       </S.FilterCard>
 
       {/* 자료 수집 현황 통계 카드 */}

@@ -1904,11 +1904,14 @@ public class ExpenseService {
     }
 
     /**
-     * 세무처리 대기 건 조회 (APPROVED 상태이지만 taxProcessed=false)
+     * 세무처리 대기 건 조회 (APPROVED 상태)
+     * @param startDate 시작일 (null이면 전체)
+     * @param endDate 종료일 (null이면 전체)
+     * @param collectionStatus 수집 상태 (null: 전체, true: 수집됨, false: 미수집)
      */
-    public List<ExpenseReportDto> getTaxPendingReports(LocalDate startDate, LocalDate endDate) {
+    public List<ExpenseReportDto> getTaxPendingReports(LocalDate startDate, LocalDate endDate, Boolean collectionStatus) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
-        List<ExpenseReportDto> list = expenseMapper.selectTaxPendingReports(startDate, endDate, companyId);
+        List<ExpenseReportDto> list = expenseMapper.selectTaxPendingReports(startDate, endDate, collectionStatus, companyId);
         // 적요 요약 정보 생성
         for (ExpenseReportDto report : list) {
             generateSummaryDescription(report);

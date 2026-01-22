@@ -249,10 +249,11 @@ public interface ExpenseMapper {
             @Param("companyId") Long companyId
     );
 
-    // 세무처리 대기 건 조회 (APPROVED 상태이지만 taxProcessed=false)
+    // 세무처리 대기 건 조회 (APPROVED 상태)
     List<ExpenseReportDto> selectTaxPendingReports(
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
+            @Param("collectionStatus") Boolean collectionStatus,
             @Param("companyId") Long companyId
     );
 
