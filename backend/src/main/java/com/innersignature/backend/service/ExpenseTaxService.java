@@ -24,10 +24,13 @@ public class ExpenseTaxService {
 
     /**
      * 세무 처리 대기 결의서 목록 조회
+     * @param startDate 시작일 (null이면 전체)
+     * @param endDate 종료일 (null이면 전체)
+     * @param collectionStatus 수집 상태 (null: 전체, true: 수집됨, false: 미수집)
      */
-    public List<ExpenseReportDto> getTaxPendingReports(LocalDate startDate, LocalDate endDate) {
+    public List<ExpenseReportDto> getTaxPendingReports(LocalDate startDate, LocalDate endDate, Boolean collectionStatus) {
         Long companyId = SecurityUtil.getCurrentCompanyId();
-        return expenseMapper.selectTaxPendingReports(startDate, endDate, companyId);
+        return expenseMapper.selectTaxPendingReports(startDate, endDate, collectionStatus, companyId);
     }
 
     /**
@@ -137,7 +140,7 @@ public class ExpenseTaxService {
         reportData.put("monthlySummary", monthlySummary);
 
         // 세무 처리 대상 결의서 목록
-        List<ExpenseReportDto> pendingReports = getTaxPendingReports(startDate, endDate);
+        List<ExpenseReportDto> pendingReports = getTaxPendingReports(startDate, endDate, null);
         reportData.put("pendingReports", pendingReports);
 
         return reportData;
