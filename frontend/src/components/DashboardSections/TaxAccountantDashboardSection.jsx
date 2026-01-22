@@ -261,7 +261,7 @@ const TaxAccountantDashboardSection = ({ filters }) => {
       {taxStatus && (
         <S.StatsGrid>
           <S.StatCard>
-            <S.StatLabel>APPROVED 상태 결의서</S.StatLabel>
+            <S.StatLabel>승인 상태 결의서</S.StatLabel>
             <S.StatValue>{taxStatus.totalCount || 0}건</S.StatValue>
           </S.StatCard>
           <S.StatCard>

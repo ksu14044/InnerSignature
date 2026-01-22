@@ -417,7 +417,7 @@ const TaxSummaryPage = () => {
       {!loading && taxStatus && (
         <S.StatCard data-tourid="tour-tax-status">
           <S.StatItem>
-            <S.StatLabel>APPROVED 상태 결의서</S.StatLabel>
+            <S.StatLabel>승인 상태 결의서</S.StatLabel>
             <S.StatValue>{taxStatus.totalCount?.toLocaleString()}건</S.StatValue>
           </S.StatItem>
           <S.StatItem>
@@ -446,7 +446,7 @@ const TaxSummaryPage = () => {
       {/* APPROVED 상태 결의서 목록 */}
       <S.Card>
         <S.CardTitle data-tourid="tour-tax-pending">
-          APPROVED 상태 결의서 ({pendingReports.length}건)
+          승인 상태 결의서 ({pendingReports.length}건)
           <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666', marginLeft: '12px' }}>
             (증빙 확인 및 수집 대상)
           </span>
@@ -454,7 +454,7 @@ const TaxSummaryPage = () => {
         {loading ? (
           <S.Empty>불러오는 중...</S.Empty>
         ) : pendingReports.length === 0 ? (
-          <S.Empty>APPROVED 상태 결의서가 없습니다.</S.Empty>
+          <S.Empty>승인 상태 결의서가 없습니다.</S.Empty>
         ) : (
           <>
             <S.SummaryTable>
