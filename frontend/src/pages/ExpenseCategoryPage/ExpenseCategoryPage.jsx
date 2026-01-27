@@ -52,12 +52,22 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
       return;
     }
     
+    // 권한 체크
+    const canEditMapping = user?.role === 'SUPERADMIN' || user?.role === 'TAX_ACCOUNTANT';
+    const canViewMapping = canEditMapping || user?.role === 'ADMIN' || user?.role === 'CEO' 
+      || user?.role === 'ACCOUNTANT' || user?.role === 'USER';
+    
     // USER도 조회는 가능하도록 변경 (백엔드 API가 USER도 허용)
     // 권한 체크는 UI에서만 처리
     if (activeTab === 'categories') {
       console.log('[카테고리] categories 탭 활성화 - loadCategories 호출');
       loadCategories();
     } else if (activeTab === 'accountCodes') {
+      // 권한이 없으면 API 호출하지 않음 (이미 페이지에서 안내 표시)
+      if (!canViewMapping) {
+        console.log('[카테고리] accountCodes 탭 권한 없음 - API 호출 생략');
+        return;
+      }
       console.log('[카테고리] accountCodes 탭 활성화 - loadMappingList 호출');
       loadMappingList();
     }
@@ -309,7 +319,11 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
       }
     } catch (error) {
       console.error('계정 과목 매핑 목록 조회 실패:', error);
-      alert(error?.response?.data?.message || '계정 과목 매핑 목록 조회 중 오류가 발생했습니다.');
+      // 권한 관련 에러(403, 401)는 alert를 띄우지 않음 (이미 페이지에서 안내 표시)
+      const status = error?.response?.status;
+      if (status !== 403 && status !== 401) {
+        alert(error?.response?.data?.message || '계정 과목 매핑 목록 조회 중 오류가 발생했습니다.');
+      }
     } finally {
       setLoading(false);
     }
