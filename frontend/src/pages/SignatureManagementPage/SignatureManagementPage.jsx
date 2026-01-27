@@ -95,7 +95,19 @@ const SignatureManagementPage = () => {
         return;
       }
 
-      const isDefault = savedSignatures.length === 0 || confirm('기본 서명/도장으로 설정하시겠습니까?');
+      // 수정 모드일 때는 기존 기본 설정을 유지하거나 사용자가 선택
+      let isDefault;
+      if (editingSignature) {
+        // 수정 시 기존 기본 설정 유지 (변경하려면 사용자가 명시적으로 선택)
+        isDefault = editingSignature.isDefault;
+        if (!editingSignature.isDefault) {
+          const setAsDefault = confirm('기본 서명/도장으로 설정하시겠습니까?');
+          isDefault = setAsDefault;
+        }
+      } else {
+        // 새로 생성할 때
+        isDefault = savedSignatures.length === 0 || confirm('기본 서명/도장으로 설정하시겠습니까?');
+      }
 
       if (editingSignature) {
         const response = await updateSignature(editingSignature.signatureId, {
@@ -179,6 +191,21 @@ const SignatureManagementPage = () => {
     }
   };
 
+  const handleEditSignature = (signature) => {
+    setEditingSignature(signature);
+    setSelectedSignatureType(signature.signatureType);
+    
+    if (signature.signatureType === 'SIGNATURE') {
+      // 서명인 경우 모달 열기
+      setIsSignatureModalOpen(true);
+    } else if (signature.signatureType === 'STAMP') {
+      // 도장인 경우 파일 입력 열기
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+    }
+  };
+
   if (loading) {
     return <LoadingOverlay />;
   }
@@ -212,6 +239,9 @@ const SignatureManagementPage = () => {
                   {sig.signatureType === 'STAMP' ? '도장' : '서명'}
                 </S.SignatureType>
                 <S.SignatureActions>
+                  <S.ActionButton onClick={() => handleEditSignature(sig)}>
+                    <FaPen /> 수정
+                  </S.ActionButton>
                   {!sig.isDefault && (
                     <S.ActionButton onClick={() => handleSetDefaultSignature(sig.signatureId)}>
                       <FaStar /> 기본으로 설정
@@ -273,6 +303,7 @@ const SignatureManagementPage = () => {
         onSave={handleSaveSignature}
         isSaving={isSavingSignature}
         savedSignatures={[]}
+        editingSignature={editingSignature}
       />
     </S.Container>
   );

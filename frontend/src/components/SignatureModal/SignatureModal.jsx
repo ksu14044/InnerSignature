@@ -3,7 +3,7 @@ import SignatureCanvas from 'react-signature-canvas';
 import { FaTimes, FaEraser, FaCheck, FaImage } from 'react-icons/fa';
 import * as S from './style';
 
-const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [] }) => {
+const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [], editingSignature = null }) => {
   const sigCanvas = useRef(null);
   const fileInputRef = useRef(null);
   const [mode, setMode] = useState('select'); // 'select', 'draw', 'upload'
@@ -12,7 +12,29 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
   const [hasDrawn, setHasDrawn] = useState(false); // 그리기 완료 여부 추적
 
   useEffect(() => {
-    if (isOpen && savedSignatures.length > 0) {
+    if (isOpen && editingSignature) {
+      // 수정 모드인 경우
+      if (editingSignature.signatureType === 'STAMP') {
+        // 도장인 경우 업로드 모드로 설정하고 기존 이미지 표시
+        setMode('upload');
+        setUploadedImage(editingSignature.signatureData);
+      } else {
+        // 서명인 경우 그리기 모드로 설정하고 기존 서명을 캔버스에 로드
+        setMode('draw');
+        if (sigCanvas.current && editingSignature.signatureData) {
+          const img = new Image();
+          img.onload = () => {
+            if (sigCanvas.current) {
+              const ctx = sigCanvas.current.getCanvas().getContext('2d');
+              ctx.clearRect(0, 0, sigCanvas.current.getCanvas().width, sigCanvas.current.getCanvas().height);
+              ctx.drawImage(img, 0, 0, sigCanvas.current.getCanvas().width, sigCanvas.current.getCanvas().height);
+              setHasDrawn(true);
+            }
+          };
+          img.src = editingSignature.signatureData;
+        }
+      }
+    } else if (isOpen && savedSignatures.length > 0) {
       // 저장된 서명이 있고 기본 서명이 있으면 자동 선택
       const defaultSig = savedSignatures.find(sig => sig.isDefault);
       if (defaultSig) {
@@ -26,15 +48,15 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
       setMode('draw');
     }
     
-    // 모달이 열릴 때 상태 초기화
-    if (isOpen) {
+    // 모달이 열릴 때 상태 초기화 (수정 모드가 아닐 때만)
+    if (isOpen && !editingSignature) {
       setUploadedImage(null);
       setHasDrawn(false);
       if (sigCanvas.current) {
         sigCanvas.current.clear();
       }
     }
-  }, [isOpen, savedSignatures]);
+  }, [isOpen, savedSignatures, editingSignature]);
 
   if (!isOpen) return null;
 
@@ -108,7 +130,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, isSaving, savedSignatures = [
     <S.Overlay>
       <S.Content>
         <S.Header>
-          <S.Title>서명 입력</S.Title>
+          <S.Title>{editingSignature ? '서명/도장 수정' : '서명 입력'}</S.Title>
           <S.CloseButton onClick={onClose}>
             <FaTimes />
           </S.CloseButton>
