@@ -73,6 +73,7 @@ export const Instruction = styled.p`
 `;
 
 export const CanvasContainer = styled.div`
+  position: relative;
   border: 2px solid var(--border-color);
   border-radius: 8px;
   background-color: #fafafa;
@@ -92,6 +93,43 @@ export const CanvasContainer = styled.div`
     .sigCanvas {
       min-height: 150px;
     }
+  }
+`;
+
+export const ClearButton = styled.button`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10;
+  font-size: 18px;
+  opacity: 0.7;
+
+  &:hover:not(:disabled) {
+    opacity: 1;
+    color: #333;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    width: 20px;
+    height: 20px;
+    font-size: 16px;
+    top: 6px;
+    right: 6px;
   }
 `;
 
@@ -329,5 +367,67 @@ export const RemoveImageButton = styled.button`
     background-color: #ffebee;
     border-color: #f44336;
     color: #f44336;
+  }
+`;
+
+export const NameInputSection = styled.div`
+  margin: 0 24px 24px 24px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+
+  @media (max-width: 768px) {
+    margin: 0 16px 20px 16px;
+    padding: 12px;
+  }
+`;
+
+export const Label = styled.label`
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--dark-color);
+  font-size: 14px;
+`;
+
+export const NameInput = styled.input`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+`;
+
+export const CheckboxWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+    
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+  
+  label {
+    font-size: 14px;
+    color: var(--dark-color);
+    cursor: pointer;
+    user-select: none;
   }
 `;

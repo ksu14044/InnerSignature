@@ -23,7 +23,8 @@ const SignatureManagementPage = () => {
   const [editingSignature, setEditingSignature] = useState(null);
   const [isTypeSelectModalOpen, setIsTypeSelectModalOpen] = useState(false);
   const [selectedSignatureType, setSelectedSignatureType] = useState(null);
-  const fileInputRef = useRef(null);
+  const [uploadedImageData, setUploadedImageData] = useState(null);
+  const hasModalBeenOpen = useRef(false);
 
   useEffect(() => {
     if (!user) {
@@ -32,6 +33,21 @@ const SignatureManagementPage = () => {
     }
     loadSignatures();
   }, [user, navigate]);
+
+  // 모달이 열렸는지 추적
+  useEffect(() => {
+    if (isSignatureModalOpen) {
+      hasModalBeenOpen.current = true;
+    }
+  }, [isSignatureModalOpen]);
+
+  // 모달이 닫힌 후 목록 새로고침
+  useEffect(() => {
+    if (!isSignatureModalOpen && !isSavingSignature && hasModalBeenOpen.current && user) {
+      // 모달이 한 번이라도 열렸고, 닫히고 저장이 완료된 후 목록 새로고침
+      loadSignatures();
+    }
+  }, [isSignatureModalOpen, isSavingSignature, user]);
 
   const loadSignatures = async () => {
     try {
@@ -52,62 +68,16 @@ const SignatureManagementPage = () => {
     setSelectedSignatureType(type);
     setIsTypeSelectModalOpen(false);
     
-    if (type === 'SIGNATURE') {
-      setIsSignatureModalOpen(true);
-    } else if (type === 'STAMP') {
-      if (fileInputRef.current) {
-        fileInputRef.current.click();
-      }
-    }
+    // 서명/도장 모두 모달로 열기
+    setIsSignatureModalOpen(true);
   };
 
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 업로드 가능합니다.');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('파일 크기는 5MB 이하여야 합니다.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64Data = reader.result;
-      handleSaveSignatureData(base64Data, 'STAMP');
-    };
-    reader.readAsDataURL(file);
-    event.target.value = '';
-  };
-
-  const handleSaveSignatureData = async (signatureData, signatureType) => {
+  const handleSaveSignatureData = async (signatureData, signatureType, signatureName, isDefault) => {
     if (isSavingSignature) return;
     
     try {
       setIsSavingSignature(true);
-      const signatureName = prompt('서명/도장 이름을 입력해주세요:', editingSignature?.signatureName || (signatureType === 'STAMP' ? '기본 도장' : '기본 서명'));
-      if (!signatureName) {
-        setIsSavingSignature(false);
-        return;
-      }
-
-      // 수정 모드일 때는 기존 기본 설정을 유지하거나 사용자가 선택
-      let isDefault;
-      if (editingSignature) {
-        // 수정 시 기존 기본 설정 유지 (변경하려면 사용자가 명시적으로 선택)
-        isDefault = editingSignature.isDefault;
-        if (!editingSignature.isDefault) {
-          const setAsDefault = confirm('기본 서명/도장으로 설정하시겠습니까?');
-          isDefault = setAsDefault;
-        }
-      } else {
-        // 새로 생성할 때
-        isDefault = savedSignatures.length === 0 || confirm('기본 서명/도장으로 설정하시겠습니까?');
-      }
 
       if (editingSignature) {
         const response = await updateSignature(editingSignature.signatureId, {
@@ -117,11 +87,11 @@ const SignatureManagementPage = () => {
           isDefault
         });
         if (response.success) {
-          alert('서명/도장이 수정되었습니다.');
+          // 모달만 닫기 (목록 새로고침은 onClose에서 처리)
           setIsSignatureModalOpen(false);
-          setEditingSignature(null);
-          setSelectedSignatureType(null);
-          loadSignatures();
+          
+          // alert 표시
+          alert('서명/도장이 수정되었습니다.');
         } else {
           alert('서명/도장 수정 실패: ' + response.message);
         }
@@ -133,10 +103,11 @@ const SignatureManagementPage = () => {
           isDefault
         });
         if (response.success) {
-          alert('서명/도장이 저장되었습니다.');
+          // 모달만 닫기 (목록 새로고침은 onClose에서 처리)
           setIsSignatureModalOpen(false);
-          setSelectedSignatureType(null);
-          loadSignatures();
+          
+          // alert 표시
+          alert('서명/도장이 저장되었습니다.');
         } else {
           alert('서명/도장 저장 실패: ' + response.message);
         }
@@ -149,8 +120,8 @@ const SignatureManagementPage = () => {
     }
   };
 
-  const handleSaveSignature = async (signatureData) => {
-    await handleSaveSignatureData(signatureData, selectedSignatureType || 'SIGNATURE');
+  const handleSaveSignature = async (signatureData, signatureName, isDefault) => {
+    await handleSaveSignatureData(signatureData, selectedSignatureType || 'SIGNATURE', signatureName, isDefault);
   };
 
   const handleAddNewSignature = () => {
@@ -195,15 +166,8 @@ const SignatureManagementPage = () => {
     setEditingSignature(signature);
     setSelectedSignatureType(signature.signatureType);
     
-    if (signature.signatureType === 'SIGNATURE') {
-      // 서명인 경우 모달 열기
-      setIsSignatureModalOpen(true);
-    } else if (signature.signatureType === 'STAMP') {
-      // 도장인 경우 파일 입력 열기
-      if (fileInputRef.current) {
-        fileInputRef.current.click();
-      }
-    }
+    // 수정 모드일 때는 서명/도장 모두 모달로 열기
+    setIsSignatureModalOpen(true);
   };
 
   if (loading) {
@@ -285,25 +249,22 @@ const SignatureManagementPage = () => {
         </S.ModalOverlay>
       )}
 
-      <input
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        ref={fileInputRef}
-        onChange={handleImageUpload}
-      />
-
       <SignatureModal
         isOpen={isSignatureModalOpen}
         onClose={() => {
           setIsSignatureModalOpen(false);
           setEditingSignature(null);
           setSelectedSignatureType(null);
+          setUploadedImageData(null);
+          // 목록 새로고침은 useEffect에서 처리
         }}
         onSave={handleSaveSignature}
         isSaving={isSavingSignature}
         savedSignatures={[]}
         editingSignature={editingSignature}
+        showNameInput={true}
+        initialImageData={uploadedImageData}
+        initialMode={selectedSignatureType === 'STAMP' && !editingSignature ? 'upload' : null}
       />
     </S.Container>
   );
