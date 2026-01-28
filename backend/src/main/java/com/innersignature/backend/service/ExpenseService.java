@@ -252,10 +252,15 @@ public class ExpenseService {
         
         // (1) 메인 문서 정보 가져오기
         ExpenseReportDto report = expenseMapper.selectExpenseReportById(expenseReportId, companyId);
-        
+
         // 만약 문서가 없으면 null 리턴 (혹은 에러 처리)
         if (report == null) {
             return null;
+        }
+
+        // DRAFT 상태 문서는 작성자 본인만 조회 가능
+        if ("DRAFT".equals(report.getStatus()) && !report.getDrafterId().equals(userId)) {
+            throw new com.innersignature.backend.exception.BusinessException("임시 저장 문서에 대한 조회 권한이 없습니다.");
         }
 
         // (2) 상세 항목들(식대, 간식...) 가져오기
@@ -715,6 +720,132 @@ public class ExpenseService {
     }
 
     /**
+     * 3-0. 기안서 임시 저장 로직
+     * 설명: 필수 필드 검증 없이 DRAFT 상태로 임시 저장합니다.
+     *      임시 저장된 문서는 작성자 본인 외에는 조회할 수 없습니다.
+     * @return 생성된 지출결의서 ID
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Long createExpenseDraft(ExpenseReportDto request, Long currentUserId) {
+
+        // (0) 기본값 설정
+        if (request.getReportDate() == null) {
+            request.setReportDate(LocalDate.now());
+        }
+
+        // (0-1) 작성자 검증: 요청된 drafterId와 현재 사용자 일치 확인
+        if (request.getDrafterId() == null) {
+            request.setDrafterId(currentUserId);
+        } else if (!request.getDrafterId().equals(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("작성자와 로그인 사용자가 일치해야 합니다.");
+        }
+
+        // (0-2) 역할 검증: TAX_ACCOUNTANT는 기안서 생성 불가
+        if (permissionUtil.isTaxAccountant(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("TAX_ACCOUNTANT 역할은 결의서를 생성할 수 없습니다.");
+        }
+
+        // (0-3) 상세 항목들로부터 총 금액 계산 및 급여 카테고리 확인 (검증은 하지 않음)
+        List<ExpenseDetailDto> details = request.getDetails();
+        long totalAmount = 0L;
+        boolean hasSalary = false;
+        if (details != null) {
+            for (ExpenseDetailDto detail : details) {
+                Long amount = detail.getAmount();
+                if (amount != null && amount > 0) {
+                    totalAmount += amount;
+                }
+
+                if ("급여".equals(detail.getCategory())) {
+                    hasSalary = true;
+                }
+
+                // 카드 결제인 경우 카드번호 처리 (있을 때만, 실패하더라도 임시 저장은 계속 진행)
+                if (detail.getPaymentMethod() != null &&
+                        ("CARD".equals(detail.getPaymentMethod())
+                                || "COMPANY_CARD".equals(detail.getPaymentMethod())
+                                || "CREDIT_CARD".equals(detail.getPaymentMethod())
+                                || "DEBIT_CARD".equals(detail.getPaymentMethod()))) {
+
+                    if (detail.getCardId() != null) {
+                        try {
+                            String encryptedCardNumber = null;
+                            if ("COMPANY_CARD".equals(detail.getPaymentMethod())) {
+                                CompanyCardDto card = companyCardService.getCardForInternalUse(detail.getCardId(), currentUserId);
+                                encryptedCardNumber = card.getCardNumberEncrypted();
+                            } else if ("CARD".equals(detail.getPaymentMethod())) {
+                                UserCardDto card = userCardService.getCardForInternalUse(detail.getCardId(), currentUserId);
+                                encryptedCardNumber = card.getCardNumberEncrypted();
+                            }
+
+                            if (encryptedCardNumber != null) {
+                                detail.setCardNumber(encryptedCardNumber);
+                            }
+                        } catch (Exception e) {
+                            logger.warn("임시 저장 - 저장된 카드 조회 실패 - paymentMethod: {}, cardId: {}", detail.getPaymentMethod(), detail.getCardId(), e);
+                            // 임시 저장이므로 실패해도 계속 진행
+                        }
+                    } else if (detail.getCardNumber() != null && !detail.getCardNumber().trim().isEmpty()) {
+                        try {
+                            String encryptedCardNumber = encryptionUtil.encrypt(detail.getCardNumber());
+                            detail.setCardNumber(encryptedCardNumber);
+                        } catch (Exception e) {
+                            logger.warn("임시 저장 - 카드번호 암호화 실패 - paymentMethod: {}, cardNumber: {}", detail.getPaymentMethod(), detail.getCardNumber(), e);
+                            // 임시 저장이므로 실패해도 계속 진행
+                        }
+                    }
+                }
+
+                // 가승인은 결의서 단위이므로 detail에서는 null로 설정
+                detail.setIsPreApproval(null);
+            }
+        }
+        request.setTotalAmount(totalAmount);
+
+        // (0-4) 급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT만 사용 가능 (임시 저장이라도 동일 규칙 적용)
+        if (hasSalary && !permissionUtil.isAdminOrCEO(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
+        }
+
+        // (0-5) 임시 저장은 항상 DRAFT 상태로 설정
+        request.setStatus("DRAFT");
+
+        // (1) 메인 문서 저장
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        request.setCompanyId(companyId);
+
+        // title이 없으면 자동 생성 (예: "지출결의서 (임시저장) - 2026-01-06")
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            String autoTitle = "지출결의서 (임시저장) - " + request.getReportDate();
+            request.setTitle(autoTitle);
+        }
+
+        expenseMapper.insertExpenseReport(request);
+
+        // 방금 DB에 들어가면서 생성된 문서 번호(PK)를 꺼내옵니다.
+        Long newId = request.getExpenseReportId();
+
+        // (2) 상세 항목들 저장 (있다면)
+        if (details != null && !details.isEmpty()) {
+            logger.debug("임시 저장 - 상세 항목 저장 시작 - 항목 수: {}", details.size());
+            for (ExpenseDetailDto detail : details) {
+                detail.setExpenseReportId(newId);
+                detail.setCompanyId(companyId);
+                expenseMapper.insertExpenseDetail(detail);
+            }
+            logger.debug("임시 저장 - 상세 항목 저장 완료");
+        }
+
+        // (3) 임시 저장은 결재 라인을 저장하지 않음 (결재자에게 노출 방지)
+        logger.debug("임시 저장 - 결재 라인은 저장하지 않습니다.");
+
+        // (4) 임시 저장은 자동 감사 실행하지 않음
+
+        logger.info("지출결의서 임시 저장 완료 - expenseReportId: {}", newId);
+        return newId;
+    }
+
+    /**
      * 3-0. 기안서 비동기 생성 (진행률 추적)
      * 설명: 비동기로 처리하여 진행률을 추적할 수 있습니다.
      * SecurityContext가 자동으로 전파됩니다 (AsyncConfig에서 설정).
@@ -744,7 +875,8 @@ public class ExpenseService {
 
     /**
      * 3-1. 기안서 수정 로직
-     * 설명: WAIT 상태의 지출결의서만 수정 가능합니다.
+     * 설명: WAIT 또는 DRAFT 상태의 지출결의서만 수정 가능합니다.
+     *      DRAFT 문서를 수정할 때는 상태를 WAIT로 변경합니다.
      * @return 수정된 지출결의서 ID
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -757,8 +889,8 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
         }
 
-        // 1-1. 마감된 월인지 확인
-        if (existingReport.getReportDate() != null) {
+        // 1-1. 마감된 월인지 확인 (DRAFT는 마감 체크 스킵)
+        if (existingReport.getReportDate() != null && !"DRAFT".equals(existingReport.getStatus())) {
             if (monthlyClosingService.isDateClosed(existingReport.getReportDate())) {
                 throw new com.innersignature.backend.exception.BusinessException(
                         String.format("%d년 %d월은 마감되어 있어 수정할 수 없습니다.", 
@@ -767,13 +899,13 @@ public class ExpenseService {
             }
         }
 
-        // 2. WAIT 상태에서만 수정 가능
-        if (!"WAIT".equals(existingReport.getStatus())) {
-            throw new com.innersignature.backend.exception.BusinessException("WAIT 상태의 문서만 수정할 수 있습니다.");
+        // 2. WAIT 또는 DRAFT 상태에서만 수정 가능
+        if (!"WAIT".equals(existingReport.getStatus()) && !"DRAFT".equals(existingReport.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("WAIT 또는 임시 저장(DRAFT) 상태의 문서만 수정할 수 있습니다.");
         }
 
-        // 2-1. 세무 수집 체크: 세무 수집된 문서는 수정 요청이 없으면 수정 불가
-        if (existingReport.getTaxCollectedAt() != null) {
+        // 2-1. 세무 수집 체크: 세무 수집된 문서는 수정 요청이 없으면 수정 불가 (DRAFT는 스킵)
+        if (!"DRAFT".equals(existingReport.getStatus()) && existingReport.getTaxCollectedAt() != null) {
             if (!Boolean.TRUE.equals(existingReport.getTaxRevisionRequested())) {
                 throw new com.innersignature.backend.exception.BusinessException("세무 수집된 문서는 수정할 수 없습니다. 세무사가 수정 요청을 보낸 경우에만 수정 가능합니다.");
             }
@@ -898,8 +1030,13 @@ public class ExpenseService {
         request.setExpenseReportId(expenseId);
         request.setDrafterId(existingReport.getDrafterId()); // 작성자는 변경 불가
         request.setCompanyId(companyId);
-        request.setStatus("WAIT"); // 상태는 WAIT로 유지
+        
+        // updateExpenseReport는 status 컬럼을 업데이트하지 않으므로 별도로 상태 업데이트 필요
         expenseMapper.updateExpenseReport(request, companyId);
+        
+        // DRAFT 문서를 수정할 때는 상태를 WAIT로 변경 (결재 요청 상태로 전환)
+        // WAIT 문서를 수정할 때도 상태는 WAIT로 유지
+        expenseMapper.updateExpenseReportStatus(expenseId, "WAIT", companyId);
 
         // 11-12. 상세 항목 업데이트 (삭제 후 재생성 대신 UPDATE/INSERT/DELETE 방식 사용)
         // 영수증이 CASCADE 삭제되지 않도록 기존 항목은 UPDATE로 처리
@@ -1145,6 +1282,13 @@ public class ExpenseService {
 
         // 2. 권한 체크: 작성자 본인, ADMIN, 또는 ACCOUNTANT 권한자만 삭제 가능
         permissionUtil.checkDeletePermission(report, userId);
+
+        // 2-0. DRAFT 상태 문서는 언제든지 바로 삭제 가능 (마감/세무 수집 상관 없음)
+        if ("DRAFT".equals(report.getStatus())) {
+            expenseMapper.deleteExpenseReport(expenseReportId, companyId);
+            logger.info("DRAFT 상태 문서 삭제 완료 - expenseReportId: {}, userId: {}", expenseReportId, userId);
+            return;
+        }
 
         // 2-1. 마감된 월인지 확인
         if (report.getReportDate() != null) {
@@ -1631,6 +1775,12 @@ public class ExpenseService {
         if (user == null) {
             return;
         }
+
+        // DRAFT 상태 문서는 작성자 본인만 조회 가능
+        reports.removeIf(report ->
+                "DRAFT".equals(report.getStatus()) &&
+                        (report.getDrafterId() == null || !report.getDrafterId().equals(userId))
+        );
         
         // TAX_ACCOUNTANT는 모든 급여 문서 조회 가능
         if ("TAX_ACCOUNTANT".equals(user.getRole())) {

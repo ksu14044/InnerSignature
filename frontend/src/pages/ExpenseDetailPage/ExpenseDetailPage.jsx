@@ -232,13 +232,17 @@ const ExpenseDetailPage = () => {
     return detail.approvalLines.some(line => line.signatureData != null && line.signatureData.trim() !== '');
   };
 
-  // 수정/삭제 가능 여부 확인 (반려인 경우만 가능)
+  // 수정/삭제 가능 여부 확인
   const canEditOrDelete = () => {
     if (!user || !detail) return false;
     // 작성자 본인이 아니면 불가
     if (detail.drafterId !== user.userId) return false;
-    // WAIT 상태가 아니면 불가
-    if (detail.status !== 'WAIT' && detail.status !== 'REJECTED') return false;
+    // DRAFT, WAIT, REJECTED 상태만 수정/삭제 가능
+    if (
+      detail.status !== 'DRAFT' &&
+      detail.status !== 'WAIT' &&
+      detail.status !== 'REJECTED'
+    ) return false;
 
     // 세무 수집된 문서는 수정 불가 (세무 수정 요청 기능 비활성화됨)
     if (detail.taxCollectedAt) {

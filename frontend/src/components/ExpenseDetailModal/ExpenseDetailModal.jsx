@@ -227,9 +227,22 @@ const ExpenseDetailModal = ({
   };
 
   const handleSave = () => {
-    // 영수증 필수 검증
-    if (receiptFiles.length === 0) {
-      alert('영수증을 첨부해주세요.');
+    // 모든 주요 필드가 비어 있고 영수증도 없는 경우: 항목 추가/수정 없이 그냥 닫기
+    const isEmpty =
+      (!formData.category || formData.category.trim() === '') &&
+      (!formData.description || formData.description.trim() === '') &&
+      (!formData.amount || String(formData.amount).trim() === '') &&
+      (!formData.paymentMethod || formData.paymentMethod.trim() === '') &&
+      (!formData.merchantName || formData.merchantName.trim() === '') &&
+      (!formData.note || formData.note.trim() === '') &&
+      (!formData.cardNumber1 || formData.cardNumber1.trim() === '') &&
+      (!formData.cardNumber2 || formData.cardNumber2.trim() === '') &&
+      (!formData.cardNumber3 || formData.cardNumber3.trim() === '') &&
+      (!formData.cardNumber4 || formData.cardNumber4.trim() === '') &&
+      receiptFiles.length === 0;
+
+    if (isEmpty) {
+      onClose();
       return;
     }
 

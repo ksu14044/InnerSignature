@@ -6,7 +6,7 @@ import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck, FaEdit, FaFileUpload
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
 import * as S from './style';
 import { useAuth } from '../../contexts/AuthContext';
-import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail, getExpenseCreationProgress } from '../../api/expenseApi';
+import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail, getExpenseCreationProgress, createExpenseDraft } from '../../api/expenseApi';
 import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole, filterCategoriesByRole } from '../../constants/categories';
@@ -214,9 +214,9 @@ const ExpenseCreatePage = () => {
           if (response.success && response.data) {
             const expense = response.data;
             
-            // WAIT 상태가 아니면 수정 불가
-            if (expense.status !== 'WAIT') {
-              alert('WAIT 상태의 문서만 수정할 수 있습니다.');
+            // WAIT 또는 DRAFT 상태가 아니면 수정 불가
+            if (expense.status !== 'WAIT' && expense.status !== 'DRAFT') {
+              alert('WAIT 또는 임시 저장(DRAFT) 상태의 문서만 수정할 수 있습니다.');
               navigate(`/detail/${id}`);
               return;
             }
@@ -668,7 +668,16 @@ const ExpenseCreatePage = () => {
     // 유효성 검사: 완료된 상세 내역 확인
     let firstMissingField = null;
     const missingFields = [];
-    
+
+    // 0. 불완전 항목 존재 여부 체크 (결재 요청은 모든 항목이 완성되어야 함)
+    const invalidDetails = details.filter(detail => !isValidDetail(detail));
+    if (invalidDetails.length > 0) {
+      missingFields.push('모든 지출 상세 내역의 필수 항목(사용일자, 항목, 적요, 금액, 결제수단/카드 정보)을 채워야 결재 요청이 가능합니다.');
+      if (!firstMissingField) {
+        firstMissingField = { type: 'detailsSection', ref: detailsSectionRef };
+      }
+    }
+
     // 1. 완료된 상세 내역 확인
     if (!completedDetails || completedDetails.length === 0) {
       missingFields.push('지출 상세 내역 (최소 1개 이상 필요)');
@@ -1051,6 +1060,66 @@ const ExpenseCreatePage = () => {
     }
   };
 
+  // 임시 저장 (검증 최소화)
+  const handleSaveDraft = async () => {
+    if (isSubmitting) return;
+
+    if (!user) {
+      alert("로그인 정보가 없습니다.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setSubmitProgress(0);
+      setProgressMessage('임시 저장 중...');
+
+      // 임시 저장은 부분 입력된 항목도 포함하여 details 전체를 그대로 저장
+      const draftDetails = (details || []).map(detail => {
+        const { receiptFiles, ...rest } = detail; // 영수증 파일은 서버로 보내지 않음
+        return {
+          ...rest,
+          amount: detail.amount ? Number(parseFormattedNumber(detail.amount)) : 0
+        };
+      });
+
+      const draftTotalAmount = draftDetails.reduce((sum, d) => sum + (d.amount || 0), 0);
+
+      const payload = {
+        drafterId: user.userId,
+        drafterName: user.koreanName,
+        reportDate: report.reportDate || new Date().toISOString().split('T')[0],
+        status: 'DRAFT',
+        totalAmount: draftTotalAmount,
+        details: draftDetails,
+        // 임시 저장 시에는 결재 라인을 저장하지 않음 -> 결재자에게 노출 방지
+        approvalLines: [],
+      };
+
+      const response = await createExpenseDraft(payload);
+
+      if (response.success) {
+        const expenseId = response.data;
+        alert('임시 저장되었습니다.');
+        if (expenseId) {
+          navigate(`/detail/${expenseId}`);
+        } else {
+          navigate('/expenses');
+        }
+      } else {
+        alert('임시 저장 실패: ' + (response.message || '알 수 없는 오류가 발생했습니다.'));
+      }
+    } catch (error) {
+      console.error('임시 저장 에러:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || '서버 통신 중 오류가 발생했습니다.';
+      alert(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+      setSubmitProgress(0);
+      setProgressMessage('지출결의서를 작성하는 중...');
+    }
+  };
+
   if (isLoading) {
     return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
   }
@@ -1137,40 +1206,36 @@ const ExpenseCreatePage = () => {
               </tr>
             </thead>
             <tbody>
-              {completedDetails.length === 0 ? (
+              {details.length === 0 ? (
                 <tr>
                   <S.Td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
                     지출 상세 내역이 없습니다. "행 추가" 버튼을 클릭하여 추가하세요.
                   </S.Td>
                 </tr>
               ) : (
-                completedDetails.map((detail, index) => {
-                  // 원본 배열에서의 인덱스 찾기
-                  const originalIndex = details.findIndex(d => d === detail);
-                  return (
-                    <S.TableRow key={originalIndex} onClick={() => openEditModal(originalIndex)}>
-                      <S.Td>{index + 1}</S.Td>
-                      <S.Td>{detail.paymentReqDate || '-'}</S.Td>
-                      <S.Td>{detail.category || '-'}</S.Td>
-                      <S.Td>{detail.merchantName || '-'}</S.Td>
-                      <S.Td>{detail.description || '-'}</S.Td>
-                      <S.Td style={{ textAlign: 'right', fontWeight: '600' }}>
-                        {detail.amount ? formatNumber(detail.amount) + '원' : '-'}
-                      </S.Td>
-                      <S.Td>{getPaymentMethodLabel(detail.paymentMethod)}</S.Td>
-                      <S.Td onClick={(e) => e.stopPropagation()}>
-                        <S.ActionButtonGroup>
-                          <S.EditButton onClick={() => openEditModal(originalIndex)} title="수정">
-                            <FaEdit />
-                          </S.EditButton>
-                          <S.DeleteButton onClick={() => removeDetailRow(originalIndex)} title="삭제">
-                            <FaTrash />
-                          </S.DeleteButton>
-                        </S.ActionButtonGroup>
-                      </S.Td>
-                    </S.TableRow>
-                  );
-                })
+                details.map((detail, index) => (
+                  <S.TableRow key={index} onClick={() => openEditModal(index)}>
+                    <S.Td>{index + 1}</S.Td>
+                    <S.Td>{detail.paymentReqDate || '-'}</S.Td>
+                    <S.Td>{detail.category || '-'}</S.Td>
+                    <S.Td>{detail.merchantName || '-'}</S.Td>
+                    <S.Td>{detail.description || '-'}</S.Td>
+                    <S.Td style={{ textAlign: 'right', fontWeight: '600' }}>
+                      {detail.amount ? formatNumber(detail.amount) + '원' : '-'}
+                    </S.Td>
+                    <S.Td>{getPaymentMethodLabel(detail.paymentMethod)}</S.Td>
+                    <S.Td onClick={(e) => e.stopPropagation()}>
+                      <S.ActionButtonGroup>
+                        <S.EditButton onClick={() => openEditModal(index)} title="수정">
+                          <FaEdit />
+                        </S.EditButton>
+                        <S.DeleteButton onClick={() => removeDetailRow(index)} title="삭제">
+                          <FaTrash />
+                        </S.DeleteButton>
+                      </S.ActionButtonGroup>
+                    </S.Td>
+                  </S.TableRow>
+                ))
               )}
             </tbody>
           </S.Table>
@@ -1178,23 +1243,21 @@ const ExpenseCreatePage = () => {
 
         {/* 모바일 카드 뷰 - 간소화된 요약 뷰 */}
         <S.MobileCardContainer>
-          {completedDetails.length === 0 ? (
+          {details.length === 0 ? (
             <S.EmptyDetailMessage>
               지출 상세 내역이 없습니다. "행 추가" 버튼을 클릭하여 추가하세요.
             </S.EmptyDetailMessage>
           ) : (
-            completedDetails.map((detail, index) => {
-              // 원본 배열에서의 인덱스 찾기
-              const originalIndex = details.findIndex(d => d === detail);
+            details.map((detail, index) => {
               return (
-                <S.DetailCard key={originalIndex} onClick={() => openEditModal(originalIndex)}>
+                <S.DetailCard key={index} onClick={() => openEditModal(index)}>
                   <S.CardHeader>
                     <S.CardRowNumber>#{index + 1}</S.CardRowNumber>
                     <S.ActionButtonGroup>
-                      <S.EditButton onClick={(e) => { e.stopPropagation(); openEditModal(originalIndex); }} title="수정">
+                      <S.EditButton onClick={(e) => { e.stopPropagation(); openEditModal(index); }} title="수정">
                         <FaEdit />
                       </S.EditButton>
-                      <S.DeleteButton onClick={(e) => { e.stopPropagation(); removeDetailRow(originalIndex); }} title="삭제">
+                      <S.DeleteButton onClick={(e) => { e.stopPropagation(); removeDetailRow(index); }} title="삭제">
                         <FaTrash />
                       </S.DeleteButton>
                     </S.ActionButtonGroup>
@@ -1250,6 +1313,10 @@ const ExpenseCreatePage = () => {
           <FaArrowLeft />
           <span>취소</span>
         </S.CancelButton>
+      <S.SubmitButton type="button" onClick={handleSaveDraft} disabled={isSubmitting}>
+        <FaSave />
+        <span>{isSubmitting ? '처리 중...' : '임시 저장'}</span>
+      </S.SubmitButton>
         <S.SubmitButton data-tourid="tour-submit-button" onClick={handleSubmit} disabled={isSubmitting}>
           <FaSave />
           <span>{isSubmitting ? '처리 중...' : '결재 요청 (저장)'}</span>

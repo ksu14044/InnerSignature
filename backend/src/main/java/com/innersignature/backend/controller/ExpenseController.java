@@ -285,6 +285,31 @@ public class ExpenseController {
     }
 
     /**
+     * 4-0. 기안서 임시 저장 API
+     * 주소: POST /api/expenses/draft
+     * 설명: 필수 필드 검증 없이 임시 저장합니다. 작성자 본인 외에는 조회되지 않습니다.
+     */
+    @Operation(summary = "지출결의서 임시 저장", description = "필수 필드 검증 없이 DRAFT 상태로 임시 저장합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "임시 저장 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping("/draft")
+    public ApiResponse<Long> createExpenseDraft(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "지출결의서 정보", required = true)
+            @RequestBody ExpenseReportDto request) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        logger.info("지출결의서 임시 저장 요청 - drafterId: {}, currentUserId: {}", 
+                request.getDrafterId(), currentUserId);
+
+        Long expenseId = expenseService.createExpenseDraft(request, currentUserId);
+
+        logger.info("지출결의서 임시 저장 완료 - expenseReportId: {}", expenseId);
+        return new ApiResponse<>(true, "임시 저장 성공", expenseId);
+    }
+
+    /**
      * 4. 기안서 작성(생성) API
      * 주소: POST /api/expenses/create
      * 설명: 프론트에서 작성한 데이터를 받아서 저장합니다.
