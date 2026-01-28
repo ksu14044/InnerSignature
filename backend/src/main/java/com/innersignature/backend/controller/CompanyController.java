@@ -9,6 +9,8 @@ import com.innersignature.backend.service.CompanyService;
 import com.innersignature.backend.service.UserService;
 import com.innersignature.backend.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +34,17 @@ public class CompanyController {
     private final UserService userService;
     
     @Operation(summary = "회사 생성", description = "CEO 또는 ADMIN이 새 회사를 등록합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "회사 생성 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "입력값 검증 실패 또는 중복된 사업자등록번호"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음 (CEO/ADMIN만 가능)")
+    })
     @PostMapping
     @PreAuthorize("hasAnyRole('CEO', 'ADMIN')")
-    public ResponseEntity<ApiResponse<CompanyDto>> createCompany(@RequestBody CompanyCreateRequest request) {
+    public ResponseEntity<ApiResponse<CompanyDto>> createCompany(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "회사 정보", required = true)
+            @RequestBody CompanyCreateRequest request) {
         try {
             Long userId = SecurityUtil.getCurrentUserId();
             logger.info("회사 생성 시도 - companyName: {}, businessRegNo: {}, userId: {}", 
@@ -96,8 +106,13 @@ public class CompanyController {
     }
     
     @Operation(summary = "회사 검색", description = "회사명 또는 사업자등록번호로 회사를 검색합니다. (공개 API, 최소 2자 이상)")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "검색 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "검색어가 2자 미만이거나 비어있음")
+    })
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<CompanySearchResultDto>>> searchCompanies(
+            @Parameter(description = "회사명 또는 사업자등록번호 (최소 2자 이상)", required = true, example = "내부서명")
             @RequestParam("name") String companyName) {
         try {
             // 입력 검증
@@ -136,8 +151,15 @@ public class CompanyController {
     }
     
     @Operation(summary = "회사 조회", description = "회사 ID로 회사 정보를 조회합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "회사를 찾을 수 없음"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요")
+    })
     @GetMapping("/{companyId}")
-    public ResponseEntity<ApiResponse<CompanyDto>> getCompany(@PathVariable Long companyId) {
+    public ResponseEntity<ApiResponse<CompanyDto>> getCompany(
+            @Parameter(description = "회사 ID", required = true, example = "1")
+            @PathVariable Long companyId) {
         try {
             CompanyDto company = companyService.findById(companyId);
             if (company == null) {

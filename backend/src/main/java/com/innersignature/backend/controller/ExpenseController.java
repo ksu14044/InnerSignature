@@ -20,6 +20,10 @@ import com.innersignature.backend.service.ProgressService;
 import com.innersignature.backend.util.SecurityUtil;
 import com.innersignature.backend.util.SecurityLogger;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
@@ -100,19 +104,37 @@ public class ExpenseController {
      * @param taxProcessed 세무처리 완료 여부 (optional, true: 완료, false: 미완료, null: 전체)
      */
     @Operation(summary = "지출결의서 목록 조회", description = "페이지네이션/필터 조건으로 지출결의 목록을 조회합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공",
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @GetMapping
     public ApiResponse<PagedResponse<ExpenseReportDto>> getExpenseList(
+            @Parameter(description = "페이지 번호 (1부터 시작)", example = "1") 
             @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기", example = "10") 
             @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "시작일 (YYYY-MM-DD)", example = "2024-01-01") 
             @RequestParam(required = false) String startDate,
+            @Parameter(description = "종료일 (YYYY-MM-DD)", example = "2024-12-31") 
             @RequestParam(required = false) String endDate,
+            @Parameter(description = "최소 금액", example = "1000") 
             @RequestParam(required = false) Long minAmount,
+            @Parameter(description = "최대 금액", example = "1000000") 
             @RequestParam(required = false) Long maxAmount,
+            @Parameter(description = "상태 배열", example = "APPROVED") 
             @RequestParam(required = false) String[] status,
+            @Parameter(description = "카테고리", example = "식대") 
             @RequestParam(required = false) String category,
+            @Parameter(description = "세무처리 완료 여부", example = "true") 
             @RequestParam(required = false) Boolean taxProcessed,
+            @Parameter(description = "작성자 이름", example = "김신입") 
             @RequestParam(required = false) String drafterName,
+            @Parameter(description = "지출 수단", example = "CARD") 
             @RequestParam(required = false) String paymentMethod,
+            @Parameter(description = "카드 번호", example = "1234-5678") 
             @RequestParam(required = false) String cardNumber) {
         
         // 날짜 파라미터 변환
@@ -160,8 +182,16 @@ public class ExpenseController {
      * 주소: GET /api/expenses/1 (숫자는 변함)
      */
     @Operation(summary = "지출결의서 단건 조회", description = "expenseId로 결의서 상세를 조회합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "결의서를 찾을 수 없음"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음")
+    })
     @GetMapping("/{expenseId}")
-    public ApiResponse<ExpenseReportDto> getExpenseDetail(@PathVariable Long expenseId) {
+    public ApiResponse<ExpenseReportDto> getExpenseDetail(
+            @Parameter(description = "지출결의서 ID", required = true, example = "1")
+            @PathVariable Long expenseId) {
         // 현재 사용자 ID 조회
         Long currentUserId = SecurityUtil.getCurrentUserId();
         
@@ -179,8 +209,16 @@ public class ExpenseController {
      * POST /api/expenses/{expenseId}/approve
      */
     @Operation(summary = "결재 승인", description = "결의서를 승인하고 서명 데이터(옵션)를 남깁니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "승인 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "결의서를 찾을 수 없음")
+    })
     @PostMapping("/{expenseId}/approve")
     public ApiResponse<Void> approveExpense(
+        @Parameter(description = "지출결의서 ID", required = true, example = "1")
         @PathVariable Long expenseId,
         @Valid @RequestBody ApprovalLineDto request){
             Long currentUserId = SecurityUtil.getCurrentUserId();
@@ -252,8 +290,16 @@ public class ExpenseController {
      * 설명: 프론트에서 작성한 데이터를 받아서 저장합니다.
      */
     @Operation(summary = "지출결의서 생성", description = "기안서를 생성합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "생성 요청 성공 (비동기 처리 시작)"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "입력값 검증 실패"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @PostMapping("/create")
-    public ApiResponse<ExpenseCreationResponse> createExpense(@Valid @RequestBody ExpenseReportDto request) {
+    public ApiResponse<ExpenseCreationResponse> createExpense(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "지출결의서 정보", required = true)
+            @Valid @RequestBody ExpenseReportDto request) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
         logger.info("지출결의서 생성 요청 - drafterId: {}, currentUserId: {}, totalAmount: {}", 
                 request.getDrafterId(), currentUserId, request.getTotalAmount());

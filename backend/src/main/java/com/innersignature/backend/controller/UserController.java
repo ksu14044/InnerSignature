@@ -1,9 +1,9 @@
 package com.innersignature.backend.controller;
 
 import com.innersignature.backend.dto.ApiResponse;
-import com.innersignature.backend.dto.CompanyDto;
 import com.innersignature.backend.dto.UserDto;
 import com.innersignature.backend.dto.UserCompanyDto;
+import com.innersignature.backend.dto.UserSignatureDto;
 import com.innersignature.backend.exception.BusinessException;
 import com.innersignature.backend.security.JwtBlacklistService;
 import com.innersignature.backend.service.CompanyService;
@@ -11,7 +11,6 @@ import com.innersignature.backend.service.EmailService;
 import com.innersignature.backend.service.PasswordResetService;
 import com.innersignature.backend.service.UserService;
 import com.innersignature.backend.service.UserSignatureService;
-import com.innersignature.backend.dto.UserSignatureDto;
 import com.innersignature.backend.util.JwtUtil;
 import com.innersignature.backend.util.SecurityLogger;
 import com.innersignature.backend.util.SecurityUtil;
@@ -23,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.HashMap;
@@ -45,8 +45,15 @@ public class UserController {
     private final UserSignatureService userSignatureService;
 
     @Operation(summary = "로그인", description = "JWT와 Refresh 토큰을 발급합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "로그인 실패 (아이디/비밀번호 오류 또는 승인 대기)"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @PostMapping("/login")
-    public ApiResponse<Map<String, Object>> login(@RequestBody LoginRequest request) {
+    public ApiResponse<Map<String, Object>> login(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "로그인 정보", required = true)
+            @RequestBody LoginRequest request) {
         logger.info("로그인 시도 - username: {}", request.getUsername());
         UserDto user = userService.authenticate(request.getUsername(), request.getPassword());
 
@@ -110,8 +117,15 @@ public class UserController {
     }
 
     @Operation(summary = "회원가입", description = "신규 사용자를 등록합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "회원가입 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "입력값 검증 실패 또는 중복된 사용자명"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @PostMapping("/register")
-    public ApiResponse<String> register(@Valid @RequestBody RegisterRequest request) {
+    public ApiResponse<String> register(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "회원가입 정보", required = true)
+            @Valid @RequestBody RegisterRequest request) {
         logger.info("회원가입 시도 - username: {}, koreanName: {}, role: {}", request.getUsername(), request.getKoreanName(), request.getRole());
         
         // role 검증 (ADMIN 제거, CEO만 허용)
@@ -440,6 +454,11 @@ public class UserController {
      * 주소: GET /api/users/me
      */
     @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 정보를 조회합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+    })
     @GetMapping("/users/me")
     public ApiResponse<UserDto> getCurrentUser() {
         Long currentUserId = SecurityUtil.getCurrentUserId();

@@ -1,5 +1,6 @@
 package com.innersignature.backend.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -8,21 +9,29 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.util.List;
 
+@Schema(description = "지출 상세 내역 정보")
 @Data
 public class ExpenseDetailDto {
+    @Schema(description = "지출 상세 내역 ID", example = "1")
     private Long expenseDetailId; // PK
+    
+    @Schema(description = "지출결의서 ID", example = "1")
     private Long expenseReportId; // 부모 문서 ID
     
+    @Schema(description = "항목 (카테고리)", example = "식대", required = true)
     @NotBlank(message = "항목은 필수입니다.")
     @Size(max = 50, message = "항목은 50자 이하여야 합니다.")
     private String category;      // 항목 (식대, 교통비)
     
+    @Schema(description = "상호명/업체명", example = "맛있는 식당")
     @Size(max = 200, message = "상호명은 200자 이하여야 합니다.")
     private String merchantName;  // 상호명/업체명
     
+    @Schema(description = "적요", example = "팀 회식비")
     @Size(max = 500, message = "적요는 500자 이하여야 합니다.")
     private String description;   // 적요
     
+    @Schema(description = "금액 (원)", example = "50000", required = true)
     @NotNull(message = "금액은 필수입니다.")
     @Positive(message = "금액은 양수여야 합니다.")
     private Long amount;          // 금액 (원 단위라 Long 사용)
