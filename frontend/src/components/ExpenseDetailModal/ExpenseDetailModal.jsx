@@ -37,6 +37,8 @@ const ExpenseDetailModal = ({
   const [useSavedCard, setUseSavedCard] = useState(true);
   const [receiptFiles, setReceiptFiles] = useState([]); // 선택된 영수증 파일들
   const receiptFileInputRef = useRef(null);
+  const initialFormDataRef = useRef(null); // 모달 오픈 시점의 초기 폼 상태
+  const initialReceiptFilesRef = useRef([]); // 모달 오픈 시점의 초기 영수증 파일 목록
 
   // 서버 영수증(existingReceipts) + 로컬 파일(receiptFiles)을 하나의 리스트로 합쳐서 동일한 스타일로 렌더링
   const combinedReceipts = [
@@ -92,7 +94,7 @@ const ExpenseDetailModal = ({
   useEffect(() => {
     if (detail) {
       const cardNumberParts = splitCardNumber(detail.cardNumber || '');
-      setFormData({
+      const initialData = {
         category: detail.category || '',
         merchantName: detail.merchantName || '',
         description: detail.description || '',
@@ -102,20 +104,24 @@ const ExpenseDetailModal = ({
         selectedCardId: '',
         ...cardNumberParts,
         note: detail.note || ''
-      });
+      };
+      setFormData(initialData);
       // 기존 카드번호가 있으면 직접 입력 모드로 설정
       if (detail.cardNumber) {
         setUseSavedCard(false);
       }
       // 추가 모달에서 이미 첨부해 둔 영수증 파일이 있으면 그대로 세팅
+      let initialReceipts = [];
       if (Array.isArray(detail.receiptFiles)) {
-        setReceiptFiles(detail.receiptFiles);
-      } else {
-        setReceiptFiles([]);
+        initialReceipts = detail.receiptFiles;
       }
+      setReceiptFiles(initialReceipts);
+      // 초기 상태 저장 (수정 모드)
+      initialFormDataRef.current = initialData;
+      initialReceiptFilesRef.current = initialReceipts;
     } else {
       // 새 항목 추가 시 초기화
-      setFormData({
+      const initialData = {
         category: '',
         merchantName: '',
         description: '',
@@ -128,9 +134,14 @@ const ExpenseDetailModal = ({
         cardNumber3: '',
         cardNumber4: '',
         note: ''
-      });
+      };
+      setFormData(initialData);
       setUseSavedCard(true);
-      setReceiptFiles([]);
+      const initialReceipts = [];
+      setReceiptFiles(initialReceipts);
+      // 초기 상태 저장 (새 항목 추가 모드)
+      initialFormDataRef.current = initialData;
+      initialReceiptFilesRef.current = initialReceipts;
     }
   }, [detail, isOpen]);
 
@@ -158,6 +169,81 @@ const ExpenseDetailModal = ({
       if (prevField) {
         prevField.focus();
       }
+    }
+  };
+
+  // 폼이 완전히 비어 있는지 여부 체크
+  const isFormEmpty = () => {
+    return (
+      (!formData.category || formData.category.trim() === '') &&
+      (!formData.description || formData.description.trim() === '') &&
+      (!formData.amount || String(formData.amount).trim() === '') &&
+      (!formData.paymentMethod || formData.paymentMethod.trim() === '') &&
+      (!formData.merchantName || formData.merchantName.trim() === '') &&
+      (!formData.note || formData.note.trim() === '') &&
+      (!formData.cardNumber1 || formData.cardNumber1.trim() === '') &&
+      (!formData.cardNumber2 || formData.cardNumber2.trim() === '') &&
+      (!formData.cardNumber3 || formData.cardNumber3.trim() === '') &&
+      (!formData.cardNumber4 || formData.cardNumber4.trim() === '') &&
+      receiptFiles.length === 0
+    );
+  };
+
+  // 초기 상태 대비 변경 여부 체크
+  const hasUnsavedChanges = () => {
+    // 완전히 비어 있으면 변경 없음으로 간주
+    if (isFormEmpty()) {
+      return false;
+    }
+
+    // 초기 상태가 아직 세팅되지 않은 경우, 내용이 있으면 변경된 것으로 간주
+    if (!initialFormDataRef.current) {
+      return true;
+    }
+
+    const initialForm = initialFormDataRef.current;
+
+    const normalizedCurrent = {
+      ...formData,
+      amount: formData.amount || '',
+    };
+
+    const normalizedInitial = {
+      ...initialForm,
+      amount: initialForm.amount || '',
+    };
+
+    const isFormSame =
+      JSON.stringify(normalizedCurrent) === JSON.stringify(normalizedInitial);
+
+    const initialReceipts = initialReceiptFilesRef.current || [];
+
+    const simplifyFiles = (files) =>
+      (files || []).map((file) => ({
+        name: file.name,
+        size: file.size,
+      }));
+
+    const isReceiptsSame =
+      JSON.stringify(simplifyFiles(receiptFiles)) ===
+      JSON.stringify(simplifyFiles(initialReceipts));
+
+    return !(isFormSame && isReceiptsSame);
+  };
+
+  // 모달 닫기 요청 처리 (바깥 클릭, X 버튼, 취소 버튼에서 공통 사용)
+  const handleRequestClose = () => {
+    if (!hasUnsavedChanges()) {
+      onClose();
+      return;
+    }
+
+    const confirmClose = window.confirm(
+      '작성 중인 내용이 있습니다. 저장하지 않고 닫으시겠습니까?'
+    );
+
+    if (confirmClose) {
+      onClose();
     }
   };
 
@@ -255,18 +341,7 @@ const ExpenseDetailModal = ({
 
   const handleSave = () => {
     // 모든 주요 필드가 비어 있고 영수증도 없는 경우: 항목 추가/수정 없이 그냥 닫기
-    const isEmpty =
-      (!formData.category || formData.category.trim() === '') &&
-      (!formData.description || formData.description.trim() === '') &&
-      (!formData.amount || String(formData.amount).trim() === '') &&
-      (!formData.paymentMethod || formData.paymentMethod.trim() === '') &&
-      (!formData.merchantName || formData.merchantName.trim() === '') &&
-      (!formData.note || formData.note.trim() === '') &&
-      (!formData.cardNumber1 || formData.cardNumber1.trim() === '') &&
-      (!formData.cardNumber2 || formData.cardNumber2.trim() === '') &&
-      (!formData.cardNumber3 || formData.cardNumber3.trim() === '') &&
-      (!formData.cardNumber4 || formData.cardNumber4.trim() === '') &&
-      receiptFiles.length === 0;
+    const isEmpty = isFormEmpty();
 
     if (isEmpty) {
       onClose();
@@ -315,11 +390,11 @@ const ExpenseDetailModal = ({
   if (!isOpen) return null;
 
   return (
-    <S.ModalOverlay onClick={onClose}>
+    <S.ModalOverlay onClick={handleRequestClose}>
       <S.ModalContent onClick={(e) => e.stopPropagation()}>
         <S.ModalHeader>
           <S.ModalTitle>지출 상세 내역 {detail ? '수정' : '추가'}</S.ModalTitle>
-          <S.CloseButton onClick={onClose}>
+          <S.CloseButton onClick={handleRequestClose}>
             <FaTimes />
           </S.CloseButton>
         </S.ModalHeader>
@@ -627,7 +702,7 @@ const ExpenseDetailModal = ({
         </S.ModalBody>
 
         <S.ModalFooter>
-          <S.CancelButton onClick={onClose}>취소</S.CancelButton>
+          <S.CancelButton onClick={handleRequestClose}>취소</S.CancelButton>
           <S.SaveButton onClick={handleSave}>저장</S.SaveButton>
         </S.ModalFooter>
       </S.ModalContent>
