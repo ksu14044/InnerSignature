@@ -102,13 +102,24 @@ export const updateExpense = async (expenseId, data) => {
   }
 };
 
-// 2-2. 지출결의서 임시 저장 함수
+// 2-2. 지출결의서 임시 저장 함수 (신규 생성)
 export const createExpenseDraft = async (data) => {
   try {
     const response = await axiosInstance.post(`${BASE_URL}/draft`, data);
     return response.data;
   } catch (error) {
     console.error("지출결의서 임시 저장 실패:", error);
+    throw error;
+  }
+};
+
+// 2-2-1. 지출결의서 임시 저장 수정 함수 (기존 DRAFT 업데이트)
+export const updateExpenseDraft = async (expenseId, data) => {
+  try {
+    const response = await axiosInstance.put(`${BASE_URL}/${expenseId}/draft`, data);
+    return response.data;
+  } catch (error) {
+    console.error("지출결의서 임시 저장 수정 실패:", error);
     throw error;
   }
 };

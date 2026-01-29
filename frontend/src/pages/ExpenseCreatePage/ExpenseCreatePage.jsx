@@ -6,7 +6,7 @@ import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck, FaEdit, FaFileUpload
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
 import * as S from './style';
 import { useAuth } from '../../contexts/AuthContext';
-import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail, getExpenseCreationProgress, createExpenseDraft } from '../../api/expenseApi';
+import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail, getExpenseCreationProgress, createExpenseDraft, updateExpenseDraft } from '../../api/expenseApi';
 import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole, filterCategoriesByRole } from '../../constants/categories';
@@ -39,6 +39,7 @@ const ExpenseCreatePage = () => {
 
   // 2-1. 기존 상세 내역 (수정 모드에서 변경사항 비교용)
   const [originalDetails, setOriginalDetails] = useState([]);
+  const [originalStatus, setOriginalStatus] = useState(null); // 수정 대상 문서의 원래 상태(DRAFT/WAI 등)
 
   // 3. 결재자 관련 상태
   const [adminUsers, setAdminUsers] = useState([]);
@@ -220,6 +221,9 @@ const ExpenseCreatePage = () => {
               navigate(`/detail/${id}`);
               return;
             }
+
+            // 원래 상태 저장 (임시 저장 수정 여부 판단용)
+            setOriginalStatus(expense.status);
 
             // 작성자 본인이 아니면 수정 불가
             if (expense.drafterId !== user?.userId) {
@@ -1096,7 +1100,15 @@ const ExpenseCreatePage = () => {
         approvalLines: [],
       };
 
-      const response = await createExpenseDraft(payload);
+      // 신규 생성 vs 기존 DRAFT 수정 분기
+      let response;
+      if (isEditMode && id && originalStatus === 'DRAFT') {
+        // 기존 임시 저장 문서 수정
+        response = await updateExpenseDraft(id, payload);
+      } else {
+        // 신규 임시 저장 생성
+        response = await createExpenseDraft(payload);
+      }
 
       if (response.success) {
         const expenseId = response.data;

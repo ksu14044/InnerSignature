@@ -340,6 +340,23 @@ public class ExpenseController {
     }
 
     /**
+     * 4-0-1. 기안서 임시 저장 수정 API
+     * 주소: PUT /api/expenses/{expenseId}/draft
+     * 설명: DRAFT 상태의 지출결의서를 다시 임시 저장합니다.
+     */
+    @Operation(summary = "지출결의서 임시 저장 수정", description = "DRAFT 상태의 기안서를 다시 임시 저장합니다.")
+    @PutMapping("/{expenseId}/draft")
+    public ApiResponse<Long> updateExpenseDraft(
+            @PathVariable Long expenseId,
+            @RequestBody ExpenseReportDto request) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        logger.info("지출결의서 임시 저장 수정 요청 - expenseId: {}, currentUserId: {}", expenseId, currentUserId);
+        Long updatedExpenseId = expenseService.updateExpenseDraft(expenseId, request, currentUserId);
+        logger.info("지출결의서 임시 저장 수정 완료 - expenseId: {}", updatedExpenseId);
+        return new ApiResponse<>(true, "임시 저장 수정 성공", updatedExpenseId);
+    }
+
+    /**
      * 4-0. 지출결의서 생성 진행률 조회 API
      * 주소: GET /api/expenses/progress/{jobId}
      * 설명: 작업 진행률을 조회합니다.

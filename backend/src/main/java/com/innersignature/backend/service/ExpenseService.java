@@ -727,7 +727,56 @@ public class ExpenseService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public Long createExpenseDraft(ExpenseReportDto request, Long currentUserId) {
+        // (0) 임시 저장 공통 전처리
+        prepareDraftCommon(request, currentUserId);
 
+        List<ExpenseDetailDto> details = request.getDetails();
+
+        // (0-5) 임시 저장은 항상 DRAFT 상태로 설정
+        request.setStatus("DRAFT");
+
+        // (1) 메인 문서 저장
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+        request.setCompanyId(companyId);
+
+        // title이 없으면 자동 생성 (예: "지출결의서 (임시저장) - 2026-01-06")
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            String autoTitle = "지출결의서 (임시저장) - " + request.getReportDate();
+            request.setTitle(autoTitle);
+        }
+
+        expenseMapper.insertExpenseReport(request);
+
+        // 방금 DB에 들어가면서 생성된 문서 번호(PK)를 꺼내옵니다.
+        Long newId = request.getExpenseReportId();
+
+        // (2) 상세 항목들 저장 (있다면)
+        if (details != null && !details.isEmpty()) {
+            logger.debug("임시 저장 - 상세 항목 저장 시작 - 항목 수: {}", details.size());
+            for (ExpenseDetailDto detail : details) {
+                detail.setExpenseReportId(newId);
+                detail.setCompanyId(companyId);
+                expenseMapper.insertExpenseDetail(detail);
+            }
+            logger.debug("임시 저장 - 상세 항목 저장 완료");
+        }
+
+        // (3) 임시 저장은 결재 라인을 저장하지 않음 (결재자에게 노출 방지)
+        logger.debug("임시 저장 - 결재 라인은 저장하지 않습니다.");
+
+        // (4) 임시 저장은 자동 감사 실행하지 않음
+
+        logger.info("지출결의서 임시 저장 완료 - expenseReportId: {}", newId);
+        return newId;
+    }
+
+    /**
+     * 임시 저장(DRAFT) 전용 공통 전처리 로직
+     * - 기본값 설정
+     * - 작성자/역할 검증
+     * - 상세 항목 총액 계산 및 급여/카드 처리
+     */
+    private void prepareDraftCommon(ExpenseReportDto request, Long currentUserId) {
         // (0) 기본값 설정
         if (request.getReportDate() == null) {
             request.setReportDate(LocalDate.now());
@@ -740,9 +789,9 @@ public class ExpenseService {
             throw new com.innersignature.backend.exception.BusinessException("작성자와 로그인 사용자가 일치해야 합니다.");
         }
 
-        // (0-2) 역할 검증: TAX_ACCOUNTANT는 기안서 생성 불가
+        // (0-2) 역할 검증: TAX_ACCOUNTANT는 기안서 생성/수정 불가
         if (permissionUtil.isTaxAccountant(currentUserId)) {
-            throw new com.innersignature.backend.exception.BusinessException("TAX_ACCOUNTANT 역할은 결의서를 생성할 수 없습니다.");
+            throw new com.innersignature.backend.exception.BusinessException("TAX_ACCOUNTANT 역할은 결의서를 생성 또는 수정할 수 없습니다.");
         }
 
         // (0-3) 상세 항목들로부터 총 금액 계산 및 급여 카테고리 확인 (검증은 하지 않음)
@@ -806,43 +855,6 @@ public class ExpenseService {
         if (hasSalary && !permissionUtil.isAdminOrCEO(currentUserId) && !permissionUtil.isAccountant(currentUserId)) {
             throw new com.innersignature.backend.exception.BusinessException("급여 카테고리는 CEO, ADMIN 또는 ACCOUNTANT 권한만 사용할 수 있습니다.");
         }
-
-        // (0-5) 임시 저장은 항상 DRAFT 상태로 설정
-        request.setStatus("DRAFT");
-
-        // (1) 메인 문서 저장
-        Long companyId = SecurityUtil.getCurrentCompanyId();
-        request.setCompanyId(companyId);
-
-        // title이 없으면 자동 생성 (예: "지출결의서 (임시저장) - 2026-01-06")
-        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
-            String autoTitle = "지출결의서 (임시저장) - " + request.getReportDate();
-            request.setTitle(autoTitle);
-        }
-
-        expenseMapper.insertExpenseReport(request);
-
-        // 방금 DB에 들어가면서 생성된 문서 번호(PK)를 꺼내옵니다.
-        Long newId = request.getExpenseReportId();
-
-        // (2) 상세 항목들 저장 (있다면)
-        if (details != null && !details.isEmpty()) {
-            logger.debug("임시 저장 - 상세 항목 저장 시작 - 항목 수: {}", details.size());
-            for (ExpenseDetailDto detail : details) {
-                detail.setExpenseReportId(newId);
-                detail.setCompanyId(companyId);
-                expenseMapper.insertExpenseDetail(detail);
-            }
-            logger.debug("임시 저장 - 상세 항목 저장 완료");
-        }
-
-        // (3) 임시 저장은 결재 라인을 저장하지 않음 (결재자에게 노출 방지)
-        logger.debug("임시 저장 - 결재 라인은 저장하지 않습니다.");
-
-        // (4) 임시 저장은 자동 감사 실행하지 않음
-
-        logger.info("지출결의서 임시 저장 완료 - expenseReportId: {}", newId);
-        return newId;
     }
 
     /**
@@ -1173,6 +1185,60 @@ public class ExpenseService {
         }
 
         logger.info("지출결의서 수정 완료 - expenseReportId: {}", expenseId);
+        return expenseId;
+    }
+
+    /**
+     * 3-1-1. 기안서 임시 저장 수정 로직
+     * 설명: DRAFT 상태의 지출결의서를 다시 임시 저장합니다. (새 문서 생성 없이 UPDATE)
+     * @return 수정된 지출결의서 ID
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Long updateExpenseDraft(Long expenseId, ExpenseReportDto request, Long currentUserId) {
+        Long companyId = SecurityUtil.getCurrentCompanyId();
+
+        // 1. 기존 문서 조회
+        ExpenseReportDto existingReport = expenseMapper.selectExpenseReportById(expenseId, companyId);
+        if (existingReport == null) {
+            throw new com.innersignature.backend.exception.ResourceNotFoundException("해당 문서를 찾을 수 없습니다.");
+        }
+
+        // 2. 상태 검증: DRAFT만 허용
+        if (!"DRAFT".equals(existingReport.getStatus())) {
+            throw new com.innersignature.backend.exception.BusinessException("임시 저장(DRAFT) 상태의 문서만 임시 저장 수정할 수 있습니다.");
+        }
+
+        // 3. 작성자 본인만 수정 가능
+        if (!existingReport.getDrafterId().equals(currentUserId)) {
+            throw new com.innersignature.backend.exception.BusinessException("작성자 본인만 수정할 수 있습니다.");
+        }
+
+        // 4. 임시 저장 공통 전처리
+        prepareDraftCommon(request, currentUserId);
+
+        // 5. 기본 필드 설정
+        request.setExpenseReportId(expenseId);
+        request.setCompanyId(companyId);
+        request.setDrafterId(existingReport.getDrafterId());
+        request.setStatus("DRAFT");
+
+        // 6. 메인 문서 UPDATE
+        expenseMapper.updateExpenseReport(request, companyId);
+
+        // 7. 상세 항목 재저장 (전체 삭제 후 다시 INSERT)
+        expenseMapper.deleteExpenseDetails(expenseId, companyId);
+        List<ExpenseDetailDto> details = request.getDetails();
+        if (details != null && !details.isEmpty()) {
+            for (ExpenseDetailDto detail : details) {
+                detail.setExpenseReportId(expenseId);
+                detail.setCompanyId(companyId);
+                // 임시 저장에서는 가승인을 detail 레벨에서 사용하지 않음
+                detail.setIsPreApproval(null);
+                expenseMapper.insertExpenseDetail(detail);
+            }
+        }
+
+        logger.info("지출결의서 임시 저장 수정 완료 - expenseReportId: {}", expenseId);
         return expenseId;
     }
 
