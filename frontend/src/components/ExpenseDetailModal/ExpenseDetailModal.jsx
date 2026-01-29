@@ -12,7 +12,9 @@ const ExpenseDetailModal = ({
   onSave, 
   availableCategories,
   descriptionInputRef,
-  amountInputRef
+  amountInputRef,
+  existingReceipts = [], // 서버에 저장된 영수증 목록 (수정 모드용)
+  onDeleteExistingReceipt, // 기존 서버 영수증 삭제 콜백 (선택)
 }) => {
   const [formData, setFormData] = useState({
     category: '',
@@ -35,6 +37,27 @@ const ExpenseDetailModal = ({
   const [useSavedCard, setUseSavedCard] = useState(true);
   const [receiptFiles, setReceiptFiles] = useState([]); // 선택된 영수증 파일들
   const receiptFileInputRef = useRef(null);
+
+  // 서버 영수증(existingReceipts) + 로컬 파일(receiptFiles)을 하나의 리스트로 합쳐서 동일한 스타일로 렌더링
+  const combinedReceipts = [
+    // 서버에서 이미 저장된 영수증
+    ...existingReceipts.map((receipt, idx) => ({
+      type: 'server',
+      key: receipt.receiptId ?? `server-${idx}`,
+      receiptId: receipt.receiptId,
+      name: receipt.originalFilename,
+      size: receipt.fileSize,
+      index: idx,
+    })),
+    // 모달에서 새로 선택한 로컬 파일
+    ...receiptFiles.map((file, idx) => ({
+      type: 'local',
+      key: `local-${idx}`,
+      name: file.name,
+      size: file.size,
+      index: idx, // 삭제 버튼에서 사용
+    })),
+  ];
 
 
   // 카드 목록 불러오기
@@ -84,8 +107,12 @@ const ExpenseDetailModal = ({
       if (detail.cardNumber) {
         setUseSavedCard(false);
       }
-      // 기존 영수증 파일 초기화 (수정 모드에서는 서버에 저장된 영수증 사용)
-      setReceiptFiles([]);
+      // 추가 모달에서 이미 첨부해 둔 영수증 파일이 있으면 그대로 세팅
+      if (Array.isArray(detail.receiptFiles)) {
+        setReceiptFiles(detail.receiptFiles);
+      } else {
+        setReceiptFiles([]);
+      }
     } else {
       // 새 항목 추가 시 초기화
       setFormData({
@@ -328,7 +355,7 @@ const ExpenseDetailModal = ({
             </S.FormGroup>
 
             <S.FormGroup>
-              <S.Label>상호명</S.Label>
+              <S.Label>상호명 *</S.Label>
               <S.Input
                 type="text"
                 name="merchantName"
@@ -336,6 +363,7 @@ const ExpenseDetailModal = ({
                 onChange={handleChange}
                 placeholder="상호명/업체명"
                 maxLength={200}
+                required
               />
             </S.FormGroup>
 
@@ -529,11 +557,11 @@ const ExpenseDetailModal = ({
                 <FaFileUpload />
                 <span>영수증 선택</span>
               </button>
-              {receiptFiles.length > 0 ? (
+              {combinedReceipts.length > 0 ? (
                 <div style={{ marginTop: '8px' }}>
-                  {receiptFiles.map((file, index) => (
+                  {combinedReceipts.map((item) => (
                     <div
-                      key={index}
+                      key={item.key}
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -545,26 +573,47 @@ const ExpenseDetailModal = ({
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: '500' }}>{file.name}</div>
+                        <div style={{ fontWeight: '500' }}>{item.name}</div>
                         <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                          크기: {(file.size / 1024).toFixed(2)} KB
+                          크기: {item.size ? (item.size / 1024).toFixed(2) + ' KB' : '-'}
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveReceiptFile(index)}
-                        style={{
-                          padding: '4px 8px',
-                          backgroundColor: '#dc3545',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer'
-                        }}
-                        title="제거"
-                      >
-                        <FaTrash />
-                      </button>
+                      {/* 로컬 파일 삭제 버튼 */}
+                      {item.type === 'local' && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveReceiptFile(item.index)}
+                          style={{
+                            padding: '4px 8px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                          title="제거"
+                        >
+                          <FaTrash />
+                        </button>
+                      )}
+                      {/* 서버 영수증 삭제 버튼 (상위 콜백 호출) */}
+                      {item.type === 'server' && onDeleteExistingReceipt && (
+                        <button
+                          type="button"
+                          onClick={() => onDeleteExistingReceipt(item.receiptId)}
+                          style={{
+                            padding: '4px 8px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                          title="기존 영수증 삭제"
+                        >
+                          <FaTrash />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

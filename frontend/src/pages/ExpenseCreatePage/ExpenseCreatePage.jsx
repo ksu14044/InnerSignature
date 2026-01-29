@@ -6,7 +6,7 @@ import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck, FaEdit, FaFileUpload
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
 import * as S from './style';
 import { useAuth } from '../../contexts/AuthContext';
-import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail, getExpenseCreationProgress, createExpenseDraft, updateExpenseDraft } from '../../api/expenseApi';
+import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail, getExpenseCreationProgress, createExpenseDraft, updateExpenseDraft, deleteReceipt } from '../../api/expenseApi';
 import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole, filterCategoriesByRole } from '../../constants/categories';
@@ -76,13 +76,26 @@ const ExpenseCreatePage = () => {
 
   // 입력이 완료된 항목만 필터링하는 함수
   const isValidDetail = (detail) => {
-    return detail.category &&
-           detail.description &&
-           detail.description.trim() !== '' &&
-           detail.amount &&
-           Number(detail.amount) > 0 &&
-           detail.paymentMethod &&
-           (detail.paymentMethod !== 'CARD' && detail.paymentMethod !== 'COMPANY_CARD' || detail.cardNumber);
+    // 기본 필수 항목 검증
+    if (!detail.paymentReqDate ||      // 사용일자
+        !detail.category ||            // 항목
+        !detail.merchantName ||        // 상호명
+        detail.merchantName.trim() === '' ||
+        !detail.description ||         // 적요
+        detail.description.trim() === '' ||
+        !detail.amount ||              // 금액
+        Number(detail.amount) <= 0 ||
+        !detail.paymentMethod) {      // 결제수단
+      return false;
+    }
+
+    // 카드 결제인 경우 카드 정보 필수 (cardId 또는 cardNumber)
+    const isCardPayment = ['CARD', 'COMPANY_CARD', 'CREDIT_CARD', 'DEBIT_CARD'].includes(detail.paymentMethod);
+    if (isCardPayment && !detail.cardId && (!detail.cardNumber || detail.cardNumber.trim() === '')) {
+      return false;
+    }
+
+    return true;
   };
 
   // 변경사항 비교 함수 (결제수단 변경 포함)
@@ -345,9 +358,15 @@ const ExpenseCreatePage = () => {
 
   const handleDetailSave = (savedData) => {
     if (editingDetailIndex !== null) {
-      // 수정 모드
+      // 수정 모드 - 기존 상세 항목의 메타데이터(expenseDetailId, receipts 등)를 유지하면서 내용만 병합
       const newDetails = [...details];
-      newDetails[editingDetailIndex] = savedData;
+      const originalDetail = newDetails[editingDetailIndex] || {};
+
+      newDetails[editingDetailIndex] = {
+        ...originalDetail,
+        ...savedData,
+      };
+
       setDetails(newDetails);
     } else {
       // 추가 모드
@@ -370,6 +389,43 @@ const ExpenseCreatePage = () => {
       'COMPANY_CARD': '회사카드'
     };
     return labels[method] || method || '-';
+  };
+
+  // 기존 서버 영수증 삭제 핸들러 (수정 모드 전용)
+  const handleDeleteExistingReceipt = async (receiptId, detailIndex) => {
+    if (!user) {
+      alert("로그인 후 진행할 수 있습니다.");
+      return;
+    }
+
+    if (!window.confirm("정말 이 영수증을 삭제하시겠습니까?")) {
+      return;
+    }
+
+    try {
+      const res = await deleteReceipt(receiptId, user.userId);
+      if (!res.success) {
+        alert('영수증 삭제 실패: ' + (res.message || '알 수 없는 오류'));
+        return;
+      }
+
+      // 프론트 상태에서도 해당 상세 항목의 receipts에서 제거
+      setDetails(prevDetails => {
+        const newDetails = [...prevDetails];
+        const target = newDetails[detailIndex];
+        if (!target) return prevDetails;
+
+        const updatedReceipts = (target.receipts || []).filter(r => r.receiptId !== receiptId);
+        newDetails[detailIndex] = { ...target, receipts: updatedReceipts };
+        return newDetails;
+      });
+
+      alert('영수증이 삭제되었습니다.');
+    } catch (error) {
+      console.error('영수증 삭제 오류:', error);
+      const msg = error?.response?.data?.message || error?.message || '영수증 삭제 중 오류가 발생했습니다.';
+      alert(msg);
+    }
   };
 
   // 영수증 파일 선택 처리 (생성 전)
@@ -674,9 +730,45 @@ const ExpenseCreatePage = () => {
     const missingFields = [];
 
     // 0. 불완전 항목 존재 여부 체크 (결재 요청은 모든 항목이 완성되어야 함)
-    const invalidDetails = details.filter(detail => !isValidDetail(detail));
+    // 각 상세 항목별로 어떤 필드가 누락되었는지 정확히 파악
+    const invalidDetails = (details || [])
+      .map((detail, index) => ({ detail, index })) // 몇 번째 상세인지 보관
+      .filter(({ detail }) => !isValidDetail(detail));
+
     if (invalidDetails.length > 0) {
-      missingFields.push('모든 지출 상세 내역의 필수 항목(사용일자, 항목, 적요, 금액, 결제수단/카드 정보)을 채워야 결재 요청이 가능합니다.');
+      invalidDetails.forEach(({ detail, index }) => {
+        const missing = [];
+
+        if (!detail.paymentReqDate) {
+          missing.push('사용일자');
+        }
+        if (!detail.category) {
+          missing.push('항목');
+        }
+        if (!detail.merchantName || detail.merchantName.trim() === '') {
+          missing.push('상호명');
+        }
+        if (!detail.description || detail.description.trim() === '') {
+          missing.push('적요');
+        }
+        if (!detail.amount || Number(detail.amount) <= 0) {
+          missing.push('금액');
+        }
+        if (!detail.paymentMethod) {
+          missing.push('결제수단');
+        }
+
+        const isCardPayment = ['CARD', 'COMPANY_CARD', 'CREDIT_CARD', 'DEBIT_CARD'].includes(detail.paymentMethod);
+        if (isCardPayment && !detail.cardId && (!detail.cardNumber || detail.cardNumber.trim() === '')) {
+          missing.push('카드 정보');
+        }
+
+        if (missing.length > 0) {
+          // 예: "상세 1번: 상호명, 금액 누락"
+          missingFields.push(`상세 ${index + 1}번: ${missing.join(', ')} 누락`);
+        }
+      });
+
       if (!firstMissingField) {
         firstMissingField = { type: 'detailsSection', ref: detailsSectionRef };
       }
@@ -698,12 +790,26 @@ const ExpenseCreatePage = () => {
       }
     }
     
-    // 3. (생성 모드에서만) 각 상세 내역별 영수증 첨부 필수 확인
-    // 수정 모드에서는 기존에 업로드된 영수증을 그대로 사용하는 것을 허용
+    // 3. 각 상세 내역별 영수증 첨부 필수 확인
     if (!isEditMode) {
+      // 생성 모드: 로컬에서 선택한 영수증(receiptFiles)만 존재
       const allDetailsHaveReceipts = completedDetails.every(detail => 
         detail.receiptFiles && detail.receiptFiles.length > 0
       );
+
+      if (!allDetailsHaveReceipts) {
+        missingFields.push('모든 지출 상세 내역에 영수증을 첨부해야 합니다');
+        if (!firstMissingField) {
+          firstMissingField = { type: 'detailsSection', ref: detailsSectionRef };
+        }
+      }
+    } else {
+      // 수정 모드: 서버 영수증(receipts) + 새로 선택한 영수증(receiptFiles)을 모두 고려
+      const allDetailsHaveReceipts = completedDetails.every(detail => {
+        const hasLocal = detail.receiptFiles && detail.receiptFiles.length > 0;
+        const hasServer = detail.receipts && detail.receipts.length > 0;
+        return hasLocal || hasServer;
+      });
 
       if (!allDetailsHaveReceipts) {
         missingFields.push('모든 지출 상세 내역에 영수증을 첨부해야 합니다');
@@ -1363,6 +1469,16 @@ const ExpenseCreatePage = () => {
             availableCategories={availableCategories}
             descriptionInputRef={descriptionInputRefs.current[editingDetailIndex || 0]}
             amountInputRef={amountInputRefs.current[editingDetailIndex || 0]}
+            existingReceipts={
+              editingDetailIndex !== null && details[editingDetailIndex]?.receipts
+                ? details[editingDetailIndex].receipts
+                : []
+            }
+            onDeleteExistingReceipt={
+              editingDetailIndex !== null
+                ? (receiptId) => handleDeleteExistingReceipt(receiptId, editingDetailIndex)
+                : undefined
+            }
           />
         </Suspense>
       )}
