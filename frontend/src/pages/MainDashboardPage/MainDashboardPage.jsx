@@ -424,7 +424,7 @@ const MainDashboardPage = () => {
         <S.StatusExpenseSection>
           <S.StatusExpenseHeader>
             <S.StatusExpenseTitle>
-              {STATUS_KOREAN[selectedStatus]} 상태 결의서 ({statusExpenses.length}건)
+              최근 {STATUS_KOREAN[selectedStatus]} 상태 결의서
             </S.StatusExpenseTitle>
             <S.ViewAllButton onClick={() => {
               const params = new URLSearchParams();
@@ -479,17 +479,6 @@ const MainDashboardPage = () => {
                   </S.ExpenseListItem>
                 );
               })}
-              {statusExpenses.length > 10 && (
-                <S.ViewMoreButton onClick={() => {
-                  const params = new URLSearchParams();
-                  params.append('status', selectedStatus);
-                  if (filters.startDate) params.append('startDate', filters.startDate);
-                  if (filters.endDate) params.append('endDate', filters.endDate);
-                  navigate(`/expenses?${params.toString()}`);
-                }}>
-                  더 보기 ({statusExpenses.length - 10}건 더)
-                </S.ViewMoreButton>
-              )}
             </S.ExpenseListContainer>
           )}
         </S.StatusExpenseSection>
