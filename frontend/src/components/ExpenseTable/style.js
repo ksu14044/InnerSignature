@@ -95,6 +95,11 @@ export const StatusBadge = styled.span`
 
   ${props => {
     switch (props.status) {
+      case 'DRAFT':
+        return `
+          background-color: rgba(107, 114, 128, 0.1);
+          color: #6b7280;
+        `;
       case 'APPROVED':
         return `
           background-color: rgba(16, 185, 129, 0.1);

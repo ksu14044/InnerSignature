@@ -11,6 +11,7 @@ export const useExpenseData = (user, filters, pagination) => {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myApprovedList, setMyApprovedList] = useState([]);
+  const [draftList, setDraftList] = useState([]);
   const [paymentPendingList, setPaymentPendingList] = useState([]);
   const [paymentPendingPage, setPaymentPendingPage] = useState(1);
   const [paymentPendingTotalPages, setPaymentPendingTotalPages] = useState(1);
@@ -53,6 +54,34 @@ export const useExpenseData = (user, filters, pagination) => {
     }
   }, []);
 
+  // 임시 보관함 조회 함수 (DRAFT 상태만)
+  const loadDraftList = useCallback(async (page = 1) => {
+    try {
+      setLoading(true);
+      // 작성자 본인만 조회하도록 필터 추가
+      const draftFilters = {
+        status: ['DRAFT'],
+        drafterName: user?.koreanName || ''
+      };
+      const response = await fetchExpenseList(page, pageSize, draftFilters);
+      if (response.success && response.data) {
+        setDraftList(response.data.content || []);
+        updatePagination({
+          page: response.data.page || 1,
+          totalPages: response.data.totalPages || 1,
+          totalElements: response.data.totalElements || 0
+        });
+      } else {
+        setDraftList([]);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('임시 보관함 조회 실패:', error);
+      setDraftList([]);
+      setLoading(false);
+    }
+  }, [user?.koreanName, pageSize, updatePagination]);
+
   // 결제 대기 건 조회 함수 (ACCOUNTANT용)
   const loadPaymentPendingList = useCallback(async (page = 1) => {
     try {
@@ -77,6 +106,7 @@ export const useExpenseData = (user, filters, pagination) => {
       list,
       loading,
       myApprovedList,
+      draftList,
       paymentPendingList,
       paymentPendingPage,
       paymentPendingTotalPages,
@@ -85,6 +115,7 @@ export const useExpenseData = (user, filters, pagination) => {
     actions: {
       loadExpenseList,
       loadMyApprovedReports,
+      loadDraftList,
       loadPaymentPendingList
     }
   };

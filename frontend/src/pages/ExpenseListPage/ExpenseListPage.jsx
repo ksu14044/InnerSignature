@@ -49,8 +49,8 @@ const ExpenseListPage = () => {
   const { currentPage, setCurrentPage, totalPages, totalElements, handlePageChange } = paginationHook;
   const { modals, handlers } = modalsHook;
   const { data, actions } = dataHook;
-  const { list, loading, myApprovedList, paymentPendingList, paymentPendingPage, paymentPendingTotalPages, paymentPendingTotalElements } = data;
-  const { loadExpenseList, loadMyApprovedReports, loadPaymentPendingList } = actions;
+  const { list, loading, myApprovedList, draftList, paymentPendingList, paymentPendingPage, paymentPendingTotalPages, paymentPendingTotalElements } = data;
+  const { loadExpenseList, loadMyApprovedReports, loadDraftList, loadPaymentPendingList } = actions;
 
   // 삭제 권한 체크 함수 (작성자 본인, CEO, ADMIN, 또는 ACCOUNTANT만 삭제 가능)
   const canDeleteExpense = (expense) => {
@@ -58,6 +58,9 @@ const ExpenseListPage = () => {
 
     // 작성자 본인이 아니면 삭제 불가
     if (expense.drafterId !== user.userId) return false;
+
+    // DRAFT 상태는 항상 삭제 가능
+    if (expense.status === 'DRAFT') return true;
 
     // WAIT 상태가 아니고 반려 상태가 아니면 삭제 불가
     if (expense.status !== 'WAIT' && expense.status !== 'REJECTED') return false;
@@ -245,43 +248,49 @@ const ExpenseListPage = () => {
 
     // URL 파라미터에서 탭 및 필터 읽기 및 적용
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'MY_APPROVALS' || tabParam === 'MY_APPROVAL_HISTORY') {
+    if (tabParam === 'MY_APPROVALS' || tabParam === 'MY_APPROVAL_HISTORY' || tabParam === 'MY_DRAFTS') {
       setActiveTab(tabParam);
+      // 임시 보관함 탭인 경우 데이터 로드
+      if (tabParam === 'MY_DRAFTS') {
+        loadDraftList(1);
+      }
     } else {
       setActiveTab('MY_REPORTS');
     }
 
-    // URL 파라미터에서 필터 읽기 및 적용
-    const statusParam = searchParams.get('status');
-    const startDateParam = searchParams.get('startDate');
-    const endDateParam = searchParams.get('endDate');
-    
-    if (statusParam || startDateParam || endDateParam) {
-      const newFilters = {
-        startDate: startDateParam || '',
-        endDate: endDateParam || '',
-        minAmount: '',
-        maxAmount: '',
-        status: statusParam ? [statusParam] : [],
-        category: '',
-        taxProcessed: null,
-        drafterName: '',
-        paymentMethod: ''
-      };
+    // URL 파라미터에서 필터 읽기 및 적용 (지출 결의서 탭에서만)
+    if (tabParam !== 'MY_DRAFTS' && tabParam !== 'MY_APPROVALS' && tabParam !== 'MY_APPROVAL_HISTORY') {
+      const statusParam = searchParams.get('status');
+      const startDateParam = searchParams.get('startDate');
+      const endDateParam = searchParams.get('endDate');
       
-      setFilters(newFilters);
-      setCurrentPage(1);
-      loadExpenseList(1, newFilters);
-      
-      // URL 파라미터 제거 (한 번만 적용되도록)
-      const newSearchParams = new URLSearchParams(searchParams);
-      if (statusParam) newSearchParams.delete('status');
-      if (startDateParam) newSearchParams.delete('startDate');
-      if (endDateParam) newSearchParams.delete('endDate');
-      setSearchParams(newSearchParams, { replace: true });
-    } else {
-      // URL 파라미터가 없을 때 기본 로드
-      loadExpenseList(1);
+      if (statusParam || startDateParam || endDateParam) {
+        const newFilters = {
+          startDate: startDateParam || '',
+          endDate: endDateParam || '',
+          minAmount: '',
+          maxAmount: '',
+          status: statusParam ? [statusParam] : [],
+          category: '',
+          taxProcessed: null,
+          drafterName: '',
+          paymentMethod: ''
+        };
+        
+        setFilters(newFilters);
+        setCurrentPage(1);
+        loadExpenseList(1, newFilters);
+        
+        // URL 파라미터 제거 (한 번만 적용되도록)
+        const newSearchParams = new URLSearchParams(searchParams);
+        if (statusParam) newSearchParams.delete('status');
+        if (startDateParam) newSearchParams.delete('startDate');
+        if (endDateParam) newSearchParams.delete('endDate');
+        setSearchParams(newSearchParams, { replace: true });
+      } else {
+        // URL 파라미터가 없을 때 기본 로드
+        loadExpenseList(1);
+      }
     }
 
     // 미서명 건 조회 (내 결재함용)
@@ -298,6 +307,9 @@ const ExpenseListPage = () => {
 
       // 내가 결재한 문서 이력 로드
       loadMyApprovedReports();
+
+      // 임시 보관함 로드
+      loadDraftList(1);
 
     }
 
@@ -468,15 +480,19 @@ const ExpenseListPage = () => {
     switch (activeTab) {
       case 'MY_REPORTS':
         return list;
+      case 'MY_DRAFTS':
+        return draftList;
       case 'MY_APPROVALS':
         return pendingApprovals;
-      default:
-        // 'MY_APPROVAL_HISTORY' 포함
+      case 'MY_APPROVAL_HISTORY':
         return myApprovedList;
+      default:
+        return list;
     }
-  }, [activeTab, list, pendingApprovals, myApprovedList]);
+  }, [activeTab, list, draftList, pendingApprovals, myApprovedList]);
 
   const isMyReportsTab = activeTab === 'MY_REPORTS';
+  const isMyDraftsTab = activeTab === 'MY_DRAFTS';
 
   if (loading) return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
 
@@ -487,15 +503,43 @@ const ExpenseListPage = () => {
           <S.TabButton
             type="button"
             active={isMyReportsTab}
-            onClick={() => setActiveTab('MY_REPORTS')}
+            onClick={() => {
+              setActiveTab('MY_REPORTS');
+              // URL 파라미터 업데이트
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.delete('tab');
+              setSearchParams(newSearchParams, { replace: true });
+            }}
             aria-label="내 결의서"
           >
             지출 결의서
           </S.TabButton>
           <S.TabButton
             type="button"
+            active={activeTab === 'MY_DRAFTS'}
+            onClick={() => {
+              setActiveTab('MY_DRAFTS');
+              setCurrentPage(1);
+              loadDraftList(1);
+              // URL 파라미터 업데이트
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.set('tab', 'MY_DRAFTS');
+              setSearchParams(newSearchParams, { replace: true });
+            }}
+            aria-label="임시 보관함"
+          >
+            임시 보관함
+          </S.TabButton>
+          <S.TabButton
+            type="button"
             active={activeTab === 'MY_APPROVALS'}
-            onClick={() => setActiveTab('MY_APPROVALS')}
+            onClick={() => {
+              setActiveTab('MY_APPROVALS');
+              // URL 파라미터 업데이트
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.set('tab', 'MY_APPROVALS');
+              setSearchParams(newSearchParams, { replace: true });
+            }}
             aria-label="내 결재함"
           >
             내 결재함
@@ -503,14 +547,20 @@ const ExpenseListPage = () => {
           <S.TabButton
             type="button"
             active={activeTab === 'MY_APPROVAL_HISTORY'}
-            onClick={() => setActiveTab('MY_APPROVAL_HISTORY')}
+            onClick={() => {
+              setActiveTab('MY_APPROVAL_HISTORY');
+              // URL 파라미터 업데이트
+              const newSearchParams = new URLSearchParams(searchParams);
+              newSearchParams.set('tab', 'MY_APPROVAL_HISTORY');
+              setSearchParams(newSearchParams, { replace: true });
+            }}
             aria-label="내가 결재한 문서"
           >
             내가 결재한 문서
           </S.TabButton>
         </S.TabContainer>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {isMyReportsTab && (
+          {(isMyReportsTab || isMyDraftsTab) && (
             <>
               {user?.role !== 'TAX_ACCOUNTANT' && (
                 <S.CreateButton onClick={() => navigate('/expenses/create')}>
@@ -518,6 +568,10 @@ const ExpenseListPage = () => {
                   <span>결의서 작성</span>
                 </S.CreateButton>
               )}
+            </>
+          )}
+          {isMyReportsTab && (
+            <>
               <S.ToggleContainer data-tourid="tour-my-posts-toggle">
                 <S.ToggleLabel>
                   <S.ToggleSwitch
@@ -577,6 +631,15 @@ const ExpenseListPage = () => {
           totalElements={totalElements}
           pageSize={paginationHook.pageSize}
           onPageChange={(page) => handlePageChange(page, loadExpenseList)}
+        />
+      )}
+      {isMyDraftsTab && totalPages > 1 && (
+        <ExpensePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={paginationHook.pageSize}
+          onPageChange={(page) => handlePageChange(page, loadDraftList)}
         />
       )}
 

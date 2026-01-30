@@ -19,7 +19,7 @@ export const USER_ROLES = {
 
 // 상태 한글 매핑
 export const STATUS_KOREAN = {
-  DRAFT: '초안',
+  DRAFT: '임시',
   PENDING: '대기',
   APPROVED: '승인',
   REJECTED: '반려',
