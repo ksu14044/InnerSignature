@@ -1072,13 +1072,7 @@ const ExpenseDetailPage = () => {
               <th>상호명</th>
               <th>적요</th>
               <th style={{ textAlign: 'right' }}>금액</th>
-              {detail.status === 'APPROVED' && (
-                <>
-                  <th style={{ textAlign: 'right' }}>승인 금액</th>
-                  <th>결제수단</th>
-                  <th>카드번호</th>
-                </>
-              )}
+              <th>결제수단</th>
               <th>비고</th>
               {user?.role === 'TAX_ACCOUNTANT' && (
                 <>
@@ -1103,6 +1097,23 @@ const ExpenseDetailPage = () => {
                 return labels[method] || method || '-';
               };
 
+              // 결제수단과 카드번호를 합친 표시 텍스트 생성
+              const getPaymentMethodWithCard = (method, cardNumber) => {
+                const methodLabel = getPaymentMethodLabel(method);
+                const isCardPayment = method === 'CARD' || method === 'COMPANY_CARD' || 
+                                      method === 'CREDIT_CARD' || method === 'DEBIT_CARD';
+                
+                if (isCardPayment && cardNumber) {
+                  // 카드번호에서 숫자만 추출하여 마지막 4자리만 표시
+                  const numericValue = cardNumber.replace(/[^0-9]/g, '');
+                  const lastFour = numericValue.length >= 4 
+                    ? numericValue.substring(numericValue.length - 4) 
+                    : numericValue;
+                  return `${methodLabel} (${lastFour})`;
+                }
+                return methodLabel;
+              };
+
               // 상호명 6글자 제한 + 호버 시 풀네임 표시
               const merchantName = item.merchantName || '-';
               const displayMerchantName = merchantName.length > 6 ? merchantName.substring(0, 6) + '...' : merchantName;
@@ -1119,43 +1130,13 @@ const ExpenseDetailPage = () => {
                 </S.MerchantNameCell>
                 <td data-label="적요" title={item.description}>{item.description}</td>
                 <td style={{ textAlign: 'right' }} data-label="금액" title={`${item.amount.toLocaleString()}원`}>{item.amount.toLocaleString()}원</td>
-                {detail.status === 'APPROVED' && (
-                  <>
-                    <td 
-                      style={{ textAlign: 'right' }} 
-                      data-label="승인 금액"
-                      title={item.actualPaidAmount !== null && item.actualPaidAmount !== undefined 
-                        ? `${item.actualPaidAmount.toLocaleString()}원`
-                        : `${item.amount.toLocaleString()}원`}
-                    >
-                      {item.actualPaidAmount !== null && item.actualPaidAmount !== undefined 
-                        ? item.actualPaidAmount.toLocaleString() + '원'
-                        : item.amount.toLocaleString() + '원'}
-                    </td>
-                    <td 
-                      style={{ textAlign: 'center' }} 
-                      data-label="결제수단"
-                      title={getPaymentMethodLabel(item.paymentMethod)}
-                    >
-                      {getPaymentMethodLabel(item.paymentMethod)}
-                    </td>
-                    <td 
-                      style={{ textAlign: 'center', fontSize: '13px', color: '#666' }} 
-                      data-label="카드번호"
-                      title={(item.paymentMethod === 'CARD' || item.paymentMethod === 'COMPANY_CARD' || 
-                        item.paymentMethod === 'CREDIT_CARD' || item.paymentMethod === 'DEBIT_CARD') 
-                        && item.cardNumber 
-                        ? item.cardNumber 
-                        : '-'}
-                    >
-                      {(item.paymentMethod === 'CARD' || item.paymentMethod === 'COMPANY_CARD' || 
-                        item.paymentMethod === 'CREDIT_CARD' || item.paymentMethod === 'DEBIT_CARD') 
-                        && item.cardNumber 
-                        ? item.cardNumber 
-                        : '-'}
-                    </td>
-                  </>
-                )}
+                <td 
+                  style={{ textAlign: 'center' }} 
+                  data-label="결제수단"
+                  title={getPaymentMethodWithCard(item.paymentMethod, item.cardNumber)}
+                >
+                  {getPaymentMethodWithCard(item.paymentMethod, item.cardNumber)}
+                </td>
                 <td style={{ textAlign: 'center' }} data-label="비고" title={item.note || '-'}>{item.note || '-'}</td>
                 {user?.role === 'TAX_ACCOUNTANT' && (
                   <>
