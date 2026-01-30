@@ -268,116 +268,6 @@ const MyProfilePage = () => {
 
   return (
     <S.Container>
-      <S.ProfileCard data-tourid="tour-basic-info">
-        <S.CardTitle>기본 정보</S.CardTitle>
-        <form onSubmit={handleSubmit}>
-          <S.FormGroup>
-            <label>아이디</label>
-            <S.Input
-              type="text"
-              value={formData.username}
-              disabled
-            />
-          </S.FormGroup>
-
-          <S.FormGroup>
-            <label>이름 *</label>
-            <S.Input
-              type="text"
-              value={formData.koreanName}
-              onChange={(e) => setFormData({ ...formData, koreanName: e.target.value })}
-              required
-            />
-          </S.FormGroup>
-
-          <S.FormGroup>
-            <label>이메일</label>
-            <S.Input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="예: user@example.com"
-            />
-          </S.FormGroup>
-
-          <S.FormGroup>
-            <label>직급</label>
-            <S.Input
-              type="text"
-              value={formData.position}
-              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-              placeholder="예: 사원, 대리, 과장, 부장 등"
-            />
-          </S.FormGroup>
-
-          <S.FormGroup>
-            <label>권한</label>
-            <S.Input
-              type="text"
-              value={getRoleLabel(formData.role)}
-              disabled
-            />
-            <S.HelpText>권한은 관리자에게 문의하세요.</S.HelpText>
-          </S.FormGroup>
-
-          <S.ButtonGroup>
-            <S.Button type="button" onClick={() => navigate('/expenses')}>
-              취소
-            </S.Button>
-            <S.Button type="submit" primary disabled={saving || changingPassword} data-tourid="tour-save-button">
-              {saving ? '저장 중...' : '저장'}
-            </S.Button>
-          </S.ButtonGroup>
-        </form>
-      </S.ProfileCard>
-
-      <S.ProfileCard data-tourid="tour-password-change">
-        <S.CardTitle>비밀번호 변경</S.CardTitle>
-        <form onSubmit={handlePasswordChange}>
-          <S.FormGroup>
-            <label>현재 비밀번호 *</label>
-            <S.Input
-              type="password"
-              value={passwordData.currentPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-              required
-              placeholder="현재 비밀번호를 입력하세요"
-            />
-          </S.FormGroup>
-
-          <S.FormGroup>
-            <label>새 비밀번호 *</label>
-            <S.Input
-              type="password"
-              value={passwordData.newPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-              required
-              placeholder="새 비밀번호를 입력하세요"
-            />
-          </S.FormGroup>
-
-          <S.FormGroup>
-            <label>새 비밀번호 확인 *</label>
-            <S.Input
-              type="password"
-              value={passwordData.confirmPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-              required
-              placeholder="새 비밀번호를 다시 입력하세요"
-            />
-          </S.FormGroup>
-
-          <S.ButtonGroup>
-            <S.Button type="button" onClick={() => setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })}>
-              초기화
-            </S.Button>
-            <S.Button type="submit" primary disabled={saving || changingPassword} data-tourid="tour-password-submit-button">
-              {changingPassword ? '변경 중...' : '비밀번호 변경'}
-            </S.Button>
-          </S.ButtonGroup>
-        </form>
-      </S.ProfileCard>
-
       <S.ProfileCard data-tourid="tour-company-section">
         <S.CardTitle>소속 회사</S.CardTitle>
         
@@ -559,6 +449,120 @@ const MyProfilePage = () => {
         onClose={() => setIsCompanySearchModalOpen(false)}
         onSelect={handleCompanySelect}
       />
+      
+      <S.ProfileCard data-tourid="tour-basic-info">
+        <S.CardTitle>기본 정보</S.CardTitle>
+        <form onSubmit={handleSubmit}>
+          <S.FormGroup>
+            <label>아이디</label>
+            <S.Input
+              type="text"
+              value={formData.username}
+              disabled
+            />
+          </S.FormGroup>
+
+          <S.FormGroup>
+            <label>이름 *</label>
+            <S.Input
+              type="text"
+              value={formData.koreanName}
+              onChange={(e) => setFormData({ ...formData, koreanName: e.target.value })}
+              required
+            />
+          </S.FormGroup>
+
+          <S.FormGroup>
+            <label>이메일</label>
+            <S.Input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="예: user@example.com"
+            />
+          </S.FormGroup>
+
+          <S.FormGroup>
+            <label>직급</label>
+            <S.Input
+              type="text"
+              value={formData.position}
+              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+              placeholder="예: 사원, 대리, 과장, 부장 등"
+            />
+          </S.FormGroup>
+
+          <S.FormGroup>
+            <label>권한</label>
+            <S.Input
+              type="text"
+              value={getRoleLabel(formData.role)}
+              disabled
+            />
+            <S.HelpText>권한은 관리자에게 문의하세요.</S.HelpText>
+          </S.FormGroup>
+
+          <S.ButtonGroup>
+            <S.Button type="button" onClick={() => navigate('/expenses')}>
+              취소
+            </S.Button>
+            <S.Button type="submit" primary disabled={saving || changingPassword} data-tourid="tour-save-button">
+              {saving ? '저장 중...' : '저장'}
+            </S.Button>
+          </S.ButtonGroup>
+        </form>
+      </S.ProfileCard>
+
+      <S.ProfileCard data-tourid="tour-password-change">
+        <S.CardTitle>비밀번호 변경</S.CardTitle>
+        <form onSubmit={handlePasswordChange}>
+          <S.FormGroup>
+            <label>현재 비밀번호 *</label>
+            <S.Input
+              type="password"
+              value={passwordData.currentPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+              required
+              placeholder="현재 비밀번호를 입력하세요"
+            />
+          </S.FormGroup>
+
+          <S.FormGroup>
+            <label>새 비밀번호 *</label>
+            <S.Input
+              type="password"
+              value={passwordData.newPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+              required
+              placeholder="새 비밀번호를 입력하세요"
+            />
+          </S.FormGroup>
+
+          <S.FormGroup>
+            <label>새 비밀번호 확인 *</label>
+            <S.Input
+              type="password"
+              value={passwordData.confirmPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+              required
+              placeholder="새 비밀번호를 다시 입력하세요"
+            />
+          </S.FormGroup>
+
+          <S.ButtonGroup>
+            <S.Button type="button" onClick={() => setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })}>
+              초기화
+            </S.Button>
+            <S.Button type="submit" primary disabled={saving || changingPassword} data-tourid="tour-password-submit-button">
+              {changingPassword ? '변경 중...' : '비밀번호 변경'}
+            </S.Button>
+          </S.ButtonGroup>
+        </form>
+      </S.ProfileCard>
+
+      
+
+      
     </S.Container>
   );
 };
