@@ -3,44 +3,48 @@ import styled from '@emotion/styled';
 export const Container = styled.div`
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  padding: 20px;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 40px 20px 24px;
+  box-sizing: border-box;
 
   @media (max-width: 480px) {
-    padding: 10px;
+    padding: 32px 16px 20px;
   }
 `;
 
 export const LoginCard = styled.div`
-  background-color: white;
-  border-radius: 20px;
-  box-shadow: var(--shadow-lg);
   width: 100%;
-  max-width: 400px;
-  overflow: hidden;
-
-  @media (max-width: 480px) {
-    border-radius: 16px;
-  }
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
 `;
 
 export const LogoSection = styled.div`
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  padding: 40px 30px;
-  text-align: center;
-  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+`;
 
-  @media (max-width: 480px) {
-    padding: 30px 20px;
-  }
+export const LogoImage = styled.img`
+  width: auto;
+  height: auto;
+  margin-bottom: 0;
 `;
 
 export const Logo = styled.h1`
   font-size: 32px;
   font-weight: 700;
-  margin: 0 0 8px 0;
+  margin: 0;
+  color: #3b82f6;
+  letter-spacing: 0.5px;
 
   @media (max-width: 480px) {
     font-size: 28px;
@@ -48,20 +52,24 @@ export const Logo = styled.h1`
 `;
 
 export const Subtitle = styled.p`
-  font-size: 16px;
-  margin: 0;
-  opacity: 0.9;
+  font-size: 18px;
+  margin: 0 0 40px 0;
+  color: #111827;
+  text-align: center;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   @media (max-width: 480px) {
-    font-size: 14px;
+    font-size: 16px;
+    margin-bottom: 32px;
   }
 `;
 
 export const Form = styled.form`
-  padding: 40px 30px;
+  width: 100%;
 
   @media (max-width: 480px) {
-    padding: 30px 20px;
+    width: 100%;
   }
 `;
 
@@ -80,7 +88,8 @@ export const FormTitle = styled.h2`
 
 export const InputGroup = styled.div`
   position: relative;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  width: 100%;
 `;
 
 export const InputIcon = styled.div`
@@ -94,22 +103,23 @@ export const InputIcon = styled.div`
 
 export const Input = styled.input`
   width: 100%;
-  padding: 16px ${props => props.hasClearButton ? '48px' : '16px'} 16px 48px;
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   font-size: 16px;
-  background-color: var(--light-color);
+  background-color: #ffffff;
   transition: all 0.2s;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   &:focus {
     outline: none;
-    border-color: var(--primary-color);
-    background-color: white;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   &::placeholder {
-    color: var(--secondary-color);
+    color: #9ca3af;
   }
 `;
 
@@ -146,49 +156,73 @@ export const SubmitButtonBase = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 16px 20px;
-  background-color: var(--primary-color);
+  padding: 14px 20px;
+  background-color: #489BFF;
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 16px;
+  margin-top: 8px;
+  margin-bottom: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   &:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
+    background-color: #2563eb;
   }
 
   &:active {
-    transform: translateY(0);
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
 export const LinkContainer = styled.div`
   text-align: center;
-  margin: 16px 0;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
 
   a {
-    color: var(--primary-color);
+    color: #489BFF;
     text-decoration: none;
     transition: all 0.2s;
 
     &:hover {
-      color: var(--primary-hover);
+      color: #2563eb;
       text-decoration: underline;
     }
   }
 
-  span {
-    color: var(--secondary-color);
-    margin: 0 8px;
+  button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: #489BFF;
+    cursor: pointer;
+    font: inherit;
+    font-size: 14px;
+
+    &:hover {
+      color: #2563eb;
+      text-decoration: underline;
+    }
   }
+`;
+
+export const LinkDivider = styled.span`
+  color: #489BFF;
+  margin: 0 4px;
 `;
 
 export const RegisterButton = styled.button`
@@ -211,6 +245,40 @@ export const RegisterButton = styled.button`
     background-color: #218838;
     transform: translateY(-1px);
   }
+`;
+
+export const Footer = styled.footer`
+  width: 100%;
+  margin-top: auto;
+  text-align: center;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.8;
+  padding: 24px 20px;
+  background-color: #F8F9FA;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  @media (max-width: 480px) {
+    font-size: 11px;
+    padding: 20px 16px;
+  }
+`;
+
+export const FooterContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+
+  span {
+    display: block;
+  }
+`;
+
+export const FooterLink = styled.span`
+  font-weight: 600;
+  margin-top: 8px;
+  margin-bottom: 2px;
 `;
 
 // 모달 스타일

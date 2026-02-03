@@ -6,7 +6,7 @@ import { API_CONFIG } from '../../config/api';
 import { checkUsername, checkEmail, getUserCompanies } from '../../api/userApi';
 import CompanySearchModal from '../../components/CompanySearchModal/CompanySearchModal';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
-import { FaUser, FaLock, FaSignInAlt, FaUserPlus, FaTimes, FaEnvelope, FaSearch, FaBuilding, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaUserPlus, FaTimes, FaEnvelope, FaSearch, FaBuilding, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import * as S from './style';
 
@@ -478,78 +478,58 @@ const LoginPage = () => {
     <S.Container>
       <S.LoginCard>
         <S.LogoSection>
-          <S.Logo>InnerSignature</S.Logo>
-          <S.Subtitle>지출결의서 시스템</S.Subtitle>
+          <S.LogoImage src="/Group 915.png" alt="innersign 로고" />
         </S.LogoSection>
 
-        <S.Form onSubmit={handleSubmit}>
-          <S.FormTitle>로그인</S.FormTitle>
+        <S.Subtitle>전자지출결의서</S.Subtitle>
 
+        <S.Form onSubmit={handleSubmit}>
           <S.InputGroup>
-            <S.InputIcon>
-              <FaUser />
-            </S.InputIcon>
             <S.Input
               type="text"
               placeholder="아이디"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              hasClearButton={!!username}
               required
             />
-            {username && (
-              <S.ClearButton
-                type="button"
-                onClick={() => setUsername('')}
-                aria-label="아이디 지우기"
-                tabIndex={-1}
-              >
-                <FaTimes />
-              </S.ClearButton>
-            )}
           </S.InputGroup>
 
           <S.InputGroup>
-            <S.InputIcon>
-              <FaLock />
-            </S.InputIcon>
             <S.Input
               type="password"
               placeholder="비밀번호"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              hasClearButton={!!password}
               required
             />
-            {password && (
-              <S.ClearButton
-                type="button"
-                onClick={() => setPassword('')}
-                aria-label="비밀번호 지우기"
-                tabIndex={-1}
-              >
-                <FaTimes />
-              </S.ClearButton>
-            )}
           </S.InputGroup>
 
           <S.SubmitButtonBase type="submit" disabled={isLoggingIn}>
-            <FaSignInAlt />
-            <span>{isLoggingIn ? '로그인 중...' : '로그인'}</span>
+            {isLoggingIn ? '로그인 중...' : '로그인'}
           </S.SubmitButtonBase>
-
-          <S.LinkContainer>
-            <Link to="/find-id">아이디 찾기</Link>
-            <span> | </span>
-            <Link to="/find-password">비밀번호 찾기</Link>
-          </S.LinkContainer>
-
-          <S.RegisterButton type="button" onClick={() => setIsRegisterModalOpen(true)}>
-            <FaUserPlus />
-            <span>회원가입</span>
-          </S.RegisterButton>
         </S.Form>
+
+        <S.LinkContainer>
+          <Link to="/find-id">아이디 찾기</Link>
+          <S.LinkDivider> | </S.LinkDivider>
+          <Link to="/find-password">비밀번호 찾기</Link>
+          <S.LinkDivider> | </S.LinkDivider>
+          <button type="button" onClick={() => setIsRegisterModalOpen(true)}>
+            회원가입
+          </button>
+        </S.LinkContainer>
       </S.LoginCard>
+
+      <S.Footer>
+        <S.FooterContent>
+          <span>전자지출결의서·이너사인</span>
+          <span>주식회사 이너사인 사업자등록번호 000-00-00000</span>
+          <span>부산광역시 해운대구 우동 655-5</span>
+          <S.FooterLink>이용약관 | 개인정보처리방침</S.FooterLink>
+          <span>문의 010-0000-0000</span>
+          <span>©2026 Innersign Inc. All rights reserved.</span>
+        </S.FooterContent>
+      </S.Footer>
 
       <RegisterModal
         isOpen={isRegisterModalOpen}

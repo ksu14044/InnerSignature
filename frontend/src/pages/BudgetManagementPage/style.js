@@ -467,4 +467,3 @@ export const ReopenButton = styled.button`
     cursor: not-allowed;
   }
 `;
-

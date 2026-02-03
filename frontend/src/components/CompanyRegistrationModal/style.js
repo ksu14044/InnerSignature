@@ -237,4 +237,3 @@ export const StatusMessage = styled.div`
   color: ${props => props.status === 'success' ? '#28a745' : '#dc3545'};
   font-weight: 500;
 `;
-
