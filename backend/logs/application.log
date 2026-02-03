@@ -402,3 +402,143 @@ This generated password is for development use only. Your security configuration
 2026-02-03T09:24:13.037+09:00 DEBUG 46440 --- [http-nio-8080-exec-8] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
 2026-02-03T09:24:13.038+09:00 DEBUG 46440 --- [http-nio-8080-exec-8] m.m.a.RequestResponseBodyMethodProcessor : Writing [ApiResponse(success=true, message=목록 조회 성공, data=PagedResponse(content=[], page=1, size=1000, totalE (truncated)...]
 2026-02-03T09:24:13.039+09:00 DEBUG 46440 --- [http-nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-02-03T09:42:25.839+09:00  INFO 29608 --- [main] c.i.backend.BackendApplication           : Starting BackendApplication using Java 17.0.17 with PID 29608 (C:\InnerSignature\backend\target\classes started by owner in C:\InnerSignature\backend)
+2026-02-03T09:42:25.843+09:00 DEBUG 29608 --- [main] c.i.backend.BackendApplication           : Running with Spring Boot v3.5.8, Spring v6.2.14
+2026-02-03T09:42:25.844+09:00  INFO 29608 --- [main] c.i.backend.BackendApplication           : The following 1 profile is active: "dev"
+2026-02-03T09:42:28.213+09:00 DEBUG 29608 --- [main] o.m.s.b.a.MybatisAutoConfiguration       : Searching for mappers annotated with @Mapper
+2026-02-03T09:42:28.222+09:00 DEBUG 29608 --- [main] o.m.s.b.a.MybatisAutoConfiguration       : Using auto-configuration base package 'com.innersignature.backend'
+2026-02-03T09:42:28.687+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\AccountCodeMappingMapper.class]
+2026-02-03T09:42:28.697+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\AuditLogMapper.class]
+2026-02-03T09:42:28.726+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\AuditRuleMapper.class]
+2026-02-03T09:42:28.730+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\BudgetMapper.class]
+2026-02-03T09:42:28.733+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\CompanyCardMapper.class]
+2026-02-03T09:42:28.756+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\CompanyMapper.class]
+2026-02-03T09:42:28.758+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\CreditMapper.class]
+2026-02-03T09:42:28.759+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\ExpenseCategoryMapper.class]
+2026-02-03T09:42:28.760+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\ExpenseMapper.class]
+2026-02-03T09:42:28.761+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\MonthlyClosingMapper.class]
+2026-02-03T09:42:28.767+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\PasswordResetTokenMapper.class]
+2026-02-03T09:42:28.772+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\PaymentMapper.class]
+2026-02-03T09:42:28.774+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\SubscriptionMapper.class]
+2026-02-03T09:42:28.775+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\SubscriptionPlanMapper.class]
+2026-02-03T09:42:28.777+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\UserApproverMapper.class]
+2026-02-03T09:42:28.778+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\UserCardMapper.class]
+2026-02-03T09:42:28.781+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\UserMapper.class]
+2026-02-03T09:42:28.792+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Identified candidate component class: file [C:\InnerSignature\backend\target\classes\com\innersignature\backend\mapper\UserSignatureMapper.class]
+2026-02-03T09:42:28.808+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'accountCodeMappingMapper' and 'com.innersignature.backend.mapper.AccountCodeMappingMapper' mapperInterface
+2026-02-03T09:42:28.815+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'auditLogMapper' and 'com.innersignature.backend.mapper.AuditLogMapper' mapperInterface
+2026-02-03T09:42:28.825+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'auditRuleMapper' and 'com.innersignature.backend.mapper.AuditRuleMapper' mapperInterface
+2026-02-03T09:42:28.829+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'budgetMapper' and 'com.innersignature.backend.mapper.BudgetMapper' mapperInterface
+2026-02-03T09:42:28.839+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'companyCardMapper' and 'com.innersignature.backend.mapper.CompanyCardMapper' mapperInterface
+2026-02-03T09:42:28.845+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'companyMapper' and 'com.innersignature.backend.mapper.CompanyMapper' mapperInterface
+2026-02-03T09:42:28.847+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'creditMapper' and 'com.innersignature.backend.mapper.CreditMapper' mapperInterface
+2026-02-03T09:42:28.861+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'expenseCategoryMapper' and 'com.innersignature.backend.mapper.ExpenseCategoryMapper' mapperInterface
+2026-02-03T09:42:28.863+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'expenseMapper' and 'com.innersignature.backend.mapper.ExpenseMapper' mapperInterface
+2026-02-03T09:42:28.871+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'monthlyClosingMapper' and 'com.innersignature.backend.mapper.MonthlyClosingMapper' mapperInterface
+2026-02-03T09:42:28.876+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'passwordResetTokenMapper' and 'com.innersignature.backend.mapper.PasswordResetTokenMapper' mapperInterface
+2026-02-03T09:42:28.879+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'paymentMapper' and 'com.innersignature.backend.mapper.PaymentMapper' mapperInterface
+2026-02-03T09:42:28.883+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'subscriptionMapper' and 'com.innersignature.backend.mapper.SubscriptionMapper' mapperInterface
+2026-02-03T09:42:28.924+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'subscriptionPlanMapper' and 'com.innersignature.backend.mapper.SubscriptionPlanMapper' mapperInterface
+2026-02-03T09:42:28.951+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'userApproverMapper' and 'com.innersignature.backend.mapper.UserApproverMapper' mapperInterface
+2026-02-03T09:42:28.986+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'userCardMapper' and 'com.innersignature.backend.mapper.UserCardMapper' mapperInterface
+2026-02-03T09:42:29.007+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'userMapper' and 'com.innersignature.backend.mapper.UserMapper' mapperInterface
+2026-02-03T09:42:29.025+09:00 DEBUG 29608 --- [main] o.m.s.mapper.ClassPathMapperScanner      : Creating MapperFactoryBean with name 'userSignatureMapper' and 'com.innersignature.backend.mapper.UserSignatureMapper' mapperInterface
+2026-02-03T09:42:30.388+09:00  INFO 29608 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-02-03T09:42:30.416+09:00  INFO 29608 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-02-03T09:42:30.424+09:00  INFO 29608 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.49]
+2026-02-03T09:42:30.675+09:00  INFO 29608 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-02-03T09:42:30.683+09:00  INFO 29608 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 4727 ms
+2026-02-03T09:42:30.878+09:00 DEBUG 29608 --- [main] c.i.b.security.JwtAuthenticationFilter   : Filter 'jwtAuthenticationFilter' configured for use
+2026-02-03T09:42:30.881+09:00 DEBUG 29608 --- [main] c.i.backend.security.RateLimitFilter     : Filter 'rateLimitFilter' configured for use
+2026-02-03T09:42:31.468+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\AccountCodeMappingMapper.xml]'
+2026-02-03T09:42:31.485+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\AuditLogMapper.xml]'
+2026-02-03T09:42:31.523+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\AuditRuleMapper.xml]'
+2026-02-03T09:42:31.542+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\BudgetMapper.xml]'
+2026-02-03T09:42:31.570+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\CompanyCardMapper.xml]'
+2026-02-03T09:42:31.585+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\CompanyMapper.xml]'
+2026-02-03T09:42:31.619+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\CreditMapper.xml]'
+2026-02-03T09:42:31.656+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\ExpenseCategoryMapper.xml]'
+2026-02-03T09:42:31.791+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\ExpenseMapper.xml]'
+2026-02-03T09:42:31.821+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\MonthlyClosingMapper.xml]'
+2026-02-03T09:42:31.852+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\PasswordResetTokenMapper.xml]'
+2026-02-03T09:42:31.861+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\PaymentMapper.xml]'
+2026-02-03T09:42:31.878+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\SubscriptionMapper.xml]'
+2026-02-03T09:42:31.900+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\SubscriptionPlanMapper.xml]'
+2026-02-03T09:42:31.915+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\UserApproverMapper.xml]'
+2026-02-03T09:42:31.929+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\UserCardMapper.xml]'
+2026-02-03T09:42:31.979+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\UserMappeer.xml]'
+2026-02-03T09:42:31.996+09:00 DEBUG 29608 --- [main] o.mybatis.spring.SqlSessionFactoryBean   : Parsed mapper file: 'file [C:\InnerSignature\backend\target\classes\mapper\UserSignatureMapper.xml]'
+2026-02-03T09:42:33.463+09:00 DEBUG 29608 --- [main] s.w.s.m.m.a.RequestMappingHandlerMapping : 164 mappings in 'requestMappingHandlerMapping'
+2026-02-03T09:42:33.709+09:00 DEBUG 29608 --- [main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**, /api/uploads/**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2026-02-03T09:42:33.762+09:00  WARN 29608 --- [main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: c579c106-92ab-4ab1-8e7c-eea73b8d8357
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-02-03T09:42:33.798+09:00  INFO 29608 --- [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-02-03T09:42:34.125+09:00 DEBUG 29608 --- [main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, RateLimitFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-02-03T09:42:34.307+09:00 DEBUG 29608 --- [main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-02-03T09:42:34.444+09:00 DEBUG 29608 --- [main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-02-03T09:42:34.466+09:00 DEBUG 29608 --- [main] o.m.s.b.a.MybatisAutoConfiguration       : Not found configuration for registering mapper bean using @MapperScan, MapperFactoryBean and MapperScannerConfigurer.
+2026-02-03T09:42:34.923+09:00  INFO 29608 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-02-03T09:42:34.966+09:00  INFO 29608 --- [main] c.i.backend.BackendApplication           : Started BackendApplication in 10.112 seconds (process running for 10.744)
+2026-02-03T09:42:53.041+09:00  INFO 29608 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-02-03T09:42:53.050+09:00  INFO 29608 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-02-03T09:42:53.058+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected StandardServletMultipartResolver
+2026-02-03T09:42:53.106+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected AcceptHeaderLocaleResolver
+2026-02-03T09:42:53.126+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected FixedThemeResolver
+2026-02-03T09:42:53.142+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator@3caf5c96
+2026-02-03T09:42:53.157+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.support.SessionFlashMapManager@279c4e3b
+2026-02-03T09:42:53.175+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : enableLoggingRequestDetails='false': request parameters and headers will be masked to prevent unsafe logging of potentially sensitive data
+2026-02-03T09:42:53.189+09:00  INFO 29608 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 131 ms
+2026-02-03T09:42:53.238+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.security.web.FilterChainProxy        : Securing GET /api/companies
+2026-02-03T09:42:53.571+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 6, role: USER, companyId: 3, uri: /api/companies
+2026-02-03T09:42:53.587+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.security.web.FilterChainProxy        : Secured GET /api/companies
+2026-02-03T09:42:53.591+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : GET "/api/companies", parameters={}
+2026-02-03T09:42:53.614+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.CompanyController#getMyCompanies()
+2026-02-03T09:42:53.707+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2026-02-03T09:42:53.717+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7798b4c7] was not registered for synchronization because synchronization is not active
+2026-02-03T09:42:53.738+09:00  INFO 29608 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-02-03T09:42:54.074+09:00  INFO 29608 --- [http-nio-8080-exec-1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@11a729f
+2026-02-03T09:42:54.079+09:00  INFO 29608 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-02-03T09:42:54.085+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1240021813 wrapping com.mysql.cj.jdbc.ConnectionImpl@11a729f] will not be managed by Spring
+2026-02-03T09:42:54.097+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] c.i.b.m.U.findCompaniesByUserId          : ==>  Preparing: SELECT c.company_id AS companyId, c.company_code AS companyCode, c.company_name AS companyName, c.business_reg_no AS businessRegNo, c.representative_name AS representativeName, c.created_by AS createdBy, c.is_active AS isActive, c.created_at AS createdAt, c.updated_at AS updatedAt FROM company_tb c INNER JOIN user_company_tb uc ON c.company_id = uc.company_id WHERE uc.user_id = ? AND uc.approval_status = 'APPROVED' AND c.is_active = 1 ORDER BY uc.is_primary DESC, c.created_at DESC
+2026-02-03T09:42:54.173+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] c.i.b.m.U.findCompaniesByUserId          : ==> Parameters: 6(Long)
+2026-02-03T09:42:54.238+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] c.i.b.m.U.findCompaniesByUserId          : <==      Total: 2
+2026-02-03T09:42:54.253+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@7798b4c7]
+2026-02-03T09:42:54.336+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2026-02-03T09:42:54.345+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [ApiResponse(success=true, message=조회 성공, data=[CompanyDto(companyId=3, companyCode=DYM7LX, companyNa (truncated)...]
+2026-02-03T09:42:54.391+09:00 DEBUG 29608 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-02-03T11:13:20.103+09:00 DEBUG 29608 --- [http-nio-8080-exec-3] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/companies
+2026-02-03T11:13:20.490+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] o.s.security.web.FilterChainProxy        : Securing GET /api/companies
+2026-02-03T11:13:20.945+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 6, role: USER, companyId: 3, uri: /api/companies
+2026-02-03T11:13:21.191+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] o.s.security.web.FilterChainProxy        : Secured GET /api/companies
+2026-02-03T11:13:21.475+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : GET "/api/companies", parameters={}
+2026-02-03T11:13:21.632+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.CompanyController#getMyCompanies()
+2026-02-03T11:13:21.776+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2026-02-03T11:13:21.878+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2924c29f] was not registered for synchronization because synchronization is not active
+2026-02-03T11:13:21.990+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@1560306876 wrapping com.mysql.cj.jdbc.ConnectionImpl@2af30665] will not be managed by Spring
+2026-02-03T11:13:22.007+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] c.i.b.m.U.findCompaniesByUserId          : ==>  Preparing: SELECT c.company_id AS companyId, c.company_code AS companyCode, c.company_name AS companyName, c.business_reg_no AS businessRegNo, c.representative_name AS representativeName, c.created_by AS createdBy, c.is_active AS isActive, c.created_at AS createdAt, c.updated_at AS updatedAt FROM company_tb c INNER JOIN user_company_tb uc ON c.company_id = uc.company_id WHERE uc.user_id = ? AND uc.approval_status = 'APPROVED' AND c.is_active = 1 ORDER BY uc.is_primary DESC, c.created_at DESC
+2026-02-03T11:13:22.034+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] c.i.b.m.U.findCompaniesByUserId          : ==> Parameters: 6(Long)
+2026-02-03T11:13:22.268+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] c.i.b.m.U.findCompaniesByUserId          : <==      Total: 2
+2026-02-03T11:13:22.282+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@2924c29f]
+2026-02-03T11:13:22.301+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2026-02-03T11:13:22.307+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [ApiResponse(success=true, message=조회 성공, data=[CompanyDto(companyId=3, companyCode=DYM7LX, companyNa (truncated)...]
+2026-02-03T11:13:22.318+09:00 DEBUG 29608 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-02-03T11:15:42.221+09:00 DEBUG 29608 --- [http-nio-8080-exec-6] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/companies
+2026-02-03T11:15:42.504+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] o.s.security.web.FilterChainProxy        : Securing GET /api/companies
+2026-02-03T11:15:42.590+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] c.i.b.security.JwtAuthenticationFilter   : JWT 인증 성공 - userId: 6, role: USER, companyId: 3, uri: /api/companies
+2026-02-03T11:15:42.612+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] o.s.security.web.FilterChainProxy        : Secured GET /api/companies
+2026-02-03T11:15:42.625+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : GET "/api/companies", parameters={}
+2026-02-03T11:15:42.720+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.innersignature.backend.controller.CompanyController#getMyCompanies()
+2026-02-03T11:15:42.772+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Creating a new SqlSession
+2026-02-03T11:15:42.795+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3b022204] was not registered for synchronization because synchronization is not active
+2026-02-03T11:15:42.845+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] o.m.s.t.SpringManagedTransaction         : JDBC Connection [HikariProxyConnection@838486388 wrapping com.mysql.cj.jdbc.ConnectionImpl@2af30665] will not be managed by Spring
+2026-02-03T11:15:42.854+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] c.i.b.m.U.findCompaniesByUserId          : ==>  Preparing: SELECT c.company_id AS companyId, c.company_code AS companyCode, c.company_name AS companyName, c.business_reg_no AS businessRegNo, c.representative_name AS representativeName, c.created_by AS createdBy, c.is_active AS isActive, c.created_at AS createdAt, c.updated_at AS updatedAt FROM company_tb c INNER JOIN user_company_tb uc ON c.company_id = uc.company_id WHERE uc.user_id = ? AND uc.approval_status = 'APPROVED' AND c.is_active = 1 ORDER BY uc.is_primary DESC, c.created_at DESC
+2026-02-03T11:15:42.855+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] c.i.b.m.U.findCompaniesByUserId          : ==> Parameters: 6(Long)
+2026-02-03T11:15:42.887+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] c.i.b.m.U.findCompaniesByUserId          : <==      Total: 2
+2026-02-03T11:15:42.893+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] org.mybatis.spring.SqlSessionUtils       : Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3b022204]
+2026-02-03T11:15:42.897+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [application/json, text/plain, */*] and supported [application/json, application/*+json, application/yaml]
+2026-02-03T11:15:42.960+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [ApiResponse(success=true, message=조회 성공, data=[CompanyDto(companyId=3, companyCode=DYM7LX, companyNa (truncated)...]
+2026-02-03T11:15:42.963+09:00 DEBUG 29608 --- [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Completed 200 OK

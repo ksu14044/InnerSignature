@@ -7,12 +7,7 @@ export const Container = styled.div`
   align-items: center;
   justify-content: space-between;
   background-color: #ffffff;
-  padding: 40px 20px 24px;
   box-sizing: border-box;
-
-  @media (max-width: 480px) {
-    padding: 32px 16px 20px;
-  }
 `;
 
 export const LoginCard = styled.div`
@@ -170,7 +165,7 @@ export const SubmitButtonBase = styled.button`
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   &:hover {
-    background-color: #2563eb;
+    background-color: #3B8BEB;
   }
 
   &:active {
@@ -198,7 +193,7 @@ export const LinkContainer = styled.div`
     transition: all 0.2s;
 
     &:hover {
-      color: #2563eb;
+      color: #3B8BEB;
       text-decoration: underline;
     }
   }
@@ -214,7 +209,7 @@ export const LinkContainer = styled.div`
     font-size: 14px;
 
     &:hover {
-      color: #2563eb;
+      color: #3B8BEB;
       text-decoration: underline;
     }
   }
@@ -251,7 +246,7 @@ export const Footer = styled.footer`
   width: 100%;
   margin-top: auto;
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
   color: #6b7280;
   line-height: 1.8;
   padding: 24px 20px;
