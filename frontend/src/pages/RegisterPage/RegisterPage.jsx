@@ -7,6 +7,7 @@ import CompanySearchModal from '../../components/CompanySearchModal/CompanySearc
 import { FaUser, FaLock, FaEnvelope, FaBuilding, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import Select from '../../components/common/Select';
 import * as S from './style';
 
 const RegisterPage = () => {
@@ -440,20 +441,22 @@ const RegisterPage = () => {
           <S.InputGroup>
             <S.Label>역할</S.Label>
             <S.SelectWrapper>
-              <S.Select
+              <Select
                 name="role"
                 value={registerData.role}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 hasError={!!errors.role}
                 required
-                style={{ cursor: 'pointer'}}
-              >
-                <option value="">선택하세요</option>
-                <option value="USER" >직원</option>
-                <option value="CEO" >대표</option>
-                <option value="TAX_ACCOUNTANT" >세무사</option>
-              </S.Select>
+                style={{ fontWeight: 400, color: '#333333'}}
+                options={[
+                  { value: '', label: '선택하세요' },
+                  { value: 'USER', label: '직원' },
+                  { value: 'CEO', label: '대표' },
+                  { value: 'TAX_ACCOUNTANT', label: '세무사' }
+                ]}
+                placeholder="선택하세요"
+              />
               {errors.role && <S.ErrorMessage>{errors.role}</S.ErrorMessage>}
             </S.SelectWrapper>
           </S.InputGroup>
@@ -473,13 +476,14 @@ const RegisterPage = () => {
                     onClick={() => setIsCompanySearchModalOpen(true)}
                     onBlur={handleBlur}
                     error={errors.company}
-                    style={{ cursor: 'pointer' }}
+                    style={{ cursor: 'pointer'}}
                   />
                   <S.CompanySearchButton
                     type="button"
                     onClick={() => setIsCompanySearchModalOpen(true)}
+                    style={{ whiteSpace: 'nowrap'}}
                   >
-                    <FaBuilding />
+                    회사 검색
                   </S.CompanySearchButton>
                 </S.InputWithButton>
               ) : (

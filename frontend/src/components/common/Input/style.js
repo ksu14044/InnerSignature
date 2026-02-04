@@ -21,6 +21,7 @@ export const InputWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
+
 `;
 
 export const InputIcon = styled.div`
@@ -43,7 +44,7 @@ export const Input = styled.input`
   transition: all 0.2s;
   box-sizing: border-box;
   font-family: 'Noto Sans KR', sans-serif;
-  color: #333333
+  color: #333333;
   
   /* Size 스타일 */
   height: ${({ size }) => sizeStyles[size]?.height || sizeStyles.large.height};

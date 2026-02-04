@@ -60,7 +60,6 @@ export const Button = styled.button`
   justify-content: center;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s;
   font-family: 'Noto Sans KR', sans-serif;
   box-sizing: border-box;
   white-space: nowrap;
@@ -82,13 +81,6 @@ export const Button = styled.button`
   /* Hover 효과 */
   &:hover:not(:disabled) {
     background-color: ${({ variant }) => variantStyles[variant]?.hoverBackgroundColor || variantStyles.primary.hoverBackgroundColor};
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Active 효과 */
-  &:active:not(:disabled) {
-    transform: scale(0.98);
   }
   
   /* Disabled 상태 */
@@ -101,7 +93,6 @@ export const Button = styled.button`
   /* Focus 상태 */
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(72, 155, 255, 0.2);
   }
   
   @media (max-width: 480px) {

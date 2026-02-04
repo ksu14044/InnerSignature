@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import { InputWrapper, Input as InputStyled } from '../../components/common/Input/style';
 
 export const Container = styled.div`
   min-height: 100vh;
@@ -22,7 +23,7 @@ export const Title = styled.h1`
   font-size: 36px;
   font-weight: 700;
   color: #000000;
-  margin: 0 0 24px 0;
+  margin: 0 0 56px 0;
   text-align: center;
   font-family: 'Noto Sans KR', sans-serif;
 `;
@@ -32,7 +33,7 @@ export const Form = styled.form`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 14px 24px 24px 24px;
+  padding: 24px;
   border: 1px solid #E4E4E4;
   border-radius: 4px;
 
@@ -52,7 +53,7 @@ export const Form = styled.form`
 
 export const InputGroup = styled.div`
   width: 100%;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -82,6 +83,15 @@ export const InputWithButton = styled.div`
     background-color: #333333 !important;
     color: #FFFFFF !important;
   }
+  /* Input 높이를 48px로 고정 (50px로 변경되지 않도록) */
+  ${InputWrapper} {
+    flex: 1;
+    ${InputStyled} {
+      height: 48px !important;
+      min-height: 48px !important;
+      max-height: 48px !important;
+    }
+  }
 `;
 
 export const StatusMessage = styled.div`
@@ -106,16 +116,18 @@ export const CompanyInputWrapper = styled.div`
 `;
 
 export const CompanySearchButton = styled.button`
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px;
-  background-color: #f5f5f5;
+  padding: 8px 16px;
+  background-color: #333333;
   border: 1px solid #ddd;
   border-radius: 8px;
   cursor: pointer;
-  color: #666;
+  color: #ffffff;
   transition: all 0.2s;
+  font-size: 15px;
+  border-radius: 4px;
 
   &:hover {
     background-color: #e9e9e9;
@@ -153,7 +165,7 @@ export const Select = styled.select`
 
   &:focus {
     outline: none;
-    border-color: ${({ hasError }) => (hasError ? '#D72D30' : '#489BFF')};
+    border-color: ${({ hasError }) => (hasError ? '#D72D30' : '#666666')};
   }
 
   &:hover {
@@ -164,6 +176,11 @@ export const Select = styled.select`
     padding: 8px;
     color: #666666;
     font-weight: 350;
+    background-color: #ffffff;
+  }
+
+  option:hover {
+    background-color: #F8F9FA;
   }
 `;
 
@@ -179,6 +196,11 @@ export const ButtonGroup = styled.div`
   gap: 8px;
   width: 100%;
   margin-top: 40px;
+
+  /* 취소 버튼 호버 효과 */
+  button:first-of-type:hover:not(:disabled) {
+    background-color: #F6F6F6 !important;
+  }
 `;
 
 export const LinkContainer = styled.div`
