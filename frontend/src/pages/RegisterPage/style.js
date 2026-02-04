@@ -34,7 +34,8 @@ export const Form = styled.form`
   align-items: center;
   padding: 14px 24px 24px 24px;
   border: 1px solid #E4E4E4;
-  
+  border-radius: 4px;
+
   /* Input 포커스 시 테두리 색상 변경 */
   input:focus {
     border-color: #666666 !important;
