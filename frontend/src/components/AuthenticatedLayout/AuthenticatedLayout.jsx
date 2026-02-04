@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import AppHeader from '../AppHeader/AppHeader';
 import { FaList, FaChartLine } from 'react-icons/fa';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import AppSidebar from '../AppSidebar/AppSidebar';
 import * as S from './style';
 
 // 페이지별 제목 매핑
@@ -120,6 +121,7 @@ const AuthenticatedLayout = ({ children, customTitle, customSubtitle, customAddi
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   
   // 동적 경로 처리 (예: /detail/:id, /expenses/edit/:id)
   const getPageTitle = () => {
@@ -153,16 +155,26 @@ const AuthenticatedLayout = ({ children, customTitle, customSubtitle, customAddi
   
   return (
     <>
-      <S.HeaderContainer>
-        <AppHeader 
-          title={title}
-          subtitle={subtitle}
-          additionalButtons={additionalButtons}
-          showNotifications={true}
-          showSettings={true}
-        />
-      </S.HeaderContainer>
-      {children}
+      {/* 모바일은 기존 MobileAppBar/MobileBottomNav가 전역 헤더 역할을 수행 */}
+      {isMobile ? (
+        <>{children}</>
+      ) : (
+        <S.Layout>
+          <AppSidebar />
+          <S.Content>
+            <S.ContentInner>
+              <S.ContentHeader>
+                <S.TitleBlock>
+                  <S.Title>{title}</S.Title>
+                  {subtitle && <S.Subtitle>{subtitle}</S.Subtitle>}
+                </S.TitleBlock>
+                {additionalButtons && <S.HeaderActions>{additionalButtons}</S.HeaderActions>}
+              </S.ContentHeader>
+            </S.ContentInner>
+            {children}
+          </S.Content>
+        </S.Layout>
+      )}
     </>
   );
 };
