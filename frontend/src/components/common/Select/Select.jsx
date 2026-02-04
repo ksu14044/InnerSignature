@@ -70,6 +70,7 @@ const Select = ({
         onClick={handleToggle}
         hasError={hasError}
         isOpen={isOpen}
+    
         {...props}
       >
         <S.SelectValue isEmpty={!value} style={{ fontWeight: 400, color: '#333333'}}>

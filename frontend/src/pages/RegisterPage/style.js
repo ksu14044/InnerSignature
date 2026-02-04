@@ -44,10 +44,8 @@ export const Form = styled.form`
   }
   
   /* Button 활성화 시 색상 변경 */
-  button:not(:disabled) {
-    &:active {
-      background-color: #333333 !important;
-    }
+  button[data-common-button="true"]:not(:disabled):active {
+    background-color: #333333 !important;
   }
 `;
 

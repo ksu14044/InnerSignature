@@ -3,6 +3,7 @@ import styled from '@emotion/styled';
 export const SelectContainer = styled.div`
   position: relative;
   width: 100%;
+  
 `;
 
 export const SelectButton = styled.button`
@@ -11,7 +12,7 @@ export const SelectButton = styled.button`
   padding-right: 40px;
   font-size: 16px;
   border: 1px solid ${({ hasError }) => (hasError ? '#D72D30' : '#ddd')};
-  border-radius: 8px;
+  border-radius: 4px;
   background-color: #ffffff;
   color: ${({ isEmpty }) => (isEmpty ? '#666666' : '#000000')};
   font-family: 'Noto Sans KR', sans-serif;
@@ -27,6 +28,12 @@ export const SelectButton = styled.button`
   &:focus {
     outline: none;
     border-color: ${({ hasError }) => (hasError ? '#D72D30' : '#666666')};
+  }
+
+  /* RegisterPage의 form 전역 button:active 스타일(검정 배경)로부터 보호 */
+  &:active {
+    background-color: #ffffff !important;
+    color: ${({ isEmpty }) => (isEmpty ? '#666666' : '#000000')} !important;
   }
 
   &:hover {

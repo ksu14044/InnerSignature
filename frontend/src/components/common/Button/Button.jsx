@@ -22,6 +22,7 @@ const Button = ({
 }) => {
   return (
     <S.Button
+      data-common-button="true"
       size={size}
       variant={variant}
       disabled={disabled}
