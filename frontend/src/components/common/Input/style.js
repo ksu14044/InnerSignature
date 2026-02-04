@@ -38,11 +38,12 @@ export const InputIcon = styled.div`
 export const Input = styled.input`
   width: 100%;
   border: 1px solid ${({ hasError }) => (hasError ? '#dc3545' : '#e5e7eb')};
-  border-radius: 8px;
+  border-radius: 4px;
   background-color: #ffffff;
   transition: all 0.2s;
   box-sizing: border-box;
   font-family: 'Noto Sans KR', sans-serif;
+  color: #333333
   
   /* Size 스타일 */
   height: ${({ size }) => sizeStyles[size]?.height || sizeStyles.large.height};
@@ -65,7 +66,7 @@ export const Input = styled.input`
   
   /* Placeholder 스타일 */
   &::placeholder {
-    color: #9ca3af;
+    color: #777777;
   }
   
   /* Disabled 상태 */
@@ -83,7 +84,7 @@ export const Input = styled.input`
 
 export const ErrorMessage = styled.div`
   font-size: 13px;
-  color: #dc3545;
+  color: #D72D30;
   margin-top: 4px;
   font-family: 'Noto Sans KR', sans-serif;
 `;

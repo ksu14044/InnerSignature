@@ -19,6 +19,7 @@ const MyProfilePage = lazy(() => import('./pages/MyProfilePage/MyProfilePage'));
 const FindIdPage = lazy(() => import('./pages/FindIdPage/FindIdPage'));
 const FindPasswordPage = lazy(() => import('./pages/FindPasswordPage/FindPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage/ResetPasswordPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage/RegisterPage'));
 const SubscriptionManagementPage = lazy(() => import('./pages/SubscriptionManagementPage/SubscriptionManagementPage'));
 const SuperAdminDashboardPage = lazy(() => import('./pages/SuperAdminDashboardPage/SuperAdminDashboardPage'));
 const MonthlyClosingPage = lazy(() => import('./pages/MonthlyClosingPage/MonthlyClosingPage'));
@@ -46,6 +47,7 @@ function App() {
         <Routes>
           {/* 공개 라우트 (헤더 없음) */}
           <Route path="/" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/find-id" element={<FindIdPage />} />
           <Route path="/find-password" element={<FindPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />

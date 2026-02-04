@@ -126,7 +126,7 @@ export const LinkContainer = styled.div`
   justify-content: center;
   gap: 0;
   flex-wrap: wrap;
-  margin-bottom: 0;
+  margin-top: 24px;
 
   a {
     color: #489BFF;

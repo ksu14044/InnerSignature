@@ -3,10 +3,11 @@ import styled from '@emotion/styled';
 export const Container = styled.div`
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   background-color: #ffffff;
   box-sizing: border-box;
+  padding: 160px 20px 20px 20px;
 `;
 
 export const Content = styled.div`

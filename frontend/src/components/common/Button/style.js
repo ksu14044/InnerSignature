@@ -58,7 +58,7 @@ export const Button = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
   font-family: 'Noto Sans KR', sans-serif;

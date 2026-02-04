@@ -19,13 +19,14 @@ const Input = ({
   ...rest
 }) => {
   return (
-    <S.InputWrapper fullWidth={fullWidth} style={style}>
+    <S.InputWrapper fullWidth={fullWidth}>
       {children && <S.InputIcon>{children}</S.InputIcon>}
       <S.Input
         size={size}
         fullWidth={fullWidth}
         hasIcon={!!children}
         hasError={!!error}
+        style={style}
         {...rest}
       />
       {error && <S.ErrorMessage>{error}</S.ErrorMessage>}

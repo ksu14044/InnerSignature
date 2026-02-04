@@ -99,7 +99,7 @@ const FindIdPage = () => {
               <S.LinkDivider> | </S.LinkDivider>
               <Link to="/find-password">비밀번호 찾기</Link>
               <S.LinkDivider> | </S.LinkDivider>
-              <Link to="/">회원가입</Link>
+              <Link to="/register">회원가입</Link>
             </S.LinkContainer>
           </S.Form>
         ) : (
