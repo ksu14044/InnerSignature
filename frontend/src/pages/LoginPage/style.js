@@ -8,16 +8,16 @@ export const Container = styled.div`
   justify-content: space-between;
   background-color: #ffffff;
   box-sizing: border-box;
+  padding-top: 160px;
 `;
 
 export const LoginCard = styled.div`
   width: 100%;
-  max-width: 420px;
+  max-width: 384px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex: 1;
-  justify-content: center;
+  margin-bottom: 160px;
 `;
 
 export const LogoSection = styled.div`
@@ -25,7 +25,7 @@ export const LogoSection = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: 56px;
 `;
 
 export const LogoImage = styled.img`
@@ -47,16 +47,16 @@ export const Logo = styled.h1`
 `;
 
 export const Subtitle = styled.p`
-  font-size: 18px;
+  font-size: 20px;
   margin: 0 0 40px 0;
   color: #111827;
   text-align: center;
-  font-weight: 400;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
 
   @media (max-width: 480px) {
     font-size: 16px;
-    margin-bottom: 32px;
+    margin-bottom: 40px;
   }
 `;
 
@@ -83,40 +83,11 @@ export const FormTitle = styled.h2`
 
 export const InputGroup = styled.div`
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  
   width: 100%;
 `;
 
-export const InputIcon = styled.div`
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--secondary-color);
-  z-index: 1;
-`;
-
-export const Input = styled.input`
-  width: 100%;
-  padding: 14px 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 16px;
-  background-color: #ffffff;
-  transition: all 0.2s;
-  box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  &::placeholder {
-    color: #9ca3af;
-  }
-`;
 
 export const ClearButton = styled.button`
   position: absolute;
@@ -146,37 +117,6 @@ export const ClearButton = styled.button`
   }
 `;
 
-export const SubmitButtonBase = styled.button`
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 14px 20px;
-  background-color: #489BFF;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 8px;
-  margin-bottom: 24px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-
-  &:hover {
-    background-color: #3B8BEB;
-  }
-
-  &:active {
-    transform: scale(0.98);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
 
 export const LinkContainer = styled.div`
   text-align: center;
@@ -186,6 +126,7 @@ export const LinkContainer = styled.div`
   justify-content: center;
   gap: 0;
   flex-wrap: wrap;
+  margin-bottom: 0;
 
   a {
     color: #489BFF;
@@ -240,40 +181,6 @@ export const RegisterButton = styled.button`
     background-color: #218838;
     transform: translateY(-1px);
   }
-`;
-
-export const Footer = styled.footer`
-  width: 100%;
-  margin-top: auto;
-  text-align: center;
-  font-size: 13px;
-  color: #6b7280;
-  line-height: 1.8;
-  padding: 24px 20px;
-  background-color: #F8F9FA;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-
-  @media (max-width: 480px) {
-    font-size: 11px;
-    padding: 20px 16px;
-  }
-`;
-
-export const FooterContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-
-  span {
-    display: block;
-  }
-`;
-
-export const FooterLink = styled.span`
-  font-weight: 600;
-  margin-top: 8px;
-  margin-bottom: 2px;
 `;
 
 // 모달 스타일
@@ -365,26 +272,6 @@ export const ButtonGroup = styled.div`
   }
 `;
 
-export const CancelButton = styled.button`
-  flex: 1;
-  padding: 14px 20px;
-  background-color: var(--secondary-color);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: #5a6268;
-    transform: translateY(-1px);
-  }
-
-  @media (max-width: 480px) {
-    padding: 16px 20px;
-  }
-`;
 
 export const RadioGroup = styled.div`
   display: flex;
@@ -508,13 +395,5 @@ export const CompanySearchButton = styled.button`
     flex: 1;
     text-align: left;
     color: ${props => props.hasValue ? '#333' : '#999'};
-  }
-`;
-
-export const SubmitButton = styled(CancelButton)`
-  background-color: var(--primary-color);
-  
-  &:hover {
-    background-color: var(--primary-hover);
   }
 `;

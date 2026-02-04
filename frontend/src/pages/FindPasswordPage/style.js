@@ -5,143 +5,84 @@ export const Container = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  padding: 20px;
+  background-color: #ffffff;
+  box-sizing: border-box;
 `;
 
-export const Card = styled.div`
-  background-color: white;
-  border-radius: 20px;
-  box-shadow: var(--shadow-lg);
+export const Content = styled.div`
   width: 100%;
-  max-width: 450px;
-  overflow: hidden;
-`;
-
-export const Header = styled.div`
+  max-width: 384px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 24px 24px 0 24px;
-  margin-bottom: 24px;
-`;
-
-export const BackButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: var(--secondary-color);
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: var(--light-color);
-    color: var(--dark-color);
-  }
 `;
 
 export const Title = styled.h1`
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--dark-color);
-  margin: 0;
-`;
-
-export const Form = styled.form`
-  padding: 0 24px 24px 24px;
+  font-size: 36px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 24px 0;
+  text-align: center;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 export const Description = styled.p`
-  color: var(--secondary-color);
-  font-size: 14px;
-  margin-bottom: 24px;
+  font-size: 18px;
+  color: #666666;
+  margin: 0 0 72px 0;
   text-align: center;
+  font-weight: 400;
+  font-family: 'Noto Sans KR', sans-serif;
   line-height: 1.6;
 `;
 
+export const Form = styled.form`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
 export const InputGroup = styled.div`
-  position: relative;
-  margin-bottom: 20px;
-`;
-
-export const InputIcon = styled.div`
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--secondary-color);
-  z-index: 1;
-`;
-
-export const Input = styled.input`
   width: 100%;
-  padding: 16px 16px 16px 48px;
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
-  font-size: 16px;
-  background-color: var(--light-color);
-  transition: all 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    background-color: white;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-  }
-`;
-
-export const SubmitButton = styled.button`
-  width: 100%;
-  padding: 16px 20px;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 8px;
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 `;
 
 export const LinkContainer = styled.div`
   text-align: center;
-  margin-top: 20px;
+  margin-top: 24px;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+  font-family: 'Noto Sans KR', sans-serif;
 
   a {
-    color: var(--primary-color);
+    color: #489BFF;
     text-decoration: none;
     transition: all 0.2s;
 
     &:hover {
-      color: var(--primary-hover);
+      color: #3B8BEB;
       text-decoration: underline;
     }
   }
+`;
 
-  span {
-    color: var(--secondary-color);
-    margin: 0 8px;
-  }
+export const LinkDivider = styled.span`
+  color: #489BFF;
+  margin: 0 4px;
 `;
 
 export const ResultContainer = styled.div`
-  padding: 24px;
+  width: 100%;
   text-align: center;
+  padding: 24px 0;
 `;
 
 export const ResultMessage = styled.div`
@@ -152,27 +93,12 @@ export const ResultMessage = styled.div`
   color: ${props => props.success ? '#155724' : '#721c24'};
   font-size: 16px;
   line-height: 1.5;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 export const ButtonGroup = styled.div`
   display: flex;
   gap: 12px;
-`;
-
-export const Button = styled.button`
-  flex: 1;
-  padding: 14px 20px;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-1px);
-  }
+  width: 100%;
 `;
 

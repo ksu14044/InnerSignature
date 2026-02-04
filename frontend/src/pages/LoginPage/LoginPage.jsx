@@ -6,8 +6,10 @@ import { API_CONFIG } from '../../config/api';
 import { checkUsername, checkEmail, getUserCompanies } from '../../api/userApi';
 import CompanySearchModal from '../../components/CompanySearchModal/CompanySearchModal';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
-import { FaUserPlus, FaTimes, FaEnvelope, FaSearch, FaBuilding, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaUser, FaLock, FaUserPlus, FaTimes, FaEnvelope, FaSearch, FaBuilding, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
 import * as S from './style';
 
 const RegisterModal = ({ isOpen, onClose, onRegister, isRegistering }) => {
@@ -170,41 +172,32 @@ const RegisterModal = ({ isOpen, onClose, onRegister, isRegistering }) => {
         <S.ModalBody>
           <form onSubmit={handleSubmit}>
             <S.InputGroup>
-              <S.InputIcon>
-                <FaUser />
-              </S.InputIcon>
               <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '5px' }}>
                 <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                  <S.Input
+                  <Input
+                    size="large"
                     type="text"
                     name="username"
                     placeholder="아이디 (3자 이상)"
                     value={registerData.username}
                     onChange={handleChange}
                     required
-                    style={{
-                      flex: 1,
-                      borderColor: usernameStatus.available === false ? '#dc3545' : 
-                                  usernameStatus.available === true ? '#28a745' : undefined
-                    }}
-                  />
-                  <button
+                    error={usernameStatus.available === false ? usernameStatus.message : undefined}
+                    fullWidth={false}
+                    style={{ flex: 1 }}
+                  >
+                    <FaUser />
+                  </Input>
+                  <Button
+                    size="small"
+                    variant="primary"
                     type="button"
                     onClick={handleCheckUsername}
                     disabled={!registerData.username || registerData.username.trim().length < 3 || usernameStatus.checking}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      opacity: (!registerData.username || registerData.username.trim().length < 3 || usernameStatus.checking) ? 0.6 : 1
-                    }}
+                    style={{ whiteSpace: 'nowrap' }}
                   >
                     {usernameStatus.checking ? '확인 중...' : '중복 확인'}
-                  </button>
+                  </Button>
                 </div>
                 {usernameStatus.message && !usernameStatus.checking && (
                   <div style={{
@@ -226,68 +219,59 @@ const RegisterModal = ({ isOpen, onClose, onRegister, isRegistering }) => {
             </S.InputGroup>
 
             <S.InputGroup>
-              <S.InputIcon>
-                <FaLock />
-              </S.InputIcon>
-              <S.Input
+              <Input
+                size="large"
                 type="password"
                 name="password"
                 placeholder="비밀번호"
                 value={registerData.password}
                 onChange={handleChange}
                 required
-              />
+              >
+                <FaLock />
+              </Input>
             </S.InputGroup>
 
             <S.InputGroup>
-              <S.InputIcon>
-                <FaUser />
-              </S.InputIcon>
-              <S.Input
+              <Input
+                size="large"
                 type="text"
                 name="koreanName"
                 placeholder="이름"
                 value={registerData.koreanName}
                 onChange={handleChange}
                 required
-              />
+              >
+                <FaUser />
+              </Input>
             </S.InputGroup>
 
             <S.InputGroup>
-              <S.InputIcon>
-                <FaEnvelope />
-              </S.InputIcon>
               <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '5px' }}>
                 <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                  <S.Input
+                  <Input
+                    size="large"
                     type="email"
                     name="email"
                     placeholder="이메일 (선택사항)"
                     value={registerData.email}
                     onChange={handleChange}
-                    style={{
-                      flex: 1,
-                      borderColor: emailStatus.available === false ? '#dc3545' : 
-                                  emailStatus.available === true ? '#28a745' : undefined
-                    }}
-                  />
-                  <button
+                    error={emailStatus.available === false ? emailStatus.message : undefined}
+                    fullWidth={false}
+                    style={{ flex: 1 }}
+                  >
+                    <FaEnvelope />
+                  </Input>
+                  <Button
+                    size="small"
+                    variant="primary"
                     type="button"
                     onClick={handleCheckEmail}
                     disabled={!registerData.email || registerData.email.trim().length === 0 || emailStatus.checking}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      opacity: (!registerData.email || registerData.email.trim().length === 0 || emailStatus.checking) ? 0.6 : 1
-                    }}
+                    style={{ whiteSpace: 'nowrap' }}
                   >
                     {emailStatus.checking ? '확인 중...' : '중복 확인'}
-                  </button>
+                  </Button>
                 </div>
                 {emailStatus.message && !emailStatus.checking && (
                   <div style={{
@@ -309,17 +293,17 @@ const RegisterModal = ({ isOpen, onClose, onRegister, isRegistering }) => {
             </S.InputGroup>
 
             <S.InputGroup>
-              <S.InputIcon>
-                <FaUser />
-              </S.InputIcon>
-              <S.Input
+              <Input
+                size="large"
                 type="text"
                 name="position"
                 placeholder="직책"
                 value={registerData.position}
                 onChange={handleChange}
                 required
-              />
+              >
+                <FaUser />
+              </Input>
             </S.InputGroup>
 
             <S.InputGroup>
@@ -383,13 +367,26 @@ const RegisterModal = ({ isOpen, onClose, onRegister, isRegistering }) => {
             )}
 
             <S.ButtonGroup>
-              <S.CancelButton type="button" onClick={onClose} disabled={isRegistering}>
+              <Button 
+                size="large" 
+                variant="secondary" 
+                type="button" 
+                onClick={onClose} 
+                disabled={isRegistering}
+                style={{ flex: 1 }}
+              >
                 취소
-              </S.CancelButton>
-              <S.SubmitButton type="submit" disabled={isRegistering}>
+              </Button>
+              <Button 
+                size="large" 
+                variant="primary" 
+                type="submit" 
+                disabled={isRegistering}
+                style={{ flex: 1 }}
+              >
                 <FaUserPlus />
                 <span>{isRegistering ? '처리 중...' : '가입하기'}</span>
-              </S.SubmitButton>
+              </Button>
             </S.ButtonGroup>
           </form>
         </S.ModalBody>
@@ -408,6 +405,8 @@ const RegisterModal = ({ isOpen, onClose, onRegister, isRegistering }) => {
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -438,6 +437,26 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoggingIn) return;
+    
+    // 입력값 검증
+    let hasError = false;
+    setUsernameError('');
+    setPasswordError('');
+    
+    if (!username || username.trim() === '') {
+      setUsernameError('아이디를 입력해 주세요.');
+      hasError = true;
+    }
+    
+    if (!password || password.trim() === '') {
+      setPasswordError('비밀번호를 입력해주세요.');
+      hasError = true;
+    }
+    
+    if (hasError) {
+      return;
+    }
+    
     try {
       setIsLoggingIn(true);
       const res = await axios.post(API_CONFIG.LOGIN_URL, { username, password });
@@ -485,28 +504,42 @@ const LoginPage = () => {
 
         <S.Form onSubmit={handleSubmit}>
           <S.InputGroup>
-            <S.Input
+            <Input
+              size="large"
               type="text"
               placeholder="아이디"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
+              error={usernameError}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (usernameError) setUsernameError('');
+              }}
             />
           </S.InputGroup>
 
           <S.InputGroup>
-            <S.Input
+            <Input
+              size="large"
               type="password"
               placeholder="비밀번호"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              error={passwordError}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (passwordError) setPasswordError('');
+              }}
             />
           </S.InputGroup>
 
-          <S.SubmitButtonBase type="submit" disabled={isLoggingIn}>
+          <Button 
+            size="large" 
+            variant="primary" 
+            fullWidth 
+            type="submit" 
+            disabled={isLoggingIn}
+          >
             {isLoggingIn ? '로그인 중...' : '로그인'}
-          </S.SubmitButtonBase>
+          </Button>
         </S.Form>
 
         <S.LinkContainer>
@@ -519,17 +552,6 @@ const LoginPage = () => {
           </button>
         </S.LinkContainer>
       </S.LoginCard>
-
-      <S.Footer>
-        <S.FooterContent>
-          <span>전자지출결의서·이너사인</span>
-          <span>주식회사 이너사인 사업자등록번호 000-00-00000</span>
-          <span>부산광역시 해운대구 우동 655-5</span>
-          <S.FooterLink>이용약관 | 개인정보처리방침</S.FooterLink>
-          <span>문의 010-0000-0000</span>
-          <span>©2026 Innersign Inc. All rights reserved.</span>
-        </S.FooterContent>
-      </S.Footer>
 
       <RegisterModal
         isOpen={isRegisterModalOpen}

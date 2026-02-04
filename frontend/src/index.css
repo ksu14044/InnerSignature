@@ -1,5 +1,5 @@
 :root {
-  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-family: 'Noto Sans KR';
   line-height: 1.5;
   font-weight: 400;
 
@@ -103,6 +103,7 @@ body {
   min-height: 100vh;
   background-color: var(--light-color);
   color: var(--dark-color);
+  font-family: 'Noto Sans KR', sans-serif;
 }
 
 a {

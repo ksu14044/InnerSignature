@@ -578,4 +578,3 @@ export const PaginationInfo = styled.span`
   font-size: 14px;
   color: var(--dark-color);
 `;
-

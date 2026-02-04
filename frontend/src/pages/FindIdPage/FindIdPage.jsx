@@ -2,7 +2,8 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { API_CONFIG } from '../../config/api';
-import { FaEnvelope, FaUser, FaArrowLeft } from 'react-icons/fa';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
 import * as S from './style';
 
 const FindIdPage = () => {
@@ -53,25 +54,15 @@ const FindIdPage = () => {
 
   return (
     <S.Container>
-      <S.Card>
-        <S.Header>
-          <S.BackButton onClick={() => navigate('/')}>
-            <FaArrowLeft />
-          </S.BackButton>
-          <S.Title>아이디 찾기</S.Title>
-        </S.Header>
+      <S.Content>
+        <S.Title>아이디 찾기</S.Title>
+        <S.Description>가입 시 등록한 이메일과 이름을 입력하세요</S.Description>
 
         {!result ? (
           <S.Form onSubmit={handleSubmit}>
-            <S.Description>
-              가입 시 등록한 이메일과 이름을 입력해주세요.
-            </S.Description>
-
             <S.InputGroup>
-              <S.InputIcon>
-                <FaEnvelope />
-              </S.InputIcon>
-              <S.Input
+              <Input
+                size="large"
                 type="email"
                 name="email"
                 placeholder="이메일"
@@ -82,10 +73,8 @@ const FindIdPage = () => {
             </S.InputGroup>
 
             <S.InputGroup>
-              <S.InputIcon>
-                <FaUser />
-              </S.InputIcon>
-              <S.Input
+              <Input
+                size="large"
                 type="text"
                 name="koreanName"
                 placeholder="이름"
@@ -95,14 +84,22 @@ const FindIdPage = () => {
               />
             </S.InputGroup>
 
-            <S.SubmitButton type="submit" disabled={loading}>
+            <Button 
+              size="large" 
+              variant="primary" 
+              fullWidth 
+              type="submit" 
+              disabled={loading}
+            >
               {loading ? '처리 중...' : '아이디 찾기'}
-            </S.SubmitButton>
+            </Button>
 
             <S.LinkContainer>
               <Link to="/">로그인</Link>
-              <span> | </span>
+              <S.LinkDivider> | </S.LinkDivider>
               <Link to="/find-password">비밀번호 찾기</Link>
+              <S.LinkDivider> | </S.LinkDivider>
+              <Link to="/">회원가입</Link>
             </S.LinkContainer>
           </S.Form>
         ) : (
@@ -118,16 +115,24 @@ const FindIdPage = () => {
               )}
             </S.ResultMessage>
             <S.ButtonGroup>
-              <S.Button onClick={() => navigate('/')}>
+              <Button 
+                size="large" 
+                variant="primary" 
+                onClick={() => navigate('/')}
+              >
                 로그인하기
-              </S.Button>
-              <S.Button onClick={() => setResult(null)}>
+              </Button>
+              <Button 
+                size="large" 
+                variant="primary" 
+                onClick={() => setResult(null)}
+              >
                 다시 찾기
-              </S.Button>
+              </Button>
             </S.ButtonGroup>
           </S.ResultContainer>
         )}
-      </S.Card>
+      </S.Content>
     </S.Container>
   );
 };

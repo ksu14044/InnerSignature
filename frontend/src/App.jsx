@@ -5,6 +5,7 @@ import MobileAppBar from './components/MobileAppBar/MobileAppBar';
 import MobileBottomNav from './components/MobileBottomNav/MobileBottomNav';
 import MobileFAB from './components/MobileFAB/MobileFAB';
 import AuthenticatedLayout from './components/AuthenticatedLayout/AuthenticatedLayout';
+import Footer from './components/common/Footer/Footer';
 import { registerServiceWorker } from './utils/serviceWorker';
 
 // Code Splitting 적용 - 각 페이지를 lazy loading으로 로드
@@ -172,6 +173,7 @@ function App() {
       </Suspense>
       <MobileBottomNav />
       <MobileFAB />
+      <Footer />
     </BrowserRouter>
   );
 }
