@@ -447,11 +447,12 @@ const RegisterPage = () => {
                 onBlur={handleBlur}
                 hasError={!!errors.role}
                 required
+                style={{ cursor: 'pointer'}}
               >
                 <option value="">선택하세요</option>
-                <option value="USER">직원</option>
-                <option value="CEO">대표</option>
-                <option value="TAX_ACCOUNTANT">세무사</option>
+                <option value="USER" >직원</option>
+                <option value="CEO" >대표</option>
+                <option value="TAX_ACCOUNTANT" >세무사</option>
               </S.Select>
               {errors.role && <S.ErrorMessage>{errors.role}</S.ErrorMessage>}
             </S.SelectWrapper>

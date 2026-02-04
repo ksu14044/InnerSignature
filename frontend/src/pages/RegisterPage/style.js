@@ -161,6 +161,8 @@ export const Select = styled.select`
 
   option {
     padding: 8px;
+    color: #666666;
+    font-weight: 350;
   }
 `;
 
