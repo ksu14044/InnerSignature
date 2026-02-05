@@ -30,7 +30,7 @@ const CategoryRatioTable = ({ data, title = '카테고리별 비율' }) => {
           {displayData.map((item, index) => (
             <tr key={index}>
               <td style={{ textAlign: 'center' }} title={item.category}>{item.category}</td>
-              <td style={{ fontWeight: '600', color: '#007bff', textAlign: 'center' }}>
+              <td style={{ textAlign: 'center' }}>
                 {item.amount?.toLocaleString() || 0}원
               </td>
               <td style={{ textAlign: 'center' }}>
@@ -41,11 +41,11 @@ const CategoryRatioTable = ({ data, title = '카테고리별 비율' }) => {
         </tbody>
         <tfoot>
           <tr>
-            <td style={{ textAlign: 'center', fontWeight: '700', paddingTop: '12px', borderTop: '2px solid #e0e0e0' }}>합계</td>
-            <td style={{ textAlign: 'center', fontWeight: '700', color: '#007bff', paddingTop: '12px', borderTop: '2px solid #e0e0e0' }}>
+            <td style={{ textAlign: 'center', paddingTop: '12px', borderTop: '1px solid #e4e4e4' }}>합계</td>
+            <td style={{ textAlign: 'center', paddingTop: '12px', borderTop: '1px solid #e4e4e4' }}>
               {totalAmount.toLocaleString()}원
             </td>
-            <td style={{ textAlign: 'center', fontWeight: '700', paddingTop: '12px', borderTop: '2px solid #e0e0e0' }}>
+            <td style={{ textAlign: 'center', paddingTop: '12px', borderTop: '1px solid #e4e4e4' }}>
               100.0%
             </td>
           </tr>

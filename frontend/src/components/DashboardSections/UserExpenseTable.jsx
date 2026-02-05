@@ -39,7 +39,7 @@ const UserExpenseTable = ({ data, title = '사용자별 지출 합계' }) => {
           {displayData.map((item, index) => (
             <tr key={index}>
               <td style={{ textAlign: 'center' }} title={item.userName}>{item.userName}</td>
-              <td style={{ fontWeight: '600', color: '#007bff', textAlign: 'center' }}>
+              <td style={{ textAlign: 'center' }}>
                 {item.totalAmount?.toLocaleString() || 0}원
               </td>
               <td style={{ textAlign: 'center' }}>{item.itemCount || 0}건</td>
@@ -48,11 +48,11 @@ const UserExpenseTable = ({ data, title = '사용자별 지출 합계' }) => {
         </tbody>
         <tfoot>
           <tr>
-            <td style={{ textAlign: 'center', fontWeight: '700', paddingTop: '12px', borderTop: '2px solid #e0e0e0' }}>합계</td>
-            <td style={{ textAlign: 'center', fontWeight: '700', color: '#007bff', paddingTop: '12px', borderTop: '2px solid #e0e0e0' }}>
+            <td style={{ textAlign: 'center', paddingTop: '12px', borderTop: '1px solid #e4e4e4' }}>합계</td>
+            <td style={{ textAlign: 'center', paddingTop: '12px', borderTop: '1px solid #e4e4e4' }}>
               {totalAmount.toLocaleString()}원
             </td>
-            <td style={{ textAlign: 'center', fontWeight: '700', paddingTop: '12px', borderTop: '2px solid #e0e0e0' }}>
+            <td style={{ textAlign: 'center', paddingTop: '12px', borderTop: '1px solid #e4e4e4' }}>
               {totalCount}건
             </td>
           </tr>

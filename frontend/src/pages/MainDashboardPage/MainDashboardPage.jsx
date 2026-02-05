@@ -416,7 +416,7 @@ const MainDashboardPage = () => {
   return (
     <S.Container>
       {/* 헤더 영역 - 피그마 디자인 기반 */}
-      {user?.role === 'USER' && (
+      {(user?.role === 'USER' || user?.role === 'ACCOUNTANT' || user?.role === 'ADMIN' || user?.role === 'TAX_ACCOUNTANT' || user?.role === 'CEO') && (
         <>
           <S.DashboardHeader>
             <S.DashboardHeaderLeft>
@@ -450,7 +450,7 @@ const MainDashboardPage = () => {
             </S.DashboardHeaderRight>
           </S.DashboardHeader>
           
-          {/* 액션 버튼 섹션 */}
+          {/* 액션 버튼 섹션 - 역할별로 다른 버튼 표시 */}
           <S.DashboardActionSection>
             {companies && companies.length > 1 && (
               <S.DashboardCompanySelector data-company-dropdown>
@@ -483,14 +483,42 @@ const MainDashboardPage = () => {
               </S.DashboardCompanySelector>
             )}
             <S.ActionButtons>
-              <S.ListButton onClick={() => navigate('/expenses')}>
-                <FaList />
-                <span>내 지출결의서</span>
-              </S.ListButton>
-              <S.CreateButton onClick={() => navigate('/expenses/create')}>
-                <FaPlus />
-                <span>지출결의서 작성</span>
-              </S.CreateButton>
+              {user?.role === 'USER' && (
+                <>
+                  <S.ListButton onClick={() => navigate('/expenses')}>
+                    <FaList />
+                    <span>내 지출결의서</span>
+                  </S.ListButton>
+                  <S.CreateButton onClick={() => navigate('/expenses/create')}>
+                    <FaPlus />
+                    <span>지출결의서 작성</span>
+                  </S.CreateButton>
+                </>
+              )}
+              {user?.role === 'ACCOUNTANT' && (
+                <>
+                  <S.ListButton onClick={() => navigate('/expenses?tab=MY_APPROVALS')}>
+                    <FaList />
+                    <span>내 결재함</span>
+                  </S.ListButton>
+                  <S.CreateButton onClick={() => navigate('/expenses/create')}>
+                    <FaPlus />
+                    <span>지출결의서 작성</span>
+                  </S.CreateButton>
+                </>
+              )}
+              {(user?.role === 'ADMIN' || user?.role === 'CEO') && (
+                <S.CreateButton onClick={() => navigate('/expenses/create')}>
+                  <FaPlus />
+                  <span>지출결의서 작성</span>
+                </S.CreateButton>
+              )}
+              {user?.role === 'TAX_ACCOUNTANT' && (
+                <S.CreateButton onClick={() => navigate('/tax/summary')}>
+                  <FaList />
+                  <span>세무 요약</span>
+                </S.CreateButton>
+              )}
             </S.ActionButtons>
           </S.DashboardActionSection>
         </>
@@ -516,57 +544,59 @@ const MainDashboardPage = () => {
         </S.FilterGroup>
       </S.FilterSection>
 
-      {/* 통계 카드 - 피그마 디자인 기반 */}
-      <S.StatsGrid>
-        <S.StatCard>
-          <S.StatLabel>
-            <S.StatBadge status="default">합계 금액</S.StatBadge>
-          </S.StatLabel>
-          <S.StatValue>{stats.totalAmount.toLocaleString()}원</S.StatValue>
-        </S.StatCard>
+      {/* 통계 카드 - 피그마 디자인 기반 (USER 역할만 표시) */}
+      {user?.role === 'USER' && (
+        <S.StatsGrid>
+          <S.StatCard>
+            <S.StatLabel>
+              <S.StatBadge status="default">합계 금액</S.StatBadge>
+            </S.StatLabel>
+            <S.StatValue>{stats.totalAmount.toLocaleString()}원</S.StatValue>
+          </S.StatCard>
 
-        <S.StatCard
-          status="wait"
-          onClick={() => handleStatCardClick('WAIT')}
-          title="대기 상태 결의서 보기"
-          selected={selectedStatus === 'WAIT'}
-        >
-          <S.StatLabel>
-            <S.StatBadge status="wait">대기</S.StatBadge>
-          </S.StatLabel>
-          <S.StatValue>{stats.waitCount}건</S.StatValue>
-          {selectedStatus === 'WAIT' && <S.ChevronIcon><FaChevronUp /></S.ChevronIcon>}
-        </S.StatCard>
+          <S.StatCard
+            status="wait"
+            onClick={() => handleStatCardClick('WAIT')}
+            title="대기 상태 결의서 보기"
+            selected={selectedStatus === 'WAIT'}
+          >
+            <S.StatLabel>
+              <S.StatBadge status="wait">대기</S.StatBadge>
+            </S.StatLabel>
+            <S.StatValue>{stats.waitCount}건</S.StatValue>
+            {selectedStatus === 'WAIT' && <S.ChevronIcon><FaChevronUp /></S.ChevronIcon>}
+          </S.StatCard>
 
-        <S.StatCard
-          status="rejected"
-          onClick={() => handleStatCardClick('REJECTED')}
-          title="반려 상태 결의서 보기"
-          selected={selectedStatus === 'REJECTED'}
-        >
-          <S.StatLabel>
-            <S.StatBadge status="rejected">반려</S.StatBadge>
-          </S.StatLabel>
-          <S.StatValue>{stats.rejectedCount}건</S.StatValue>
-          {selectedStatus === 'REJECTED' && <S.ChevronIcon><FaChevronUp /></S.ChevronIcon>}
-        </S.StatCard>
+          <S.StatCard
+            status="rejected"
+            onClick={() => handleStatCardClick('REJECTED')}
+            title="반려 상태 결의서 보기"
+            selected={selectedStatus === 'REJECTED'}
+          >
+            <S.StatLabel>
+              <S.StatBadge status="rejected">반려</S.StatBadge>
+            </S.StatLabel>
+            <S.StatValue>{stats.rejectedCount}건</S.StatValue>
+            {selectedStatus === 'REJECTED' && <S.ChevronIcon><FaChevronUp /></S.ChevronIcon>}
+          </S.StatCard>
 
-        <S.StatCard
-          status="approved"
-          onClick={() => handleStatCardClick('APPROVED')}
-          title="승인 상태 결의서 보기"
-          selected={selectedStatus === 'APPROVED'}
-        >
-          <S.StatLabel>
-            <S.StatBadge status="approved">승인</S.StatBadge>
-          </S.StatLabel>
-          <S.StatValue>{stats.approvedCount}건</S.StatValue>
-          {selectedStatus === 'APPROVED' && <S.ChevronIcon><FaChevronUp /></S.ChevronIcon>}
-        </S.StatCard>
-      </S.StatsGrid>
+          <S.StatCard
+            status="approved"
+            onClick={() => handleStatCardClick('APPROVED')}
+            title="승인 상태 결의서 보기"
+            selected={selectedStatus === 'APPROVED'}
+          >
+            <S.StatLabel>
+              <S.StatBadge status="approved">승인</S.StatBadge>
+            </S.StatLabel>
+            <S.StatValue>{stats.approvedCount}건</S.StatValue>
+            {selectedStatus === 'APPROVED' && <S.ChevronIcon><FaChevronUp /></S.ChevronIcon>}
+          </S.StatCard>
+        </S.StatsGrid>
+      )}
 
-      {/* 선택된 상태의 결의서 목록 */}
-      {selectedStatus && (
+      {/* 선택된 상태의 결의서 목록 (USER 역할만 표시) */}
+      {user?.role === 'USER' && selectedStatus && (
         <S.StatusExpenseSection>
           <S.StatusExpenseHeader>
             <S.StatusExpenseTitle>

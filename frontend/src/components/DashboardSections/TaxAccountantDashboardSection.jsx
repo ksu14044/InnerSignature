@@ -6,11 +6,14 @@ import {
   fetchTaxPendingReports,
   fetchCategorySummary,
   fetchMonthlyTaxSummary,
-  collectTaxData
+  collectTaxData,
+  fetchExpenseList
 } from '../../api/expenseApi';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import LoadingOverlay from '../LoadingOverlay/LoadingOverlay';
+import { FaChevronUp } from 'react-icons/fa';
 import * as S from './style';
+import * as MainS from '../../pages/MainDashboardPage/style';
 
 // Lazy load 모바일 컴포넌트
 const MobileTaxAccountantDashboard = lazy(() => import('../mobile/MobileTaxAccountantDashboard'));
@@ -27,6 +30,16 @@ const TaxAccountantDashboardSection = ({ filters }) => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState('전표를 생성하는 중...');
   const debounceTimer = useRef(null);
+  const [stats, setStats] = useState({
+    totalAmount: 0,
+    waitCount: 0,
+    rejectedCount: 0,
+    approvedCount: 0,
+    collectedCount: 0
+  });
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [statusExpenses, setStatusExpenses] = useState([]);
+  const [loadingStatusExpenses, setLoadingStatusExpenses] = useState(false);
   
   const [collectMode, setCollectMode] = useState('date'); // 'date' 또는 'month'
   const [monthRange, setMonthRange] = useState({
@@ -40,7 +53,7 @@ const TaxAccountantDashboardSection = ({ filters }) => {
     try {
       setLoading(true);
       
-      const [statusRes, pendingRes, summaryRes, monthlyRes] = await Promise.all([
+      const [statusRes, pendingRes, summaryRes, monthlyRes, allExpensesRes] = await Promise.all([
         fetchTaxStatus(filters.startDate || null, filters.endDate || null),
         fetchTaxPendingReports(filters.startDate || null, filters.endDate || null),
         fetchCategorySummary({
@@ -49,7 +62,8 @@ const TaxAccountantDashboardSection = ({ filters }) => {
           status: ['APPROVED'],
           taxProcessed: null
         }),
-        fetchMonthlyTaxSummary(filters.startDate || null, filters.endDate || null)
+        fetchMonthlyTaxSummary(filters.startDate || null, filters.endDate || null),
+        fetchExpenseList(1, 1000, filters).catch(() => ({ success: false, data: { content: [] } }))
       ]);
 
       if (statusRes.success) {
@@ -64,10 +78,58 @@ const TaxAccountantDashboardSection = ({ filters }) => {
       if (monthlyRes.success) {
         setMonthlySummary(monthlyRes.data || []);
       }
+      if (allExpensesRes.success && allExpensesRes.data) {
+        const expenses = allExpensesRes.data.content || [];
+        const approvedExpenses = expenses.filter(exp => exp.status === 'APPROVED');
+        const collectedExpenses = expenses.filter(exp => exp.taxProcessed === true);
+        setStats({
+          totalAmount: approvedExpenses.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0),
+          waitCount: expenses.filter(exp => exp.status === 'WAIT').length,
+          rejectedCount: expenses.filter(exp => exp.status === 'REJECTED').length,
+          approvedCount: expenses.filter(exp => exp.status === 'APPROVED').length,
+          collectedCount: collectedExpenses.length
+        });
+      }
     } catch (error) {
       console.error('세무 데이터 로드 실패:', error?.message || String(error) || error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 통계 카드 클릭 핸들러
+  const handleStatCardClick = async (status) => {
+    if (selectedStatus === status) {
+      setSelectedStatus(null);
+      setStatusExpenses([]);
+      return;
+    }
+
+    setSelectedStatus(status);
+    setLoadingStatusExpenses(true);
+
+    try {
+      const filterParams = {
+        ...filters,
+        status: status === 'COLLECTED' ? ['APPROVED'] : [status]
+      };
+
+      const response = await fetchExpenseList(1, 100, filterParams);
+      
+      if (response.success && response.data) {
+        let expenses = response.data.content || [];
+        if (status === 'COLLECTED') {
+          expenses = expenses.filter(exp => exp.taxProcessed === true);
+        }
+        setStatusExpenses(expenses);
+      } else {
+        setStatusExpenses([]);
+      }
+    } catch (error) {
+      console.error('결의서 목록 로드 실패:', error);
+      setStatusExpenses([]);
+    } finally {
+      setLoadingStatusExpenses(false);
     }
   };
 
@@ -247,36 +309,140 @@ const TaxAccountantDashboardSection = ({ filters }) => {
     <>
       <S.SectionTitle>세무 자료 현황</S.SectionTitle>
 
-      {/* 미수집 결의서 알림 */}
-      {pendingReports.length > 0 && (
-        <S.AlertSection>
-          <S.AlertTitle>📋 미수집 결의서: {pendingReports.length}건</S.AlertTitle>
-          <S.AlertButton onClick={() => navigate('/tax/summary')}>
-            상세 페이지로 이동 →
-          </S.AlertButton>
-        </S.AlertSection>
+      {/* 통계 카드 - 피그마 디자인 기반 */}
+      <MainS.StatsGrid style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+        <MainS.StatCard>
+          <MainS.StatLabel>
+            <MainS.StatBadge status="default">합계 금액</MainS.StatBadge>
+          </MainS.StatLabel>
+          <MainS.StatValue>{stats.totalAmount.toLocaleString()}원</MainS.StatValue>
+        </MainS.StatCard>
+
+        <MainS.StatCard
+          status="wait"
+          onClick={() => handleStatCardClick('WAIT')}
+          title="대기 상태 결의서 보기"
+          selected={selectedStatus === 'WAIT'}
+        >
+          <MainS.StatLabel>
+            <MainS.StatBadge status="wait">대기</MainS.StatBadge>
+          </MainS.StatLabel>
+          <MainS.StatValue>{stats.waitCount}건</MainS.StatValue>
+          {selectedStatus === 'WAIT' && <MainS.ChevronIcon><FaChevronUp /></MainS.ChevronIcon>}
+        </MainS.StatCard>
+
+        <MainS.StatCard
+          status="rejected"
+          onClick={() => handleStatCardClick('REJECTED')}
+          title="반려 상태 결의서 보기"
+          selected={selectedStatus === 'REJECTED'}
+        >
+          <MainS.StatLabel>
+            <MainS.StatBadge status="rejected">반려</MainS.StatBadge>
+          </MainS.StatLabel>
+          <MainS.StatValue>{stats.rejectedCount}건</MainS.StatValue>
+          {selectedStatus === 'REJECTED' && <MainS.ChevronIcon><FaChevronUp /></MainS.ChevronIcon>}
+        </MainS.StatCard>
+
+        <MainS.StatCard
+          status="approved"
+          onClick={() => handleStatCardClick('APPROVED')}
+          title="승인 상태 결의서 보기"
+          selected={selectedStatus === 'APPROVED'}
+        >
+          <MainS.StatLabel>
+            <MainS.StatBadge status="approved">승인</MainS.StatBadge>
+          </MainS.StatLabel>
+          <MainS.StatValue>{stats.approvedCount}건</MainS.StatValue>
+          {selectedStatus === 'APPROVED' && <MainS.ChevronIcon><FaChevronUp /></MainS.ChevronIcon>}
+        </MainS.StatCard>
+
+        <MainS.StatCard
+          onClick={() => handleStatCardClick('COLLECTED')}
+          title="수집 상태 결의서 보기"
+          selected={selectedStatus === 'COLLECTED'}
+        >
+          <MainS.StatLabel>
+            <MainS.StatBadge status="default" style={{ backgroundColor: '#f8ebff', color: '#a133e0' }}>수집</MainS.StatBadge>
+          </MainS.StatLabel>
+          <MainS.StatValue>{stats.collectedCount}건</MainS.StatValue>
+          {selectedStatus === 'COLLECTED' && <MainS.ChevronIcon><FaChevronUp /></MainS.ChevronIcon>}
+        </MainS.StatCard>
+      </MainS.StatsGrid>
+
+      {/* 선택된 상태의 결의서 목록 */}
+      {selectedStatus && (
+        <MainS.StatusExpenseSection>
+          <MainS.StatusExpenseHeader>
+            <MainS.StatusExpenseTitle>
+              최근 {selectedStatus === 'WAIT' ? '대기' : selectedStatus === 'REJECTED' ? '반려' : selectedStatus === 'APPROVED' ? '승인' : '수집'} 상태 결의서
+            </MainS.StatusExpenseTitle>
+            <MainS.ViewAllLink to={`/expenses?status=${selectedStatus === 'COLLECTED' ? 'APPROVED' : selectedStatus}${filters.startDate ? `&startDate=${filters.startDate}` : ''}${filters.endDate ? `&endDate=${filters.endDate}` : ''}`}>
+              전체보기 →
+            </MainS.ViewAllLink>
+          </MainS.StatusExpenseHeader>
+
+          {loadingStatusExpenses ? (
+            <MainS.LoadingMessage>로딩 중...</MainS.LoadingMessage>
+          ) : statusExpenses.length === 0 ? (
+            <MainS.EmptyMessage>해당 상태의 결의서가 없습니다.</MainS.EmptyMessage>
+          ) : (
+            <MainS.RecentExpenseList>
+              {statusExpenses.slice(0, 10).map((item) => (
+                <MainS.RecentExpenseItem
+                  key={item.expenseReportId}
+                  onClick={() => navigate(`/detail/${item.expenseReportId}`)}
+                  selected={false}
+                >
+                  <MainS.RecentExpenseDate>{item.reportDate}</MainS.RecentExpenseDate>
+                  <MainS.RecentExpenseContent>
+                    <MainS.RecentExpenseDescription>
+                      {item.summaryDescription || item.firstDescription || '-'}
+                    </MainS.RecentExpenseDescription>
+                    <MainS.RecentExpenseMeta>
+                      <span>{item.drafterName}</span>
+                      <span>{item.totalAmount.toLocaleString()}원</span>
+                    </MainS.RecentExpenseMeta>
+                  </MainS.RecentExpenseContent>
+                  {item.status && (
+                    <MainS.StatusBadge status={item.status.toLowerCase()}>
+                      {item.status === 'APPROVED' ? '승인' : item.status === 'WAIT' ? '대기' : item.status === 'REJECTED' ? '반려' : item.status}
+                    </MainS.StatusBadge>
+                  )}
+                </MainS.RecentExpenseItem>
+              ))}
+            </MainS.RecentExpenseList>
+          )}
+        </MainS.StatusExpenseSection>
       )}
 
-      {/* 통계 카드 */}
-      {taxStatus && (
-        <S.StatsGrid>
-          <S.StatCard>
-            <S.StatLabel>승인 상태 결의서</S.StatLabel>
-            <S.StatValue>{taxStatus.totalCount || 0}건</S.StatValue>
-          </S.StatCard>
-          <S.StatCard>
-            <S.StatLabel>미수집</S.StatLabel>
-            <S.StatValue style={{ color: '#dc3545' }}>{taxStatus.pendingCount || 0}건</S.StatValue>
-          </S.StatCard>
-          <S.StatCard>
-            <S.StatLabel>수집 완료</S.StatLabel>
-            <S.StatValue style={{ color: '#28a745' }}>{taxStatus.completedCount || 0}건</S.StatValue>
-          </S.StatCard>
-          <S.StatCard>
-            <S.StatLabel>총 금액</S.StatLabel>
-            <S.StatValue>{totalStats.totalAmount.toLocaleString()}원</S.StatValue>
-          </S.StatCard>
-        </S.StatsGrid>
+      {/* 미수집 결의서 알림 - 피그마 디자인 기반 */}
+      {pendingReports.length > 0 && (
+        <S.AlertSection style={{ 
+          background: '#ffffff', 
+          border: '1px solid #489bff', 
+          borderRadius: '4px',
+          padding: '20px 24px'
+        }}>
+          <S.AlertTitle style={{ color: '#333333', fontSize: '18px', fontWeight: '700' }}>
+            미수집 결의서 {pendingReports.length}건
+          </S.AlertTitle>
+          <S.AlertButton 
+            onClick={() => navigate('/tax/summary')}
+            style={{
+              background: '#ffffff',
+              color: '#333333',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '8px 16px',
+              fontSize: '16px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            세무 요약 보기 →
+          </S.AlertButton>
+        </S.AlertSection>
       )}
 
       {/* 주요 카테고리 Top 5 */}

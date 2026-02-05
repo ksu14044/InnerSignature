@@ -89,8 +89,12 @@ export const StatValue = styled.div`
 export const ChartsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 24px;
   margin-bottom: 24px;
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  padding: 24px;
 
   @media (max-width: 1200px) {
     grid-template-columns: repeat(2, 1fr);
@@ -106,11 +110,12 @@ export const ChartsGrid = styled.div`
     overflow-y: hidden;
     gap: 16px;
     margin-bottom: 8px;
-    padding: 0 16px;
+    padding: 16px;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    border-radius: 4px;
     
     &::-webkit-scrollbar {
       display: none;
@@ -119,20 +124,24 @@ export const ChartsGrid = styled.div`
 `;
 
 export const ChartCard = styled.div`
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  background: transparent;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  padding: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 
   @media (max-width: 480px) {
     flex: 0 0 calc(100vw - 32px);
     min-width: calc(100vw - 32px);
     max-width: calc(100vw - 32px);
-    padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: none;
+    padding: 0;
+    border-radius: 4px;
+    box-shadow: none;
+    border: 1px solid #e4e4e4;
     margin-bottom: 8px;
     scroll-snap-align: center;
   }
@@ -140,9 +149,11 @@ export const ChartCard = styled.div`
 
 export const ChartTitle = styled.h3`
   font-size: 18px;
-  font-weight: 600;
-  color: var(--dark-color);
-  margin: 0 0 16px 0;
+  font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: #333333;
+  margin: 0;
+  padding: 24px 24px 16px 24px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -150,7 +161,7 @@ export const ChartTitle = styled.h3`
 
   @media (max-width: 480px) {
     font-size: 14px;
-    margin-bottom: 12px;
+    padding: 16px 16px 12px 16px;
   }
 `;
 
@@ -456,29 +467,70 @@ export const SummarySection = styled.div`
 export const SummaryTable = styled.table`
   width: 100%;
   border-collapse: collapse;
-  margin-top: 16px;
+  margin-top: 0;
 
   thead {
-    background: #f5f5f5;
+    background: #f8f9fa;
+  }
+
+  thead tr {
+    height: 48px;
   }
 
   th, td {
     padding: 12px;
     text-align: left;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e4e4e4;
   }
 
   th {
     font-weight: 600;
     color: var(--dark-color);
+    height: 48px;
+    line-height: 24px;
+    vertical-align: middle;
+  }
+
+  tbody tr {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333333;
+  }
+
+  tbody td {
+    color: #666666;
   }
 
   tbody tr:hover {
     background: #f9f9f9;
   }
 
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tfoot tr {
+    font-size: 14px;
+    font-weight: 700;
+    color: #333333;
+  }
+
+  tfoot td {
+    color: #666666;
+  }
+
   @media (max-width: 480px) {
     font-size: 14px;
+    
+    thead tr {
+      height: 40px;
+    }
+
+    th {
+      height: 40px;
+      line-height: 20px;
+      padding: 10px 8px;
+    }
     
     th, td {
       padding: 10px 8px;

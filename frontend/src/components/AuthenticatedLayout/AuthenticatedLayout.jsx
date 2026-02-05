@@ -155,7 +155,7 @@ const AuthenticatedLayout = ({ children, customTitle, customSubtitle, customAddi
   
   // 대시보드 페이지는 자체 헤더를 사용하므로 ContentHeader 숨김
   const isDashboardPage = location.pathname === '/dashboard' || location.pathname === '/dashboard/main';
-  const shouldHideContentHeader = isDashboardPage && user?.role === 'USER';
+  const shouldHideContentHeader = isDashboardPage && (user?.role === 'USER' || user?.role === 'ACCOUNTANT' || user?.role === 'ADMIN' || user?.role === 'TAX_ACCOUNTANT' || user?.role === 'CEO');
 
   return (
     <>
