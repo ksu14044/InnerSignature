@@ -233,7 +233,9 @@ const RegisterPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
     if (isRegistering) return;
 
     // 모든 필드를 touched로 표시하고 검증
@@ -533,7 +535,8 @@ const RegisterPage = () => {
             <Button
               size="large"
               variant="primary"
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={isRegistering}
               style={{ flex: 1 }}
             >

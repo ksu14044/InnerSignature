@@ -2,13 +2,13 @@ import styled from '@emotion/styled';
 import { Link } from 'react-router-dom';
 
 export const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  width: 100%;
+  padding: 24px 24px 24px 40px;
   min-height: 100vh;
+  background: #f8f9fa;
 
   @media (max-width: 768px) {
-    padding: 15px;
+    padding: 16px 16px 16px 40px;
   }
 
   @media (max-width: 480px) {
@@ -19,6 +19,7 @@ export const Container = styled.div`
     background: #f5f5f5;
     padding-top: 56px;
     padding-bottom: 80px;
+    padding-left: 40px;
   }
 `;
 
@@ -608,16 +609,16 @@ export const NotificationItemInfo = styled.div`
 
 export const FilterSection = styled.div`
   margin-bottom: 24px;
-  padding: 20px;
+  padding: 20px 24px;
   background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  box-shadow: none;
 
   @media (max-width: 480px) {
     margin: 0 0 20px 0;
     padding: 16px;
-    border-radius: 6px;
+    border-radius: 4px;
   }
 `;
 
@@ -633,7 +634,7 @@ export const FilterGroup = styled.div`
 `;
 
 export const FilterLabel = styled.label`
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--dark-color);
   display: flex;
@@ -739,95 +740,85 @@ export const PeriodTab = styled.button`
 
 export const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 24px;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
     gap: 16px;
-    margin: 0 0 32px 0;
+    margin: 0 0 24px 0;
   }
 `;
 
 export const StatCard = styled.div`
-  padding: 24px;
+  padding: 20px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
-  border-left: 4px solid ${props => {
-    switch(props.status) {
-      case 'wait': return '#f59e0b';
-      case 'rejected': return '#ef4444';
-      case 'approved': return '#10b981';
-      default: return '#3b82f6';
-    }
-  }};
+  border-radius: 4px;
+  box-shadow: none;
+  border: 1px solid #e4e4e4;
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  align-items: center;
   position: relative;
+  min-height: 120px;
+  cursor: ${props => props.onClick ? 'pointer' : 'default'};
 
   ${props => props.selected && `
-    background-color: #f8fafc;
-    border-color: #3b82f6;
-    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1);
+    background-color: #ffffff;
+    border-color: #489bff;
+    box-shadow: 0 0 0 1px #489bff;
   `}
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     border-color: ${props => {
+      if (props.selected) return '#489bff';
       switch(props.status) {
-        case 'wait': return '#f59e0b';
-        case 'rejected': return '#ef4444';
-        case 'approved': return '#10b981';
-        default: return '#3b82f6';
+        case 'wait': return '#ffa310';
+        case 'rejected': return '#d72d30';
+        case 'approved': return '#14804a';
+        default: return '#489bff';
       }
     }};
   }
 
   @media (max-width: 480px) {
-    padding: 20px;
-    border-radius: 8px;
+    padding: 16px;
+    min-height: 100px;
   }
 `;
 
 export const StatLabel = styled.div`
-  font-size: 14px;
-  color: #64748b;
-  margin-bottom: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.8;
+  font-size: 16px;
+  color: #333333;
+  margin-bottom: 8px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 export const StatValue = styled.div`
-  font-size: 32px;
-  font-weight: 800;
-  color: ${props => {
-    switch(props.status) {
-      case 'wait': return '#f59e0b';
-      case 'rejected': return '#ef4444';
-      case 'approved': return '#10b981';
-      default: return '#3b82f6';
-    }
-  }};
+  font-size: 24px;
+  font-weight: 700;
+  color: #333333;
   margin-bottom: 8px;
 
   @media (max-width: 768px) {
-    font-size: 28px;
+    font-size: 20px;
   }
 
   @media (max-width: 480px) {
-    font-size: 24px;
+    font-size: 18px;
   }
 `;
 
@@ -964,15 +955,13 @@ export const StatusExpenseSection = styled.div`
   margin-top: 24px;
   margin-bottom: 24px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  padding: 24px;
 
   @media (max-width: 480px) {
     margin: 16px 0;
     padding: 16px;
-    border-radius: 6px;
   }
 `;
 
@@ -980,26 +969,14 @@ export const StatusExpenseHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--border-color);
-
-  @media (max-width: 480px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
+  margin-bottom: 16px;
 `;
 
-export const StatusExpenseTitle = styled.h3`
-  margin: 0;
-  font-size: 20px;
+export const StatusExpenseTitle = styled.h2`
+  font-size: 18px;
   font-weight: 700;
-  color: var(--dark-color);
-
-  @media (max-width: 480px) {
-    font-size: 18px;
-  }
+  color: #333333;
+  margin: 0;
 `;
 
 export const ViewAllButton = styled.button`
@@ -1412,4 +1389,394 @@ export const QuickMonthButtons = styled.div`
   gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
+`;
+
+// 피그마 디자인 기반 헤더 스타일
+export const DashboardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: white;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+  }
+`;
+
+export const DashboardHeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+export const DashboardTitle = styled.h1`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0;
+`;
+
+export const DashboardHeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+export const ActionButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-left: auto;
+
+  @media (max-width: 480px) {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+    margin-left: 0;
+  }
+`;
+
+export const ListButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #ffffff;
+  color: #333333;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f8f9fa;
+    border-color: #489bff;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: center;
+  }
+`;
+
+export const CreateButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #489bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #3a8ae6;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: center;
+  }
+`;
+
+export const DashboardNotificationContainer = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+export const DashboardNotificationIconWrapper = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const DashboardNotificationIcon = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+`;
+
+export const DashboardNotificationBadge = styled.div`
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const DashboardProfileIcon = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #d9d9d9;
+`;
+
+export const DashboardNotificationBadgeCount = styled.span`
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  background-color: #d72d30;
+  color: #ffffff;
+  border-radius: 9px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 400;
+  min-width: 22px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+// 회사 선택 드롭다운 스타일 (피그마 디자인 기반)
+export const DashboardCompanySelector = styled.div`
+  position: relative;
+`;
+
+export const DashboardCompanySelectorButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 20px;
+  font-weight: 700;
+  color: #333333;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
+export const DashboardCompanyDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background-color: white;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  overflow: hidden;
+`;
+
+export const DashboardCompanyDropdownItem = styled.div`
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  background-color: ${props => props.selected ? '#f0f0f0' : 'white'};
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+`;
+
+// 액션 버튼 섹션 (DashboardHeader 아래)
+export const DashboardActionSection = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 16px 24px;
+  background: white;
+  border-radius: 4px;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+`;
+
+// 최근 작성한 지출결의서 섹션
+export const RecentExpenseSection = styled.div`
+  margin-top: 24px;
+  margin-bottom: 24px;
+  background: white;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  padding: 24px;
+
+  @media (max-width: 480px) {
+    margin: 16px 0;
+    padding: 16px;
+  }
+`;
+
+export const RecentExpenseHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+export const RecentExpenseTitle = styled.h2`
+  font-size: 18px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0;
+`;
+
+export const ViewAllLink = styled(Link)`
+  font-size: 15px;
+  font-weight: 500;
+  color: #333333;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background-color: #ffffff;
+  border-radius: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f8f9fa;
+  }
+`;
+
+export const RecentExpenseList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+export const RecentExpenseItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: #ffffff;
+  border: 1px solid ${props => props.selected ? '#489bff' : '#e4e4e4'};
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #489bff;
+    box-shadow: 0 2px 8px rgba(72, 155, 255, 0.1);
+  }
+`;
+
+export const RecentExpenseDate = styled.div`
+  min-width: 100px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #666666;
+`;
+
+export const RecentExpenseContent = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+`;
+
+export const RecentExpenseDescription = styled.div`
+  font-size: 16px;
+  font-weight: 400;
+  color: #666666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const RecentExpenseMeta = styled.div`
+  display: flex;
+  gap: 16px;
+  font-size: 16px;
+  color: #666666;
+
+  span:last-child {
+    font-weight: 500;
+    color: #555555;
+  }
+`;
+
+export const StatBadge = styled.span`
+  padding: 4px 12px;
+  background-color: ${props => {
+    switch(props.status) {
+      case 'approved': return '#edfff6';
+      case 'wait': return '#fff7d7';
+      case 'rejected': return '#ffefef';
+      default: return '#ebf4ff';
+    }
+  }};
+  color: ${props => {
+    switch(props.status) {
+      case 'approved': return '#14804a';
+      case 'wait': return '#ffa310';
+      case 'rejected': return '#d72d30';
+      default: return '#489bff';
+    }
+  }};
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 400;
+`;
+
+export const ChevronIcon = styled.div`
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  color: #666666;
+  font-size: 24px;
+  opacity: 0.7;
+`;
+
+export const StatusBadge = styled.span`
+  padding: 4px 8px;
+  background-color: ${props => {
+    switch(props.status) {
+      case 'approved': return '#edfff6';
+      case 'wait': return '#fff7d7';
+      case 'rejected': return '#ffefef';
+      default: return '#f0f0f0';
+    }
+  }};
+  color: ${props => {
+    switch(props.status) {
+      case 'approved': return '#14804a';
+      case 'wait': return '#ffa310';
+      case 'rejected': return '#d72d30';
+      default: return '#666666';
+    }
+  }};
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
 `;

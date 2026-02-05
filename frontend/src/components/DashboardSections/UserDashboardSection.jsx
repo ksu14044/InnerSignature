@@ -65,51 +65,8 @@ const UserDashboardSection = ({ filters }) => {
     );
   }
 
-  // 데스크톱 버전
-  return (
-    <>
-      {recentExpenses.length > 0 && (
-        <S.RecentSection>
-          <S.SectionTitle>최근 작성한 결의서</S.SectionTitle>
-          <S.ExpenseList>
-            {recentExpenses.map((expense) => (
-              <S.ExpenseItem
-                key={expense.expenseReportId}
-                onClick={() => navigate(`/detail/${expense.expenseReportId}`)}
-              >
-                <S.ExpenseItemDate>{expense.reportDate}</S.ExpenseItemDate>
-                <S.ExpenseItemContent>
-                  <S.ExpenseItemTitle title={expense.summaryDescription || expense.firstDescription || '-'}>
-                    {expense.summaryDescription || expense.firstDescription || '-'}
-                  </S.ExpenseItemTitle>
-                  <S.ExpenseItemMeta>
-                    <span>{expense.totalAmount.toLocaleString()}원</span>
-                    <span>{expense.status === 'WAIT' ? '대기' : 
-                           expense.status === 'APPROVED' ? '승인' :
-                           expense.status}</span>
-                  </S.ExpenseItemMeta>
-                </S.ExpenseItemContent>
-                <S.ExpenseItemAction>
-                  <FaEye />
-                </S.ExpenseItemAction>
-              </S.ExpenseItem>
-            ))}
-          </S.ExpenseList>
-        </S.RecentSection>
-      )}
-
-      <S.ActionSection>
-        <S.ActionButton onClick={() => navigate('/expenses/create')}>
-          <FaPlus />
-          <span>새 결의서 작성</span>
-        </S.ActionButton>
-        <S.ActionButton variant="secondary" onClick={() => navigate('/expenses')}>
-          <FaList />
-          <span>내 결의서 목록</span>
-        </S.ActionButton>
-      </S.ActionSection>
-    </>
-  );
+  // 데스크톱 버전 - MainDashboardPage에서 이미 헤더와 최근 결의서를 표시하므로 여기서는 빈 컴포넌트 반환
+  return null;
 };
 
 export default UserDashboardSection;

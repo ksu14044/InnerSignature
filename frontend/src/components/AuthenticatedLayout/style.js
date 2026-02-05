@@ -11,22 +11,6 @@ export const Content = styled.main`
   min-width: 0;
 `;
 
-export const ContentInner = styled.div`
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--page-padding);
-
-  @media (max-width: 768px) {
-    padding: var(--page-padding-tablet);
-  }
-
-  @media (max-width: 480px) {
-    padding: 0;
-    width: 100%;
-    max-width: 100%;
-  }
-`;
-
 export const ContentHeader = styled.div`
   display: flex;
   justify-content: space-between;

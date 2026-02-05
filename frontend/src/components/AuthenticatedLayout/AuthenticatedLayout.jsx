@@ -153,6 +153,10 @@ const AuthenticatedLayout = ({ children, customTitle, customSubtitle, customAddi
     return <>{children}</>;
   }
   
+  // 대시보드 페이지는 자체 헤더를 사용하므로 ContentHeader 숨김
+  const isDashboardPage = location.pathname === '/dashboard' || location.pathname === '/dashboard/main';
+  const shouldHideContentHeader = isDashboardPage && user?.role === 'USER';
+
   return (
     <>
       {/* 모바일은 기존 MobileAppBar/MobileBottomNav가 전역 헤더 역할을 수행 */}
@@ -162,7 +166,7 @@ const AuthenticatedLayout = ({ children, customTitle, customSubtitle, customAddi
         <S.Layout>
           <AppSidebar />
           <S.Content>
-            <S.ContentInner>
+            {!shouldHideContentHeader && (
               <S.ContentHeader>
                 <S.TitleBlock>
                   <S.Title>{title}</S.Title>
@@ -170,7 +174,7 @@ const AuthenticatedLayout = ({ children, customTitle, customSubtitle, customAddi
                 </S.TitleBlock>
                 {additionalButtons && <S.HeaderActions>{additionalButtons}</S.HeaderActions>}
               </S.ContentHeader>
-            </S.ContentInner>
+            )}
             {children}
           </S.Content>
         </S.Layout>

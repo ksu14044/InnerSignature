@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { fetchExpenseList } from '../../api/expenseApi';
-import { getUserCompanies } from '../../api/userApi';
+import { fetchExpenseList, fetchPendingApprovals } from '../../api/expenseApi';
+import { getUserCompanies, getPendingUsers, approveUser } from '../../api/userApi';
 import { getCurrentSubscription } from '../../api/subscriptionApi';
 import { getTotalAvailableAmount } from '../../api/creditApi';
 import { STATUS_KOREAN } from '../../constants/status';
@@ -10,12 +10,11 @@ import { useDebounce, useOptimizedList } from '../../hooks/useOptimizedList';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
-import UserDashboardSection from '../../components/DashboardSections/UserDashboardSection';
 import AccountantDashboardSection from '../../components/DashboardSections/AccountantDashboardSection';
 import TaxAccountantDashboardSection from '../../components/DashboardSections/TaxAccountantDashboardSection';
 import AdminDashboardSection from '../../components/DashboardSections/AdminDashboardSection';
 import CEODashboardSection from '../../components/DashboardSections/CEODashboardSection';
-import { FaPlus, FaEye, FaChevronUp, FaCalendarAlt, FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaPlus, FaEye, FaChevronUp, FaCalendarAlt, FaChevronDown, FaChevronLeft, FaChevronRight, FaBell, FaList, FaBuilding, FaCheck } from 'react-icons/fa';
 
 const MainDashboardPage = () => {
   const { user } = useAuth();
@@ -34,6 +33,12 @@ const MainDashboardPage = () => {
   const [loadingStatusExpenses, setLoadingStatusExpenses] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [totalCredit, setTotalCredit] = useState(0);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+  const [recentExpenses, setRecentExpenses] = useState([]);
   
   // 날짜를 YYYY-MM-DD 형식으로 변환하는 헬퍼 함수
   const formatDate = (date) => {
@@ -108,6 +113,16 @@ const MainDashboardPage = () => {
           const expenses = response.data.content || [];
           const newStats = calculateStats(expenses);
           setStats(newStats);
+          
+          // 최근 작성한 결의서 (최대 5개)
+          if (user.role === 'USER') {
+            const filteredExpenses = expenses.filter(exp => exp.drafterId === user.userId);
+            setRecentExpenses(
+              filteredExpenses
+                .sort((a, b) => new Date(b.reportDate) - new Date(a.reportDate))
+                .slice(0, 5)
+            );
+          }
         }
       } catch (error) {
         console.error('대시보드 데이터 로드 실패:', error);
@@ -123,6 +138,50 @@ const MainDashboardPage = () => {
 
     loadDashboardData();
   }, [user, filterParams, calculateStats]);
+
+  // 알림 데이터 로드
+  useEffect(() => {
+    if (!user?.userId) return;
+
+    const loadNotifications = async () => {
+      try {
+        // 서명 대기 건 조회
+        const approvalsRes = await fetchPendingApprovals(user.userId);
+        if (approvalsRes.success) {
+          setPendingApprovals(approvalsRes.data || []);
+        }
+
+        // 승인 대기 사용자 조회 (CEO, ADMIN만)
+        if (user.role === 'CEO' || user.role === 'ADMIN') {
+          const usersRes = await getPendingUsers();
+          if (usersRes.success) {
+            setPendingUsers(usersRes.data || []);
+          }
+        }
+      } catch (error) {
+        console.error('알림 데이터 로드 실패:', error);
+      }
+    };
+
+    loadNotifications();
+  }, [user?.userId, user?.role]);
+
+  // 회사 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isCompanyDropdownOpen && !event.target.closest('[data-company-dropdown]')) {
+        setIsCompanyDropdownOpen(false);
+      }
+    };
+
+    if (isCompanyDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCompanyDropdownOpen]);
 
 
   // 구독 및 크레딧 정보 로드 (CEO, ADMIN만)
@@ -351,13 +410,96 @@ const MainDashboardPage = () => {
     return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
   }
 
+  const { companies, switchCompany } = useAuth();
+  const totalNotifications = pendingApprovals.length + pendingUsers.length;
+
   return (
     <S.Container>
+      {/* 헤더 영역 - 피그마 디자인 기반 */}
+      {user?.role === 'USER' && (
+        <>
+          <S.DashboardHeader>
+            <S.DashboardHeaderLeft>
+              <S.DashboardTitle>대시보드</S.DashboardTitle>
+            </S.DashboardHeaderLeft>
+            <S.DashboardHeaderRight>
+              <S.DashboardNotificationContainer>
+                <S.DashboardNotificationIconWrapper>
+                  <S.DashboardNotificationIcon
+                    onClick={() => {
+                      // 서명 대기 건이 있으면 바로 모달 열기
+                      if (pendingApprovals.length > 0) {
+                        setIsNotificationModalOpen(true);
+                      } else if (pendingUsers.length > 0) {
+                        // 승인 대기 건이 있으면 승인 모달 열기
+                        setIsApprovalModalOpen(true);
+                      }
+                    }}
+                    style={{ cursor: totalNotifications > 0 ? 'pointer' : 'default' }}
+                  >
+                    <img src="/이너사인_이미지 (1)/아이콘/24px_알림_사이드바/알림.png" alt="알림" />
+                  </S.DashboardNotificationIcon>
+                  {totalNotifications > 0 && (
+                    <S.DashboardNotificationBadgeCount>{totalNotifications > 9 ? '9+' : totalNotifications}</S.DashboardNotificationBadgeCount>
+                  )}
+                </S.DashboardNotificationIconWrapper>
+                <S.DashboardNotificationBadge>
+                  <S.DashboardProfileIcon />
+                </S.DashboardNotificationBadge>
+              </S.DashboardNotificationContainer>
+            </S.DashboardHeaderRight>
+          </S.DashboardHeader>
+          
+          {/* 액션 버튼 섹션 */}
+          <S.DashboardActionSection>
+            {companies && companies.length > 1 && (
+              <S.DashboardCompanySelector data-company-dropdown>
+                <S.DashboardCompanySelectorButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>
+                  <span>{companies.find(c => c.companyId === user.companyId)?.companyName || '회사 선택'}</span>
+                  <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />
+                </S.DashboardCompanySelectorButton>
+                {isCompanyDropdownOpen && (
+                  <S.DashboardCompanyDropdown>
+                    {companies.map((company) => (
+                      <S.DashboardCompanyDropdownItem
+                        key={company.companyId}
+                        selected={company.companyId === user.companyId}
+                        onClick={async () => {
+                          try {
+                            await switchCompany(company.companyId);
+                            setIsCompanyDropdownOpen(false);
+                            window.location.reload();
+                          } catch (error) {
+                            alert('회사 전환에 실패했습니다.');
+                          }
+                        }}
+                      >
+                        {company.companyId === user.companyId && <FaCheck style={{ marginRight: '8px', color: '#007bff' }} />}
+                        {company.companyName}
+                      </S.DashboardCompanyDropdownItem>
+                    ))}
+                  </S.DashboardCompanyDropdown>
+                )}
+              </S.DashboardCompanySelector>
+            )}
+            <S.ActionButtons>
+              <S.ListButton onClick={() => navigate('/expenses')}>
+                <FaList />
+                <span>내 지출결의서</span>
+              </S.ListButton>
+              <S.CreateButton onClick={() => navigate('/expenses/create')}>
+                <FaPlus />
+                <span>지출결의서 작성</span>
+              </S.CreateButton>
+            </S.ActionButtons>
+          </S.DashboardActionSection>
+        </>
+      )}
+
       {/* 기간 필터 */}
       <S.FilterSection>
         <S.FilterGroup>
           <S.FilterLabel>
-            <FaCalendarAlt />
             월별 탐색
           </S.FilterLabel>
           <S.MonthNavigator>
@@ -374,49 +516,53 @@ const MainDashboardPage = () => {
         </S.FilterGroup>
       </S.FilterSection>
 
-      {/* 통계 카드 */}
+      {/* 통계 카드 - 피그마 디자인 기반 */}
       <S.StatsGrid>
         <S.StatCard>
-          <S.StatLabel>합계 금액</S.StatLabel>
-          <S.StatValue status="default">{stats.totalAmount.toLocaleString()}원</S.StatValue>
+          <S.StatLabel>
+            <S.StatBadge status="default">합계 금액</S.StatBadge>
+          </S.StatLabel>
+          <S.StatValue>{stats.totalAmount.toLocaleString()}원</S.StatValue>
         </S.StatCard>
 
         <S.StatCard
           status="wait"
           onClick={() => handleStatCardClick('WAIT')}
-          style={{ cursor: 'pointer' }}
           title="대기 상태 결의서 보기"
           selected={selectedStatus === 'WAIT'}
         >
-          <S.StatLabel>대기</S.StatLabel>
-          <S.StatValue status="wait">{stats.waitCount}건</S.StatValue>
-          {selectedStatus === 'WAIT' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
+          <S.StatLabel>
+            <S.StatBadge status="wait">대기</S.StatBadge>
+          </S.StatLabel>
+          <S.StatValue>{stats.waitCount}건</S.StatValue>
+          {selectedStatus === 'WAIT' && <S.ChevronIcon><FaChevronUp /></S.ChevronIcon>}
         </S.StatCard>
 
         <S.StatCard
           status="rejected"
           onClick={() => handleStatCardClick('REJECTED')}
-          style={{ cursor: 'pointer' }}
           title="반려 상태 결의서 보기"
           selected={selectedStatus === 'REJECTED'}
         >
-          <S.StatLabel>반려</S.StatLabel>
-          <S.StatValue status="rejected">{stats.rejectedCount}건</S.StatValue>
-          {selectedStatus === 'REJECTED' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
+          <S.StatLabel>
+            <S.StatBadge status="rejected">반려</S.StatBadge>
+          </S.StatLabel>
+          <S.StatValue>{stats.rejectedCount}건</S.StatValue>
+          {selectedStatus === 'REJECTED' && <S.ChevronIcon><FaChevronUp /></S.ChevronIcon>}
         </S.StatCard>
 
         <S.StatCard
           status="approved"
           onClick={() => handleStatCardClick('APPROVED')}
-          style={{ cursor: 'pointer' }}
           title="승인 상태 결의서 보기"
           selected={selectedStatus === 'APPROVED'}
         >
-          <S.StatLabel>승인</S.StatLabel>
-          <S.StatValue status="approved">{stats.approvedCount}건</S.StatValue>
-          {selectedStatus === 'APPROVED' && <FaChevronUp style={{ marginTop: '8px', fontSize: '14px', opacity: 0.7 }} />}
+          <S.StatLabel>
+            <S.StatBadge status="approved">승인</S.StatBadge>
+          </S.StatLabel>
+          <S.StatValue>{stats.approvedCount}건</S.StatValue>
+          {selectedStatus === 'APPROVED' && <S.ChevronIcon><FaChevronUp /></S.ChevronIcon>}
         </S.StatCard>
-
       </S.StatsGrid>
 
       {/* 선택된 상태의 결의서 목록 */}
@@ -426,15 +572,9 @@ const MainDashboardPage = () => {
             <S.StatusExpenseTitle>
               최근 {STATUS_KOREAN[selectedStatus]} 상태 결의서
             </S.StatusExpenseTitle>
-            <S.ViewAllButton onClick={() => {
-              const params = new URLSearchParams();
-              params.append('status', selectedStatus);
-              if (filters.startDate) params.append('startDate', filters.startDate);
-              if (filters.endDate) params.append('endDate', filters.endDate);
-              navigate(`/expenses?${params.toString()}`);
-            }}>
-              전체 보기
-            </S.ViewAllButton>
+            <S.ViewAllLink to={`/expenses?status=${selectedStatus}${filters.startDate ? `&startDate=${filters.startDate}` : ''}${filters.endDate ? `&endDate=${filters.endDate}` : ''}`}>
+              전체보기 →
+            </S.ViewAllLink>
           </S.StatusExpenseHeader>
 
           {loadingStatusExpenses ? (
@@ -442,7 +582,7 @@ const MainDashboardPage = () => {
           ) : statusExpenses.length === 0 ? (
             <S.EmptyMessage>해당 상태의 결의서가 없습니다.</S.EmptyMessage>
           ) : (
-            <S.ExpenseListContainer>
+            <S.RecentExpenseList>
               {statusExpenses && statusExpenses.slice(0, 10).map((item) => {
                 // 지급 요청일 계산
                 const paymentReqDate = item.details && item.details.length > 0
@@ -459,35 +599,82 @@ const MainDashboardPage = () => {
                     ? item.firstDescription
                     : '-';
 
+                // 상태를 소문자로 변환 (StatusBadge용)
+                // PENDING도 wait로 매핑
+                let statusLower = item.status?.toLowerCase() || '';
+                if (statusLower === 'pending') {
+                  statusLower = 'wait';
+                }
+
                 return (
-                  <S.ExpenseListItem key={item.expenseReportId}>
-                    <S.ExpenseListItemLink to={`/detail/${item.expenseReportId}`}>
-                      <S.ExpenseListItemDate>{paymentReqDate}</S.ExpenseListItemDate>
-                      <S.ExpenseListItemContent>
-                        <S.ExpenseListItemTitle>
-                          {descriptionDisplay}
-                        </S.ExpenseListItemTitle>
-                        <S.ExpenseListItemMeta>
-                          <span>{item.drafterName}</span>
-                          <span>{item.totalAmount.toLocaleString()}원</span>
-                        </S.ExpenseListItemMeta>
-                      </S.ExpenseListItemContent>
-                      <S.ExpenseListItemAction>
-                        <FaEye />
-                      </S.ExpenseListItemAction>
-                    </S.ExpenseListItemLink>
-                  </S.ExpenseListItem>
+                  <S.RecentExpenseItem
+                    key={item.expenseReportId}
+                    onClick={() => navigate(`/detail/${item.expenseReportId}`)}
+                    selected={false}
+                  >
+                    <S.RecentExpenseDate>{paymentReqDate}</S.RecentExpenseDate>
+                    <S.RecentExpenseContent>
+                      <S.RecentExpenseDescription>
+                        {descriptionDisplay}
+                      </S.RecentExpenseDescription>
+                      <S.RecentExpenseMeta>
+                        <span>{item.drafterName}</span>
+                        <span>{item.totalAmount.toLocaleString()}원</span>
+                      </S.RecentExpenseMeta>
+                    </S.RecentExpenseContent>
+                    {item.status && (
+                      <S.StatusBadge status={statusLower}>
+                        {STATUS_KOREAN[item.status] || item.status}
+                      </S.StatusBadge>
+                    )}
+                  </S.RecentExpenseItem>
                 );
               })}
-            </S.ExpenseListContainer>
+            </S.RecentExpenseList>
           )}
         </S.StatusExpenseSection>
       )}
 
        
 
-      {/* 권한별 대시보드 섹션 */}
-      {user?.role === 'USER' && <UserDashboardSection filters={filters} />}
+      {/* 일반 사용자 대시보드 - 최근 작성한 지출결의서 */}
+      {user?.role === 'USER' && !selectedStatus && (
+        <S.RecentExpenseSection>
+          <S.RecentExpenseHeader>
+            <S.RecentExpenseTitle>최근 작성한 지출결의서</S.RecentExpenseTitle>
+            <S.ViewAllLink to="/expenses">전체보기 →</S.ViewAllLink>
+          </S.RecentExpenseHeader>
+          {recentExpenses.length === 0 ? (
+            <S.EmptyMessage>작성한 결의서가 없습니다.</S.EmptyMessage>
+          ) : (
+            <S.RecentExpenseList>
+              {recentExpenses.map((expense) => (
+                <S.RecentExpenseItem
+                  key={expense.expenseReportId}
+                  onClick={() => navigate(`/detail/${expense.expenseReportId}`)}
+                  selected={false}
+                >
+                  <S.RecentExpenseDate>{expense.reportDate}</S.RecentExpenseDate>
+                  <S.RecentExpenseContent>
+                    <S.RecentExpenseDescription>
+                      {expense.summaryDescription || expense.firstDescription || '-'}
+                    </S.RecentExpenseDescription>
+                    <S.RecentExpenseMeta>
+                      <span>{expense.drafterName}</span>
+                      <span>{expense.totalAmount.toLocaleString()}원</span>
+                    </S.RecentExpenseMeta>
+                  </S.RecentExpenseContent>
+                  {expense.status === 'APPROVED' && (
+                    <S.StatusBadge status="approved">승인</S.StatusBadge>
+                  )}
+                </S.RecentExpenseItem>
+              ))}
+            </S.RecentExpenseList>
+          )}
+        </S.RecentExpenseSection>
+      )}
+
+      {/* 권한별 대시보드 섹션 - 일반 사용자는 MainDashboardPage에서 직접 처리 */}
       {user?.role === 'ACCOUNTANT' && <AccountantDashboardSection filters={filters} />}
       {user?.role === 'TAX_ACCOUNTANT' && <TaxAccountantDashboardSection filters={filters} />}
       {user?.role === 'ADMIN' && <AdminDashboardSection filters={filters} />}
@@ -542,6 +729,145 @@ const MainDashboardPage = () => {
       )}
 
     
+
+      {/* 서명 대기 모달 */}
+      {isNotificationModalOpen && (
+        <S.NotificationModal onClick={() => setIsNotificationModalOpen(false)}>
+          <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
+            <S.NotificationModalHeader>
+              <h3>서명 대기 건 ({pendingApprovals.length}건)</h3>
+              <button onClick={() => setIsNotificationModalOpen(false)}>×</button>
+            </S.NotificationModalHeader>
+            <S.NotificationModalBody>
+              {pendingApprovals.length === 0 ? (
+                <p>서명 대기 중인 건이 없습니다.</p>
+              ) : (
+                <S.NotificationList>
+                  {pendingApprovals.map((item) => (
+                    <S.NotificationItem
+                      key={item.expenseReportId}
+                      onClick={() => {
+                        navigate(`/detail/${item.expenseReportId}`);
+                        setIsNotificationModalOpen(false);
+                      }}
+                    >
+                      <S.NotificationItemTitle>
+                        {(item.summaryDescription && item.summaryDescription.trim() !== '')
+                          ? item.summaryDescription
+                          : (item.firstDescription && item.firstDescription.trim() !== '')
+                            ? item.firstDescription
+                            : '-'}
+                      </S.NotificationItemTitle>
+                      <S.NotificationItemInfo>
+                        <span>문서번호: {item.expenseReportId}</span>
+                        <span>작성자: {item.drafterName}</span>
+                        <span>작성일: {item.reportDate}</span>
+                        <span>금액: {item.totalAmount.toLocaleString()}원</span>
+                      </S.NotificationItemInfo>
+                    </S.NotificationItem>
+                  ))}
+                </S.NotificationList>
+              )}
+            </S.NotificationModalBody>
+          </S.NotificationModalContent>
+        </S.NotificationModal>
+      )}
+
+      {/* 승인 대기 모달 */}
+      {isApprovalModalOpen && (
+        <S.NotificationModal onClick={() => setIsApprovalModalOpen(false)}>
+          <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
+            <S.NotificationModalHeader>
+              <h3>승인 대기 사용자 ({pendingUsers.length}건)</h3>
+              <button onClick={() => setIsApprovalModalOpen(false)}>×</button>
+            </S.NotificationModalHeader>
+            <S.NotificationModalBody>
+              {pendingUsers.length === 0 ? (
+                <p>승인 대기 중인 사용자가 없습니다.</p>
+              ) : (
+                <S.NotificationList>
+                  {pendingUsers.map((pendingUser) => (
+                    <S.NotificationItem key={pendingUser.userId}>
+                      <S.NotificationItemTitle>{pendingUser.koreanName} ({pendingUser.username})</S.NotificationItemTitle>
+                      <S.NotificationItemInfo>
+                        <span>역할: {pendingUser.role}</span>
+                        <span>직급: {pendingUser.position || '-'}</span>
+                        <span>이메일: {pendingUser.email || '-'}</span>
+                      </S.NotificationItemInfo>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await approveUser(pendingUser.userId, 'APPROVE');
+                              if (response.success) {
+                                setPendingUsers(pendingUsers.filter(u => u.userId !== pendingUser.userId));
+                                const refreshResponse = await getPendingUsers();
+                                if (refreshResponse.success) {
+                                  setPendingUsers(refreshResponse.data || []);
+                                }
+                                alert('사용자가 승인되었습니다.');
+                              } else {
+                                alert(response.message || '승인에 실패했습니다.');
+                              }
+                            } catch (error) {
+                              console.error('승인 실패:', error);
+                              alert('승인 처리 중 오류가 발생했습니다.');
+                            }
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500'
+                          }}
+                        >
+                          승인
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await approveUser(pendingUser.userId, 'REJECT');
+                              if (response.success) {
+                                setPendingUsers(pendingUsers.filter(u => u.userId !== pendingUser.userId));
+                                const refreshResponse = await getPendingUsers();
+                                if (refreshResponse.success) {
+                                  setPendingUsers(refreshResponse.data || []);
+                                }
+                                alert('사용자가 거부되었습니다.');
+                              } else {
+                                alert(response.message || '거부에 실패했습니다.');
+                              }
+                            } catch (error) {
+                              console.error('거부 실패:', error);
+                              alert('거부 처리 중 오류가 발생했습니다.');
+                            }
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500'
+                          }}
+                        >
+                          거부
+                        </button>
+                      </div>
+                    </S.NotificationItem>
+                  ))}
+                </S.NotificationList>
+              )}
+            </S.NotificationModalBody>
+          </S.NotificationModalContent>
+        </S.NotificationModal>
+      )}
 
       {/* CEO이면서 소속 회사가 없을 때 회사 등록 모달 */}
       <CompanyRegistrationModal
