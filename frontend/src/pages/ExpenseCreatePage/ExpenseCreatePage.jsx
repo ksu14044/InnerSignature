@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';
-import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck, FaEdit, FaFileUpload, FaFile } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaSave, FaArrowLeft, FaUserCheck, FaEdit, FaFileUpload, FaFile, FaList } from 'react-icons/fa';
 
 // 스타일 컴포넌트들을 한꺼번에 'S'라는 이름으로 가져옵니다.
 import * as S from './style';
 import { useAuth } from '../../contexts/AuthContext';
-import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail, getExpenseCreationProgress, createExpenseDraft, updateExpenseDraft, deleteReceipt } from '../../api/expenseApi';
+import { setApprovalLines, fetchApprovers, fetchExpenseDetail, updateExpense, uploadReceipt, getReceipts, uploadReceiptForDetail, getExpenseCreationProgress, createExpenseDraft, updateExpenseDraft, deleteReceipt, fetchPendingApprovals } from '../../api/expenseApi';
+import { getPendingUsers } from '../../api/userApi';
 import { API_CONFIG } from '../../config/api';
 import { EXPENSE_STATUS, APPROVAL_STATUS } from '../../constants/status';
 import { getCategoriesByRole, filterCategoriesByRole } from '../../constants/categories';
 import { DEFAULT_VALUES } from '../../constants/defaults';
 import { getMergedCategories } from '../../api/expenseCategoryApi';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import { formatNumber, parseFormattedNumber } from '../../utils/numberUtils';
 
 // Lazy load 모달 컴포넌트
@@ -63,6 +65,12 @@ const ExpenseCreatePage = () => {
 
   // 7. 토스트 메시지 상태
   const [toastMessage, setToastMessage] = useState(null);
+
+  // 8. 알림 관련 상태
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
 
   // 4. 필드 참조 (스크롤 이동용)
   const titleInputRef = useRef(null);
@@ -298,6 +306,33 @@ const ExpenseCreatePage = () => {
       loadExpenseData();
     }
   }, [isEditMode, id, user, navigate]);
+
+  // 알림 데이터 로드
+  useEffect(() => {
+    if (!user?.userId) return;
+
+    const loadNotifications = async () => {
+      try {
+        // 서명 대기 건 조회
+        const approvalsRes = await fetchPendingApprovals(user.userId);
+        if (approvalsRes.success) {
+          setPendingApprovals(approvalsRes.data || []);
+        }
+
+        // 승인 대기 사용자 조회 (CEO, ADMIN만)
+        if (user.role === 'CEO' || user.role === 'ADMIN') {
+          const usersRes = await getPendingUsers();
+          if (usersRes.success) {
+            setPendingUsers(usersRes.data || []);
+          }
+        }
+      } catch (error) {
+        console.error('알림 데이터 로드 실패:', error);
+      }
+    };
+
+    loadNotifications();
+  }, [user?.userId, user?.role]);
 
   // --- 이벤트 핸들러 ---
 
@@ -1245,6 +1280,25 @@ const ExpenseCreatePage = () => {
   return (
     <>
       <S.Container>
+      <PageHeader
+        title="지출결의서"
+        pendingApprovals={pendingApprovals}
+        pendingUsers={pendingUsers}
+        onNotificationClick={() => {
+          // 서명 대기 건이 있으면 바로 모달 열기
+          if (pendingApprovals.length > 0) {
+            setIsNotificationModalOpen(true);
+          } else if (pendingUsers.length > 0) {
+            // 승인 대기 건이 있으면 승인 모달 열기
+            setIsApprovalModalOpen(true);
+          }
+        }}
+        onApprovalClick={() => setIsApprovalModalOpen(true)}
+      />
+      <S.PageSubHeader>
+        {isEditMode ? '지출결의서 수정' : '지출결의서 작성'}
+      </S.PageSubHeader>
+
       {/* 2. 결재자 선택 섹션 - 급여가 아닌 경우에만 표시 */}
       {!hasSalaryCategory && (
         <S.Section ref={approverSectionRef} data-tourid="tour-approver-selection">
@@ -1258,23 +1312,24 @@ const ExpenseCreatePage = () => {
           
           {selectedApprovers.length > 0 ? (
             <S.SelectedApproversDisplay>
-              <S.SelectedApproversTitle>선택된 결재 순서:</S.SelectedApproversTitle>
+              <S.SelectedApproversTitle>선택된 결재 순서</S.SelectedApproversTitle>
               <S.SelectedApproversList>
                 {selectedApprovers.map((userId, index) => {
                   const adminUser = adminUsers.find(user => user.userId === userId);
                   return (
                     <S.SelectedApproverItem key={userId}>
-                      <S.ApproverOrderBadge>{index + 1}</S.ApproverOrderBadge>
+                      <S.ApproverOrderBadge>{index + 1}순위</S.ApproverOrderBadge>
                       <S.SelectedApproverInfo>
                         <S.SelectedApproverName>{adminUser?.koreanName || '알 수 없음'}</S.SelectedApproverName>
-                        <S.SelectedApproverPosition>{adminUser?.position || '관리자'}</S.SelectedApproverPosition>
                       </S.SelectedApproverInfo>
-                      <S.RemoveApproverButton 
-                        onClick={() => handleApproverToggle(userId)}
-                        title="제거"
-                      >
-                        ×
-                      </S.RemoveApproverButton>
+                      <S.RewriteIcon
+                        src="/이너사인_이미지 (1)/아이콘/20px_기타_입력/다시쓰기.png"
+                        alt="다시쓰기"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApproverToggle(userId);
+                        }}
+                      />
                     </S.SelectedApproverItem>
                   );
                 })}
@@ -1282,7 +1337,7 @@ const ExpenseCreatePage = () => {
             </S.SelectedApproversDisplay>
           ) : (
             <S.EmptyApproversMessage>
-              결재자를 선택해주세요. 우측 상단의 "결재자 선택" 버튼을 클릭하세요.
+              결재자를 선택해 주세요. 결재자 선택 버튼을 클릭하여 선택하세요.
             </S.EmptyApproversMessage>
           )}
         </S.Section>
@@ -1313,42 +1368,55 @@ const ExpenseCreatePage = () => {
           <S.Table>
             <thead>
               <tr>
-                <S.Th width="5%">#</S.Th>
-                <S.Th width="12%">사용일자</S.Th>
-                <S.Th width="12%">항목</S.Th>
-                <S.Th width="10%">상호명</S.Th>
-                <S.Th width="15%">적요 (내용)</S.Th>
-                <S.Th width="12%">금액</S.Th>
-                <S.Th width="12%">결제수단</S.Th>
-                <S.Th width="20%">관리</S.Th>
+                <S.Th width="6.67%">지급 요청일</S.Th>
+                <S.Th width="6.67%">항목</S.Th>
+                <S.Th width="6.67%">상호명</S.Th>
+                <S.Th width="40%">적요(내용)</S.Th>
+                <S.Th width="15%" style={{ textAlign: 'right' }}>금액</S.Th>
+                <S.Th width="11.67%">결제수단</S.Th>
+                <S.Th width="6.67%">비고</S.Th>
+                <S.Th width="6.67%">관리</S.Th>
               </tr>
             </thead>
             <tbody>
               {details.length === 0 ? (
                 <tr>
-                  <S.Td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-                    지출 상세 내역이 없습니다. "행 추가" 버튼을 클릭하여 추가하세요.
+                  <S.Td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: '#666666', fontSize: '15px', fontWeight: 350 }}>
+                    지출 상세 내역이 없습니다. 행 추가 버튼을 클릭하여 추가하세요.
                   </S.Td>
                 </tr>
               ) : (
                 details.map((detail, index) => (
                   <S.TableRow key={index} onClick={() => openEditModal(index)}>
-                    <S.Td>{index + 1}</S.Td>
                     <S.Td>{detail.paymentReqDate || '-'}</S.Td>
                     <S.Td>{detail.category || '-'}</S.Td>
                     <S.Td>{detail.merchantName || '-'}</S.Td>
                     <S.Td>{detail.description || '-'}</S.Td>
-                    <S.Td style={{ textAlign: 'right', fontWeight: '600' }}>
+                    <S.Td style={{ textAlign: 'right', fontWeight: '500' }}>
                       {detail.amount ? formatNumber(detail.amount) + '원' : '-'}
                     </S.Td>
-                    <S.Td>{getPaymentMethodLabel(detail.paymentMethod)}</S.Td>
+                    <S.Td>
+                      {(() => {
+                        const methodLabel = getPaymentMethodLabel(detail.paymentMethod);
+                        const isCardPayment = ['CARD', 'COMPANY_CARD', 'CREDIT_CARD', 'DEBIT_CARD'].includes(detail.paymentMethod);
+                        if (isCardPayment && detail.cardNumber) {
+                          const numericValue = detail.cardNumber.replace(/[^0-9]/g, '');
+                          const lastFour = numericValue.length >= 4
+                            ? numericValue.substring(numericValue.length - 4)
+                            : numericValue;
+                          return `${methodLabel} (${lastFour})`;
+                        }
+                        return methodLabel;
+                      })()}
+                    </S.Td>
+                    <S.Td>{detail.note || '-'}</S.Td>
                     <S.Td onClick={(e) => e.stopPropagation()}>
                       <S.ActionButtonGroup>
                         <S.EditButton onClick={() => openEditModal(index)} title="수정">
-                          <FaEdit />
+                          <img src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/도장카드수정.png" alt="수정" />
                         </S.EditButton>
                         <S.DeleteButton onClick={() => removeDetailRow(index)} title="삭제">
-                          <FaTrash />
+                          <img src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/삭제.png" alt="삭제" />
                         </S.DeleteButton>
                       </S.ActionButtonGroup>
                     </S.Td>
@@ -1370,13 +1438,12 @@ const ExpenseCreatePage = () => {
               return (
                 <S.DetailCard key={index} onClick={() => openEditModal(index)}>
                   <S.CardHeader>
-                    <S.CardRowNumber>#{index + 1}</S.CardRowNumber>
                     <S.ActionButtonGroup>
                       <S.EditButton onClick={(e) => { e.stopPropagation(); openEditModal(index); }} title="수정">
-                        <FaEdit />
+                        <img src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/도장카드수정.png" alt="수정" />
                       </S.EditButton>
                       <S.DeleteButton onClick={(e) => { e.stopPropagation(); removeDetailRow(index); }} title="삭제">
-                        <FaTrash />
+                        <img src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/삭제.png" alt="삭제" />
                       </S.DeleteButton>
                     </S.ActionButtonGroup>
                   </S.CardHeader>
@@ -1407,7 +1474,20 @@ const ExpenseCreatePage = () => {
                     </S.MobileSummaryRow>
                     <S.MobileSummaryRow>
                       <S.MobileLabel>결제수단</S.MobileLabel>
-                      <S.MobileValue>{getPaymentMethodLabel(detail.paymentMethod)}</S.MobileValue>
+                      <S.MobileValue>
+                        {(() => {
+                          const methodLabel = getPaymentMethodLabel(detail.paymentMethod);
+                          const isCardPayment = ['CARD', 'COMPANY_CARD', 'CREDIT_CARD', 'DEBIT_CARD'].includes(detail.paymentMethod);
+                          if (isCardPayment && detail.cardNumber) {
+                            const numericValue = detail.cardNumber.replace(/[^0-9]/g, '');
+                            const lastFour = numericValue.length >= 4
+                              ? numericValue.substring(numericValue.length - 4)
+                              : numericValue;
+                            return `${methodLabel} (${lastFour})`;
+                          }
+                          return methodLabel;
+                        })()}
+                      </S.MobileValue>
                     </S.MobileSummaryRow>
                   </S.CardBody>
                 </S.DetailCard>
@@ -1421,8 +1501,8 @@ const ExpenseCreatePage = () => {
       {/* 5. 하단 총계 및 버튼 */}
       <S.TotalSection data-tourid="tour-total-amount">
         <S.TotalCard>
-          <S.TotalLabel>총 합계</S.TotalLabel>
-          <S.TotalAmount>{totalAmount.toLocaleString()} 원</S.TotalAmount>
+          <S.TotalLabel>합계 금액</S.TotalLabel>
+          <S.TotalAmount>{totalAmount.toLocaleString()}원</S.TotalAmount>
         </S.TotalCard>
       </S.TotalSection>
 
@@ -1431,15 +1511,23 @@ const ExpenseCreatePage = () => {
           <FaArrowLeft />
           <span>취소</span>
         </S.CancelButton>
-      <S.SubmitButton type="button" onClick={handleSaveDraft} disabled={isSubmitting}>
+      <S.DraftButton type="button" onClick={handleSaveDraft} disabled={isSubmitting}>
         <FaSave />
         <span>{isSubmitting ? '처리 중...' : '임시 저장'}</span>
-      </S.SubmitButton>
+      </S.DraftButton>
         <S.SubmitButton data-tourid="tour-submit-button" onClick={handleSubmit} disabled={isSubmitting}>
-          <FaSave />
-          <span>{isSubmitting ? '처리 중...' : '결재 요청 (저장)'}</span>
+          <FaFileUpload />
+          <span>{isSubmitting ? '처리 중...' : '결재 요청'}</span>
         </S.SubmitButton>
       </S.ButtonGroup>
+
+      {/* 목록 버튼 */}
+      <S.ListButtonContainer>
+        <S.ListButton onClick={() => navigate('/expenses')} disabled={isSubmitting}>
+          <FaList />
+          <span>목록</span>
+        </S.ListButton>
+      </S.ListButtonContainer>
 
       {/* 결재자 선택 모달 */}
       {!hasSalaryCategory && isApproverModalOpen && (

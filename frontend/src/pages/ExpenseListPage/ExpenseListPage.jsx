@@ -18,6 +18,7 @@ import { useExpenseData } from '../../hooks/useExpenseData';
 import ExpenseFilters from '../../components/ExpenseFilters/ExpenseFilters';
 import ExpenseTable from '../../components/ExpenseTable/ExpenseTable';
 import ExpensePagination from '../../components/ExpensePagination/ExpensePagination';
+import PageHeader from '../../components/PageHeader/PageHeader';
 
 // Lazy load 모달 컴포넌트
 const CompanyRegistrationModal = lazy(() => import('../../components/CompanyRegistrationModal/CompanyRegistrationModal'));
@@ -531,37 +532,21 @@ const ExpenseListPage = () => {
 
   return (
     <S.Container>
-      <S.PageHeader>
-        <S.PageHeaderLeft>
-          <S.PageTitle>지출결의서</S.PageTitle>
-        </S.PageHeaderLeft>
-        <S.PageHeaderRight>
-          <S.NotificationContainer>
-            <S.NotificationIconWrapper>
-              <S.NotificationIcon
-                onClick={() => {
-                  // 서명 대기 건이 있으면 바로 모달 열기
-                  if (pendingApprovals.length > 0) {
-                    handlers.openNotificationModal();
-                  } else if (pendingUsers.length > 0) {
-                    // 승인 대기 건이 있으면 승인 모달 열기
-                    handlers.openApprovalModal();
-                  }
-                }}
-                style={{ cursor: (pendingApprovals.length + pendingUsers.length) > 0 ? 'pointer' : 'default' }}
-              >
-                <img src="/이너사인_이미지 (1)/아이콘/24px_알림_사이드바/알림.png" alt="알림" />
-              </S.NotificationIcon>
-              {(pendingApprovals.length + pendingUsers.length) > 0 && (
-                <S.NotificationBadgeCount>{(pendingApprovals.length + pendingUsers.length) > 9 ? '9+' : (pendingApprovals.length + pendingUsers.length)}</S.NotificationBadgeCount>
-              )}
-            </S.NotificationIconWrapper>
-            <S.ProfileBadge>
-              <S.ProfileIcon />
-            </S.ProfileBadge>
-          </S.NotificationContainer>
-        </S.PageHeaderRight>
-      </S.PageHeader>
+      <PageHeader
+        title="지출결의서"
+        pendingApprovals={pendingApprovals}
+        pendingUsers={pendingUsers}
+        onNotificationClick={() => {
+          // 서명 대기 건이 있으면 바로 모달 열기
+          if (pendingApprovals.length > 0) {
+            handlers.openNotificationModal();
+          } else if (pendingUsers.length > 0) {
+            // 승인 대기 건이 있으면 승인 모달 열기
+            handlers.openApprovalModal();
+          }
+        }}
+        onApprovalClick={() => handlers.openApprovalModal()}
+      />
       <S.TabHeaderBar>
         <S.TabSection>
           <S.TabText

@@ -1,15 +1,13 @@
 import styled from '@emotion/styled';
 
 export const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--spacing-lg);
+  width: 100%;
+  padding: 24px 24px 24px 40px;
   min-height: 100vh;
-  padding-bottom: 120px; /* 하단 고정 버튼 공간 확보 */
+  background: #f8f9fa;
 
   @media (max-width: 768px) {
-    padding: var(--spacing-md);
-    padding-bottom: 100px;
+    padding: 16px 16px 16px 40px;
   }
 
   @media (max-width: 480px) {
@@ -17,27 +15,60 @@ export const Container = styled.div`
     width: 100%;
     max-width: 100%;
     min-height: auto;
-    background: var(--bg-light);
+    background: #f5f5f5;
     padding-top: 56px;
-    padding-bottom: 80px; /* 하단 네비게이션 + FAB 공간 */
+    padding-bottom: 80px;
+    padding-left: 40px;
   }
 `;
 
-export const Header = styled.div`
+export const PageHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: white;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+  }
+`;
+
+export const PageHeaderLeft = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 32px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--primary-color);
+`;
 
-  @media (max-width: 768px) {
-    margin-bottom: 24px;
-    padding-bottom: 12px;
-  }
+export const PageTitle = styled.h1`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0;
+`;
+
+export const PageHeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+export const PageSubHeader = styled.div`
+  margin-bottom: 24px;
+  padding: 0 24px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 24px;
 
   @media (max-width: 480px) {
-    display: none;
+    padding: 0 16px;
+    font-size: 18px;
   }
 `;
 
@@ -48,7 +79,7 @@ export const BackButton = styled.button`
   color: var(--secondary-color);
   cursor: pointer;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   transition: all 0.2s;
@@ -85,51 +116,50 @@ export const Title = styled.h1`
 
 export const Section = styled.div`
   background-color: white;
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e0e0e0;
   position: relative;
   transition: all var(--transition-base);
 
   &:hover {
-    box-shadow: var(--shadow);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 
   @media (max-width: 768px) {
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-md);
+    padding: 20px;
+    margin-bottom: 16px;
   }
 
   @media (max-width: 480px) {
-    padding: var(--spacing-md);
-    margin-bottom: var(--spacing-sm);
-    border-radius: 0;
-    box-shadow: none;
+    padding: 16px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border: none;
-    border-bottom: 1px solid var(--border-light);
   }
 `;
 
 export const SectionTitle = styled.h3`
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--dark-color);
-  margin: 0 0 24px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 21.6px;
 
   @media (max-width: 768px) {
     font-size: 18px;
-    margin-bottom: 20px;
   }
 
   @media (max-width: 480px) {
     font-size: 16px;
-    margin-bottom: 16px;
   }
 `;
 
@@ -137,13 +167,13 @@ export const SectionHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 0;
   }
 `;
 
@@ -223,14 +253,14 @@ export const Value = styled.span`
   color: var(--secondary-color);
   padding: 12px;
   background-color: var(--light-color);
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid var(--border-color);
 `;
 
 export const Input = styled.input`
   padding: 12px 16px;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 16px;
   transition: all 0.2s;
   min-height: 48px;
@@ -254,7 +284,7 @@ export const Input = styled.input`
 export const Select = styled.select`
   padding: 12px 16px;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 16px;
   background-color: white;
   cursor: pointer;
@@ -289,7 +319,7 @@ export const ApproverCheckbox = styled.div`
   align-items: center;
   padding: 16px;
   border: 2px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 4px;
   background-color: white;
   transition: all 0.2s;
   cursor: pointer;
@@ -357,28 +387,34 @@ export const AddButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  background-color: var(--success-color);
-  color: white;
+  padding: 8px 16px;
+  background-color: white;
+  color: #333333;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 15px;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 18px;
   cursor: pointer;
   transition: all 0.2s;
+  height: 36px;
 
   &:hover {
-    background-color: #218838;
-    transform: translateY(-1px);
+    background-color: #f8f9fa;
   }
 `;
 
 export const TableContainer = styled.div`
   overflow-x: auto;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 
   @media (max-width: 480px) {
     display: none;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 `;
 
@@ -386,6 +422,7 @@ export const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
   background-color: white;
+  border: none;
 
   @media (max-width: 768px) {
     font-size: 14px;
@@ -393,13 +430,15 @@ export const Table = styled.table`
 `;
 
 export const Th = styled.th`
-  background-color: var(--light-color);
-  border: 1px solid var(--border-color);
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
   padding: 16px 12px;
-  text-align: center;
-  font-weight: 600;
-  color: var(--dark-color);
+  text-align: ${props => props.width === '12%' && props.children === '금액' ? 'right' : 'left'};
+  font-weight: 500;
+  color: #333333;
   font-size: 14px;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 16.8px;
 
   @media (max-width: 768px) {
     padding: 12px 8px;
@@ -413,18 +452,27 @@ export const Th = styled.th`
 `;
 
 export const Td = styled.td`
-  border: 1px solid var(--border-color);
+  border: 1px solid #e0e0e0;
   padding: 12px 8px;
-  text-align: center;
+  text-align: ${props => props.style?.textAlign || 'left'};
   vertical-align: middle;
+  color: #666666;
+  font-size: 16px;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 19.2px;
 `;
 
 export const TableRow = styled.tr`
   cursor: pointer;
   transition: all 0.2s;
+  background-color: white;
 
   &:hover {
     background-color: #f8f9fa;
+  }
+
+  &:not(:last-child) {
+    border-bottom: 1px solid #e0e0e0;
   }
 `;
 
@@ -439,28 +487,29 @@ export const EditButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
-  background-color: var(--primary-color);
-  color: white;
+  padding: 4px;
+  background-color: transparent;
   border: none;
-  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
   transition: all 0.2s;
-  min-width: 40px;
-  min-height: 40px;
+  width: 30px;
+  height: 30px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 
   &:hover {
-    background-color: var(--primary-hover);
+    opacity: 0.7;
     transform: scale(1.05);
   }
 
   @media (max-width: 480px) {
-    min-width: 40px;
-    min-height: 40px;
-    padding: 8px;
-    font-size: 14px;
-    border-radius: 8px;
+    width: 48px;
+    height: 48px;
+    padding: 4px;
   }
 `;
 
@@ -468,28 +517,29 @@ export const DeleteButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
-  background-color: var(--danger-color);
-  color: white;
+  padding: 4px;
+  background-color: transparent;
   border: none;
-  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
   transition: all 0.2s;
-  min-width: 40px;
-  min-height: 40px;
+  width: 30px;
+  height: 30px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 
   &:hover {
-    background-color: #c82333;
+    opacity: 0.7;
     transform: scale(1.05);
   }
 
   @media (max-width: 480px) {
-    min-width: 40px;
-    min-height: 40px;
-    padding: 8px;
-    font-size: 14px;
-    border-radius: 8px;
+    width: 48px;
+    height: 48px;
+    padding: 4px;
   }
 `;
 
@@ -503,14 +553,14 @@ export const TotalSection = styled.div`
 `;
 
 export const TotalCard = styled.div`
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  background: linear-gradient(135deg, #74dbed 0%, #489bff 100%);
   color: white;
   padding: 24px;
-  border-radius: 12px;
+  border-radius: 4px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -520,14 +570,17 @@ export const TotalCard = styled.div`
   }
 
   @media (max-width: 480px) {
-    border-radius: 16px;
+    border-radius: 4px;
     padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 `;
 
 export const TotalLabel = styled.span`
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 500;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 21.6px;
 
   @media (max-width: 768px) {
     font-size: 16px;
@@ -537,9 +590,12 @@ export const TotalLabel = styled.span`
 export const TotalAmount = styled.span`
   font-size: 32px;
   font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 38.4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: right;
 
   @media (max-width: 768px) {
     font-size: 28px;
@@ -552,29 +608,29 @@ export const TotalAmount = styled.span`
 
 export const ButtonGroup = styled.div`
   display: flex;
-  gap: var(--spacing-md);
+  gap: 8px;
   justify-content: flex-end;
-  margin-top: var(--spacing-xl);
-  padding-bottom: var(--spacing-2xl);
+  margin-top: 32px;
+  padding-bottom: 40px;
 
   @media (max-width: 768px) {
     flex-direction: row;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-lg);
-    padding-bottom: var(--spacing-xl);
+    gap: 8px;
+    margin-top: 24px;
+    padding-bottom: 32px;
   }
 
   @media (max-width: 480px) {
     position: relative;
     background: white;
-    padding: var(--spacing-md);
-    margin: var(--spacing-md);
-    margin-bottom: calc(var(--spacing-md) + 80px); /* FAB 공간 확보 */
-    box-shadow: var(--shadow-sm);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-light);
+    padding: 16px;
+    margin: 16px;
+    margin-bottom: calc(16px + 80px); /* FAB 공간 확보 */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    border: none;
     flex-direction: row;
-    gap: var(--spacing-sm);
+    gap: 8px;
   }
 `;
 
@@ -582,23 +638,24 @@ export const CancelButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-lg);
+  gap: 8px;
+  padding: 8px 16px;
   background-color: white;
-  color: var(--text-primary);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-base);
+  color: #333333;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 15px;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 18px;
   cursor: pointer;
   transition: all var(--transition-base);
-  min-height: 48px;
-  flex: 1;
-  max-width: 200px;
+  min-height: 36px;
+  width: 90px;
 
   &:hover:not(:disabled) {
-    background-color: var(--bg-hover);
-    border-color: var(--secondary-color);
+    background-color: #f8f9fa;
+    border-color: #d0d0d0;
   }
 
   &:disabled {
@@ -607,8 +664,53 @@ export const CancelButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    padding: var(--spacing-md) var(--spacing-lg);
-    max-width: none;
+    padding: 8px 16px;
+    width: auto;
+  }
+
+  @media (max-width: 480px) {
+    flex: 1;
+    padding: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    
+    span {
+      display: inline;
+    }
+  }
+`;
+
+export const DraftButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: white;
+  color: #333333;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 15px;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 18px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  min-height: 36px;
+  width: 122px;
+
+  &:hover:not(:disabled) {
+    background-color: #f8f9fa;
+    border-color: #d0d0d0;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    padding: 8px 16px;
+    width: auto;
   }
 
   @media (max-width: 480px) {
@@ -626,24 +728,25 @@ export const SubmitButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-lg);
-  background-color: var(--primary-color);
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #489bff;
   color: white;
   border: none;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-base);
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 15px;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 18px;
   cursor: pointer;
   transition: all var(--transition-base);
-  min-height: 48px;
-  flex: 2;
-  max-width: 300px;
+  min-height: 36px;
+  width: 122px;
 
   &:hover:not(:disabled) {
-    background-color: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    background-color: #3a8ae6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(72, 155, 255, 0.2);
   }
 
   &:active:not(:disabled) {
@@ -657,8 +760,8 @@ export const SubmitButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    padding: var(--spacing-md) var(--spacing-lg);
-    max-width: none;
+    padding: 8px 16px;
+    width: auto;
   }
 
   @media (max-width: 480px) {
@@ -672,11 +775,65 @@ export const SubmitButton = styled.button`
   }
 `;
 
+export const ListButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 24px;
+  padding-bottom: 32px;
+
+  @media (max-width: 480px) {
+    margin-top: 16px;
+    padding-bottom: 16px;
+  }
+`;
+
+export const ListButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #333333;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 15px;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 22.5px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  width: 90px;
+  height: 40px;
+
+  &:hover:not(:disabled) {
+    background-color: #222222;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  @media (max-width: 480px) {
+    width: 90px;
+    height: 40px;
+  }
+`;
+
 export const InfoMessage = styled.div`
   padding: 15px 20px;
   background-color: #fff3cd;
   border: 1px solid #ffc107;
-  border-radius: 8px;
+  border-radius: 4px;
   color: #856404;
   font-size: 14px;
   line-height: 1.6;
@@ -704,7 +861,7 @@ export const UploadButton = styled.button`
   background-color: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -742,7 +899,7 @@ export const ReceiptItem = styled.div`
   padding: 16px;
   background-color: #f8f9fa;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 4px;
   transition: all 0.2s;
 
   &:hover {
@@ -766,25 +923,26 @@ export const SelectApproverButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  background-color: var(--primary-color);
-  color: white;
+  padding: 8px 16px;
+  background-color: white;
+  color: #333333;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 15px;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 18px;
   cursor: pointer;
   transition: all 0.2s;
+  height: 36px;
 
   &:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+    background-color: #f8f9fa;
   }
 
   @media (max-width: 768px) {
     padding: 8px 16px;
-    font-size: 13px;
+    font-size: 15px;
   }
 
   @media (max-width: 480px) {
@@ -796,17 +954,18 @@ export const SelectApproverButton = styled.button`
 
 export const SelectedApproversDisplay = styled.div`
   margin-top: 20px;
-  padding: 16px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
+  padding: 0;
+  background-color: transparent;
+  border-radius: 0;
+  border: none;
 `;
 
 export const SelectedApproversTitle = styled.div`
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--dark-color);
+  font-weight: 500;
+  font-size: 16px;
+  color: #333333;
   margin-bottom: 12px;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 export const SelectedApproversList = styled.div`
@@ -819,15 +978,16 @@ export const SelectedApproverItem = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  background-color: white;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
+  padding: 0;
+  background-color: transparent;
+  border-radius: 0;
+  border: none;
   transition: all 0.2s;
+  margin-bottom: 8px;
 
   &:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+    border: none;
+    box-shadow: none;
   }
 `;
 
@@ -835,13 +995,15 @@ export const ApproverOrderBadge = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  height: 32px;
-  background-color: var(--primary-color);
-  color: white;
-  border-radius: 50%;
+  min-width: 46px;
+  height: 22px;
+  background-color: #ebf4ff;
+  color: #489bff;
+  border-radius: 4px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
+  font-family: 'Noto Sans KR', sans-serif;
+  padding: 0 8px;
 `;
 
 export const SelectedApproverInfo = styled.div`
@@ -852,14 +1014,29 @@ export const SelectedApproverInfo = styled.div`
 `;
 
 export const SelectedApproverName = styled.span`
-  font-weight: 600;
-  font-size: 16px;
-  color: var(--dark-color);
+  font-weight: 700;
+  font-size: 18px;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 21.6px;
 `;
 
 export const SelectedApproverPosition = styled.span`
   font-size: 14px;
   color: var(--secondary-color);
+`;
+
+export const RewriteIcon = styled.img`
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.7;
+  }
 `;
 
 export const RemoveApproverButton = styled.button`
@@ -887,12 +1064,14 @@ export const RemoveApproverButton = styled.button`
 export const EmptyApproversMessage = styled.div`
   padding: 20px;
   text-align: center;
-  color: var(--secondary-color);
-  font-size: 14px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px dashed var(--border-color);
-  margin-top: 20px;
+  color: #666666;
+  font-size: 15px;
+  font-weight: 350;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 18px;
+  background-color: transparent;
+  border: none;
+  margin-top: 0;
 `;
 
 /* 모바일 카드 뷰 스타일 */
@@ -908,10 +1087,10 @@ export const MobileCardContainer = styled.div`
 
 export const DetailCard = styled.div`
   background-color: white;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  border: none;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
   @media (max-width: 480px) {
     display: block;
@@ -924,7 +1103,7 @@ export const CardHeader = styled.div`
   align-items: center;
   padding: 12px 16px;
   background-color: #f8f9fa;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #e0e0e0;
 `;
 
 export const CardRowNumber = styled.span`
@@ -956,7 +1135,7 @@ export const MobileInput = styled.input`
   width: 100%;
   padding: 14px 16px;
   border: 2px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 16px;
   transition: all 0.2s;
   -webkit-appearance: none;
@@ -977,7 +1156,7 @@ export const MobileSelect = styled.select`
   width: 100%;
   padding: 14px 16px;
   border: 2px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 16px;
   background-color: white;
   cursor: pointer;
@@ -999,10 +1178,17 @@ export const MobileSelect = styled.select`
 export const EmptyDetailMessage = styled.div`
   padding: 20px;
   text-align: center;
-  color: #999;
-  font-size: 14px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
+  color: #666666;
+  font-size: 15px;
+  font-weight: 350;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 18px;
+  background-color: transparent;
+  border-radius: 4px;
+
+  @media (max-width: 480px) {
+    border-radius: 4px;
+  }
 `;
 
 export const MobileSummaryRow = styled.div`
@@ -1035,7 +1221,7 @@ export const ToastMessage = styled.div`
   background-color: #dc3545;
   color: white;
   padding: 16px 24px;
-  border-radius: 8px;
+  border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 9999;
   display: flex;
@@ -1131,7 +1317,7 @@ export const ModalOverlay = styled.div`
 
 export const ModalContent = styled.div`
   background: white;
-  border-radius: 12px;
+  border-radius: 4px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   max-width: 500px;
   width: 100%;
@@ -1196,7 +1382,7 @@ export const DetailSelectItem = styled.button`
   padding: 16px;
   background: #f8f9fa;
   border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;

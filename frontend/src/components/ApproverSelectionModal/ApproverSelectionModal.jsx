@@ -25,13 +25,13 @@ const ApproverSelectionModal = ({
         <S.ModalBody>
           {selectedApprovers.length > 0 && (
             <S.SelectedApproversBox>
-              <S.SelectedTitle>선택된 결재 순서:</S.SelectedTitle>
+              <S.SelectedTitle>선택된 결재 순서</S.SelectedTitle>
               <S.SelectedList>
                 {selectedApprovers.map((userId, index) => {
                   const adminUser = adminUsers.find(user => user.userId === userId);
                   return (
                     <S.SelectedItem key={userId}>
-                      <S.OrderBadge>{index + 1}</S.OrderBadge>
+                      <S.OrderBadge inline>{index + 1}순위</S.OrderBadge>
                       <S.SelectedName>{adminUser?.koreanName || '알 수 없음'}</S.SelectedName>
                       <S.SelectedPosition>{adminUser?.position || '관리자'}</S.SelectedPosition>
                     </S.SelectedItem>
@@ -80,6 +80,7 @@ const ApproverSelectionModal = ({
           )}
 
           <S.ModalFooter>
+            <S.CancelButton onClick={onClose}>취소</S.CancelButton>
             <S.ConfirmButton onClick={onClose}>
               확인
             </S.ConfirmButton>

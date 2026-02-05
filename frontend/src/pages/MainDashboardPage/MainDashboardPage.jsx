@@ -14,6 +14,7 @@ import AccountantDashboardSection from '../../components/DashboardSections/Accou
 import TaxAccountantDashboardSection from '../../components/DashboardSections/TaxAccountantDashboardSection';
 import AdminDashboardSection from '../../components/DashboardSections/AdminDashboardSection';
 import CEODashboardSection from '../../components/DashboardSections/CEODashboardSection';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import { FaPlus, FaEye, FaChevronUp, FaCalendarAlt, FaChevronDown, FaChevronLeft, FaChevronRight, FaBell, FaList, FaBuilding, FaCheck } from 'react-icons/fa';
 
 const MainDashboardPage = () => {
@@ -411,44 +412,27 @@ const MainDashboardPage = () => {
   }
 
   const { companies, switchCompany } = useAuth();
-  const totalNotifications = pendingApprovals.length + pendingUsers.length;
 
   return (
     <S.Container>
       {/* 헤더 영역 - 피그마 디자인 기반 */}
       {(user?.role === 'USER' || user?.role === 'ACCOUNTANT' || user?.role === 'ADMIN' || user?.role === 'TAX_ACCOUNTANT' || user?.role === 'CEO') && (
         <>
-          <S.PageHeader>
-            <S.PageHeaderLeft>
-              <S.PageTitle>대시보드</S.PageTitle>
-            </S.PageHeaderLeft>
-            <S.PageHeaderRight>
-              <S.DashboardNotificationContainer>
-                <S.DashboardNotificationIconWrapper>
-                  <S.DashboardNotificationIcon
-                    onClick={() => {
-                      // 서명 대기 건이 있으면 바로 모달 열기
-                      if (pendingApprovals.length > 0) {
-                        setIsNotificationModalOpen(true);
-                      } else if (pendingUsers.length > 0) {
-                        // 승인 대기 건이 있으면 승인 모달 열기
-                        setIsApprovalModalOpen(true);
-                      }
-                    }}
-                    style={{ cursor: totalNotifications > 0 ? 'pointer' : 'default' }}
-                  >
-                    <img src="/이너사인_이미지 (1)/아이콘/24px_알림_사이드바/알림.png" alt="알림" />
-                  </S.DashboardNotificationIcon>
-                  {totalNotifications > 0 && (
-                    <S.DashboardNotificationBadgeCount>{totalNotifications > 9 ? '9+' : totalNotifications}</S.DashboardNotificationBadgeCount>
-                  )}
-                </S.DashboardNotificationIconWrapper>
-                <S.DashboardNotificationBadge>
-                  <S.DashboardProfileIcon />
-                </S.DashboardNotificationBadge>
-              </S.DashboardNotificationContainer>
-            </S.PageHeaderRight>
-          </S.PageHeader>
+          <PageHeader
+            title="대시보드"
+            pendingApprovals={pendingApprovals}
+            pendingUsers={pendingUsers}
+            onNotificationClick={() => {
+              // 서명 대기 건이 있으면 바로 모달 열기
+              if (pendingApprovals.length > 0) {
+                setIsNotificationModalOpen(true);
+              } else if (pendingUsers.length > 0) {
+                // 승인 대기 건이 있으면 승인 모달 열기
+                setIsApprovalModalOpen(true);
+              }
+            }}
+            onApprovalClick={() => setIsApprovalModalOpen(true)}
+          />
           
           {/* 액션 버튼 섹션 - 역할별로 다른 버튼 표시 */}
           <S.DashboardActionSection>

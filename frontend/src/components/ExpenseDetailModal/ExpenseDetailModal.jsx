@@ -393,7 +393,7 @@ const ExpenseDetailModal = ({
     <S.ModalOverlay onClick={handleRequestClose}>
       <S.ModalContent onClick={(e) => e.stopPropagation()}>
         <S.ModalHeader>
-          <S.ModalTitle>지출 상세 내역 {detail ? '수정' : '추가'}</S.ModalTitle>
+          <S.ModalTitle>지출 상세 내역</S.ModalTitle>
           <S.CloseButton onClick={handleRequestClose}>
             <FaTimes />
           </S.CloseButton>
@@ -401,8 +401,8 @@ const ExpenseDetailModal = ({
 
         <S.ModalBody>
           <S.FormGrid>
-          <S.FormGroup>
-              <S.Label>사용일자 *</S.Label>
+            <S.FormGroup>
+              <S.Label>사용일자*</S.Label>
               <S.Input
                 type="date"
                 name="paymentReqDate"
@@ -414,7 +414,7 @@ const ExpenseDetailModal = ({
             <div></div>
 
             <S.FormGroup>
-              <S.Label>항목 *</S.Label>
+              <S.Label>항목*</S.Label>
               <S.Select 
                 name="category" 
                 value={formData.category} 
@@ -430,7 +430,7 @@ const ExpenseDetailModal = ({
             </S.FormGroup>
 
             <S.FormGroup>
-              <S.Label>상호명 *</S.Label>
+              <S.Label>상호명</S.Label>
               <S.Input
                 type="text"
                 name="merchantName"
@@ -443,7 +443,7 @@ const ExpenseDetailModal = ({
             </S.FormGroup>
 
             <S.FormGroup fullWidth>
-              <S.Label>적요 (내용) *</S.Label>
+              <S.Label>적요(내용)*</S.Label>
               <S.Input
                 ref={descriptionInputRef}
                 type="text"
@@ -455,7 +455,7 @@ const ExpenseDetailModal = ({
             </S.FormGroup>
 
             <S.FormGroup>
-              <S.Label>금액 *</S.Label>
+              <S.Label>금액*</S.Label>
               <S.Input
                 ref={amountInputRef}
                 type="text"
@@ -468,7 +468,7 @@ const ExpenseDetailModal = ({
             </S.FormGroup>
 
             <S.FormGroup>
-              <S.Label>결제수단 *</S.Label>
+              <S.Label>결제수단*</S.Label>
               <S.Select
                 name="paymentMethod"
                 value={formData.paymentMethod}
@@ -596,15 +596,13 @@ const ExpenseDetailModal = ({
                 name="note"
                 value={formData.note}
                 onChange={handleChange}
-                placeholder="비고를 입력하세요 (선택사항)"
+                placeholder="50자 내외로 입력하세요(선택)"
                 rows={3}
               />
             </S.FormGroup>
 
             <S.FormGroup fullWidth>
-              <S.Label>
-                영수증 <span style={{ color: 'red' }}>*</span>
-              </S.Label>
+              <S.Label>영수증*</S.Label>
               <input
                 ref={receiptFileInputRef}
                 type="file"
@@ -613,90 +611,38 @@ const ExpenseDetailModal = ({
                 onChange={handleReceiptFileSelect}
                 style={{ display: 'none' }}
               />
-              <button
-                type="button"
-                onClick={() => receiptFileInputRef.current?.click()}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '12px'
-                }}
-              >
-                <FaFileUpload />
-                <span>영수증 선택</span>
-              </button>
-              {combinedReceipts.length > 0 ? (
-                <div style={{ marginTop: '8px' }}>
-                  {combinedReceipts.map((item) => (
-                    <div
-                      key={item.key}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '8px',
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: '4px',
-                        marginBottom: '4px'
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: '500' }}>{item.name}</div>
-                        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                          크기: {item.size ? (item.size / 1024).toFixed(2) + ' KB' : '-'}
-                        </div>
-                      </div>
-                      {/* 로컬 파일 삭제 버튼 */}
-                      {item.type === 'local' && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveReceiptFile(item.index)}
-                          style={{
-                            padding: '4px 8px',
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                          title="제거"
-                        >
-                          <FaTrash />
-                        </button>
-                      )}
-                      {/* 서버 영수증 삭제 버튼 (상위 콜백 호출) */}
-                      {item.type === 'server' && onDeleteExistingReceipt && (
-                        <button
-                          type="button"
-                          onClick={() => onDeleteExistingReceipt(item.receiptId)}
-                          style={{
-                            padding: '4px 8px',
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                          title="기존 영수증 삭제"
-                        >
-                          <FaTrash />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ padding: '12px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
-                  영수증을 선택해주세요. (필수)
-                </div>
-              )}
+              <S.ReceiptContainer>
+                {combinedReceipts.length > 0 ? (
+                  combinedReceipts.map((item) => (
+                    <S.ReceiptItem key={item.key}>
+                      <S.ReceiptFileName>{item.name}</S.ReceiptFileName>
+                      <S.ReceiptDeleteButton
+                        type="button"
+                        onClick={() => {
+                          if (item.type === 'local') {
+                            handleRemoveReceiptFile(item.index);
+                          } else if (item.type === 'server' && onDeleteExistingReceipt) {
+                            onDeleteExistingReceipt(item.receiptId);
+                          }
+                        }}
+                      >
+                        <img
+                          src="/이너사인_이미지 (1)/아이콘/20px_기타_입력/다시쓰기.png"
+                          alt="영수증 삭제"
+                        />
+                      </S.ReceiptDeleteButton>
+                    </S.ReceiptItem>
+                  ))
+                ) : (
+                  <S.ReceiptPlaceholder>영수증을 첨부해주세요(필수)</S.ReceiptPlaceholder>
+                )}
+                <S.ReceiptAttachButton
+                  type="button"
+                  onClick={() => receiptFileInputRef.current?.click()}
+                >
+                  첨부
+                </S.ReceiptAttachButton>
+              </S.ReceiptContainer>
             </S.FormGroup>
           </S.FormGrid>
         </S.ModalBody>
