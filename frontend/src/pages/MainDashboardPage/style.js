@@ -1392,7 +1392,7 @@ export const QuickMonthButtons = styled.div`
 `;
 
 // 피그마 디자인 기반 헤더 스타일
-export const DashboardHeader = styled.div`
+export const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1408,20 +1408,20 @@ export const DashboardHeader = styled.div`
   }
 `;
 
-export const DashboardHeaderLeft = styled.div`
+export const PageHeaderLeft = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
 `;
 
-export const DashboardTitle = styled.h1`
+export const PageTitle = styled.h1`
   font-size: 24px;
   font-weight: 700;
   color: #333333;
   margin: 0;
 `;
 
-export const DashboardHeaderRight = styled.div`
+export const PageHeaderRight = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;

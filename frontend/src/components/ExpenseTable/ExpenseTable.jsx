@@ -15,6 +15,10 @@ const ExpenseTable = ({
     }
   };
 
+  if (expenses.length === 0) {
+    return null;
+  }
+
   return (
     <S.TableContainer>
       <S.Table>
@@ -56,7 +60,6 @@ const ExpenseTable = ({
               <S.Tr
                 key={item.expenseReportId}
                 onClick={(e) => handleRowClick(item.expenseReportId, e)}
-                style={{ cursor: 'pointer' }}
               >
                 <td>
                   {paymentReqDate}

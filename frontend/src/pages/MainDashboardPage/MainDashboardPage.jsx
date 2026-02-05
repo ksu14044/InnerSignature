@@ -418,11 +418,11 @@ const MainDashboardPage = () => {
       {/* 헤더 영역 - 피그마 디자인 기반 */}
       {(user?.role === 'USER' || user?.role === 'ACCOUNTANT' || user?.role === 'ADMIN' || user?.role === 'TAX_ACCOUNTANT' || user?.role === 'CEO') && (
         <>
-          <S.DashboardHeader>
-            <S.DashboardHeaderLeft>
-              <S.DashboardTitle>대시보드</S.DashboardTitle>
-            </S.DashboardHeaderLeft>
-            <S.DashboardHeaderRight>
+          <S.PageHeader>
+            <S.PageHeaderLeft>
+              <S.PageTitle>대시보드</S.PageTitle>
+            </S.PageHeaderLeft>
+            <S.PageHeaderRight>
               <S.DashboardNotificationContainer>
                 <S.DashboardNotificationIconWrapper>
                   <S.DashboardNotificationIcon
@@ -447,8 +447,8 @@ const MainDashboardPage = () => {
                   <S.DashboardProfileIcon />
                 </S.DashboardNotificationBadge>
               </S.DashboardNotificationContainer>
-            </S.DashboardHeaderRight>
-          </S.DashboardHeader>
+            </S.PageHeaderRight>
+          </S.PageHeader>
           
           {/* 액션 버튼 섹션 - 역할별로 다른 버튼 표시 */}
           <S.DashboardActionSection>

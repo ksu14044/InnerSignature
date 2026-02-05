@@ -1,11 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 export const useExpensePagination = (initialPage = 1) => {
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
   const pageSize = 10;
+
+  // totalPages 변경 추적
+  useEffect(() => {
+    console.log('[Pagination Hook] totalPages 변경:', totalPages, '타입:', typeof totalPages);
+  }, [totalPages]);
 
   // 페이지 변경 핸들러
   const handlePageChange = useCallback((newPage, onLoadList) => {
@@ -18,9 +23,31 @@ export const useExpensePagination = (initialPage = 1) => {
 
   // 페이지네이션 정보 업데이트
   const updatePagination = useCallback((pageData) => {
-    setCurrentPage(pageData.page || 1);
-    setTotalPages(pageData.totalPages || 1);
-    setTotalElements(pageData.totalElements || 0);
+    console.log('[Pagination] updatePagination 호출:', {
+      received: pageData,
+      totalPages: pageData.totalPages,
+      totalPagesType: typeof pageData.totalPages,
+      isUndefined: pageData.totalPages === undefined,
+      isNull: pageData.totalPages === null
+    });
+    
+    const newPage = pageData.page || 1;
+    // totalPages가 명시적으로 전달된 경우 그대로 사용 (0도 유효한 값)
+    // undefined나 null인 경우에만 1로 기본값 설정
+    const newTotalPages = pageData.totalPages !== undefined && pageData.totalPages !== null ? pageData.totalPages : 1;
+    const newTotalElements = pageData.totalElements || 0;
+    
+    console.log('[Pagination] 설정할 값:', {
+      page: newPage,
+      totalPages: newTotalPages,
+      totalElements: newTotalElements
+    });
+    
+    setCurrentPage(newPage);
+    setTotalPages(newTotalPages);
+    setTotalElements(newTotalElements);
+    
+    console.log('[Pagination] 상태 업데이트 완료');
   }, []);
 
   // 페이지 번호 배열 생성 (최대 5개 표시)

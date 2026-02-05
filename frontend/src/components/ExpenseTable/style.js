@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 
 export const TableContainer = styled.div`
   overflow-x: auto;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  border: 1px solid #e4e4e4;
   background-color: white;
-  box-shadow: var(--shadow);
+  box-shadow: none;
   margin-bottom: 24px;
+  padding: 0;
 
   @media (max-width: 768px) {
     display: none;
@@ -16,20 +17,34 @@ export const TableContainer = styled.div`
 
 export const Table = styled.table`
   width: 100%;
-  border-collapse: collapse;
-  background-color: white;
+  border-collapse: separate;
+  border-spacing: 0 0;
+  background-color: transparent;
+  
+  tbody tr {
+    margin-bottom: 0;
+  }
 `;
 
 export const Thead = styled.thead`
-  background-color: var(--light-color);
+  background-color: #f8f9fa;
 
   th {
-    padding: 16px 12px;
-    border-bottom: 2px solid var(--border-color);
-    color: var(--dark-color);
-    font-weight: 600;
+    padding: 12px 24px;
+    border-bottom: 1px solid #e4e4e4;
+    color: #333333;
+    font-weight: 500;
     font-size: 14px;
-    text-align: center;
+    line-height: 16.8px;
+    text-align: left;
+  }
+
+  th:first-of-type {
+    padding-left: 24px;
+  }
+
+  th:last-of-type {
+    padding-right: 24px;
   }
 
   th:nth-of-type(2) {
@@ -46,26 +61,58 @@ export const Thead = styled.thead`
 `;
 
 export const Tr = styled.tr`
+  background-color: white;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  transition: all 0.2s;
+  cursor: pointer;
+
   &:hover {
-    background-color: rgba(0, 123, 255, 0.02);
+    border-color: #489bff;
   }
 
+  ${props => props.selected && `
+    border-color: #489bff;
+  `}
+
   td {
-    padding: 16px 12px;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--dark-color);
-    text-align: center;
+    padding: 16px 24px;
+    border-bottom: none;
+    color: #666666;
+    text-align: left;
     vertical-align: middle;
+    font-size: 16px;
+    line-height: 19.2px;
+    font-weight: 400;
+  }
+
+  td:first-of-type {
+    padding-left: 24px;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+  }
+
+  td:last-of-type {
+    padding-right: 24px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+  }
+
+  &:not(:last-child) {
+    margin-bottom: 0;
   }
 `;
 
+
 export const AmountTh = styled.th`
-  font-weight: 600;
+  font-weight: 500;
+  text-align: right !important;
 `;
 
 export const AmountTd = styled.td`
-  font-weight: 600;
-  color: var(--primary-color);
+  font-weight: 500;
+  color: #666666;
+  text-align: right !important;
 `;
 
 export const StyledLink = styled(Link)`
@@ -87,38 +134,44 @@ export const StyledLink = styled(Link)`
 
 export const StatusBadge = styled.span`
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 12px;
-  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 14px;
+  text-transform: none;
 
   ${props => {
     switch (props.status) {
       case 'DRAFT':
         return `
-          background-color: rgba(107, 114, 128, 0.1);
-          color: #6b7280;
+          background-color: #f3f3f3;
+          color: #666666;
         `;
       case 'APPROVED':
         return `
-          background-color: rgba(16, 185, 129, 0.1);
-          color: var(--success-color);
+          background-color: #edfff6;
+          color: #14804a;
         `;
       case 'REJECTED':
         return `
-          background-color: rgba(239, 68, 68, 0.1);
-          color: var(--danger-color);
+          background-color: #ffefef;
+          color: #d72d30;
         `;
       case 'PAID':
         return `
-          background-color: rgba(59, 130, 246, 0.1);
-          color: #3b82f6;
+          background-color: #edfff6;
+          color: #14804a;
+        `;
+      case 'WAIT':
+        return `
+          background-color: #fff8de;
+          color: #ff8307;
         `;
       default:
         return `
-          background-color: rgba(245, 158, 11, 0.1);
-          color: var(--warning-color);
+          background-color: #fff8de;
+          color: #ff8307;
         `;
     }
   }}

@@ -1,4 +1,3 @@
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import * as S from './style';
 
 const ExpensePagination = ({
@@ -18,23 +17,8 @@ const ExpensePagination = ({
   const pages = isPaymentPending ? paymentPendingTotalPages : totalPages;
   const elements = isPaymentPending ? paymentPendingTotalElements : totalElements;
 
+  // totalPages가 0이면 아직 데이터가 로드되지 않은 상태
   if (pages <= 1) return null;
-
-  const getPageNumbers = () => {
-    const pageNumbers = [];
-    const maxPages = 5;
-    let startPage = Math.max(1, page - Math.floor(maxPages / 2));
-    let endPage = Math.min(pages, startPage + maxPages - 1);
-
-    if (endPage - startPage < maxPages - 1) {
-      startPage = Math.max(1, endPage - maxPages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
-    }
-    return pageNumbers;
-  };
 
   const handlePageChange = (newPage) => {
     if (isPaymentPending) {
@@ -44,35 +28,71 @@ const ExpensePagination = ({
     }
   };
 
-  const startItem = ((page - 1) * pageSize + 1);
-  const endItem = Math.min(page * pageSize, elements);
-
   return (
     <S.PaginationContainer>
-      <S.PaginationInfo>
-        전체 {elements}개 중 {startItem}-{endItem}개 표시
-      </S.PaginationInfo>
       <S.Pagination>
+        {/* 첫 페이지 버튼 */}
+        <S.PaginationButton
+          onClick={() => handlePageChange(1)}
+          disabled={page === 1}
+          aria-label="첫 페이지"
+        >
+          <S.IconWrapper>
+            <S.PaginationIcon 
+              src="/이너사인_이미지 (1)/아이콘/24px_페이지넘기기/페이지넘기기_02_왼쪽.png" 
+              alt="첫 페이지"
+            />
+          </S.IconWrapper>
+        </S.PaginationButton>
+        
+        {/* 이전 페이지 버튼 */}
         <S.PaginationButton
           onClick={() => handlePageChange(page - 1)}
           disabled={page === 1}
+          aria-label="이전 페이지"
         >
-          <FaChevronLeft />
+          <S.IconWrapper>
+            <S.PaginationIcon 
+              src="/이너사인_이미지 (1)/아이콘/24px_페이지넘기기/페이지넘기기_01_왼쪽.png" 
+              alt="이전 페이지"
+            />
+          </S.IconWrapper>
         </S.PaginationButton>
-        {getPageNumbers().map((pageNum) => (
-          <S.PaginationButton
-            key={pageNum}
-            onClick={() => handlePageChange(pageNum)}
-            active={pageNum === page}
-          >
-            {pageNum}
-          </S.PaginationButton>
-        ))}
+        
+        {/* 현재 페이지 번호 */}
+        <S.PaginationButton
+          active={true}
+          aria-label={`페이지 ${page}`}
+        >
+          {page}
+        </S.PaginationButton>
+        
+        {/* 다음 페이지 버튼 */}
         <S.PaginationButton
           onClick={() => handlePageChange(page + 1)}
           disabled={page === pages}
+          aria-label="다음 페이지"
         >
-          <FaChevronRight />
+          <S.IconWrapper>
+            <S.PaginationIcon 
+              src="/이너사인_이미지 (1)/아이콘/24px_페이지넘기기/페이지넘기기_01_오른쪽.png" 
+              alt="다음 페이지"
+            />
+          </S.IconWrapper>
+        </S.PaginationButton>
+        
+        {/* 마지막 페이지 버튼 */}
+        <S.PaginationButton
+          onClick={() => handlePageChange(pages)}
+          disabled={page === pages}
+          aria-label="마지막 페이지"
+        >
+          <S.IconWrapper>
+            <S.PaginationIcon 
+              src="/이너사인_이미지 (1)/아이콘/24px_페이지넘기기/페이지넘기기_02_오른쪽.png" 
+              alt="마지막 페이지"
+            />
+          </S.IconWrapper>
         </S.PaginationButton>
       </S.Pagination>
     </S.PaginationContainer>

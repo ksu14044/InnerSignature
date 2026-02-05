@@ -2,25 +2,24 @@ import styled from '@emotion/styled';
 import { Link } from 'react-router-dom';
 
 export const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  width: 100%;
+  padding: 24px 24px 24px 40px;
   min-height: 100vh;
+  background: #f8f9fa;
 
   @media (max-width: 768px) {
-    padding: 15px;
+    padding: 16px 16px 16px 40px;
   }
 
   @media (max-width: 480px) {
     padding: 0;
     width: 100%;
     max-width: 100%;
-    min-height: calc(100vh - 56px - 64px);
+    min-height: auto;
     background: #f5f5f5;
     padding-top: 56px;
-    padding-bottom: 80px; /* 하단 네비게이션 + FAB 공간 */
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    padding-bottom: 80px;
+    padding-left: 40px;
   }
 `;
 
@@ -322,28 +321,184 @@ export const ManagementMenuItem = styled.button`
   }
 `;
 
-export const ActionBar = styled.div`
+export const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: white;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-light);
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: white;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+  }
+`;
+
+export const PageHeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+export const PageTitle = styled.h1`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0;
+`;
+
+export const PageHeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+export const NotificationContainer = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+export const NotificationIconWrapper = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const NotificationIcon = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+`;
+
+export const ProfileBadge = styled.div`
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const ProfileIcon = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #d9d9d9;
+`;
+
+export const NotificationBadgeCount = styled.span`
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  background-color: #d72d30;
+  color: #ffffff;
+  border-radius: 9px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 400;
+  min-width: 22px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const TabHeaderBar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: white;
 
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--spacing-sm);
+    gap: 16px;
+    padding: 16px;
   }
 
   @media (max-width: 480px) {
-    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
   }
 `;
+
+export const TabSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex: 1;
+  
+  @media (max-width: 768px) {
+    gap: 24px;
+    width: 100%;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 16px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+`;
+
+export const TabHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+  
+  @media (max-width: 480px) {
+    width: 100%;
+    margin-left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+`;
+
+export const TabText = styled.span`
+  font-size: 20px;
+  font-weight: ${props => props.active ? '700' : '500'};
+  color: ${props => props.active ? '#333333' : '#999999'};
+  line-height: 24px;
+  cursor: pointer;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: ${props => props.active ? '#333333' : '#666666'};
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 16px;
+  }
+`;
+
 
 export const FilterContainer = styled.div`
   background-color: white;
@@ -495,140 +650,135 @@ export const FilterActions = styled.div`
 export const ToggleContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-right: 12px;
+  gap: 8px;
+  
+  span {
+    font-size: 16px;
+    font-weight: 500;
+    color: #777777;
+    line-height: 19.2px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 100%;
+  }
 `;
 
 export const TabContainer = styled.div`
   display: inline-flex;
   align-items: center;
-  background-color: var(--bg-light);
-  border-radius: var(--radius-lg);
-  padding: 4px;
-  margin-right: var(--spacing-md);
-  box-shadow: var(--shadow-sm);
+  gap: 32px;
+  margin-right: auto;
 
   @media (max-width: 768px) {
-    width: 100%;
-    justify-content: center;
-    margin-bottom: var(--spacing-sm);
+    gap: 24px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 16px;
     margin-right: 0;
   }
 `;
 
 export const TabButton = styled.button`
   border: none;
-  background-color: ${props => (props.active ? 'white' : 'transparent')};
-  color: ${props => (props.active ? 'var(--primary-color)' : 'var(--text-secondary)')};
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
-  font-weight: ${props => (props.active ? 'var(--font-weight-semibold)' : 'var(--font-weight-medium)')};
+  background-color: transparent;
+  color: ${props => (props.active ? '#333333' : '#999999')};
+  padding: 0;
+  font-size: 20px;
+  font-weight: ${props => (props.active ? '700' : '500')};
+  line-height: 24px;
   cursor: pointer;
-  transition: all var(--transition-base);
-  min-width: 100px;
+  transition: color 0.2s;
   position: relative;
 
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: ${props => (props.active ? '60%' : '0')};
-    height: 2px;
-    background-color: var(--primary-color);
-    border-radius: var(--radius-full);
-    transition: width var(--transition-base);
-  }
-
   &:hover {
-    background-color: ${props => (props.active ? 'white' : 'var(--bg-hover)')};
-    color: ${props => (props.active ? 'var(--primary-color)' : 'var(--text-primary)')};
+    color: ${props => (props.active ? '#333333' : '#666666')};
   }
 
   @media (max-width: 480px) {
-    flex: 1;
-    padding: var(--spacing-sm) var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    min-width: auto;
+    font-size: 16px;
   }
 `;
 
 export const ToggleLabel = styled.label`
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
-  color: var(--dark-color);
+  color: #777777;
   cursor: pointer;
   user-select: none;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  line-height: 19.2px;
 `;
 
 export const ToggleSwitch = styled.div`
   position: relative;
-  width: 50px;
-  height: 26px;
-  background-color: ${props => props.active ? 'var(--primary-color)' : '#ccc'};
-  border-radius: 13px;
+  width: 44px;
+  height: 24px;
+  background-color: ${props => props.active ? '#489bff' : '#ccc'};
+  border-radius: 12px;
   cursor: pointer;
   transition: background-color 0.3s;
 
   &::after {
     content: '';
     position: absolute;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background-color: white;
     top: 2px;
-    left: ${props => props.active ? '26px' : '2px'};
+    left: ${props => props.active ? '22px' : '2px'};
     transition: left 0.3s;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   &:hover {
-    background-color: ${props => props.active ? 'var(--primary-hover)' : '#bbb'};
+    background-color: ${props => props.active ? '#3a8aef' : '#bbb'};
   }
 `;
 
 export const FilterButton = styled.button`
   padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19.2px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-right: 12px;
-  min-height: 48px;
+  gap: 8px;
+  height: 40px;
+  background-color: white;
+  color: #333333;
 
   ${props => {
     if (props.variant === 'primary') {
       return `
-        background-color: var(--primary-color);
+        background-color: #489bff;
         color: white;
+        border-color: #489bff;
 
         &:hover {
-          background-color: var(--primary-hover);
+          background-color: #3a8aef;
+          border-color: #3a8aef;
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
       `;
     } else if (props.variant === 'secondary') {
       return `
-        background-color: var(--light-color);
-        color: var(--dark-color);
-        border: 1px solid var(--border-color);
+        background-color: white;
+        color: #333333;
+        border: 1px solid #e4e4e4;
 
         &:hover {
-          background-color: #e5e7eb;
-          border-color: var(--secondary-color);
+          background-color: #f8f9fa;
+          border-color: #d0d0d0;
         }
       `;
     }
@@ -639,14 +789,13 @@ export const FilterButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    width: 100%;
     padding: 12px 20px;
-    margin-right: 0;
   }
 
   @media (max-width: 480px) {
-    padding: 12px 16px;
-    font-size: 12px;
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 14px;
     
     span {
       display: none;
@@ -655,25 +804,32 @@ export const FilterButton = styled.button`
 `;
 
 export const ExportButton = styled.button`
-  padding: 10px 20px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 48px;
+  gap: 8px;
+  width: 125px;
+  height: 40px;
+  padding: 0 16px;
+  background-color: #ffffff;
+  color: #333333;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
 
   &:hover {
-    background-color: #218838;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    border-color: #489bff;
+    background-color: #f8f9fa;
   }
 
   &:active {
@@ -681,17 +837,15 @@ export const ExportButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    width: 100%;
-    padding: 12px 20px;
+    width: auto;
+    min-width: 116px;
   }
 
   @media (max-width: 480px) {
-    padding: 12px 16px;
-    font-size: 12px;
-    
-    span {
-      display: none;
-    }
+    width: auto;
+    min-width: 100px;
+    font-size: 14px;
+    padding: 0 12px;
   }
 `;
 
@@ -699,31 +853,31 @@ export const CreateButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
-  background-color: var(--primary-color);
+  padding: 10px 20px;
+  background-color: #489bff;
   color: white;
   border: none;
-  border-radius: 10px;
-  font-weight: 600;
+  border-radius: 4px;
+  font-weight: 500;
   font-size: 16px;
+  line-height: 19.2px;
   cursor: pointer;
   transition: all 0.2s;
-  min-height: 48px;
+  height: 40px;
 
   &:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
+    background-color: #3a8aef;
+    transform: translateY(-1px);
   }
 
   @media (max-width: 768px) {
     width: 100%;
     justify-content: center;
-    padding: 16px 20px;
+    padding: 12px 20px;
   }
 
   @media (max-width: 480px) {
-    padding: 14px 16px;
+    padding: 10px 16px;
     font-size: 14px;
     
     span {
@@ -1433,4 +1587,48 @@ export const CompanyDropdownItem = styled.div`
   &:not(:last-child) {
     border-bottom: 1px solid var(--border-color);
   }
+`;
+
+export const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid #e4e4e4;
+  margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    padding: 60px 20px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 40px 16px;
+  }
+`;
+
+export const EmptyIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+`;
+
+export const EmptyMessage = styled.p`
+  font-size: 15px;
+  font-weight: 350;
+  color: #666666;
+  line-height: 18px;
+  margin: 0;
 `;

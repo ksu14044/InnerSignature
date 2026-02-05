@@ -2,74 +2,69 @@ import styled from '@emotion/styled';
 
 export const PaginationContainer = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 16px;
-  margin: 32px 0;
-  padding: 24px;
-  background-color: white;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow);
+  justify-content: center;
+  gap: 0;
+  margin: 24px 0;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
 
   @media (max-width: 768px) {
-    margin: 24px 0;
-    padding: 20px;
+    margin: 16px 0;
   }
 
   @media (max-width: 480px) {
-    margin: 16px 8px;
-    padding: 16px;
-    gap: 12px;
-    border-radius: 16px;
-    background: white;
-    border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin: 12px 0;
   }
 `;
 
 export const PaginationInfo = styled.div`
   font-size: 14px;
-  color: var(--secondary-color);
-  font-weight: 500;
+  color: #666666;
+  font-weight: 400;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+  margin-right: 16px;
 
   @media (max-width: 480px) {
     font-size: 11px;
+    margin-right: 8px;
   }
 `;
 
 export const Pagination = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
 `;
 
 export const PaginationButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
-  height: 40px;
-  padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: ${props => props.active ? 'var(--primary-color)' : 'white'};
-  color: ${props => props.active ? 'white' : 'var(--dark-color)'};
-  font-weight: ${props => props.active ? '600' : '500'};
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: ${props => props.active ? '1px solid #333333' : 'none'};
+  border-radius: 4px;
+  background-color: ${props => props.active ? 'transparent' : '#ffffff'};
+  color: ${props => props.active ? '#666666' : '#666666'};
+  font-weight: 400;
   font-size: 14px;
+  line-height: 14px;
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   transition: all 0.2s;
   opacity: ${props => props.disabled ? '0.5' : '1'};
 
   &:hover:not(:disabled) {
-    background-color: ${props => props.active ? 'var(--primary-hover)' : 'var(--light-color)'};
-    border-color: ${props => props.active ? 'var(--primary-hover)' : 'var(--primary-color)'};
-    transform: translateY(-1px);
+    background-color: #ffffff;
+    ${props => !props.active && 'border: 1px solid #333333;'}
   }
 
   &:active:not(:disabled) {
@@ -77,16 +72,28 @@ export const PaginationButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    min-width: 36px;
-    height: 36px;
-    padding: 6px 10px;
+    width: 32px;
+    height: 32px;
     font-size: 13px;
   }
 
   @media (max-width: 480px) {
-    min-width: 32px;
-    height: 32px;
-    padding: 4px 8px;
+    width: 28px;
+    height: 28px;
     font-size: 11px;
   }
+`;
+
+export const IconWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+`;
+
+export const PaginationIcon = styled.img`
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 `;
