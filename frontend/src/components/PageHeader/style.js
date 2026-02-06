@@ -96,3 +96,41 @@ export const NotificationBadgeCount = styled.span`
   align-items: center;
   justify-content: center;
 `;
+
+export const PageSubHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 0 24px;
+  font-family: 'Noto Sans KR', sans-serif;
+
+  @media (max-width: 480px) {
+    padding: 0 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+`;
+
+export const PageSubHeaderText = styled.div`
+  font-size: 20px;
+  font-weight: 700;
+  color: #333333;
+  line-height: 24px;
+
+  @media (max-width: 480px) {
+    font-size: 18px;
+  }
+`;
+
+export const PageSubHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: flex-end;
+  }
+`;

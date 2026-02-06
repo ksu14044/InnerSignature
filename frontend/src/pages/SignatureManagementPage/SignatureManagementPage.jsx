@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaTrash, FaPen, FaStar, FaStamp } from 'react-icons/fa';
+import { FaPlus, FaStar, FaStamp } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   getMySignatures, 
@@ -11,6 +11,7 @@ import {
 } from '../../api/signatureApi';
 import SignatureModal from '../../components/SignatureModal/SignatureModal';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import * as S from './style';
 
 const SignatureManagementPage = () => {
@@ -174,14 +175,30 @@ const SignatureManagementPage = () => {
     return <LoadingOverlay />;
   }
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   return (
     <S.Container>
-      <S.SectionHeader>
-        <S.SectionTitle>내 서명/도장 목록</S.SectionTitle>
-        <S.AddButton onClick={handleAddNewSignature}>
-          <FaPlus /> 서명/도장 추가
-        </S.AddButton>
-      </S.SectionHeader>
+      <PageHeader
+        title="도장·서명"
+        subTitle="내 도장·서명"
+        subTitleActions={
+          <S.AddButton onClick={handleAddNewSignature}>
+            <FaPlus /> 도장·서명 추가
+          </S.AddButton>
+        }
+        pendingApprovals={[]}
+        pendingUsers={[]}
+        onNotificationClick={() => {}}
+        onApprovalClick={() => {}}
+      />
 
       {savedSignatures.length === 0 ? (
         <S.EmptyState>
@@ -190,33 +207,42 @@ const SignatureManagementPage = () => {
       ) : (
         <S.SignaturesGrid>
           {savedSignatures.map(sig => (
-            <S.SignatureItem key={sig.signatureId} isDefault={sig.isDefault}>
+            <S.SignatureCard key={sig.signatureId}>
+              <S.SignatureHeader>
+                <S.SignatureHeaderLeft>
+                  {sig.isDefault ? (
+                    <S.DefaultBadge>기본</S.DefaultBadge>
+                  ) : (
+                    <S.SetDefaultButton onClick={() => handleSetDefaultSignature(sig.signatureId)}>
+                      기본으로 설정
+                    </S.SetDefaultButton>
+                  )}
+                </S.SignatureHeaderLeft>
+                <S.SignatureHeaderRight>
+                  <S.EditButton onClick={() => handleEditSignature(sig)}>
+                    <img src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/수정.png" alt="수정" />
+                  </S.EditButton>
+                  <S.DeleteButton onClick={() => handleDeleteSignature(sig.signatureId)}>
+                    <img src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/삭제.png" alt="삭제" />
+                  </S.DeleteButton>
+                </S.SignatureHeaderRight>
+              </S.SignatureHeader>
               <S.SignaturePreview>
                 <img src={sig.signatureData} alt={sig.signatureName} />
               </S.SignaturePreview>
               <S.SignatureInfo>
-                <S.SignatureName>
-                  {sig.signatureName}
-                  {sig.isDefault && <S.DefaultBadge>기본</S.DefaultBadge>}
-                </S.SignatureName>
-                <S.SignatureType>
-                  {sig.signatureType === 'STAMP' ? '도장' : '서명'}
-                </S.SignatureType>
-                <S.SignatureActions>
-                  <S.ActionButton onClick={() => handleEditSignature(sig)}>
-                    <FaPen /> 수정
-                  </S.ActionButton>
-                  {!sig.isDefault && (
-                    <S.ActionButton onClick={() => handleSetDefaultSignature(sig.signatureId)}>
-                      <FaStar /> 기본으로 설정
-                    </S.ActionButton>
-                  )}
-                  <S.DeleteButton onClick={() => handleDeleteSignature(sig.signatureId)}>
-                    <FaTrash /> 삭제
-                  </S.DeleteButton>
-                </S.SignatureActions>
+                <S.SignatureNameRow>
+                  <S.SignatureName>{sig.signatureName}</S.SignatureName>
+                </S.SignatureNameRow>
+                <S.SignatureDateRow>
+                  <S.DateLabel>생성일</S.DateLabel>
+                  <S.DateValue>{formatDate(sig.createdAt || sig.createdDate)}</S.DateValue>
+                  <S.SignatureTypeLabel>
+                    {sig.signatureType === 'STAMP' ? '도장' : '서명'}
+                  </S.SignatureTypeLabel>
+                </S.SignatureDateRow>
               </S.SignatureInfo>
-            </S.SignatureItem>
+            </S.SignatureCard>
           ))}
         </S.SignaturesGrid>
       )}
