@@ -1,44 +1,158 @@
 import styled from '@emotion/styled';
 
 export const Container = styled.div`
-  padding: 40px;
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  background-color: white;
+  width: 100%;
+  padding: 24px 24px 24px 40px;
+  min-height: 100vh;
+  background: #f8f9fa;
+
+  @media (max-width: 768px) {
+    padding: 16px 16px 16px 40px;
+  }
 
   @media (max-width: 480px) {
     padding: 0;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
+    width: 100%;
     max-width: 100%;
     min-height: auto;
     background: #f5f5f5;
     padding-top: 56px;
-    padding-bottom: 80px; /* 하단 네비게이션 + FAB 공간 */
+    padding-bottom: 80px;
+    padding-left: 40px;
   }
 `;
 
-export const Header = styled.div`
+export const PageSubHeader = styled.div`
+  margin-bottom: 24px;
+  padding: 0 24px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 24px;
+
+  @media (max-width: 480px) {
+    padding: 0 16px;
+    font-size: 18px;
+  }
+`;
+
+export const MainContentBox = styled.div`
+  background-color: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  padding: 24px;
+  margin-bottom: 24px;
+
+  @media (max-width: 480px) {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+`;
+
+
+export const DocumentHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: none;
+
+  @media (max-width: 480px) {
+    gap: 12px;
+  }
+`;
+
+export const InfoAndStampContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #333;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 16px;
+  }
 
   @media (max-width: 480px) {
     flex-direction: column;
-    gap: 0;
-    margin-bottom: 0;
-    padding: 0;
-    border-bottom: none;
-    background: transparent;
-    margin-bottom: 0;
+    gap: 12px;
   }
+`;
+
+export const DocumentTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+`;
+
+export const DocumentTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const StatusBadge = styled.div`
+  background-color: #edfff6;
+  color: #14804a;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const InfoBox = styled.div`
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 528px;
+  height: 104px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    width: 100%;
+    height: auto;
+    min-height: 104px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    gap: 12px;
+    width: 100%;
+    height: auto;
+  }
+`;
+
+export const InfoItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+`;
+
+export const InfoLabel = styled.span`
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const InfoValue = styled.span`
+  font-size: 15px;
+  font-weight: 400;
+  color: #666666;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 export const TitleInfo = styled.div`
@@ -139,34 +253,42 @@ export const StampArea = styled.div`
 
 // 도장 박스 하나
 export const StampBox = styled.div`
-  border: 1px solid #aaa;
-  width: 90px;
+  border: 1px solid #e4e4e4;
+  width: 94px;
+  height: 104px;
   text-align: center;
-  background-color: white;
   flex-shrink: 0;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
 
   @media (max-width: 480px) {
     width: 80px;
     min-width: 80px;
+    height: auto;
+    min-height: 104px;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
   }
 `;
 
 export const StampPosition = styled.div`
-  background-color: #f4f4f4;
-  border-bottom: 1px solid #aaa;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e4e4e4;
   padding: 4px;
-  font-size: 12px;
-  color: #333;
+  font-size: 13px;
+  color: #666666;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 400;
 `;
 
 export const StampContent = styled.div`
-  height: 70px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
+  padding: 8px;
   
   img {
     max-width: 100%;
@@ -175,8 +297,8 @@ export const StampContent = styled.div`
   }
   
   span {
-    color: #bbb;
-    font-size: 11px;
+    color: #666666;
+    font-size: 12px;
     line-height: 1.4;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -184,6 +306,7 @@ export const StampContent = styled.div`
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     word-break: break-word;
+    font-family: 'Noto Sans KR', sans-serif;
   }
 
   @media (max-width: 480px) {
@@ -198,11 +321,12 @@ export const StampContent = styled.div`
 `;
 
 export const StampDate = styled.div`
-  border-top: 1px dotted #ccc;
-  font-size: 10px;
-  height: 20px;
-  line-height: 20px;
-  color: #888;
+  border-top: 1px dotted #e4e4e4;
+  font-size: 13px;
+  height: 24px;
+  line-height: 24px;
+  color: #666666;
+  font-family: 'Noto Sans KR', sans-serif;
 `;
 
 // 본문 영역
@@ -218,10 +342,11 @@ export const ContentArea = styled.div`
 `;
 
 export const SectionTitle = styled.h2`
-  font-size: 18px;
-  margin-bottom: 10px;
-  border-left: 4px solid #333;
-  padding-left: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -243,19 +368,98 @@ export const SectionTitle = styled.h2`
   }
 `;
 
+export const TotalAmountAndButtons = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 0 24px;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 0 16px;
+  }
+`;
+
+export const EditDeleteButtons = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+// 목록 버튼 - ExpenseCreatePage 스타일 재사용
+export const ListButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 24px;
+  padding-bottom: 32px;
+
+  @media (max-width: 480px) {
+    margin-top: 16px;
+    padding-bottom: 16px;
+  }
+`;
+
+export const ListButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #333333;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 15px;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 22.5px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  width: 90px;
+  height: 40px;
+
+  &:hover:not(:disabled) {
+    background-color: #222222;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  @media (max-width: 480px) {
+    width: 90px;
+    height: 40px;
+  }
+`;
+
 export const TotalAmount = styled.div`
-  text-align: right;
-  font-size: 18px;
-  margin-bottom: 20px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
   
-  span {
-    font-weight: bold;
+  .label {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333333;
+  }
+  
+  .amount {
     font-size: 24px;
-    text-decoration: underline;
-    margin-left: 10px;
+    font-weight: 700;
+    color: #333333;
   }
 
   @media (max-width: 480px) {
@@ -271,13 +475,18 @@ export const TotalAmount = styled.div`
     flex-direction: column;
     gap: 8px;
     
-    span {
+    .label {
+      color: white;
+    }
+    
+    .amount {
       font-size: 32px;
       margin-left: 0;
       display: block;
       margin-top: 0;
       text-decoration: none;
       font-weight: 700;
+      color: white;
     }
   }
 `;
@@ -304,21 +513,31 @@ export const DetailTable = styled.table`
   border-collapse: collapse;
   
   th {
-    background-color: #fafafa;
-    border: 1px solid #ddd;
-    padding: 10px;
-    font-size: 13px;
+    background-color: #f8f9fa;
+    border: 1px solid #e4e4e4;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333333;
     vertical-align: middle;
+    font-family: 'Noto Sans KR', sans-serif;
   }
   td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    font-size: 13px;
+    border: 1px solid #e4e4e4;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 400;
+    color: #666666;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 0;
     vertical-align: middle;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  
+  td[style*="text-align: right"] {
+    font-weight: 500;
   }
   
   td:nth-child(2), td:nth-child(4) {
@@ -793,11 +1012,8 @@ export const PaymentModalFooter = styled(RejectModalFooter)`
 
 // 영수증 섹션
 export const ReceiptSection = styled.div`
-  margin-top: 40px;
-  padding: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background-color: #fafafa;
+  margin-top: 24px;
+  padding: 0;
 
   @media (max-width: 480px) {
     margin-top: 8px;
@@ -811,18 +1027,75 @@ export const ReceiptSection = styled.div`
   }
 `;
 
+export const ReceiptSectionContainer = styled.div`
+  background-color: #f8f9fa;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  padding: 16px;
+  margin-top: 16px;
+
+  @media (max-width: 480px) {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 12px;
+  }
+`;
+
 export const ReceiptSectionHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 8px;
+  margin-bottom: 16px;
+  width: 100%;
 
   @media (max-width: 480px) {
     flex-direction: column;
     align-items: stretch;
     margin-bottom: 12px;
+    gap: 12px;
+  }
+`;
+
+export const ReceiptSectionHeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: flex-end;
+  }
+`;
+
+export const DownloadAllButton = styled.button`
+  background-color: #f8f9fa;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: background-color 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: #e9ecef;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: center;
   }
 `;
 
@@ -836,10 +1109,15 @@ export const ReceiptItem = styled.div`
   display: flex;
   gap: 16px;
   padding: 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background-color: white;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  background-color: #ffffff;
   align-items: flex-start;
+  margin-bottom: 12px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -882,23 +1160,29 @@ export const ReceiptInfo = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  font-size: 14px;
-  color: #666;
+  gap: 4px;
+  font-size: 15px;
+  color: #333333;
   min-width: 0;
+  font-family: 'Noto Sans KR', sans-serif;
 
   strong {
-    color: #333;
-    font-size: 16px;
+    color: #333333;
+    font-size: 15px;
+    font-weight: 400;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   
   div {
+    font-size: 14px;
+    font-weight: 350;
+    color: #666666;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 16.8px;
   }
 
   @media (max-width: 480px) {
@@ -913,20 +1197,24 @@ export const ReceiptInfo = styled.div`
 
 export const ReceiptActions = styled.div`
   display: flex;
-  flex-direction: column;
   gap: 8px;
   flex-shrink: 0;
 
   button {
-    padding: 8px 16px;
-    border: 1px solid #ddd;
+    padding: 0;
+    border: none;
     border-radius: 4px;
-    background-color: white;
+    background-color: #ffffff;
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.2s;
     white-space: nowrap;
-    min-height: 40px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 
     &:hover {
       background-color: #f0f0f0;

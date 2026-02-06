@@ -328,14 +328,15 @@ public class ExpenseService {
         report.setReceipts(receipts);
 
         // (6) 권한에 따라 세무처리 정보 필터링
-        // USER 역할은 세무처리 완료 상태를 볼 수 없음
-        if (userId != null) {
-            UserDto user = userService.selectUserById(userId);
-            if (user != null && "USER".equals(user.getRole())) {
-                report.setTaxProcessed(null);
-                report.setTaxProcessedAt(null);
-            }
-        }
+        // 모든 사용자가 세무처리 정보를 볼 수 있도록 변경
+        // (기존: USER 역할은 세무처리 완료 상태를 볼 수 없었음)
+        // if (userId != null) {
+        //     UserDto user = userService.selectUserById(userId);
+        //     if (user != null && "USER".equals(user.getRole())) {
+        //         report.setTaxProcessed(null);
+        //         report.setTaxProcessedAt(null);
+        //     }
+        // }
 
         // (7) 완성된 하나를 리턴
         return report;
@@ -1888,17 +1889,19 @@ public class ExpenseService {
     }
 
     private void filterTaxProcessingInfo(List<ExpenseReportDto> reports, Long userId) {
-        if (userId == null || reports == null || reports.isEmpty()) {
-            return;
-        }
-        
-        UserDto user = userService.selectUserById(userId);
-        if (user != null && "USER".equals(user.getRole())) {
-            for (ExpenseReportDto report : reports) {
-                report.setTaxProcessed(null);
-                report.setTaxProcessedAt(null);
-            }
-        }
+        // 모든 사용자가 세무처리 정보를 볼 수 있도록 변경
+        // (기존: USER 역할은 세무처리 완료 상태를 볼 수 없었음)
+        // if (userId == null || reports == null || reports.isEmpty()) {
+        //     return;
+        // }
+        // 
+        // UserDto user = userService.selectUserById(userId);
+        // if (user != null && "USER".equals(user.getRole())) {
+        //     for (ExpenseReportDto report : reports) {
+        //         report.setTaxProcessed(null);
+        //         report.setTaxProcessedAt(null);
+        //     }
+        // }
     }
 
     /**

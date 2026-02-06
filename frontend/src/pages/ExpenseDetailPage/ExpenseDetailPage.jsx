@@ -1,12 +1,16 @@
 import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, deleteExpense, downloadReceiptsBatch, uploadReceiptForDetail } from '../../api/expenseApi';
+import { FaList } from 'react-icons/fa';
+import { fetchExpenseDetail, approveExpense, rejectExpense, cancelApproval, cancelRejection, updateExpenseStatus, uploadReceipt, getReceipts, deleteReceipt, downloadReceipt, updateExpenseDetailTaxInfo, deleteExpense, downloadReceiptsBatch, uploadReceiptForDetail, fetchPendingApprovals } from '../../api/expenseApi';
 import { getExpenseDetailForSuperAdmin } from '../../api/superAdminApi';
 import { getMySignatures } from '../../api/signatureApi';
+import { getPendingUsers } from '../../api/userApi';
 import * as S from './style'; // 스타일 가져오기
 import { useAuth } from '../../contexts/AuthContext';
 import { STATUS_KOREAN } from '../../constants/status';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import PageHeader from '../../components/PageHeader/PageHeader';
+import Button from '../../components/common/Button/Button';
 
 // Lazy load 모달 컴포넌트
 const SignatureModal = lazy(() => import('../../components/SignatureModal/SignatureModal'));
@@ -46,6 +50,8 @@ const ExpenseDetailPage = () => {
   const [isDownloadingBatch, setIsDownloadingBatch] = useState(false);
   const paymentModalReceiptInputRef = useRef(null);
   const {user} = useAuth();
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
 
   useEffect(() => {
     // SUPERADMIN인 경우 SUPERADMIN 전용 API 사용
@@ -110,6 +116,19 @@ const ExpenseDetailPage = () => {
         .catch((error) => {
           console.error('서명/도장 조회 실패:', error);
         });
+    }
+  }, [user]);
+
+  // 알림 데이터 조회
+  useEffect(() => {
+    if (user) {
+      Promise.all([
+        fetchPendingApprovals().then(res => res.success ? res.data : []).catch(() => []),
+        getPendingUsers().then(res => res.success ? res.data : []).catch(() => [])
+      ]).then(([approvals, users]) => {
+        setPendingApprovals(approvals || []);
+        setPendingUsers(users || []);
+      });
     }
   }, [user]);
 
@@ -884,33 +903,67 @@ const ExpenseDetailPage = () => {
         />
       )}
       <S.Container>
-      {/* 1. 상단 헤더 */}
-      <S.Header>
-        <S.TitleInfo>
-          <h1 title="지출결의서">
-            지출결의서
-            {hasSalaryCategory && (
-              <S.SecretBadge>비밀</S.SecretBadge>
-            )}
-          </h1>
-          <p title={`문서번호: ${detail.expenseReportId}`}><strong>문서번호:</strong> {detail.expenseReportId}</p>
-          <p title={`작성자: ${detail.drafterName}`}><strong>작성자:</strong> {detail.drafterName}</p>
-          <p title={`작성일: ${detail.reportDate}`}><strong>작성일:</strong> {detail.reportDate}</p>
-          {/* 세무처리 완료 상태 표시 (USER는 숨김) */}
-          {user && user.role !== 'USER' && detail.taxProcessed !== null && detail.taxProcessed !== undefined && (
-            <p title={`세무처리: ${detail.taxProcessed ? `완료${detail.taxProcessedAt ? ` (${new Date(detail.taxProcessedAt).toLocaleDateString('ko-KR')})` : ''}` : '미완료'}`}>
-              <strong>세무처리:</strong> {detail.taxProcessed ? (
-                <span style={{ color: '#28a745', fontWeight: 'bold' }}>
-                  완료 {detail.taxProcessedAt ? `(${new Date(detail.taxProcessedAt).toLocaleDateString('ko-KR')})` : ''}
-                </span>
-              ) : (
-                <span style={{ color: '#6c757d' }}>미완료</span>
-              )}
-            </p>
-          )}
-        </S.TitleInfo>
+      <PageHeader
+        title="지출결의서"
+        pendingApprovals={pendingApprovals}
+        pendingUsers={pendingUsers}
+        onNotificationClick={() => {
+          // 서명 대기 건이 있으면 알림 모달, 없으면 승인 모달
+          if (pendingApprovals.length > 0) {
+            // 알림 모달 처리 (필요시 구현)
+          } else if (pendingUsers.length > 0) {
+            // 승인 모달 처리 (필요시 구현)
+          }
+        }}
+      />
+      <S.PageSubHeader>지출결의서 상세 내역</S.PageSubHeader>
 
-        <S.StampArea>
+      {/* 메인 컨텐츠 박스 */}
+      <S.MainContentBox>
+        {/* 1. 문서 헤더 */}
+        <S.DocumentHeader>
+          <S.DocumentTitleRow>
+            <S.DocumentTitle>지출결의서</S.DocumentTitle>
+            {detail.status === 'APPROVED' && (
+              <S.StatusBadge>승인</S.StatusBadge>
+            )}
+          </S.DocumentTitleRow>
+          
+          {/* InfoBox와 StampArea를 묶은 컨테이너 */}
+          <S.InfoAndStampContainer>
+            {/* 정보 박스 */}
+            <S.InfoBox>
+              <S.InfoItem>
+                <S.InfoLabel>작성자</S.InfoLabel>
+                <S.InfoValue>{detail.drafterName}</S.InfoValue>
+              </S.InfoItem>
+              <S.InfoItem>
+                <S.InfoLabel>지급 요청일</S.InfoLabel>
+                <S.InfoValue>{detail.reportDate}</S.InfoValue>
+              </S.InfoItem>
+              {user && detail.taxProcessed !== null && detail.taxProcessed !== undefined && (
+                <S.InfoItem>
+                  <S.InfoLabel>세무처리</S.InfoLabel>
+                  <S.InfoValue>
+                    {detail.taxProcessed ? (
+                      <>
+                        <span style={{ color: '#489bff' }}>완료</span>
+                        {detail.taxProcessedAt && (
+                          <span style={{ color: '#666666', marginLeft: '4px' }}>
+                            {new Date(detail.taxProcessedAt).toLocaleDateString('ko-KR')}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span style={{ color: '#489BFF' }}>미완료</span>
+                    )}
+                  </S.InfoValue>
+                </S.InfoItem>
+              )}
+            </S.InfoBox>
+
+            {/* 결재자 영역 */}
+            <S.StampArea>
           {hasSalaryCategory ? (
             // 급여 결의서는 결재 불필요
             <S.StampBox>
@@ -1022,14 +1075,14 @@ const ExpenseDetailPage = () => {
               <S.StampDate></S.StampDate>
             </S.StampBox>
           )}
-        </S.StampArea>
-      </S.Header>
+            </S.StampArea>
+          </S.InfoAndStampContainer>
+        </S.DocumentHeader>
 
-      {/* 2. 본문 내용 */}
-      <S.ContentArea>
-        <S.TotalAmount title={`총 합계: ${detail.totalAmount.toLocaleString()}원`}>
-          총 합계: <span>{detail.totalAmount.toLocaleString()}</span> 원
-        </S.TotalAmount>
+        {/* 2. 본문 내용 */}
+        <S.ContentArea>
+          {/* 합계 금액 */}
+          
         {/* 실제 지급 금액이 있는 경우 표시 */}
         {detail.actualPaidAmount !== null && detail.actualPaidAmount !== undefined && detail.actualPaidAmount !== detail.totalAmount && (
           <div style={{ 
@@ -1064,6 +1117,7 @@ const ExpenseDetailPage = () => {
             )}
           </div>
         )}
+        
 
         <S.DetailTable>
           <thead>
@@ -1138,31 +1192,50 @@ const ExpenseDetailPage = () => {
             })}
           </tbody>
         </S.DetailTable>
-      </S.ContentArea>
+        </S.ContentArea>
+      </S.MainContentBox>
+      {/* 합계금액과 버튼을 가로로 배치 */}
+      <S.TotalAmountAndButtons>
+        <S.TotalAmount>
+          <span className="label">합계 금액</span>
+          <span className="amount">{detail.totalAmount.toLocaleString()}원</span>
+        </S.TotalAmount>
+        
+        {/* 수정/삭제 버튼 - 피그마 Group 1161 디자인 적용 */}
+        {canEditOrDelete() && (
+          <S.EditDeleteButtons>
+            <Button
+              variant="primary"
+              size="small"
+              onClick={() => navigate(`/expenses/edit/${id}`)}
+              style={{ 
+                width: '60px',
+                height: '36px'
+              }}
+            >
+              수정
+            </Button>
+            <Button
+              variant="outline"
+              size="small"
+              onClick={handleDeleteExpense}
+              disabled={isDeletingExpense}
+              style={{ 
+                backgroundColor: '#ffffff',
+                borderColor: '#e4e4e4',
+                color: '#333333',
+                width: '60px',
+                height: '36px'
+              }}
+            >
+              {isDeletingExpense ? '삭제 중...' : '삭제'}
+            </Button>
+          </S.EditDeleteButtons>
+        )}
+      </S.TotalAmountAndButtons>
 
       {/* 3. 버튼 */}
       <S.ButtonGroup>
-         <button className="back" onClick={() => navigate('/expenses')}>목록으로</button>
-         {/* 수정/삭제 가능한 경우에만 수정 버튼 표시 */}
-         {canEditOrDelete() && (
-           <>
-             <button
-               className="edit"
-               onClick={() => navigate(`/expenses/edit/${id}`)}
-               style={{ backgroundColor: '#17a2b8', color: 'white' }}
-             >
-               수정하기
-             </button>
-             <button
-               className="delete"
-               onClick={handleDeleteExpense}
-               disabled={isDeletingExpense}
-               style={{ backgroundColor: '#dc3545', color: 'white' }}
-             >
-               {isDeletingExpense ? '삭제 중...' : '삭제하기'}
-             </button>
-           </>
-         )}
          {/* 세무 수집된 문서는 수정 불가 안내 메시지 */}
          {detail && detail.taxCollectedAt && user && detail.drafterId === user.userId && detail.status === 'WAIT' && (
            <span style={{
@@ -1254,27 +1327,20 @@ const ExpenseDetailPage = () => {
         
         return (
           <S.ReceiptSection>
+            <S.ReceiptSectionContainer>
             <S.ReceiptSectionHeader>
-              <S.SectionTitle title="영수증 (전체)">영수증 (전체)</S.SectionTitle>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <S.SectionTitle title="영수증(전체)">영수증(전체)</S.SectionTitle>
+              <S.ReceiptSectionHeaderRight>
                 {allReceiptsWithDescription.length > 0 && (
-                  <button
+                  <S.DownloadAllButton
                     onClick={handleBatchDownload}
                     disabled={isDownloadingBatch || isUploadingReceipt || deletingReceiptId !== null}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: isDownloadingBatch ? 'not-allowed' : 'pointer',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      opacity: (isDownloadingBatch || isUploadingReceipt || deletingReceiptId !== null) ? 0.6 : 1
-                    }}
                   >
-                    {isDownloadingBatch ? '다운로드 중...' : '전체 다운로드 (ZIP)'}
-                  </button>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M10 2.5V12.5M10 12.5L6.25 8.75M10 12.5L13.75 8.75M3.75 12.5V15.8333C3.75 16.2754 4.12559 16.6667 4.58333 16.6667H15.4167C15.8744 16.6667 16.25 16.2754 16.25 15.8333V12.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    전체 다운로드
+                  </S.DownloadAllButton>
                 )}
                 {canUploadReceipt() && (
                   <label>
@@ -1290,7 +1356,7 @@ const ExpenseDetailPage = () => {
                     />
                   </label>
                 )}
-              </div>
+              </S.ReceiptSectionHeaderRight>
             </S.ReceiptSectionHeader>
             {allReceiptsWithDescription.length > 0 ? (
               <S.ReceiptList>
@@ -1299,45 +1365,37 @@ const ExpenseDetailPage = () => {
                     <S.ReceiptInfo>
                       <div title={receipt.originalFilename}><strong>{receipt.originalFilename}</strong></div>
                       <div 
-                        style={{ marginTop: '4px', color: '#666', fontSize: '14px' }}
-                        title={`적요: ${receipt.description} | 항목: ${receipt.category} | 금액: ${receipt.amount.toLocaleString()}원`}
+                        style={{ marginTop: '4px' }}
+                        title={`적요: ${receipt.description} | 항목: ${receipt.category} | 금액: ${receipt.amount.toLocaleString()}원 | 업로드: ${receipt.uploadedByName} (${receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''})`}
                       >
-                        <strong>적요:</strong> {receipt.description} | <strong>항목:</strong> {receipt.category} | <strong>금액:</strong> {receipt.amount.toLocaleString()}원
+                        적요 {receipt.description} | 항목 {receipt.category} | 금액 {receipt.amount.toLocaleString()}원 | 업로드 {receipt.uploadedByName} ({receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''})
                       </div>
-                      <div 
-                        style={{ marginTop: '4px', fontSize: '12px', color: '#999' }}
-                        title={`업로드: ${receipt.uploadedByName} (${receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''})`}
-                      >
-                        업로드: {receipt.uploadedByName} ({receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''})
-                      </div>
-                      {receipt.fileSize && (
-                        <div 
-                          style={{ marginTop: '2px', fontSize: '12px', color: '#999' }}
-                          title={`크기: ${(receipt.fileSize / 1024).toFixed(2)} KB`}
-                        >
-                          크기: {(receipt.fileSize / 1024).toFixed(2)} KB
-                        </div>
-                      )}
                     </S.ReceiptInfo>
                     <S.ReceiptActions>
-                      <button onClick={() => handleReceiptDownload(receipt.receiptId, receipt.originalFilename)} disabled={isUploadingReceipt || deletingReceiptId !== null || updatingReceiptId !== null}>다운로드</button>
+                      
                       {/* 대기 상태: 수정 버튼 표시 */}
                       {canModifyReceipt(receipt) && (
                         <button 
                           onClick={() => handleReceiptModify(receipt.receiptId, receipt.expenseDetailId)} 
                           disabled={isUploadingReceipt || updatingReceiptId === receipt.receiptId || updatingReceiptId !== null || deletingReceiptId !== null}
+                          title="수정"
                           style={{
-                            padding: '6px 12px',
-                            backgroundColor: '#17a2b8',
-                            color: 'white',
+                            padding: '6px',
+                            backgroundColor: 'transparent',
                             border: 'none',
                             borderRadius: '4px',
                             cursor: (isUploadingReceipt || updatingReceiptId === receipt.receiptId || updatingReceiptId !== null || deletingReceiptId !== null) ? 'not-allowed' : 'pointer',
-                            fontSize: '14px',
-                            opacity: (isUploadingReceipt || updatingReceiptId === receipt.receiptId || updatingReceiptId !== null || deletingReceiptId !== null) ? 0.6 : 1
+                            opacity: (isUploadingReceipt || updatingReceiptId === receipt.receiptId || updatingReceiptId !== null || deletingReceiptId !== null) ? 0.6 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
                           }}
                         >
-                          {updatingReceiptId === receipt.receiptId ? '수정 중...' : '수정'}
+                          <img 
+                            src="/이너사인_이미지 (1)/아이콘/20px_기타_입력/영수증수정.png" 
+                            alt="수정" 
+                            style={{ width: '20px', height: '20px' }}
+                          />
                         </button>
                       )}
                       {/* 승인 상태: 삭제 버튼 표시 */}
@@ -1359,6 +1417,28 @@ const ExpenseDetailPage = () => {
                           {deletingReceiptId === receipt.receiptId ? '삭제 중...' : '삭제'}
                         </button>
                       )}
+                      <button 
+                        onClick={() => handleReceiptDownload(receipt.receiptId, receipt.originalFilename)} 
+                        disabled={isUploadingReceipt || deletingReceiptId !== null || updatingReceiptId !== null}
+                        title="다운로드"
+                        style={{
+                          padding: '6px',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: (isUploadingReceipt || deletingReceiptId !== null || updatingReceiptId !== null) ? 'not-allowed' : 'pointer',
+                          opacity: (isUploadingReceipt || deletingReceiptId !== null || updatingReceiptId !== null) ? 0.6 : 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <img 
+                          src="/이너사인_이미지 (1)/아이콘/20px_추가_검색_다운로드_임시저장_내지출결의서/영수증다운로드.png" 
+                          alt="다운로드" 
+                          style={{ width: '20px', height: '20px' }}
+                        />
+                      </button>
                     </S.ReceiptActions>
                   </S.ReceiptItem>
                 ))}
@@ -1368,9 +1448,18 @@ const ExpenseDetailPage = () => {
                 <p>영수증이 아직 첨부되지 않았습니다.</p>
               </S.ReceiptEmpty>
             )}
+            </S.ReceiptSectionContainer>
           </S.ReceiptSection>
         );
       })()}
+
+      {/* 목록 버튼 - ExpenseCreatePage 스타일 재사용 */}
+      <S.ListButtonContainer>
+        <S.ListButton onClick={() => navigate('/expenses')}>
+          <FaList />
+          <span>목록</span>
+        </S.ListButton>
+      </S.ListButtonContainer>
 
        {isModalOpen && (
          <Suspense fallback={<div>로딩 중...</div>}>
