@@ -5,7 +5,7 @@ import { getUserApprovers, createUserApprover, updateUserApprover, deleteUserApp
 import { fetchApprovers } from '../../api/expenseApi';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import { FaPlus, FaEdit, FaTrash, FaUserCheck } from 'react-icons/fa';
+import PageHeader from '../../components/PageHeader/PageHeader';
 
 const MyApproverPage = () => {
   const { user } = useAuth();
@@ -140,26 +140,31 @@ const MyApproverPage = () => {
 
   return (
     <S.Container>
-      <S.InfoBox>
-        <p>담당 결재자를 설정하면 지출결의서 작성 시 자동으로 결재자가 선택됩니다.</p>
-        <p>담당 결재자가 1명이면 자동 선택되고, 2명 이상이면 선택할 수 있습니다.</p>
-      </S.InfoBox>
+      <PageHeader
+        title="담당 결재자 설정"
+        subTitle="담당 결재자 목록"
+        subTitleActions={(
+          <S.ActionBar>
+            <S.AddButton onClick={() => handleOpenModal()}>
+              <span style={{ fontSize: '18px', fontWeight: 700, lineHeight: 1 }}>+</span>
+              <span>담당 결재자 추가</span>
+            </S.AddButton>
+          </S.ActionBar>
+        )}
+      />
 
-      <S.ActionBar>
-        <S.AddButton onClick={() => handleOpenModal()}>
-          <FaPlus />
-          <span>담당 결재자 추가</span>
-        </S.AddButton>
-      </S.ActionBar>
+      <S.InfoBox>
+        <p>·담당 결재자를 설정하면 지출결의서 작성 시 자동으로 결재자가 선택됩니다.</p>
+        <p>·담당 결재자가 1명이면 자동 선택되고, 2명 이상이면 선택할 수 있습니다.</p>
+      </S.InfoBox>
 
       <S.TableContainer>
         <S.Table>
           <thead>
             <tr>
-              <th>순서</th>
+              <th>우선순위</th>
               <th>결재자 이름</th>
               <th>직급</th>
-              <th>우선순위</th>
               <th>상태</th>
               <th>관리</th>
             </tr>
@@ -167,7 +172,7 @@ const MyApproverPage = () => {
           <tbody>
             {mappings.length === 0 ? (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>
                   등록된 담당 결재자가 없습니다.
                 </td>
               </tr>
@@ -181,7 +186,6 @@ const MyApproverPage = () => {
                       <td>{mapping.priority || 1}</td>
                       <td>{approver?.koreanName || '알 수 없음'}</td>
                       <td>{approver?.position || '-'}</td>
-                      <td>{mapping.priority || 1}</td>
                       <td>
                         <S.StatusBadge active={mapping.isActive}>
                           {mapping.isActive ? '활성' : '비활성'}
@@ -190,10 +194,16 @@ const MyApproverPage = () => {
                       <td>
                         <S.ActionButtons>
                           <S.EditButton onClick={() => handleOpenModal(mapping)}>
-                            <FaEdit />
+                            <img
+                              src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/도장카드수정.png"
+                              alt="수정"
+                            />
                           </S.EditButton>
                           <S.DeleteButton onClick={() => handleDelete(mapping.mappingId)}>
-                            <FaTrash />
+                            <img
+                              src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/도장카드삭제.png"
+                              alt="삭제"
+                            />
                           </S.DeleteButton>
                         </S.ActionButtons>
                       </td>
@@ -218,7 +228,10 @@ const MyApproverPage = () => {
             <S.ModalBody>
               <form onSubmit={handleSubmit}>
                 <S.FormGroup>
-                  <S.FormLabel>결재자 *</S.FormLabel>
+                  <S.FormLabel>
+                    결재자
+                    <S.RequiredAsterisk>*</S.RequiredAsterisk>
+                  </S.FormLabel>
                   <S.FormSelect
                     value={formData.approverId}
                     onChange={(e) => setFormData({ ...formData, approverId: e.target.value })}
@@ -234,7 +247,10 @@ const MyApproverPage = () => {
                 </S.FormGroup>
                 
                 <S.FormGroup>
-                  <S.FormLabel>우선순위</S.FormLabel>
+                  <S.FormLabel>
+                    우선순위
+                    <S.RequiredAsterisk>*</S.RequiredAsterisk>
+                  </S.FormLabel>
                   <S.FormInput
                     type="number"
                     min="1"
