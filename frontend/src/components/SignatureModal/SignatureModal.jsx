@@ -3,6 +3,14 @@ import SignatureCanvas from 'react-signature-canvas';
 import { FaTimes, FaCheck, FaImage } from 'react-icons/fa';
 import * as S from './style';
 
+// X 아이콘 컴포넌트 (x-circle-contained)
+const XCircleIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10" cy="10" r="9" stroke="#333" strokeWidth="1.5"/>
+    <path d="M7 7L13 13M13 7L7 13" stroke="#333" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
 const SignatureModal = ({ 
   isOpen, 
   onClose, 
@@ -191,11 +199,38 @@ const SignatureModal = ({
     return false;
   };
 
+  // 제목 결정
+  const getTitle = () => {
+    if (editingSignature) {
+      return editingSignature.signatureType === 'STAMP' ? '도장 수정' : '서명 수정';
+    }
+    // 초기 모드나 업로드 모드일 때 도장/서명 구분
+    if (initialMode === 'upload' || (mode === 'upload' && !editingSignature)) {
+      return '도장 입력';
+    }
+    return '서명 입력';
+  };
+
+  const handleReupload = () => {
+    setUploadedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleRedraw = () => {
+    clear();
+  };
+
+  const handleClearName = () => {
+    setSignatureName('');
+  };
+
   return (
     <S.Overlay>
       <S.Content>
         <S.Header>
-          <S.Title>{editingSignature ? '서명/도장 수정' : '서명 입력'}</S.Title>
+          <S.Title>{getTitle()}</S.Title>
           <S.CloseButton onClick={onClose}>
             <FaTimes />
           </S.CloseButton>
@@ -208,19 +243,19 @@ const SignatureModal = ({
               저장된 서명/도장
             </S.Tab>
             <S.Tab active={mode === 'draw'} onClick={() => setMode('draw')}>
-              새로 그리기
+              그리기
             </S.Tab>
             <S.Tab active={mode === 'upload'} onClick={() => setMode('upload')}>
-              <FaImage /> 이미지 업로드
+              업로드
             </S.Tab>
           </S.TabGroup>
         ) : (
           <S.TabGroup>
             <S.Tab active={mode === 'draw'} onClick={() => setMode('draw')}>
-              직접 그리기
+              그리기
             </S.Tab>
             <S.Tab active={mode === 'upload'} onClick={() => setMode('upload')}>
-              <FaImage /> 이미지 업로드
+              업로드
             </S.Tab>
           </S.TabGroup>
         )}
@@ -251,24 +286,17 @@ const SignatureModal = ({
           </>
         ) : mode === 'upload' ? (
           <>
-            <S.Instruction>
-              서명 이미지 파일을 업로드해주세요
-            </S.Instruction>
             <S.UploadContainer>
               {uploadedImage ? (
                 <S.UploadedImageWrapper>
-                  <S.UploadedImage src={uploadedImage} alt="업로드된 서명" />
-                  <S.RemoveImageButton onClick={() => setUploadedImage(null)}>
-                    <FaTimes /> 이미지 제거
-                  </S.RemoveImageButton>
+                  <S.UploadedImage src={uploadedImage} alt="업로드된 이미지" />
+                  <S.ReuploadButton onClick={handleReupload} disabled={isSaving}>
+                    다시 업로드
+                  </S.ReuploadButton>
                 </S.UploadedImageWrapper>
               ) : (
                 <S.UploadArea onClick={handleUploadClick}>
-                  <FaImage style={{ fontSize: '48px', color: '#007bff', marginBottom: '16px' }} />
-                  <p>이미지를 클릭하거나 드래그하여 업로드</p>
-                  <p style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
-                    JPG, PNG, GIF (최대 5MB)
-                  </p>
+                  <p>이 곳에 서명 이미지 파일을 끌어다놓거나 업로드하세요<br />JPG, PNG, GIF(최대 5MB)</p>
                 </S.UploadArea>
               )}
               <input
@@ -282,13 +310,10 @@ const SignatureModal = ({
           </>
         ) : (
           <>
-            <S.Instruction>
-              아래 영역에 서명을 입력해주세요
-            </S.Instruction>
             <S.CanvasContainer>
               <SignatureCanvas
                 ref={sigCanvas}
-                canvasProps={{ width: 360, height: 200, className: 'sigCanvas' }}
+                canvasProps={{ width: 452, height: 160, className: 'sigCanvas' }}
                 backgroundColor="#fafafa"
                 onEnd={() => {
                   // 그리기 완료 시 상태 업데이트
@@ -297,9 +322,16 @@ const SignatureModal = ({
                   }
                 }}
               />
-              <S.ClearButton onClick={clear} disabled={isSaving} title="지우기">
-                <FaTimes />
-              </S.ClearButton>
+              {hasDrawn && (
+                <S.RedrawButton onClick={handleRedraw} disabled={isSaving}>
+                  다시 그리기
+                </S.RedrawButton>
+              )}
+              {!hasDrawn && (
+                <S.ClearButton onClick={clear} disabled={isSaving}>
+                  지우기
+                </S.ClearButton>
+              )}
             </S.CanvasContainer>
           </>
         )}
@@ -307,14 +339,24 @@ const SignatureModal = ({
         {/* 이름 입력 필드 (showNameInput이 true일 때만 표시) */}
         {showNameInput && (
           <S.NameInputSection>
-            <S.Label>서명/도장 이름</S.Label>
-            <S.NameInput
-              type="text"
-              value={signatureName}
-              onChange={(e) => setSignatureName(e.target.value)}
-              placeholder={editingSignature ? '서명/도장 이름을 입력하세요' : '예: 기본 서명, 회사 도장'}
-              maxLength={50}
-            />
+            <S.Label>이름<span className="asterisk">*</span></S.Label>
+            <S.NameInputWrapper>
+              <S.NameInput
+                type="text"
+                value={signatureName}
+                onChange={(e) => setSignatureName(e.target.value)}
+                placeholder={editingSignature ? 
+                  (editingSignature.signatureType === 'STAMP' ? '도장 이름을 입력하세요' : '서명 이름을 입력하세요') : 
+                  '서명 이름을 입력하세요'}
+                maxLength={50}
+                hasValue={!!signatureName}
+              />
+              {signatureName && (
+                <S.ClearNameButton onClick={handleClearName}>
+                  <XCircleIcon />
+                </S.ClearNameButton>
+              )}
+            </S.NameInputWrapper>
             <S.CheckboxWrapper>
               <input
                 type="checkbox"
@@ -323,19 +365,26 @@ const SignatureModal = ({
                 onChange={(e) => setIsDefault(e.target.checked)}
                 disabled={editingSignature?.isDefault} // 기존 기본 서명은 체크박스 비활성화
               />
-              <label htmlFor="isDefault">기본 서명/도장으로 설정</label>
+              <label htmlFor="isDefault">기본으로 설정</label>
             </S.CheckboxWrapper>
+            <S.HelpText>지출결의서 작성 시 기본으로 선택합니다.</S.HelpText>
           </S.NameInputSection>
         )}
 
         <S.ButtonGroup>
           <S.ActionButton 
+            onClick={onClose}
+            variant="secondary"
+            disabled={isSaving}
+          >
+            취소
+          </S.ActionButton>
+          <S.ActionButton 
             onClick={save} 
             variant="primary" 
             disabled={isSaving || !getCanSave()}
           >
-            <FaCheck />
-            <span>{isSaving ? '저장 중...' : '승인 및 저장'}</span>
+            저장
           </S.ActionButton>
         </S.ButtonGroup>
       </S.Content>

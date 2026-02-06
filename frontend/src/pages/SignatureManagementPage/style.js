@@ -345,18 +345,22 @@ export const ModalOverlay = styled.div`
 `;
 
 export const ModalContent = styled.div`
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  width: 500px;
+  height: 341px;
+  overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
 
   @media (max-width: 480px) {
-    max-width: 100%;
+    width: 100%;
+    max-width: 500px;
+    height: auto;
     max-height: 90vh;
-    border-radius: 12px 12px 0 0;
+    border-radius: 4px;
   }
 `;
 
@@ -364,39 +368,45 @@ export const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 24px 24px 0 24px;
+  margin-bottom: 16px;
 `;
 
 export const ModalTitle = styled.h3`
   font-family: 'Noto Sans KR', sans-serif;
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
+  color: #333333;
   margin: 0;
+  line-height: 21.6px;
 `;
 
 export const CloseButton = styled.button`
   background: none;
   border: none;
-  font-size: 24px;
-  color: #666;
+  width: 24px;
+  height: 24px;
+  color: #333333;
   cursor: pointer;
   padding: 0;
-  width: 30px;
-  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  transition: opacity 0.2s;
 
   &:hover {
-    background-color: #f0f0f0;
+    opacity: 0.7;
+  }
+
+  img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
   }
 `;
 
 export const ModalBody = styled.div`
-  padding: 20px;
+  padding: 0 24px 24px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -405,35 +415,90 @@ export const ModalBody = styled.div`
 export const TypeSelectButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  background: white;
+  gap: 24px;
+  padding: 0;
+  border: 1px solid ${props => props.selected ? '#666666' : '#e4e4e4'};
+  border-radius: 4px;
+  background: transparent;
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
+  width: 452px;
+  height: 98px;
+  position: relative;
+  box-sizing: border-box;
 
   &:hover {
-    border-color: #007bff;
-    background-color: #f8f9fa;
+    border-color: #666666;
   }
 
-  div {
-    flex: 1;
+  @media (max-width: 480px) {
+    width: 100%;
+    max-width: 452px;
+  }
+`;
 
-    strong {
-      display: block;
-      font-size: 18px;
-      margin-bottom: 4px;
-      color: #333;
-    }
+export const TypeIcon = styled.div`
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 24px;
+  flex-shrink: 0;
 
-    p {
-      margin: 0;
-      font-size: 14px;
-      color: #666;
-    }
+  img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+  }
+`;
+
+export const TypeContent = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 24px;
+`;
+
+export const TypeTitle = styled.strong`
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #333333;
+  line-height: 21.6px;
+  display: block;
+`;
+
+export const TypeDescription = styled.p`
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  font-weight: 350;
+  color: #666666;
+  line-height: 19.2px;
+  margin: 0;
+`;
+
+export const CheckMark = styled.div`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #489bff;
+  border-radius: 50%;
+  display: ${props => props.selected ? 'flex' : 'none'};
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+
+  &::after {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid #489bff;
+    border-radius: 50%;
   }
 `;
 

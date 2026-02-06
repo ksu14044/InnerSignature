@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaStar, FaStamp } from 'react-icons/fa';
+import { FaPlus, FaStar, FaStamp, FaPen } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   getMySignatures, 
@@ -252,23 +252,38 @@ const SignatureManagementPage = () => {
         <S.ModalOverlay onClick={() => setIsTypeSelectModalOpen(false)}>
           <S.ModalContent onClick={(e) => e.stopPropagation()}>
             <S.ModalHeader>
-              <S.ModalTitle>서명/도장 타입 선택</S.ModalTitle>
-              <S.CloseButton onClick={() => setIsTypeSelectModalOpen(false)}>×</S.CloseButton>
+              <S.ModalTitle>도장ㆍ서명 타입 선택</S.ModalTitle>
+              <S.CloseButton onClick={() => setIsTypeSelectModalOpen(false)}>
+                <img src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/팝업창닫기.png" alt="닫기" />
+              </S.CloseButton>
             </S.ModalHeader>
             <S.ModalBody>
-              <S.TypeSelectButton onClick={() => handleSelectSignatureType('SIGNATURE')}>
-                <FaPen style={{ fontSize: '32px', marginBottom: '8px', color: '#007bff' }} />
-                <div>
-                  <strong>서명</strong>
-                  <p>터치스크린이나 마우스로 직접 서명합니다</p>
-                </div>
+              
+              <S.TypeSelectButton 
+                selected={selectedSignatureType === 'STAMP'}
+                onClick={() => handleSelectSignatureType('STAMP')}
+              >
+                <S.TypeIcon>
+                  <img src="/이너사인_이미지 (1)/아이콘/20px_기타_입력/선택.png" alt="도장" />
+                </S.TypeIcon>
+                <S.TypeContent>
+                  <S.TypeTitle>도장</S.TypeTitle>
+                  <S.TypeDescription>이미지 파일을 업로드합니다.</S.TypeDescription>
+                </S.TypeContent>
+                <S.CheckMark selected={selectedSignatureType === 'STAMP'} />
               </S.TypeSelectButton>
-              <S.TypeSelectButton onClick={() => handleSelectSignatureType('STAMP')}>
-                <FaStamp style={{ fontSize: '32px', marginBottom: '8px', color: '#007bff' }} />
-                <div>
-                  <strong>도장</strong>
-                  <p>이미지 파일을 업로드합니다</p>
-                </div>
+              <S.TypeSelectButton 
+                selected={selectedSignatureType === 'SIGNATURE'}
+                onClick={() => handleSelectSignatureType('SIGNATURE')}
+              >
+                <S.TypeIcon>
+                  <img src="/이너사인_이미지 (1)/아이콘/20px_기타_입력/선택.png" alt="서명" />
+                </S.TypeIcon>
+                <S.TypeContent>
+                  <S.TypeTitle>서명</S.TypeTitle>
+                  <S.TypeDescription>마우스로 직접 그리거나 이미지 파일을 업로드합니다.</S.TypeDescription>
+                </S.TypeContent>
+                <S.CheckMark selected={selectedSignatureType === 'SIGNATURE'} />
               </S.TypeSelectButton>
             </S.ModalBody>
           </S.ModalContent>
