@@ -40,6 +40,10 @@ const TaxAccountantDashboardSection = ({ filters }) => {
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [statusExpenses, setStatusExpenses] = useState([]);
   const [loadingStatusExpenses, setLoadingStatusExpenses] = useState(false);
+  const [approvedExpenses, setApprovedExpenses] = useState([]);
+  const [selectedTaxStatus, setSelectedTaxStatus] = useState(null); // 합계금액, 승인, 수집, 미수집
+  const [taxStatusExpenses, setTaxStatusExpenses] = useState([]);
+  const [loadingTaxStatusExpenses, setLoadingTaxStatusExpenses] = useState(false);
   
   const [collectMode, setCollectMode] = useState('date'); // 'date' 또는 'month'
   const [monthRange, setMonthRange] = useState({
@@ -80,13 +84,16 @@ const TaxAccountantDashboardSection = ({ filters }) => {
       }
       if (allExpensesRes.success && allExpensesRes.data) {
         const expenses = allExpensesRes.data.content || [];
-        const approvedExpenses = expenses.filter(exp => exp.status === 'APPROVED');
+        const approvedExpensesList = expenses
+          .filter(exp => exp.status === 'APPROVED')
+          .sort((a, b) => new Date(b.reportDate) - new Date(a.reportDate)); // 최신순 정렬
         const collectedExpenses = expenses.filter(exp => exp.taxProcessed === true);
+        setApprovedExpenses(approvedExpensesList.slice(0, 3)); // 최근 3개만 저장
         setStats({
-          totalAmount: approvedExpenses.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0),
+          totalAmount: approvedExpensesList.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0),
           waitCount: expenses.filter(exp => exp.status === 'WAIT').length,
           rejectedCount: expenses.filter(exp => exp.status === 'REJECTED').length,
-          approvedCount: expenses.filter(exp => exp.status === 'APPROVED').length,
+          approvedCount: approvedExpensesList.length,
           collectedCount: collectedExpenses.length
         });
       }
@@ -130,6 +137,55 @@ const TaxAccountantDashboardSection = ({ filters }) => {
       setStatusExpenses([]);
     } finally {
       setLoadingStatusExpenses(false);
+    }
+  };
+
+  // 세무 상태 카드 클릭 핸들러 (합계금액, 승인, 수집, 미수집)
+  const handleTaxStatusCardClick = async (taxStatus) => {
+    if (selectedTaxStatus === taxStatus) {
+      setSelectedTaxStatus(null);
+      setTaxStatusExpenses([]);
+      return;
+    }
+
+    setSelectedTaxStatus(taxStatus);
+    setLoadingTaxStatusExpenses(true);
+
+    try {
+      let expenses = [];
+      
+      if (taxStatus === 'TOTAL') {
+        // 합계금액: 모든 APPROVED 결의서
+        const response = await fetchTaxPendingReports(filters.startDate || null, filters.endDate || null, null);
+        if (response.success) {
+          expenses = response.data || [];
+        }
+      } else if (taxStatus === 'APPROVED') {
+        // 승인: APPROVED 상태 결의서 (수집 여부 무관)
+        const response = await fetchTaxPendingReports(filters.startDate || null, filters.endDate || null, null);
+        if (response.success) {
+          expenses = response.data || [];
+        }
+      } else if (taxStatus === 'COLLECTED') {
+        // 수집: tax_collected_at이 NOT NULL인 APPROVED 결의서
+        const response = await fetchTaxPendingReports(filters.startDate || null, filters.endDate || null, true);
+        if (response.success) {
+          expenses = response.data || [];
+        }
+      } else if (taxStatus === 'UNCOLLECTED') {
+        // 미수집: tax_collected_at이 NULL인 APPROVED 결의서
+        const response = await fetchTaxPendingReports(filters.startDate || null, filters.endDate || null, false);
+        if (response.success) {
+          expenses = response.data || [];
+        }
+      }
+      
+      setTaxStatusExpenses(expenses);
+    } catch (error) {
+      console.error('세무 상태 결의서 목록 로드 실패:', error);
+      setTaxStatusExpenses([]);
+    } finally {
+      setLoadingTaxStatusExpenses(false);
     }
   };
 
@@ -307,75 +363,96 @@ const TaxAccountantDashboardSection = ({ filters }) => {
   // 데스크톱 버전
   return (
     <>
-      <S.SectionTitle>세무 자료 현황</S.SectionTitle>
-
       {/* 통계 카드 - 피그마 디자인 기반 */}
-      <MainS.StatsGrid style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
-        <MainS.StatCard>
-          <MainS.StatLabel>
-            <MainS.StatBadge status="default">합계 금액</MainS.StatBadge>
-          </MainS.StatLabel>
-          <MainS.StatValue>{stats.totalAmount.toLocaleString()}원</MainS.StatValue>
-        </MainS.StatCard>
+      <S.StatsGridContainer>
+        <S.StatCardContainer>
+          <S.StatCardContent>
+            <S.StatBadgeContainer>
+              <S.StatBadge style={{ backgroundColor: '#ebf4ff', color: '#489bff' }}>합계 금액</S.StatBadge>
+            </S.StatBadgeContainer>
+            <S.StatValueLarge>{stats.totalAmount.toLocaleString()}원</S.StatValueLarge>
+          </S.StatCardContent>
+          <S.StatCardChevron><FaChevronUp /></S.StatCardChevron>
+        </S.StatCardContainer>
 
-        <MainS.StatCard
-          status="wait"
+        <S.StatCardContainer
+          onClick={() => handleStatCardClick('APPROVED')}
+          selected={selectedStatus === 'APPROVED'}
+          style={{ borderColor: selectedStatus === 'APPROVED' ? '#14804a' : '#e4e4e4' }}
+        >
+          <S.StatCardContent>
+            <S.StatBadgeContainer>
+              <S.StatBadge style={{ backgroundColor: '#edfff6', color: '#14804a' }}>승인</S.StatBadge>
+            </S.StatBadgeContainer>
+            <S.StatValueLarge>{stats.approvedCount}건</S.StatValueLarge>
+          </S.StatCardContent>
+          <S.StatCardChevron><FaChevronUp /></S.StatCardChevron>
+        </S.StatCardContainer>
+
+        <S.StatCardContainer
           onClick={() => handleStatCardClick('WAIT')}
-          title="대기 상태 결의서 보기"
           selected={selectedStatus === 'WAIT'}
         >
-          <MainS.StatLabel>
-            <MainS.StatBadge status="wait">대기</MainS.StatBadge>
-          </MainS.StatLabel>
-          <MainS.StatValue>{stats.waitCount}건</MainS.StatValue>
-          {selectedStatus === 'WAIT' && <MainS.ChevronIcon><FaChevronUp /></MainS.ChevronIcon>}
-        </MainS.StatCard>
+          <S.StatCardContent>
+            <S.StatBadgeContainer>
+              <S.StatBadge style={{ backgroundColor: '#fff7d7', color: '#ffa310' }}>대기</S.StatBadge>
+            </S.StatBadgeContainer>
+            <S.StatValueLarge>{stats.waitCount}건</S.StatValueLarge>
+          </S.StatCardContent>
+          <S.StatCardChevron><FaChevronUp /></S.StatCardChevron>
+        </S.StatCardContainer>
 
-        <MainS.StatCard
-          status="rejected"
+        <S.StatCardContainer
           onClick={() => handleStatCardClick('REJECTED')}
-          title="반려 상태 결의서 보기"
           selected={selectedStatus === 'REJECTED'}
         >
-          <MainS.StatLabel>
-            <MainS.StatBadge status="rejected">반려</MainS.StatBadge>
-          </MainS.StatLabel>
-          <MainS.StatValue>{stats.rejectedCount}건</MainS.StatValue>
-          {selectedStatus === 'REJECTED' && <MainS.ChevronIcon><FaChevronUp /></MainS.ChevronIcon>}
-        </MainS.StatCard>
+          <S.StatCardContent>
+            <S.StatBadgeContainer>
+              <S.StatBadge style={{ backgroundColor: '#ffefef', color: '#d72d30' }}>반려</S.StatBadge>
+            </S.StatBadgeContainer>
+            <S.StatValueLarge>{stats.rejectedCount}건</S.StatValueLarge>
+          </S.StatCardContent>
+          <S.StatCardChevron><FaChevronUp /></S.StatCardChevron>
+        </S.StatCardContainer>
+      </S.StatsGridContainer>
 
-        <MainS.StatCard
-          status="approved"
-          onClick={() => handleStatCardClick('APPROVED')}
-          title="승인 상태 결의서 보기"
-          selected={selectedStatus === 'APPROVED'}
-        >
-          <MainS.StatLabel>
-            <MainS.StatBadge status="approved">승인</MainS.StatBadge>
-          </MainS.StatLabel>
-          <MainS.StatValue>{stats.approvedCount}건</MainS.StatValue>
-          {selectedStatus === 'APPROVED' && <MainS.ChevronIcon><FaChevronUp /></MainS.ChevronIcon>}
-        </MainS.StatCard>
+      {/* 승인 지출결의서 목록 - 피그마 디자인 */}
+      {approvedExpenses.length > 0 && (
+        <S.ApprovedExpenseSection>
+          <S.ApprovedExpenseHeader>
+            <S.ApprovedExpenseTitle>
+              승인 지출결의서 {stats.approvedCount}건
+            </S.ApprovedExpenseTitle>
+            <S.ViewAllButton onClick={() => navigate('/expenses?status=APPROVED')}>
+              전체보기 →
+            </S.ViewAllButton>
+          </S.ApprovedExpenseHeader>
+          <MainS.RecentExpenseList>
+            {approvedExpenses.map((item) => (
+              <MainS.RecentExpenseItem key={item.expenseReportId} onClick={() => navigate(`/detail/${item.expenseReportId}`)}>
+                <MainS.RecentExpenseDate>{item.reportDate}</MainS.RecentExpenseDate>
+                <MainS.RecentExpenseContent>
+                  <MainS.RecentExpenseDescription>
+                    {item.summaryDescription || item.firstDescription || '-'}
+                  </MainS.RecentExpenseDescription>
+                  <MainS.RecentExpenseMeta>
+                    <span>{item.drafterName}</span>
+                    <span>{item.totalAmount.toLocaleString()}원</span>
+                  </MainS.RecentExpenseMeta>
+                </MainS.RecentExpenseContent>
+                <MainS.StatusBadge status="approved">승인</MainS.StatusBadge>
+              </MainS.RecentExpenseItem>
+            ))}
+          </MainS.RecentExpenseList>
+        </S.ApprovedExpenseSection>
+      )}
 
-        <MainS.StatCard
-          onClick={() => handleStatCardClick('COLLECTED')}
-          title="수집 상태 결의서 보기"
-          selected={selectedStatus === 'COLLECTED'}
-        >
-          <MainS.StatLabel>
-            <MainS.StatBadge status="default" style={{ backgroundColor: '#f8ebff', color: '#a133e0' }}>수집</MainS.StatBadge>
-          </MainS.StatLabel>
-          <MainS.StatValue>{stats.collectedCount}건</MainS.StatValue>
-          {selectedStatus === 'COLLECTED' && <MainS.ChevronIcon><FaChevronUp /></MainS.ChevronIcon>}
-        </MainS.StatCard>
-      </MainS.StatsGrid>
-
-      {/* 선택된 상태의 결의서 목록 */}
-      {selectedStatus && (
+      {/* 선택된 상태의 결의서 목록 (승인 외 다른 상태) */}
+      {selectedStatus && selectedStatus !== 'APPROVED' && (
         <MainS.StatusExpenseSection>
           <MainS.StatusExpenseHeader>
             <MainS.StatusExpenseTitle>
-              최근 {selectedStatus === 'WAIT' ? '대기' : selectedStatus === 'REJECTED' ? '반려' : selectedStatus === 'APPROVED' ? '승인' : '수집'} 상태 결의서
+              최근 {selectedStatus === 'WAIT' ? '대기' : selectedStatus === 'REJECTED' ? '반려' : '수집'} 상태 결의서
             </MainS.StatusExpenseTitle>
             <MainS.ViewAllLink to={`/expenses?status=${selectedStatus === 'COLLECTED' ? 'APPROVED' : selectedStatus}${filters.startDate ? `&startDate=${filters.startDate}` : ''}${filters.endDate ? `&endDate=${filters.endDate}` : ''}`}>
               전체보기 →
@@ -418,204 +495,135 @@ const TaxAccountantDashboardSection = ({ filters }) => {
 
       {/* 미수집 결의서 알림 - 피그마 디자인 기반 */}
       {pendingReports.length > 0 && (
-        <S.AlertSection style={{ 
-          background: '#ffffff', 
-          border: '1px solid #489bff', 
-          borderRadius: '4px',
-          padding: '20px 24px'
-        }}>
-          <S.AlertTitle style={{ color: '#333333', fontSize: '18px', fontWeight: '700' }}>
-            미수집 결의서 {pendingReports.length}건
-          </S.AlertTitle>
-          <S.AlertButton 
-            onClick={() => navigate('/tax/summary')}
-            style={{
-              background: '#ffffff',
-              color: '#333333',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '8px 16px',
-              fontSize: '16px',
-              fontWeight: '500',
-              cursor: 'pointer'
-            }}
-          >
+        <S.UncollectedAlertSection>
+          <S.UncollectedAlertTitle>미수집 결의서 {pendingReports.length}건</S.UncollectedAlertTitle>
+          <S.UncollectedAlertButton onClick={() => navigate('/tax/summary')}>
             세무 요약 보기 →
-          </S.AlertButton>
-        </S.AlertSection>
+          </S.UncollectedAlertButton>
+        </S.UncollectedAlertSection>
       )}
 
-      {/* 주요 카테고리 Top 5 */}
-      {summary.length > 0 && (
-        <S.SummarySection>
-          <S.SectionTitle>주요 카테고리 (Top 5)</S.SectionTitle>
-          <S.SummaryTable>
-            <thead>
-              <tr>
-                <th>카테고리</th>
-                <th>금액</th>
-                <th>건수</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summary.slice(0, 5).map((item, index) => (
-                <tr key={index}>
-                  <td>{item.category || '-'}</td>
-                  <td>{item.totalAmount?.toLocaleString() || 0}원</td>
-                  <td>{item.reportCount || 0}건</td>
-                </tr>
+      {/* 세무 상태 카드 섹션 */}
+      <S.TaxStatusCardsGrid>
+        <S.TaxStatusCard
+          onClick={() => handleTaxStatusCardClick('TOTAL')}
+          selected={selectedTaxStatus === 'TOTAL'}
+        >
+          <S.TaxStatusCardContent>
+            <S.TaxStatusBadge style={{ backgroundColor: '#ebf4ff', color: '#489bff' }}>합계금액</S.TaxStatusBadge>
+            <S.TaxStatusValue>{stats.totalAmount.toLocaleString()}원</S.TaxStatusValue>
+          </S.TaxStatusCardContent>
+          {selectedTaxStatus === 'TOTAL' && <S.TaxStatusChevron><FaChevronUp /></S.TaxStatusChevron>}
+        </S.TaxStatusCard>
+
+        <S.TaxStatusCard
+          onClick={() => handleTaxStatusCardClick('APPROVED')}
+          selected={selectedTaxStatus === 'APPROVED'}
+        >
+          <S.TaxStatusCardContent>
+            <S.TaxStatusBadge style={{ backgroundColor: '#edfff6', color: '#14804a' }}>승인</S.TaxStatusBadge>
+            <S.TaxStatusValue>{stats.approvedCount}건</S.TaxStatusValue>
+          </S.TaxStatusCardContent>
+          {selectedTaxStatus === 'APPROVED' && <S.TaxStatusChevron><FaChevronUp /></S.TaxStatusChevron>}
+        </S.TaxStatusCard>
+
+        <S.TaxStatusCard
+          onClick={() => handleTaxStatusCardClick('COLLECTED')}
+          selected={selectedTaxStatus === 'COLLECTED'}
+        >
+          <S.TaxStatusCardContent>
+            <S.TaxStatusBadge style={{ backgroundColor: '#f8ebff', color: '#a133e0' }}>수집</S.TaxStatusBadge>
+            <S.TaxStatusValue>{stats.collectedCount}건</S.TaxStatusValue>
+          </S.TaxStatusCardContent>
+          {selectedTaxStatus === 'COLLECTED' && <S.TaxStatusChevron><FaChevronUp /></S.TaxStatusChevron>}
+        </S.TaxStatusCard>
+
+        <S.TaxStatusCard
+          onClick={() => handleTaxStatusCardClick('UNCOLLECTED')}
+          selected={selectedTaxStatus === 'UNCOLLECTED'}
+        >
+          <S.TaxStatusCardContent>
+            <S.TaxStatusBadge style={{ backgroundColor: '#f4f4f4', color: '#666666' }}>미수집</S.TaxStatusBadge>
+            <S.TaxStatusValue>{pendingReports.length}건</S.TaxStatusValue>
+          </S.TaxStatusCardContent>
+          {selectedTaxStatus === 'UNCOLLECTED' && <S.TaxStatusChevron><FaChevronUp /></S.TaxStatusChevron>}
+        </S.TaxStatusCard>
+      </S.TaxStatusCardsGrid>
+
+      {/* 선택된 세무 상태의 결의서 목록 */}
+      {selectedTaxStatus && (
+        <MainS.StatusExpenseSection>
+          <MainS.StatusExpenseHeader>
+            <MainS.StatusExpenseTitle>
+              {selectedTaxStatus === 'TOTAL' ? '전체' : 
+               selectedTaxStatus === 'APPROVED' ? '승인' : 
+               selectedTaxStatus === 'COLLECTED' ? '수집' : '미수집'} 상태 결의서
+            </MainS.StatusExpenseTitle>
+            <MainS.ViewAllLink to={`/tax/summary${filters.startDate ? `?startDate=${filters.startDate}` : ''}${filters.endDate ? `&endDate=${filters.endDate}` : ''}`}>
+              전체보기 →
+            </MainS.ViewAllLink>
+          </MainS.StatusExpenseHeader>
+
+          {loadingTaxStatusExpenses ? (
+            <MainS.LoadingMessage>로딩 중...</MainS.LoadingMessage>
+          ) : taxStatusExpenses.length === 0 ? (
+            <MainS.EmptyMessage>해당 상태의 결의서가 없습니다.</MainS.EmptyMessage>
+          ) : (
+            <MainS.RecentExpenseList>
+              {taxStatusExpenses.slice(0, 10).map((item) => (
+                <MainS.RecentExpenseItem
+                  key={item.expenseReportId}
+                  onClick={() => navigate(`/detail/${item.expenseReportId}`)}
+                  selected={false}
+                >
+                  <MainS.RecentExpenseDate>{item.reportDate}</MainS.RecentExpenseDate>
+                  <MainS.RecentExpenseContent>
+                    <MainS.RecentExpenseDescription>
+                      {item.summaryDescription || item.firstDescription || '-'}
+                    </MainS.RecentExpenseDescription>
+                    <MainS.RecentExpenseMeta>
+                      <span>{item.drafterName}</span>
+                      <span>{item.totalAmount.toLocaleString()}원</span>
+                    </MainS.RecentExpenseMeta>
+                  </MainS.RecentExpenseContent>
+                  <MainS.StatusBadge status="approved">승인</MainS.StatusBadge>
+                </MainS.RecentExpenseItem>
               ))}
-            </tbody>
-          </S.SummaryTable>
-          {summary.length > 5 && (
-            <S.ViewMoreButton onClick={() => navigate('/tax/summary')}>
-              전체 보기 ({summary.length}개 카테고리)
-            </S.ViewMoreButton>
+            </MainS.RecentExpenseList>
           )}
-        </S.SummarySection>
+        </MainS.StatusExpenseSection>
       )}
 
-      {/* 자료 수집 및 전표 다운로드 */}
-      <S.ManagementSection>
-        <S.SectionTitle>기간별 자료 수집</S.SectionTitle>
-        <div style={{ padding: '20px', backgroundColor: '#fff9e6', borderRadius: '8px', border: '2px solid #ffc107' }}>
-          <div style={{ marginBottom: '15px', color: '#e65100', fontWeight: '500' }}>
-            ⚠️ 선택한 기간의 APPROVED 결의서를 수집하고 세무 전표를 다운로드합니다.
-            <br />수집된 자료는 DB에 기록되며, 일반 사용자는 수정/삭제할 수 없습니다.
-          </div>
+      {/* 세무 자료 현황 - 피그마 디자인 */}
+      <S.SectionTitle>세무 자료 현황</S.SectionTitle>
 
-          {/* 수집 모드 선택 */}
-          <div style={{ marginBottom: '16px', display: 'flex', gap: '16px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="collectMode"
-                value="date"
-                checked={collectMode === 'date'}
-                onChange={(e) => setCollectMode(e.target.value)}
-                style={{ marginRight: '6px' }}
-              />
-              <span style={{ fontSize: '14px', fontWeight: '500' }}>📆 일별 수집</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="collectMode"
-                value="month"
-                checked={collectMode === 'month'}
-                onChange={(e) => setCollectMode(e.target.value)}
-                style={{ marginRight: '6px' }}
-              />
-              <span style={{ fontSize: '14px', fontWeight: '500' }}>📅 월별 수집</span>
-            </label>
-          </div>
+      {/* 주요 카테고리 Top 5 - 피그마 디자인 */}
+      {summary.length > 0 && (
+        <S.CategoryTableSection>
+          <S.CategoryTableTitle>주요 카테고리(Top 5)</S.CategoryTableTitle>
+          <S.CategoryTable>
+            <S.CategoryTableHeader>
+              <S.CategoryTableHeaderCell>카테고리</S.CategoryTableHeaderCell>
+              <S.CategoryTableHeaderCell style={{ textAlign: 'right' }}>총 결제 금액</S.CategoryTableHeaderCell>
+              <S.CategoryTableHeaderCell style={{ textAlign: 'right' }}>건수</S.CategoryTableHeaderCell>
+            </S.CategoryTableHeader>
+            <S.CategoryTableBody>
+              {summary.slice(0, 5).map((item, index) => (
+                <S.CategoryTableRow key={index}>
+                  <S.CategoryTableCell>{item.category || '-'}</S.CategoryTableCell>
+                  <S.CategoryTableCell style={{ textAlign: 'right', fontWeight: '500' }}>
+                    {item.totalAmount?.toLocaleString() || 0}원
+                  </S.CategoryTableCell>
+                  <S.CategoryTableCell style={{ textAlign: 'right' }}>
+                    {item.reportCount || 0}건
+                  </S.CategoryTableCell>
+                </S.CategoryTableRow>
+              ))}
+            </S.CategoryTableBody>
+          </S.CategoryTable>
+        </S.CategoryTableSection>
+      )}
 
-          {/* 일별 수집 모드 */}
-          {collectMode === 'date' && (
-            <div>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <button
-                  onClick={handleCollectTaxData}
-                  disabled={!filters.startDate || !filters.endDate || loading}
-                  style={{
-                    padding: '14px 24px',
-                    backgroundColor: '#ff6f00',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: (!filters.startDate || !filters.endDate || loading) ? 'not-allowed' : 'pointer',
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    opacity: (!filters.startDate || !filters.endDate || loading) ? 0.5 : 1,
-                  }}
-                >
-                  {loading ? '처리 중...' : '📥 일별 자료 수집 및 전표 다운로드'}
-                </button>
-                {(!filters.startDate || !filters.endDate) && (
-                  <span style={{ color: '#d32f2f', fontSize: '13px' }}>
-                    ※ 대시보드 상단에서 기간을 선택해주세요
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* 월별 수집 모드 */}
-          {collectMode === 'month' && (
-            <div>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                <div>
-                  <label style={{ fontSize: '13px', color: '#666', display: 'block', marginBottom: '4px' }}>
-                    수집 시작월
-                  </label>
-                  <input
-                    type="month"
-                    value={monthRange.startMonth}
-                    onChange={(e) => setMonthRange(prev => ({ ...prev, startMonth: e.target.value }))}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                      fontSize: '14px',
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '13px', color: '#666', display: 'block', marginBottom: '4px' }}>
-                    수집 종료월
-                  </label>
-                  <input
-                    type="month"
-                    value={monthRange.endMonth}
-                    min={monthRange.startMonth || undefined}
-                    onChange={(e) => setMonthRange(prev => ({ ...prev, endMonth: e.target.value }))}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                      fontSize: '14px',
-                    }}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <button
-                  onClick={handleMonthCollect}
-                  disabled={!monthRange.startMonth || !monthRange.endMonth || loading}
-                  style={{
-                    padding: '14px 24px',
-                    backgroundColor: '#ff6f00',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: (!monthRange.startMonth || !monthRange.endMonth || loading) ? 'not-allowed' : 'pointer',
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    opacity: (!monthRange.startMonth || !monthRange.endMonth || loading) ? 0.5 : 1,
-                  }}
-                >
-                  {loading ? '처리 중...' : '📅 월별 자료 수집 및 전표 다운로드'}
-                </button>
-              </div>
-              {monthRange.startMonth && monthRange.endMonth && (
-                <div style={{ marginTop: '8px', fontSize: '13px', color: '#1976d2' }}>
-                  ✓ {monthRange.startMonth} ~ {monthRange.endMonth} 
-                  {' '}({calculateMonthRange(monthRange.startMonth, monthRange.endMonth)})
-                </div>
-              )}
-              {(!monthRange.startMonth || !monthRange.endMonth) && (
-                <div style={{ marginTop: '8px', fontSize: '13px', color: '#d32f2f' }}>
-                  ※ 수집할 시작월과 종료월을 선택해주세요 (예: 2024-01 ~ 2024-03)
-                </div>
-              )}
-            </div>
-          )}
-
-          <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#e3f2fd', borderRadius: '4px', fontSize: '12px', color: '#1565c0' }}>
-            💡 월별 수집 시: 1월~3월처럼 연속된 여러 달을 한번에 수집 가능
-          </div>
-        </div>
-      </S.ManagementSection>
 
       {/* 다운로드 중일 때는 진행률 모달 표시 */}
       {loading && downloadProgress > 0 && (

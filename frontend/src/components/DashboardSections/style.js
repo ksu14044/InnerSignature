@@ -788,3 +788,405 @@ export const ScrollSpacer = styled.div`
   }
 `;
 
+// 세무사 대시보드 전용 스타일 (피그마 디자인 기반)
+export const DashboardTitle = styled.h1`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0 0 24px 0;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const MonthNavigatorSection = styled.div`
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+`;
+
+export const MonthNavigatorLabel = styled.div`
+  font-size: 18px;
+  font-weight: 500;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const MonthNavigatorContent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+export const MonthDisplay = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const StatsGridContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+
+  @media (max-width: 1400px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const StatCardContainer = styled.div`
+  background: #ffffff;
+  border: 1px solid ${props => props.selected ? '#14804a' : '#e4e4e4'};
+  border-radius: 4px;
+  padding: 20px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  cursor: ${props => props.onClick ? 'pointer' : 'default'};
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: ${props => props.selected ? '#14804a' : '#489bff'};
+  }
+`;
+
+export const StatCardContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const StatBadgeContainer = styled.div`
+  margin-bottom: 8px;
+`;
+
+export const StatBadge = styled.span`
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 400;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const StatValueLarge = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const StatCardChevron = styled.div`
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  color: #666666;
+  font-size: 24px;
+  opacity: 0.7;
+`;
+
+export const ApprovedExpenseSection = styled.div`
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  padding: 24px;
+  margin-bottom: 24px;
+`;
+
+export const ApprovedExpenseHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+export const ApprovedExpenseTitle = styled.h2`
+  font-size: 18px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const ViewAllButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333333;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+
+  &:hover {
+    background: #f8f9fa;
+  }
+`;
+
+export const ApprovedExpenseList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+export const ApprovedExpenseItem = styled.div`
+  display: grid;
+  grid-template-columns: 100px 1fr auto auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #489bff;
+    box-shadow: 0 2px 8px rgba(72, 155, 255, 0.1);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+`;
+
+export const ApprovedExpenseDate = styled.div`
+  font-size: 16px;
+  font-weight: 400;
+  color: #666666;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const ApprovedExpenseDescription = styled.div`
+  font-size: 16px;
+  font-weight: 400;
+  color: #666666;
+  font-family: 'Noto Sans KR', sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const ApprovedExpenseUser = styled.div`
+  font-size: 16px;
+  font-weight: 400;
+  color: #666666;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const ApprovedExpenseAmount = styled.div`
+  font-size: 16px;
+  font-weight: 500;
+  color: #666666;
+  text-align: right;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const ApprovedStatusBadge = styled.span`
+  display: inline-block;
+  padding: 4px 8px;
+  background: #edfff6;
+  color: #14804a;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const UncollectedAlertSection = styled.div`
+  background: #ffffff;
+  border: 1px solid #489bff;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+export const UncollectedAlertTitle = styled.div`
+  font-size: 18px;
+  font-weight: 700;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const UncollectedAlertButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333333;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+
+  &:hover {
+    background: #f8f9fa;
+  }
+`;
+
+export const CategoryTableSection = styled.div`
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+`;
+
+export const CategoryTableTitle = styled.h2`
+  font-size: 18px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0 0 16px 0;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const CategoryTable = styled.div`
+  width: 100%;
+`;
+
+export const CategoryTableHeader = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  padding: 12px 0;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-bottom: 8px;
+`;
+
+export const CategoryTableHeaderCell = styled.div`
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+  padding: 0 16px;
+`;
+
+export const CategoryTableBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const CategoryTableRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px 0;
+  background: #f8f9fa;
+  border-radius: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f0f0f0;
+  }
+`;
+
+export const CategoryTableCell = styled.div`
+  font-size: 16px;
+  font-weight: 400;
+  color: #666666;
+  font-family: 'Noto Sans KR', sans-serif;
+  padding: 0 16px;
+`;
+
+// 세무 상태 카드 스타일
+export const TaxStatusCardsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+
+  @media (max-width: 1400px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const TaxStatusCard = styled.div`
+  background: #ffffff;
+  border: 1px solid ${props => props.selected ? '#489bff' : '#e4e4e4'};
+  border-radius: 4px;
+  padding: 20px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #489bff;
+  }
+`;
+
+export const TaxStatusCardContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const TaxStatusBadge = styled.span`
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 400;
+  font-family: 'Noto Sans KR', sans-serif;
+  width: fit-content;
+`;
+
+export const TaxStatusValue = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333333;
+  font-family: 'Noto Sans KR', sans-serif;
+`;
+
+export const TaxStatusChevron = styled.div`
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  color: #666666;
+  font-size: 24px;
+  opacity: 0.7;
+`;

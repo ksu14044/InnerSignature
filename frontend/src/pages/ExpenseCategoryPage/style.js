@@ -826,16 +826,13 @@ export const MappingItem = styled.div`
   padding: 24px;
   background: #ffffff;
   border: 1px solid #e4e4e4;
-  border-radius: 8px;
+  border-radius: 4px;
   min-height: 97px;
   cursor: ${props => props.$clickable ? 'pointer' : 'default'};
   transition: all 0.2s;
 
   &:hover {
-    ${props => props.$clickable && `
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      transform: translateY(-1px);
-    `}
+    background: rgba(228, 228, 228, 0.4);
   }
   
   @media (max-width: 480px) {
