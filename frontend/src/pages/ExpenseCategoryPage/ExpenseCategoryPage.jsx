@@ -13,7 +13,8 @@ import {
 import { getAccountCodeMappingList, createAccountCodeMapping, updateAccountCodeMapping, deleteAccountCodeMapping } from '../../api/accountCodeApi';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
-import { FaPlus, FaEdit, FaTrash, FaGripVertical, FaCode } from 'react-icons/fa';
+import PageHeader from '../../components/PageHeader/PageHeader';
+import { FaPlus, FaCode } from 'react-icons/fa';
 
 const ExpenseCategoryPage = ({ hideHeader = false }) => {
   const { user } = useAuth();
@@ -230,10 +231,10 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
       return;
     }
 
-    // 마우스 위치에 따라 위/아래 판별
+    // 마우스 위치에 따라 왼쪽/오른쪽 판별
     const rect = e.currentTarget.getBoundingClientRect();
-    const offsetY = e.clientY - rect.top;
-    const nextPos = offsetY < rect.height / 2 ? 'before' : 'after';
+    const offsetX = e.clientX - rect.left;
+    const nextPos = offsetX < rect.width / 2 ? 'left' : 'right';
 
     setDragOverIndex(index);
     setDropPosition(nextPos);
@@ -263,8 +264,9 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
       return;
     }
 
-    // before/after에 따라 최종 삽입 인덱스 계산
-    let insertIndex = dropIndex + (pos === 'after' ? 1 : 0);
+    // left/right에 따라 최종 삽입 인덱스 계산
+    // left: 해당 카드 앞에 삽입, right: 해당 카드 뒤에 삽입
+    let insertIndex = dropIndex + (pos === 'right' ? 1 : 0);
     const fromIndex = draggedItem;
 
     // 원본 삭제 후 인덱스 보정
@@ -464,84 +466,105 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
 
   return (
     <S.Container>
-
-      {/* 탭 버튼 */}
-      <S.TabSection>
-        <S.TabButton active={activeTab === 'categories'} onClick={() => setActiveTab('categories')}>
-          지출 카테고리
-        </S.TabButton>
-        <S.TabButton active={activeTab === 'accountCodes'} onClick={() => setActiveTab('accountCodes')}>
-          계정 코드 매핑
-        </S.TabButton>
-      </S.TabSection>
+      <PageHeader
+        title="지출 항목 관리"
+        pendingApprovals={[]}
+        pendingUsers={[]}
+      />
+      
+      {/* 탭 헤더 바 */}
+      <S.TabHeaderBar>
+        <S.TabSection>
+          <S.TabButton active={activeTab === 'categories'} onClick={() => setActiveTab('categories')}>
+            지출 카테고리
+          </S.TabButton>
+          <S.TabButton active={activeTab === 'accountCodes'} onClick={() => setActiveTab('accountCodes')}>
+            계정 코드 매핑
+          </S.TabButton>
+        </S.TabSection>
+        {activeTab === 'categories' && canEditCategories && (
+          <S.TabHeaderActions>
+            <S.AddButton onClick={() => handleOpenModal()}>
+              <FaPlus />
+              <span>항목 추가</span>
+            </S.AddButton>
+          </S.TabHeaderActions>
+        )}
+        {activeTab === 'accountCodes' && (
+          <S.TabHeaderActions>
+            <S.AddButton 
+              disabled={!canEditMapping}
+              onClick={() => canEditMapping && handleOpenMappingModal()}
+              $disabled={!canEditMapping}
+            >
+              <FaPlus />
+              <span>항목 추가</span>
+            </S.AddButton>
+          </S.TabHeaderActions>
+        )}
+      </S.TabHeaderBar>
 
       {/* 지출 카테고리 탭 */}
       {activeTab === 'categories' && (
         <>
-      <S.InfoBox>
-        <p>
-          {user.role === 'SUPERADMIN' 
-            ? 'SUPERADMIN은 전역 기본 항목을 설정할 수 있습니다.'
-            : user.role === 'USER'
-            ? '지출 항목을 조회할 수 있습니다. 항목 생성/수정이 필요하시면 회계 담당자, 관리자, 대표 또는 세무 담당자에게 문의해주세요.'
-            : '회사별 항목을 추가, 수정, 삭제(비활성화)할 수 있습니다. 드래그 앤 드롭으로 순서를 변경할 수 있습니다.'}
-        </p>
-      </S.InfoBox>
+          <S.InfoBox>
+            <p>
+              {user.role === 'SUPERADMIN' 
+                ? 'SUPERADMIN은 전역 기본 항목을 설정할 수 있습니다.'
+                : user.role === 'USER'
+                ? '지출 항목을 조회할 수 있습니다. 항목 생성/수정이 필요하시면 회계 담당자, 관리자, 대표 또는 세무 담당자에게 문의해주세요.'
+                : '회사별 항목을 추가, 수정, 삭제(비활성화)할 수 있습니다. 드래그 앤 드롭으로 순서를 변경할 수 있습니다.'}
+            </p>
+          </S.InfoBox>
 
-      {canEditCategories && (
-        <S.ActionBar>
-          <S.AddButton onClick={() => handleOpenModal()}>
-            <FaPlus />
-            <span>항목 추가</span>
-          </S.AddButton>
-        </S.ActionBar>
-      )}
-
-      <S.CategoryList>
-        {categories.length === 0 ? (
-          <S.EmptyMessage>등록된 항목이 없습니다.</S.EmptyMessage>
-        ) : (
-          categories.map((category, index) => (
-            <S.CategoryItem
-              key={category.categoryId}
-              draggable={canEditCategories}
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnd={handleDragEnd}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, index)}
-              isActive={category.isActive}
-              isDragging={draggedItem === index}
-              isDragOver={dragOverIndex === index}
-              dropPosition={dragOverIndex === index ? dropPosition : null}
-            >
-              {canEditCategories && (
-                <S.DragHandle>
-                  <FaGripVertical />
-                </S.DragHandle>
-              )}
-              <S.CategoryInfo>
-                <S.CategoryName>{category.categoryName}</S.CategoryName>
-                <S.CategoryMeta>
-                  순서: {category.displayOrder || 0} | 
-                  {category.companyId ? '회사별' : '전역'} | 
-                  {category.isActive ? '활성' : '비활성'}
-                </S.CategoryMeta>
-              </S.CategoryInfo>
-              {canEditCategories && (
-                <S.ActionButtons>
-                  <S.EditButton onClick={() => handleOpenModal(category)}>
-                    <FaEdit />
-                  </S.EditButton>
-                  <S.DeleteButton onClick={() => handleDelete(category.categoryId)}>
-                    <FaTrash />
-                  </S.DeleteButton>
-                </S.ActionButtons>
-              )}
-            </S.CategoryItem>
-          ))
-        )}
-      </S.CategoryList>
+          <S.CategoryList>
+            {categories.length === 0 ? (
+              <S.EmptyMessage>등록된 항목이 없습니다.</S.EmptyMessage>
+            ) : (
+              categories.map((category, index) => (
+                <S.CategoryItem
+                  key={category.categoryId}
+                  draggable={canEditCategories}
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                  isActive={category.isActive}
+                  isDragging={draggedItem === index}
+                  isDragOver={dragOverIndex === index}
+                  dropPosition={dragOverIndex === index ? dropPosition : null}
+                >
+                  <S.CategoryInfo>
+                    <S.CategoryName>{category.categoryName}</S.CategoryName>
+                    <S.CategoryMeta>
+                      순서 {category.displayOrder || 0} | {category.companyId ? '회사별' : '전역'} | {category.isActive ? '활성' : '비활성'}
+                    </S.CategoryMeta>
+                  </S.CategoryInfo>
+                  {canEditCategories && (
+                    <S.ActionButtons>
+                      <S.EditButton onClick={() => handleOpenModal(category)}>
+                        <img 
+                          src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/수정.png" 
+                          alt="수정" 
+                          width="24" 
+                          height="24"
+                        />
+                      </S.EditButton>
+                      <S.DeleteButton onClick={() => handleDelete(category.categoryId)}>
+                        <img 
+                          src="/이너사인_이미지 (1)/아이콘/24px_팝업창_페이지넘기기_수정삭제/삭제.png" 
+                          alt="삭제" 
+                          width="24" 
+                          height="24"
+                        />
+                      </S.DeleteButton>
+                    </S.ActionButtons>
+                  )}
+                </S.CategoryItem>
+              ))
+            )}
+          </S.CategoryList>
 
       {/* 모달 */}
       {isModalOpen && (
@@ -551,48 +574,66 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
               <S.ModalTitle>
                 {editingCategory ? '항목 수정' : '항목 추가'}
               </S.ModalTitle>
-              <S.ModalCloseButton onClick={handleCloseModal}>×</S.ModalCloseButton>
+              <S.ModalCloseButton onClick={handleCloseModal}>
+                <img 
+                  src="/이너사인_이미지 (1)/아이콘/24px_알림_사이드바/x-02.png" 
+                  alt="닫기" 
+                  width="24" 
+                  height="24"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+                <span style={{ display: 'none', fontSize: '24px', color: '#666666' }}>×</span>
+              </S.ModalCloseButton>
             </S.ModalHeader>
             <S.ModalBody>
               <form onSubmit={handleSubmit}>
                 <S.FormGroup>
-                  <S.FormLabel>항목명 *</S.FormLabel>
+                  <S.FormLabel>항목 이름</S.FormLabel>
                   <S.FormInput
                     type="text"
                     value={formData.categoryName}
                     onChange={(e) => setFormData({ ...formData, categoryName: e.target.value })}
+                    placeholder="항목 이름을 입력하세요"
                     required
                     maxLength={50}
                   />
                 </S.FormGroup>
                 
                 <S.FormGroup>
-                  <S.FormLabel>표시 순서</S.FormLabel>
+                  <S.FormLabel>표지순서</S.FormLabel>
                   <S.FormInput
                     type="number"
                     min="0"
                     value={formData.displayOrder}
                     onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
                   />
-                  <S.FormHelpText>낮을수록 먼저 표시됩니다. 드래그 앤 드롭으로도 변경할 수 있습니다.</S.FormHelpText>
+                  <S.FormHelpText>낮을수록 먼저 표시됩니다. 드래그 앤 드롭으로 변경할 수 있습니다.</S.FormHelpText>
                 </S.FormGroup>
                 
                 <S.FormGroup>
-                  <S.FormLabel>
-                    <input
+                  <S.CheckboxGroup>
+                    <S.Checkbox
                       type="checkbox"
+                      id="isActive"
                       checked={formData.isActive}
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                     />
-                    활성화
-                  </S.FormLabel>
+                    <S.CheckboxLabel htmlFor="isActive">활성화</S.CheckboxLabel>
+                  </S.CheckboxGroup>
                 </S.FormGroup>
                 
                 <S.ModalFooter>
                   <S.ModalButton type="button" onClick={handleCloseModal} variant="secondary">
                     취소
                   </S.ModalButton>
-                  <S.ModalButton type="submit">
+                  <S.ModalButton 
+                    type="submit"
+                    $disabled={!formData.categoryName || formData.categoryName.trim() === ''}
+                    disabled={!formData.categoryName || formData.categoryName.trim() === ''}
+                  >
                     {editingCategory ? '수정' : '추가'}
                   </S.ModalButton>
                 </S.ModalFooter>
@@ -607,57 +648,63 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
       {/* 계정 코드 매핑 탭 */}
       {activeTab === 'accountCodes' && (
         <S.MappingTabContent>
-          <S.InfoBox>
-            <p>
-              카테고리와 가맹점 키워드에 따라 자동으로 계정 과목 코드를 매핑할 수 있습니다.
-            </p>
-          </S.InfoBox>
+          {!canEditMapping ? (
+            <S.NoAccessContainer>
+              <S.NoAccessIcon>
+                <img 
+                  src="/이너사인_이미지 (1)/아이콘/계정매핑_알림_40px.png" 
+                  alt="경고" 
+                  width="40" 
+                  height="40"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </S.NoAccessIcon>
+              <S.NoAccessMessage>
+                접근 권한이 없습니다.<br />
+                계정 코드 매핑/수정은 세무 상담사 또는 시스템 관리자 권한이 필요합니다.
+              </S.NoAccessMessage>
+            </S.NoAccessContainer>
+          ) : (
+            <>
+              <S.InfoBox>
+                <p>
+                  카테고리와 가맹점 키워드에 따라 자동으로 계정 과목 코드를 매핑할 수 있습니다.
+                </p>
+              </S.InfoBox>
 
-          {!canEditMapping && (
-            <div style={{ marginBottom: '16px', padding: '12px', background: '#fff3cd', borderRadius: '4px', color: '#856404' }}>
-              <p style={{ margin: 0 }}>
-                <strong>안내:</strong> 계정 코드 매핑 생성/수정은 <strong>세무 담당자(TAX_ACCOUNTANT)</strong> 또는 <strong>시스템 관리자(SUPERADMIN)</strong> 권한이 필요합니다.
-              </p>
-            </div>
+              <S.MappingList>
+                {mappingList.length === 0 ? (
+                  <S.EmptyMessage>등록된 매핑이 없습니다.</S.EmptyMessage>
+                ) : (
+                  mappingList.map(mapping => (
+                    <S.MappingItem key={mapping.mappingId}>
+                      <S.MappingInfo>
+                        <S.MappingTitle>
+                          카테고리: {mapping.category || '-'}
+                          {mapping.merchantKeyword && ` | 가맹점: ${mapping.merchantKeyword}`}
+                        </S.MappingTitle>
+                        <S.MappingMeta>
+                          계정 코드: {mapping.accountCode} | 계정명: {mapping.accountName}
+                        </S.MappingMeta>
+                      </S.MappingInfo>
+                      {canEditMapping && (
+                        <S.ActionButtons>
+                          <S.EditButton onClick={() => handleOpenMappingModal(mapping)}>
+                            <FaEdit />
+                          </S.EditButton>
+                          <S.DeleteButton onClick={() => handleDeleteMapping(mapping.mappingId)}>
+                            <FaTrash />
+                          </S.DeleteButton>
+                        </S.ActionButtons>
+                      )}
+                    </S.MappingItem>
+                  ))
+                )}
+              </S.MappingList>
+            </>
           )}
-          {canEditMapping && (
-            <S.ActionBar>
-              <S.AddButton onClick={() => handleOpenMappingModal()}>
-                <FaPlus />
-                <span>매핑 추가</span>
-              </S.AddButton>
-            </S.ActionBar>
-          )}
-
-          <S.MappingList>
-            {mappingList.length === 0 ? (
-              <S.EmptyMessage>등록된 매핑이 없습니다.</S.EmptyMessage>
-            ) : (
-              mappingList.map(mapping => (
-                <S.MappingItem key={mapping.mappingId}>
-                  <S.MappingInfo>
-                    <S.MappingTitle>
-                      카테고리: {mapping.category || '-'}
-                      {mapping.merchantKeyword && ` | 가맹점: ${mapping.merchantKeyword}`}
-                    </S.MappingTitle>
-                    <S.MappingMeta>
-                      계정 코드: {mapping.accountCode} | 계정명: {mapping.accountName}
-                    </S.MappingMeta>
-                  </S.MappingInfo>
-                  {canEditMapping && (
-                    <S.ActionButtons>
-                      <S.EditButton onClick={() => handleOpenMappingModal(mapping)}>
-                        <FaEdit />
-                      </S.EditButton>
-                      <S.DeleteButton onClick={() => handleDeleteMapping(mapping.mappingId)}>
-                        <FaTrash />
-                      </S.DeleteButton>
-                    </S.ActionButtons>
-                  )}
-                </S.MappingItem>
-              ))
-            )}
-          </S.MappingList>
 
           {/* 계정 코드 매핑 모달 */}
           {isMappingModalOpen && (
