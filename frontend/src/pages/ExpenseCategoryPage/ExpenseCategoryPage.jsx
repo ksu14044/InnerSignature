@@ -14,7 +14,7 @@ import { getAccountCodeMappingList, createAccountCodeMapping, updateAccountCodeM
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import PageHeader from '../../components/PageHeader/PageHeader';
-import { FaPlus, FaCode } from 'react-icons/fa';
+import { FaPlus } from 'react-icons/fa';
 
 const ExpenseCategoryPage = ({ hideHeader = false }) => {
   const { user } = useAuth();
@@ -492,14 +492,17 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
         )}
         {activeTab === 'accountCodes' && (
           <S.TabHeaderActions>
-            <S.AddButton 
-              disabled={!canEditMapping}
-              onClick={() => canEditMapping && handleOpenMappingModal()}
-              $disabled={!canEditMapping}
-            >
-              <FaPlus />
-              <span>항목 추가</span>
-            </S.AddButton>
+            {canEditMapping ? (
+              <S.AddButton onClick={handleOpenMappingModal}>
+                <FaPlus />
+                <span>매핑 추가</span>
+              </S.AddButton>
+            ) : (
+              <S.AddButton disabled $disabled>
+                <FaPlus />
+                <span>항목 추가</span>
+              </S.AddButton>
+            )}
           </S.TabHeaderActions>
         )}
       </S.TabHeaderBar>
@@ -679,26 +682,19 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
                   <S.EmptyMessage>등록된 매핑이 없습니다.</S.EmptyMessage>
                 ) : (
                   mappingList.map(mapping => (
-                    <S.MappingItem key={mapping.mappingId}>
+                    <S.MappingItem 
+                      key={mapping.mappingId}
+                      onClick={canEditMapping ? () => handleOpenMappingModal(mapping) : undefined}
+                      $clickable={canEditMapping}
+                    >
                       <S.MappingInfo>
                         <S.MappingTitle>
-                          카테고리: {mapping.category || '-'}
-                          {mapping.merchantKeyword && ` | 가맹점: ${mapping.merchantKeyword}`}
+                          {mapping.category || '-'}
                         </S.MappingTitle>
                         <S.MappingMeta>
-                          계정 코드: {mapping.accountCode} | 계정명: {mapping.accountName}
+                          계정명 {mapping.accountName}
                         </S.MappingMeta>
                       </S.MappingInfo>
-                      {canEditMapping && (
-                        <S.ActionButtons>
-                          <S.EditButton onClick={() => handleOpenMappingModal(mapping)}>
-                            <FaEdit />
-                          </S.EditButton>
-                          <S.DeleteButton onClick={() => handleDeleteMapping(mapping.mappingId)}>
-                            <FaTrash />
-                          </S.DeleteButton>
-                        </S.ActionButtons>
-                      )}
                     </S.MappingItem>
                   ))
                 )}

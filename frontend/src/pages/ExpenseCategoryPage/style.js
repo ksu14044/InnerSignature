@@ -82,9 +82,9 @@ export const Title = styled.h1`
 
 export const InfoBox = styled.div`
   padding: 24px;
-  background: #f8f9fa;
-  border-radius: 4px;
-  border: none;
+  background: #fafdff;
+  border: 1px solid #489bff;
+  border-radius: 8px;
   margin-bottom: 24px;
   
   p {
@@ -739,9 +739,11 @@ export const TabButton = styled.span`
 
 export const MappingTabContent = styled.div`
   background: white;
-  border-radius: 12px;
   padding: 24px;
-  box-shadow: var(--shadow);
+  
+  @media (max-width: 480px) {
+    padding: 16px;
+  }
 `;
 
 export const NoAccessContainer = styled.div`
@@ -795,44 +797,63 @@ export const NoAccessMessage = styled.div`
 `;
 
 export const MappingList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 0;
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 `;
 
 export const MappingItem = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: white;
-  border: 1px solid var(--border-color);
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
   border-radius: 8px;
-  box-shadow: var(--shadow-sm);
+  min-height: 97px;
+  cursor: ${props => props.$clickable ? 'pointer' : 'default'};
   transition: all 0.2s;
 
   &:hover {
-    box-shadow: var(--shadow);
-    transform: translateY(-1px);
+    ${props => props.$clickable && `
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
+    `}
+  }
+  
+  @media (max-width: 480px) {
+    padding: 16px;
+    min-height: 97px;
   }
 `;
 
 export const MappingInfo = styled.div`
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 `;
 
 export const MappingTitle = styled.div`
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--dark-color);
+  font-size: 18px;
+  font-weight: 500;
+  color: #333333;
+  line-height: 21.6px;
 `;
 
 export const MappingMeta = styled.div`
-  font-size: 14px;
-  color: var(--secondary-color);
+  font-size: 16px;
+  font-weight: 350;
+  color: #666666;
+  line-height: 19.2px;
 `;
 
