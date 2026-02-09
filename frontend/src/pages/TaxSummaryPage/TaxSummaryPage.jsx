@@ -11,6 +11,7 @@ import {
 } from '../../api/expenseApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { showApiError } from '../../utils/errorHandler';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import * as S from './style';
 
 const TaxSummaryPage = () => {
@@ -244,242 +245,217 @@ const TaxSummaryPage = () => {
 
   return (
     <S.Container>
-      {/* 조회 필터 */}
-      
+      <PageHeader
+        title="세무 요약"
+        pendingApprovals={[]}
+        pendingUsers={[]}
+      />
 
-      {/* 자료 수집 섹션 */}
-      <S.FilterCard style={{ marginTop: '20px', backgroundColor: '#fff9e6', border: '2px solid #ffc107' }}>
-        <div style={{ marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-            🗂️ 자료 수집 및 전표 다운로드
-          </h3>
-          <div style={{ fontSize: '13px', color: '#666' }}>
-            ⚠️ 수집된 자료는 일반 사용자가 수정/삭제할 수 없습니다.
-          </div>
-        </div>
+      {/* 자료 수집 및 전표 다운로드 섹션 */}
+      <S.CollectCard>
+        <S.CollectTitle>자료 수집 및 전표 다운로드</S.CollectTitle>
+        
+        {/* 수집 안내 박스 */}
+        <S.InfoBox>
+          <S.InfoTitle>수집 안내</S.InfoTitle>
+          <S.InfoText>
+            ·선택한 기간의 승인 결의서를 수집하고 세무사 전용 전표(Excel)를 다운로드합니다.<br />
+            ·수집된 자료는 DB에 기록되며, 일반 사용자가 수정/삭제할 수 없습니다.<br />
+            ·월별 수집 시: 1월 ~ 3월처럼 연속된 여러 달을 한 번에 수집 가능합니다.<br />
+            ·이미 수집된 자료도 전표에 포함됩니다.
+          </S.InfoText>
+        </S.InfoBox>
 
         {/* 수집 모드 선택 */}
-        <div style={{ marginBottom: '16px', display: 'flex', gap: '16px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-            <input
+        <S.ModeSelector>
+          <S.ModeOption>
+            <S.RadioInput
               type="radio"
               name="collectMode"
               value="date"
               checked={collectMode === 'date'}
               onChange={(e) => setCollectMode(e.target.value)}
-              style={{ marginRight: '6px' }}
             />
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>📆 일별 수집</span>
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-            <input
+            <S.RadioLabel>일별 수집</S.RadioLabel>
+          </S.ModeOption>
+          <S.ModeOption>
+            <S.RadioInput
               type="radio"
               name="collectMode"
               value="month"
               checked={collectMode === 'month'}
               onChange={(e) => setCollectMode(e.target.value)}
-              style={{ marginRight: '6px' }}
             />
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>📅 월별 수집</span>
-          </label>
-        </div>
+            <S.RadioLabel>월별 수집</S.RadioLabel>
+          </S.ModeOption>
+        </S.ModeSelector>
 
         {/* 일별 수집 모드 */}
         {collectMode === 'date' && (
-          <div>
-            <S.FilterGrid>
-              <div>
-                <S.Label>수집 시작일</S.Label>
-                <S.Input
+          <S.DateCollectSection>
+            <S.DateInputGroup>
+              <S.DateInputWrapper>
+                <S.DateLabel>수집 시작일</S.DateLabel>
+                <S.DateInput
                   type="date"
                   value={filters.startDate}
                   onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
                 />
-              </div>
-              <div>
-                <S.Label>수집 종료일</S.Label>
-                <S.Input
+              </S.DateInputWrapper>
+              <S.DateInputWrapper>
+                <S.DateLabel>수집 종료일</S.DateLabel>
+                <S.DateInput
                   type="date"
                   value={filters.endDate}
                   min={filters.startDate || undefined}
                   onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
                 />
-              </div>
-            </S.FilterGrid>
-            <S.ButtonRow style={{ marginTop: 12 }}>
-              <S.Button
-                variant="primary"
-                onClick={handleCollectTaxData}
-                disabled={!filters.startDate || !filters.endDate || loading}
-                style={{ fontSize: '15px', padding: '12px 24px', fontWeight: '600' }}
-              >
-                {loading ? '처리 중...' : '📥 일별 자료 수집 및 전표 다운로드'}
-              </S.Button>
-            </S.ButtonRow>
-            {(!filters.startDate || !filters.endDate) && (
-              <div style={{ marginTop: '8px', fontSize: '13px', color: '#d32f2f' }}>
-                ※ 수집할 시작일과 종료일을 선택해주세요
-              </div>
-            )}
-          </div>
+              </S.DateInputWrapper>
+            </S.DateInputGroup>
+            <S.DownloadButton
+              onClick={handleCollectTaxData}
+              disabled={!filters.startDate || !filters.endDate || loading}
+            >
+              {loading ? '처리 중...' : '일별 자료 수집 및 전표 다운로드'}
+            </S.DownloadButton>
+          </S.DateCollectSection>
         )}
 
         {/* 월별 수집 모드 */}
         {collectMode === 'month' && (
-          <div>
-            <S.FilterGrid>
-              <div>
-                <S.Label>수집 시작월</S.Label>
-                <S.Input
+          <S.MonthCollectSection>
+            <S.DateInputGroup>
+              <S.DateInputWrapper>
+                <S.DateLabel>수집 시작월</S.DateLabel>
+                <S.DateInput
                   type="month"
                   value={monthRange.startMonth}
                   onChange={(e) => setMonthRange(prev => ({ ...prev, startMonth: e.target.value }))}
                   placeholder="YYYY-MM"
                 />
-              </div>
-              <div>
-                <S.Label>수집 종료월</S.Label>
-                <S.Input
+              </S.DateInputWrapper>
+              <S.DateInputWrapper>
+                <S.DateLabel>수집 종료월</S.DateLabel>
+                <S.DateInput
                   type="month"
                   value={monthRange.endMonth}
                   min={monthRange.startMonth || undefined}
                   onChange={(e) => setMonthRange(prev => ({ ...prev, endMonth: e.target.value }))}
                   placeholder="YYYY-MM"
                 />
-              </div>
-            </S.FilterGrid>
-            <S.ButtonRow style={{ marginTop: 12 }}>
-              <S.Button
-                variant="primary"
-                onClick={handleMonthCollect}
-                disabled={!monthRange.startMonth || !monthRange.endMonth || loading}
-                style={{ fontSize: '15px', padding: '12px 24px', fontWeight: '600' }}
-              >
-                {loading ? '처리 중...' : '📅 월별 자료 수집 및 전표 다운로드'}
-              </S.Button>
-            </S.ButtonRow>
-            {monthRange.startMonth && monthRange.endMonth && (
-              <div style={{ marginTop: '8px', fontSize: '13px', color: '#1976d2' }}>
-                ✓ {monthRange.startMonth} ~ {monthRange.endMonth} 
-                {' '}({calculateMonthRange(monthRange.startMonth, monthRange.endMonth)})
-              </div>
-            )}
-            {(!monthRange.startMonth || !monthRange.endMonth) && (
-              <div style={{ marginTop: '8px', fontSize: '13px', color: '#d32f2f' }}>
-                ※ 수집할 시작월과 종료월을 선택해주세요 (예: 2024-01 ~ 2024-03)
-              </div>
-            )}
-          </div>
+              </S.DateInputWrapper>
+            </S.DateInputGroup>
+            <S.DownloadButton
+              onClick={handleMonthCollect}
+              disabled={!monthRange.startMonth || !monthRange.endMonth || loading}
+            >
+              {loading ? '처리 중...' : '월별 자료 수집 및 전표 다운로드'}
+            </S.DownloadButton>
+          </S.MonthCollectSection>
         )}
+      </S.CollectCard>
 
-        <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#e3f2fd', borderRadius: '4px', fontSize: '13px', color: '#1565c0' }}>
-          💡 <strong>수집 안내:</strong>
-          <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
-            <li>선택한 기간의 APPROVED 결의서를 수집하고 세무사 전용 전표(Excel)를 다운로드합니다</li>
-            <li>이미 수집된 자료도 전표에 포함됩니다</li>
-            <li>월별 수집 시: 1월~3월처럼 연속된 여러 달을 한번에 수집 가능</li>
-          </ul>
-        </div>
-      </S.FilterCard>
-
+      {/* 필터 섹션 */}
       <S.FilterCard data-tourid="tour-tax-filter">
         <S.FilterGrid>
-          <div>
-            <S.Label>시작일</S.Label>
-            <S.Input
+          <S.FilterGroup>
+            <S.FilterLabel>시작일</S.FilterLabel>
+            <S.FilterInput
               type="date"
               value={filters.startDate}
               onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
             />
-          </div>
-          <div>
-            <S.Label>종료일</S.Label>
-            <S.Input
+          </S.FilterGroup>
+          <S.FilterGroup>
+            <S.FilterLabel>종료일</S.FilterLabel>
+            <S.FilterInput
               type="date"
               value={filters.endDate}
               min={filters.startDate || undefined}
               onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
             />
-          </div>
-          <div>
-            <S.Label>수집 상태</S.Label>
-            <S.Input
-              as="select"
+          </S.FilterGroup>
+          <S.FilterGroup>
+            <S.FilterLabel>수집 상태</S.FilterLabel>
+            <S.FilterSelect
               value={filters.collectionStatus === null ? '' : filters.collectionStatus ? 'true' : 'false'}
               onChange={(e) => {
                 const value = e.target.value === '' ? null : e.target.value === 'true';
                 setFilters(prev => ({ ...prev, collectionStatus: value }));
               }}
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
             >
               <option value="">전체</option>
               <option value="true">수집됨</option>
               <option value="false">미수집</option>
-            </S.Input>
-          </div>
+            </S.FilterSelect>
+          </S.FilterGroup>
         </S.FilterGrid>
-        <S.ButtonRow style={{ marginTop: 12, justifyContent: 'flex-end' }}>
-          <S.Button variant="secondary" onClick={() => setFilters({ startDate: '', endDate: '', collectionStatus: null })}>
-            필터 초기화
-          </S.Button>
-        </S.ButtonRow>
+        <S.FilterActions>
+          <S.ResetButton onClick={() => setFilters({ startDate: '', endDate: '', collectionStatus: null })}>
+            초기화
+          </S.ResetButton>
+          <S.ApplyButton onClick={() => {}}>
+            적용
+          </S.ApplyButton>
+        </S.FilterActions>
       </S.FilterCard>
 
       {/* 자료 수집 현황 통계 카드 */}
       {!loading && taxStatus && (
         <S.StatCard data-tourid="tour-tax-status">
-          <S.StatItem>
-            <S.StatLabel>승인 상태 결의서</S.StatLabel>
+          <S.StatBox>
+            <S.StatLabel>승인 결의서</S.StatLabel>
             <S.StatValue>{taxStatus.totalCount?.toLocaleString()}건</S.StatValue>
-          </S.StatItem>
-          <S.StatItem>
+          </S.StatBox>
+          <S.StatBox>
+            <S.StatLabel>수집</S.StatLabel>
+            <S.StatValue>{(taxStatus.completedCount || taxStatus.processedCount || 0)?.toLocaleString()}건</S.StatValue>
+          </S.StatBox>
+          <S.StatBox>
             <S.StatLabel>미수집</S.StatLabel>
-            <S.StatValue style={{ color: '#dc3545' }}>{taxStatus.pendingCount?.toLocaleString()}건</S.StatValue>
-          </S.StatItem>
-          <S.StatItem>
-            <S.StatLabel>수집 완료</S.StatLabel>
-            <S.StatValue style={{ color: '#28a745' }}>{(taxStatus.completedCount || taxStatus.processedCount || 0)?.toLocaleString()}건</S.StatValue>
-          </S.StatItem>
-          <S.StatItem>
+            <S.StatValue>{taxStatus.pendingCount?.toLocaleString()}건</S.StatValue>
+          </S.StatBox>
+          <S.StatBox>
             <S.StatLabel>수집률</S.StatLabel>
             <S.StatValue>{((taxStatus.completionRate || 0) * 100).toFixed(1)}%</S.StatValue>
-          </S.StatItem>
-          <S.StatItem>
-            <S.StatLabel>총 금액</S.StatLabel>
+          </S.StatBox>
+          <S.StatBox>
+            <S.StatLabel>합계 금액</S.StatLabel>
             <S.StatValue>{taxStatus.totalAmount?.toLocaleString()}원</S.StatValue>
-          </S.StatItem>
-          <S.StatItem>
+          </S.StatBox>
+          <S.StatBox>
             <S.StatLabel>미수집 금액</S.StatLabel>
             <S.StatValue>{taxStatus.pendingAmount?.toLocaleString()}원</S.StatValue>
-          </S.StatItem>
+          </S.StatBox>
         </S.StatCard>
       )}
 
       {/* APPROVED 상태 결의서 목록 */}
       <S.Card>
-        <S.CardTitle data-tourid="tour-tax-pending">
-          승인 상태 결의서 ({pendingReports.length}건)
-          <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666', marginLeft: '12px' }}>
-            (증빙 확인 및 수집 대상)
-          </span>
-        </S.CardTitle>
+        <S.CardHeader>
+          <S.CardTitle data-tourid="tour-tax-pending">
+            승인 지출결의서 {pendingReports.length}건
+            <S.CardSubtitle>(증빙 확인 및 수집 대상)</S.CardSubtitle>
+          </S.CardTitle>
+          <S.ViewAllButton onClick={() => navigate('/expenses')}>
+            전체보기
+          </S.ViewAllButton>
+        </S.CardHeader>
         {loading ? (
           <S.Empty>불러오는 중...</S.Empty>
         ) : pendingReports.length === 0 ? (
           <S.Empty>승인 상태 결의서가 없습니다.</S.Empty>
         ) : (
           <>
-            <S.SummaryTable>
-              <thead>
-                <tr>
-                  <S.Th>적요(내용)</S.Th>
-                  <S.Th>작성자</S.Th>
-                  <S.Th>작성일</S.Th>
-                  <S.Th>금액</S.Th>
-                  <S.Th>수집 상태</S.Th>
-                </tr>
-              </thead>
-              <tbody>
+            <S.PendingTable>
+              <S.TableHeader>
+                <S.TableHeaderCell>지급 요청일</S.TableHeaderCell>
+                <S.TableHeaderCell>작성자</S.TableHeaderCell>
+                <S.TableHeaderCell>적요(내용)</S.TableHeaderCell>
+                <S.TableHeaderCell align="right">금액</S.TableHeaderCell>
+                <S.TableHeaderCell>수집 상태</S.TableHeaderCell>
+              </S.TableHeader>
+              <S.TableBody>
                 {pendingReports.map((item, index) => {
                   const descriptionDisplay =
                     item.summaryDescription && item.summaryDescription.trim() !== ''
@@ -487,33 +463,31 @@ const TaxSummaryPage = () => {
                       : item.firstDescription && item.firstDescription.trim() !== ''
                         ? item.firstDescription
                         : '-';
+                  
+                  const paymentReqDate = item.paymentReqDate || item.reportDate;
 
                   return (
-                    <S.Tr key={item.expenseReportId} even={index % 2 === 1}>
-                      <S.Td data-label="적요(내용)">
+                    <S.TableRow key={item.expenseReportId} even={index % 2 === 1}>
+                      <S.TableCell>{paymentReqDate}</S.TableCell>
+                      <S.TableCell>{item.drafterName}</S.TableCell>
+                      <S.TableCell>
                         <S.LinkButton onClick={() => navigate(`/detail/${item.expenseReportId}`)}>
                           {descriptionDisplay}
                         </S.LinkButton>
-                      </S.Td>
-                      <S.Td data-label="작성자">{item.drafterName}</S.Td>
-                      <S.Td data-label="작성일">{item.reportDate}</S.Td>
-                      <S.Td align="right" data-label="금액">{item.totalAmount?.toLocaleString()}원</S.Td>
-                      <S.Td data-label="수집 상태">
+                      </S.TableCell>
+                      <S.TableCell align="right">{item.totalAmount?.toLocaleString()}원</S.TableCell>
+                      <S.TableCell>
                         {item.taxCollectedAt ? (
-                          <span style={{ color: '#28a745', fontSize: '12px' }}>
-                            ✅ 수집됨 ({new Date(item.taxCollectedAt).toLocaleDateString('ko-KR')})
-                          </span>
+                          <S.CollectedBadge>수집</S.CollectedBadge>
                         ) : (
-                          <span style={{ color: '#dc3545', fontSize: '12px' }}>
-                            ⏳ 미수집
-                          </span>
+                          <S.NotCollectedBadge>미수집</S.NotCollectedBadge>
                         )}
-                      </S.Td>
-                    </S.Tr>
+                      </S.TableCell>
+                    </S.TableRow>
                   );
                 })}
-              </tbody>
-            </S.SummaryTable>
+              </S.TableBody>
+            </S.PendingTable>
           </>
         )}
       </S.Card>
@@ -581,98 +555,74 @@ const TaxSummaryPage = () => {
       </S.Card>
 
       {/* 영수증 검색 섹션 */}
-      <S.Card style={{ marginTop: '20px', backgroundColor: '#f8f9ff', border: '2px solid #6366f1' }}>
-        <S.CardTitle style={{ color: '#6366f1' }}>
-          🔍 영수증 검색
-          <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666', marginLeft: '12px' }}>
-            (세무 자료 엑셀의 상세내역ID로 영수증 찾기)
-          </span>
+      <S.ReceiptSearchCard>
+        <S.CardTitle>
+          영수증 검색
+          <S.CardSubtitle>(세무 자료 엑셀의 상세내역 ID로 영수증 찾기)</S.CardSubtitle>
         </S.CardTitle>
 
-        <div style={{ marginBottom: '20px' }}>
-          <S.FilterGrid style={{ gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'end' }}>
-            <div>
-              <S.Label>상세내역 ID</S.Label>
-              <S.Input
-                type="text"
-                placeholder="예: 92 (엑셀의 상세내역ID)"
-                value={receiptSearchId}
-                onChange={(e) => setReceiptSearchId(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleReceiptSearch()}
-                style={{ width: '100%' }}
-              />
-            </div>
-            <S.Button
-              onClick={handleReceiptSearch}
-              disabled={!receiptSearchId.trim()}
-              style={{ padding: '10px 20px', backgroundColor: '#6366f1', borderColor: '#6366f1' }}
-            >
-              🔍 검색
-            </S.Button>
-          </S.FilterGrid>
-        </div>
+        <S.SearchInputGroup>
+          <S.SearchInputWrapper>
+            <S.SearchLabel>상세 내역 ID</S.SearchLabel>
+            <S.SearchInput
+              type="text"
+              placeholder="예: 92(엑셀의 상세 내역 ID)"
+              value={receiptSearchId}
+              onChange={(e) => setReceiptSearchId(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleReceiptSearch()}
+            />
+          </S.SearchInputWrapper>
+          <S.SearchButton
+            onClick={handleReceiptSearch}
+            disabled={!receiptSearchId.trim()}
+          >
+            검색
+          </S.SearchButton>
+        </S.SearchInputGroup>
 
         {searchedReceipts.length > 0 && (
-          <div>
-            <h4 style={{ marginBottom: '12px', color: '#333', fontSize: '16px' }}>
-              상세내역 ID {receiptSearchId}의 영수증 목록 ({searchedReceipts.length}개)
-            </h4>
-            <div style={{ display: 'grid', gap: '12px' }}>
-              {searchedReceipts.map((receipt) => (
-                <div
-                  key={receipt.receiptId}
-                  style={{
-                    padding: '16px',
-                    backgroundColor: 'white',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
+          <S.ReceiptList>
+            {searchedReceipts.map((receipt) => (
+              <S.ReceiptItem key={receipt.receiptId}>
+                <S.ReceiptInfo>
+                  <S.ReceiptFileName>{receipt.originalFilename}</S.ReceiptFileName>
+                  <S.ReceiptMeta>
+                    {receipt.expenseDetailId && (
+                      <>
+                        상세내역ID: {receipt.expenseDetailId} |{' '}
+                      </>
+                    )}
+                    업로드: {receipt.uploadedByName} |{' '}
+                    {receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''}
+                    {receipt.fileSize && ` | ${(receipt.fileSize / 1024).toFixed(2)} KB`}
+                  </S.ReceiptMeta>
+                </S.ReceiptInfo>
+                <S.DownloadReceiptButton
+                  onClick={() => handleReceiptDownload(receipt.receiptId, receipt.originalFilename)}
+                  title="다운로드"
                 >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', marginBottom: '4px', color: '#111827' }}>
-                      {receipt.originalFilename}
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                      {receipt.expenseDetailId && (
-                        <span style={{ color: '#6366f1', fontWeight: '500', marginRight: '8px' }}>
-                          상세내역ID: {receipt.expenseDetailId} |
-                        </span>
-                      )}
-                      업로드: {receipt.uploadedByName} |
-                      {receipt.uploadedAt ? new Date(receipt.uploadedAt).toLocaleString('ko-KR') : ''}
-                      {receipt.fileSize && ` | ${(receipt.fileSize / 1024).toFixed(2)} KB`}
-                    </div>
-                  </div>
-                  <S.Button
-                    onClick={() => handleReceiptDownload(receipt.receiptId, receipt.originalFilename)}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#10b981',
-                      borderColor: '#10b981',
-                      marginLeft: '16px'
-                    }}
-                  >
-                    📥 다운로드
-                  </S.Button>
-                </div>
-              ))}
-            </div>
-          </div>
+                  <img
+                    src="/이너사인_이미지 (1)/아이콘/20px_추가_검색_다운로드_임시저장_내지출결의서/영수증다운로드.png"
+                    alt="다운로드"
+                    style={{ width: '20px', height: '20px' }}
+                  />
+                </S.DownloadReceiptButton>
+              </S.ReceiptItem>
+            ))}
+          </S.ReceiptList>
         )}
 
-        <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '4px', fontSize: '13px', color: '#92400e' }}>
-          💡 <strong>사용법:</strong>
-          <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
-            <li>세무 자료 엑셀의 "상세내역ID" 컬럼에서 확인한 값을 입력하세요</li>
-            <li>Enter 키 또는 검색 버튼으로 해당 상세내역의 영수증을 찾을 수 있습니다</li>
-            <li>영수증은 행 단위(상세 내역별)로 조회됩니다</li>
-            <li>영수증이 없으면 "첨부된 영수증이 없습니다" 메시지가 표시됩니다</li>
-          </ul>
-        </div>
-      </S.Card>
+        {/* 사용법 안내 - 카드 하단 */}
+        <S.UsageInfoBox>
+          <S.UsageTitle>사용법</S.UsageTitle>
+          <S.UsageText>
+            ·세무 자료 엑셀의 '상세내역 ID' 컬럼에서 확인한 값을 입력하세요.<br />
+            ·Enter 키 또는 검색 버튼으로 해당 상세내역의 영수증을 찾을 수 있습니다.<br />
+            ·영수증은 행 단위(상세 내역별)로 조회됩니다.<br />
+            ·영수증이 없으면 '첨부된 영수증이 없습니다' 메시지가 표시됩니다.
+          </S.UsageText>
+        </S.UsageInfoBox>
+      </S.ReceiptSearchCard>
     </S.Container>
   );
 };

@@ -1,19 +1,25 @@
 import styled from '@emotion/styled';
 
+// 지출결의서 목록 페이지와 동일한 전체 레이아웃 컨테이너
 export const Container = styled.div`
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--page-padding);
+  width: 100%;
+  padding: 24px 24px 24px 40px;
   min-height: 100vh;
+  background: #f8f9fa;
+
+  @media (max-width: 768px) {
+    padding: 16px 16px 16px 40px;
+  }
 
   @media (max-width: 480px) {
     padding: 0;
     width: 100%;
     max-width: 100%;
-    min-height: auto; /* 모바일에서는 컨텐츠 높이에 따라 조정 */
+    min-height: auto;
     background: #f5f5f5;
     padding-top: 56px;
-    padding-bottom: 80px; /* 하단 네비게이션 + 여유 공간 */
+    padding-bottom: 80px;
+    padding-left: 40px;
   }
 `;
 
@@ -110,24 +116,6 @@ export const Button = styled.button`
   }
 `;
 
-export const FilterCard = styled.div`
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-
-  @media (max-width: 480px) {
-    margin: 0 0 12px 0;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    padding: 16px;
-    box-shadow: none;
-  }
-`;
-
 export const FilterStatusBar = styled.div`
   display: flex;
   align-items: center;
@@ -208,10 +196,6 @@ export const SummaryTable = styled.table`
   width: 100%;
   border-collapse: collapse;
   background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 
   @media (max-width: 480px) {
     display: block;
@@ -244,9 +228,10 @@ export const Th = styled.th`
   padding: 12px;
   text-align: ${({ align }) => align || 'left'};
   background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
-  font-weight: 700;
-  color: var(--dark-color);
+  border-bottom: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
   position: relative;
   cursor: ${({ sortable }) => (sortable ? 'pointer' : 'default')};
   user-select: none;
@@ -289,9 +274,11 @@ export const Th = styled.th`
 `;
 
 export const Td = styled.td`
-  padding: 12px;
-  border-bottom: 1px solid #f1f1f1;
-  color: #333;
+  padding: 16px 12px;
+  border-bottom: none;
+  font-size: 16px;
+  font-weight: 400;
+  color: #666666;
   text-align: ${({ align }) => align || 'left'};
 
   @media (max-width: 768px) {
@@ -355,16 +342,11 @@ export const Td = styled.td`
 
 export const Tr = styled.tr`
   transition: background-color 0.15s ease;
+  background-color: ${props => props.even ? '#f8f9fa' : '#ffffff'};
 
   &:hover {
-    background-color: #f8f9fa;
+    background-color: #f0f0f0;
   }
-
-  ${({ even }) =>
-    even &&
-    `
-    background-color: #fafbfc;
-  `}
 
   @media (max-width: 480px) {
     &:hover {
@@ -424,34 +406,320 @@ export const Card = styled.div`
   }
 `;
 
+export const CardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
 export const CardTitle = styled.h3`
-  margin: 0 0 16px 0;
+  margin: 0 0 24px 0;
   font-size: 18px;
-  color: var(--dark-color);
+  font-weight: 700;
+  color: #333333;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+export const CardSubtitle = styled.span`
+  font-size: 16px;
+  font-weight: 400;
+  color: #333333;
+`;
+
+export const ViewAllButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333333;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f8f9fa;
+  }
+`;
+
+// 승인 지출결의서 테이블
+export const PendingTable = styled.div`
+  width: 100%;
+  border-collapse: collapse;
+`;
+
+export const TableHeader = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr 1fr 1fr;
+  gap: 16px;
+  padding: 12px 0;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-bottom: 8px;
+`;
+
+export const TableHeaderCell = styled.div`
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+  text-align: ${props => props.align || 'left'};
+`;
+
+export const TableBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+`;
+
+export const TableRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e4e4e4;
+  background: ${props => props.even ? '#f8f9fa' : '#ffffff'};
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+export const TableCell = styled.div`
+  font-size: 16px;
+  font-weight: 400;
+  color: #666666;
+  text-align: ${props => props.align || 'left'};
+`;
+
+// 수집 상태 배지
+export const CollectedBadge = styled.span`
+  display: inline-block;
+  padding: 4px 8px;
+  background: #f8ebff;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #a133e0;
+`;
+
+export const NotCollectedBadge = styled.span`
+  display: inline-block;
+  padding: 4px 8px;
+  background: #f4f4f4;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #666666;
+`;
+
+// 영수증 검색 카드
+export const ReceiptSearchCard = styled.div`
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+
+  @media (max-width: 480px) {
+    margin: 0 0 12px 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 16px;
+  }
+`;
+
+export const UsageInfoBox = styled.div`
+  background: #f8fbff;
+  border: 1px solid #489bff;
+  border-radius: 4px;
+  padding: 16px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+`;
+
+export const UsageTitle = styled.div`
+  font-size: 15px;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 8px;
+`;
+
+export const UsageText = styled.div`
+  font-size: 15px;
+  font-weight: 350;
+  color: #666666;
+  line-height: 24px;
+`;
+
+export const SearchInputGroup = styled.div`
+  display: flex;
   gap: 12px;
+  align-items: flex-end;
+  margin-top: 24px;
+  margin-bottom: 24px;
+`;
+
+export const SearchInputWrapper = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const SearchLabel = styled.label`
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+`;
+
+export const SearchInput = styled.input`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-size: 15px;
+  background: #ffffff;
+  
+  &:focus {
+    outline: none;
+    border-color: #489bff;
+  }
+  
+  &::placeholder {
+    color: #777777;
+  }
+`;
+
+export const SearchButton = styled.button`
+  padding: 10px 20px;
+  background: #489bff;
+  border: none;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: #3a8aef;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+export const ReceiptList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+export const ReceiptItem = styled.div`
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  background-color: #ffffff;
+  align-items: flex-start;
+  margin-bottom: 12px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 
   @media (max-width: 768px) {
-    font-size: 16px;
-    margin-bottom: 12px;
+    flex-direction: column;
   }
 
   @media (max-width: 480px) {
-    font-size: 16px;
+    padding: 12px;
+    border-radius: 12px;
     margin-bottom: 12px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-
-    button {
-      width: 100%;
-      margin-left: 0 !important;
-      font-size: 13px !important;
-      padding: 8px 12px !important;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    
+    &:last-child {
+      margin-bottom: 0;
     }
+  }
+`;
+
+export const ReceiptInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+  color: #333333;
+  min-width: 0;
+  font-family: 'Noto Sans KR', sans-serif;
+
+  strong {
+    color: #333333;
+    font-size: 15px;
+    font-weight: 400;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  div {
+    font-size: 14px;
+    color: #666666;
+  }
+`;
+
+export const ReceiptFileName = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+`;
+
+export const ReceiptMeta = styled.div`
+  font-size: 14px;
+  color: #6b7280;
+`;
+
+export const DownloadReceiptButton = styled.button`
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  margin-left: 16px;
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+
+  @media (max-width: 480px) {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 12px;
+    min-height: 44px;
+    width: auto;
   }
 `;
 
@@ -495,15 +763,269 @@ export const StatusChip = styled.button`
   }
 `;
 
-export const StatCard = styled.div`
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+// 자료 수집 및 전표 다운로드 카드
+export const CollectCard = styled.div`
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+
+  @media (max-width: 480px) {
+    margin: 0 0 12px 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 16px;
+  }
+`;
+
+export const CollectTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0 0 16px 0;
+`;
+
+// 수집 안내 박스
+export const InfoBox = styled.div`
+  background: #f8fbff;
+  border: 1px solid #489bff;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 24px;
+`;
+
+export const InfoTitle = styled.div`
+  font-size: 15px;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 8px;
+`;
+
+export const InfoText = styled.div`
+  font-size: 15px;
+  font-weight: 350;
+  color: #666666;
+  line-height: 24px;
+`;
+
+// 수집 모드 선택
+export const ModeSelector = styled.div`
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+`;
+
+export const ModeOption = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+`;
+
+export const RadioInput = styled.input`
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+`;
+
+export const RadioLabel = styled.span`
+  font-size: 16px;
+  font-weight: 500;
+  color: #333333;
+`;
+
+// 날짜 입력 섹션
+export const DateCollectSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+export const MonthCollectSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+export const DateInputGroup = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+`;
+
+export const DateInputWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const DateLabel = styled.label`
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+`;
+
+export const DateInput = styled.input`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-size: 15px;
+  background: #ffffff;
+  
+  &:focus {
+    outline: none;
+    border-color: #489bff;
+  }
+`;
+
+export const DownloadButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333333;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #f8f9fa;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+// 필터 카드
+export const FilterCard = styled.div`
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+
+  @media (max-width: 480px) {
+    margin: 0 0 12px 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 16px;
+  }
+`;
+
+export const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const FilterLabel = styled.label`
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+`;
+
+export const FilterInput = styled.input`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-size: 15px;
+  background: #ffffff;
+  
+  &:focus {
+    outline: none;
+    border-color: #489bff;
+  }
+`;
+
+export const FilterSelect = styled.select`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-size: 15px;
+  background: #ffffff;
+  
+  &:focus {
+    outline: none;
+    border-color: #489bff;
+  }
+`;
+
+export const FilterActions = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+`;
+
+export const ResetButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 400;
+  color: #777777;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f8f9fa;
+  }
+`;
+
+export const ApplyButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #489bff;
+  border: none;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #3a8aef;
+  }
+`;
+
+// 통계 카드 (그라데이션 배경)
+export const StatCard = styled.div`
+  background: linear-gradient(180deg, #74dbed 0%, #489bff 100%);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
@@ -519,34 +1041,26 @@ export const StatCard = styled.div`
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     padding: 16px;
-    box-shadow: none;
   }
 `;
 
-export const StatItem = styled.div`
+export const StatBox = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-
-  @media (max-width: 480px) {
-    gap: 4px;
-  }
 `;
 
 export const StatLabel = styled.div`
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
   font-weight: 500;
-
-  @media (max-width: 480px) {
-    font-size: 11px;
-  }
+  color: #ffffff;
 `;
 
 export const StatValue = styled.div`
   font-size: 24px;
-  color: #fff;
   font-weight: 700;
+  color: #ffffff;
+  line-height: 28.8px;
 
   @media (max-width: 768px) {
     font-size: 20px;
