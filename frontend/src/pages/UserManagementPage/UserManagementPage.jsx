@@ -7,6 +7,7 @@ import { USER_ROLES } from '../../constants/status';
 import { FaPlus, FaEdit, FaTrash, FaTimes, FaCheck, FaBan } from 'react-icons/fa';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
+import PageHeader from '../../components/PageHeader/PageHeader';
 
 const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
@@ -339,6 +340,12 @@ const UserManagementPage = () => {
 
   return (
     <S.Container>
+      <PageHeader
+        title="사용자 관리"
+        pendingApprovals={[]}
+        pendingUsers={[]}
+      />
+
       {/* 모바일용 새 사용자 추가 버튼 */}
       <S.MobileToolbar>
         <S.Button primary onClick={handleCreate} aria-label="새 사용자 추가">
@@ -348,10 +355,8 @@ const UserManagementPage = () => {
 
       {/* 회사 선택 (CEO/ADMIN만) */}
       {(isAdmin || isCEO) && userCompanies.length > 0 && (
-        <S.ProfileCard style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px', color: '#495057' }}>
-            승인 대기 사용자 조회할 회사 선택
-          </label>
+        <S.CompanySelectCard>
+          <label>승인 대기 사용자 조회할 회사 선택</label>
           <S.Select
             value={selectedCompanyId || ''}
             onChange={(e) => {
@@ -359,9 +364,9 @@ const UserManagementPage = () => {
               setSelectedCompanyId(companyId);
               if (companyId) {
                 loadCompanyApplications(companyId);
-                loadUsers(companyId); // 선택된 회사의 직원 목록도 함께 로드
+                loadUsers(companyId);
               } else {
-                loadUsers(); // 회사 선택 해제 시 기본 회사 직원 조회
+                loadUsers();
               }
             }}
           >
@@ -372,123 +377,63 @@ const UserManagementPage = () => {
               </option>
             ))}
           </S.Select>
-        </S.ProfileCard>
+        </S.CompanySelectCard>
       )}
 
       {/* 회사별 승인 대기 사용자 (CEO/ADMIN만) */}
       {(isAdmin || isCEO) && selectedCompanyId && (
-        <S.ProfileCard style={{ marginBottom: '20px' }}>
-          <S.CardTitle>
-            {userCompanies.find(c => c.companyId === selectedCompanyId)?.companyName} - 승인 대기 사용자
-          </S.CardTitle>
+        <S.PendingUsersCard>
+          <S.PendingUsersTitle>승인 대기 사용자</S.PendingUsersTitle>
           {loadingApplications ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>로딩 중...</div>
+            <S.LoadingText>로딩 중...</S.LoadingText>
           ) : (
             <>
               {companyApplications[selectedCompanyId]?.length > 0 ? (
-                <>
-                  {/* 데스크톱 테이블 뷰 */}
-                  <S.Table>
-                    <thead>
-                      <tr>
-                        <th>이름</th>
-                        <th>아이디</th>
-                        <th>이메일</th>
-                        <th>요청 역할</th>
-                        <th>요청 직급</th>
-                        <th>요청일</th>
-                        <th>작업</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {companyApplications[selectedCompanyId].map((application) => (
-                        <tr key={application.userCompanyId}>
-                          <td>{application.koreanName}</td>
-                          <td>{application.username}</td>
-                          <td>{application.email || '-'}</td>
-                          <td>{getRoleLabel(application.role)}</td>
-                          <td>{application.position || '-'}</td>
-                          <td>{new Date(application.createdAt).toLocaleDateString()}</td>
-                          <td>
-                            <S.ActionButtons>
-                              <S.IconButton
-                                onClick={() => handleApproveUserCompany(application.userId, application.companyId)}
-                                style={{ color: '#28a745', marginRight: '10px' }}
-                                title="승인"
-                              >
-                                <FaCheck />
-                              </S.IconButton>
-                              <S.IconButton
-                                onClick={() => handleRejectUserCompany(application.userId, application.companyId)}
-                                danger
-                                title="거부"
-                              >
-                                <FaBan />
-                              </S.IconButton>
-                            </S.ActionButtons>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </S.Table>
-
-                  {/* 모바일 카드 뷰 */}
-                  <S.MobileCardContainer>
+                <S.PendingUsersTable>
+                  <thead>
+                    <tr>
+                      <th>아이디</th>
+                      <th>이름</th>
+                      <th>이메일</th>
+                      <th>요청 역할</th>
+                      <th>요청 직급</th>
+                      <th>작업</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {companyApplications[selectedCompanyId].map((application) => (
-                      <S.UserCard key={application.userCompanyId}>
-                        <S.UserCardHeader>
-                          <S.UserCardInfo>
-                            <S.UserCardName>{application.koreanName}</S.UserCardName>
-                            <S.UserCardId>@{application.username}</S.UserCardId>
-                          </S.UserCardInfo>
-                        </S.UserCardHeader>
-                        <S.UserCardBody>
-                          <S.UserCardRow>
-                            <S.UserCardLabel>이메일</S.UserCardLabel>
-                            <S.UserCardValue>{application.email || '-'}</S.UserCardValue>
-                          </S.UserCardRow>
-                          <S.UserCardRow>
-                            <S.UserCardLabel>요청 역할</S.UserCardLabel>
-                            <S.UserCardValue>{getRoleLabel(application.role)}</S.UserCardValue>
-                          </S.UserCardRow>
-                          <S.UserCardRow>
-                            <S.UserCardLabel>요청 직급</S.UserCardLabel>
-                            <S.UserCardValue>{application.position || '-'}</S.UserCardValue>
-                          </S.UserCardRow>
-                          <S.UserCardRow>
-                            <S.UserCardLabel>요청일</S.UserCardLabel>
-                            <S.UserCardValue>{new Date(application.createdAt).toLocaleDateString()}</S.UserCardValue>
-                          </S.UserCardRow>
-                        </S.UserCardBody>
-                        <S.UserCardActions>
+                      <tr key={application.userCompanyId}>
+                        <td>{application.username}</td>
+                        <td>{application.koreanName}</td>
+                        <td>{application.email || '-'}</td>
+                        <td>{getRoleLabel(application.role)}</td>
+                        <td>{application.position || '-'}</td>
+                        <td>
                           <S.ActionButtons>
-                            <S.IconButton
+                            <S.ApproveButton
                               onClick={() => handleApproveUserCompany(application.userId, application.companyId)}
-                              style={{ color: '#28a745', flex: 1 }}
+                              title="승인"
                             >
-                              <FaCheck /> 승인
-                            </S.IconButton>
-                            <S.IconButton
+                              <img src="/이너사인_이미지 (1)/아이콘/24px_대시보드_선택/수락.png" alt="승인" />
+                            </S.ApproveButton>
+                            <S.RejectButton
                               onClick={() => handleRejectUserCompany(application.userId, application.companyId)}
-                              danger
-                              style={{ flex: 1 }}
+                              title="거부"
                             >
-                              <FaBan /> 거부
-                            </S.IconButton>
+                              <img src="/이너사인_이미지 (1)/아이콘/24px_대시보드_선택/거절.png" alt="거부" />
+                            </S.RejectButton>
                           </S.ActionButtons>
-                        </S.UserCardActions>
-                      </S.UserCard>
+                        </td>
+                      </tr>
                     ))}
-                  </S.MobileCardContainer>
-                </>
+                  </tbody>
+                </S.PendingUsersTable>
               ) : (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                  승인 대기 사용자가 없습니다.
-                </div>
+                <S.EmptyText>승인 대기 사용자가 없습니다.</S.EmptyText>
               )}
             </>
           )}
-        </S.ProfileCard>
+        </S.PendingUsersCard>
       )}
 
       {loading ? (
@@ -496,10 +441,9 @@ const UserManagementPage = () => {
       ) : (
         <>
           {/* 데스크톱 테이블 뷰 */}
-          <S.Table>
+          <S.UsersTable>
             <thead>
               <tr>
-                <th>ID</th>
                 <th>아이디</th>
                 <th>이름</th>
                 <th>이메일</th>
@@ -507,18 +451,31 @@ const UserManagementPage = () => {
                 <th>권한</th>
                 <th>상태</th>
                 {(isAdmin || isCEO) && <th>결재자 지정</th>}
-                <th>작업</th>
               </tr>
             </thead>
             <tbody>
               {users.map((targetUser) => (
                 <tr key={targetUser.userId}>
-                  <td>{targetUser.userId}</td>
                   <td>{targetUser.username}</td>
                   <td>{targetUser.koreanName}</td>
                   <td>{targetUser.email || '-'}</td>
                   <td>{targetUser.position || '-'}</td>
-                  <td>{getRoleLabel(targetUser.role)}</td>
+                  <td>
+                    {(isAdmin || isCEO) ? (
+                      <S.RoleSelect
+                        value={targetUser.role}
+                        onChange={(e) => handleRoleChange(targetUser.userId, e.target.value)}
+                        disabled={targetUser.userId === user?.userId || isCreating || isUpdating}
+                      >
+                        <option value="USER">일반 사용자</option>
+                        <option value="ADMIN">관리자</option>
+                        <option value="ACCOUNTANT">결재 담당자</option>
+                        <option value="TAX_ACCOUNTANT">세무사</option>
+                      </S.RoleSelect>
+                    ) : (
+                      getRoleLabel(targetUser.role)
+                    )}
+                  </td>
                   <td>
                     <S.StatusBadge active={targetUser.isActive}>
                       {targetUser.isActive ? '활성' : '비활성'}
@@ -526,131 +483,23 @@ const UserManagementPage = () => {
                   </td>
                   {(isAdmin || isCEO) && (
                     <td>
-                      {/* ADMIN은 CEO를 결재자로 지정할 수 없음 */}
                       {isAdmin && targetUser.role === 'CEO' ? (
-                        <span style={{ color: '#999', fontSize: '12px' }}>지정 불가</span>
+                        <S.DisabledText>지정 불가</S.DisabledText>
                       ) : (
-                        <input
+                        <S.Checkbox
                           type="checkbox"
                           checked={targetUser.isApprover || false}
                           onChange={() => handleApproverToggle(targetUser)}
                           disabled={isUpdating || targetUser.userId === user?.userId}
-                          title={targetUser.isApprover ? '결재자 지정 해제' : '결재자 지정'}
                         />
                       )}
                     </td>
                   )}
-                  <td>
-                    <S.ActionButtons>
-                      {(isAdmin || isCEO) && (
-                        <S.RoleSelect
-                          value={targetUser.role}
-                          onChange={(e) => handleRoleChange(targetUser.userId, e.target.value)}
-                          disabled={targetUser.userId === user?.userId || isCreating || isUpdating}
-                        >
-                          <option value="USER">일반 사용자</option>
-                          <option value="ADMIN">관리자</option>
-                          <option value="ACCOUNTANT">결재 담당자</option>
-                          <option value="TAX_ACCOUNTANT">세무사</option>
-                        </S.RoleSelect>
-                      )}
-                      {isSuperAdmin && (
-                        <>
-                          <S.IconButton onClick={() => handleEdit(targetUser)}>
-                            <FaEdit />
-                          </S.IconButton>
-                          <S.IconButton 
-                            danger 
-                            onClick={() => setDeleteConfirm(targetUser.userId)}
-                            disabled={targetUser.userId === user?.userId || deletingUserId === targetUser.userId || deletingUserId !== null || isCreating || isUpdating}
-                            title={deletingUserId === targetUser.userId ? '삭제 중...' : '삭제'}
-                          >
-                            <FaTrash />
-                          </S.IconButton>
-                        </>
-                      )}
-                    </S.ActionButtons>
-                  </td>
                 </tr>
               ))}
             </tbody>
-          </S.Table>
+          </S.UsersTable>
 
-          {/* 모바일 카드 뷰 */}
-          <S.MobileCardContainer>
-            {users.map((targetUser) => (
-              <S.UserCard key={targetUser.userId}>
-                <S.UserCardHeader>
-                  <S.UserCardInfo>
-                    <S.UserCardName>{targetUser.koreanName}</S.UserCardName>
-                    <S.UserCardId>@{targetUser.username} (ID: {targetUser.userId})</S.UserCardId>
-                  </S.UserCardInfo>
-                  <S.StatusBadge active={targetUser.isActive}>
-                    {targetUser.isActive ? '활성' : '비활성'}
-                  </S.StatusBadge>
-                </S.UserCardHeader>
-                <S.UserCardBody>
-                  <S.UserCardRow>
-                    <S.UserCardLabel>이메일</S.UserCardLabel>
-                    <S.UserCardValue>{targetUser.email || '-'}</S.UserCardValue>
-                  </S.UserCardRow>
-                  <S.UserCardRow>
-                    <S.UserCardLabel>직급</S.UserCardLabel>
-                    <S.UserCardValue>{targetUser.position || '-'}</S.UserCardValue>
-                  </S.UserCardRow>
-                  <S.UserCardRow>
-                    <S.UserCardLabel>권한</S.UserCardLabel>
-                    <S.UserCardValue>{getRoleLabel(targetUser.role)}</S.UserCardValue>
-                  </S.UserCardRow>
-                  {(isAdmin || isCEO) && (
-                    <S.UserCardRow>
-                      <S.UserCardLabel>결재자 지정</S.UserCardLabel>
-                      <S.UserCardValue>
-                        {isAdmin && targetUser.role === 'CEO' ? (
-                          <span style={{ color: '#999', fontSize: '12px' }}>지정 불가</span>
-                        ) : (
-                          <S.MobileCheckbox
-                            type="checkbox"
-                            checked={targetUser.isApprover || false}
-                            onChange={() => handleApproverToggle(targetUser)}
-                            disabled={isUpdating || targetUser.userId === user?.userId}
-                          />
-                        )}
-                      </S.UserCardValue>
-                    </S.UserCardRow>
-                  )}
-                </S.UserCardBody>
-                <S.UserCardActions>
-                  {(isAdmin || isCEO) && (
-                    <S.MobileSelect
-                      value={targetUser.role}
-                      onChange={(e) => handleRoleChange(targetUser.userId, e.target.value)}
-                      disabled={targetUser.userId === user?.userId || isCreating || isUpdating}
-                    >
-                      <option value="USER">일반 사용자</option>
-                      <option value="ADMIN">관리자</option>
-                      <option value="ACCOUNTANT">결재 담당자</option>
-                      <option value="TAX_ACCOUNTANT">세무사</option>
-                    </S.MobileSelect>
-                  )}
-                  {isSuperAdmin && (
-                    <S.ActionButtons>
-                      <S.IconButton onClick={() => handleEdit(targetUser)}>
-                        <FaEdit /> 수정
-                      </S.IconButton>
-                      <S.IconButton 
-                        danger 
-                        onClick={() => setDeleteConfirm(targetUser.userId)}
-                        disabled={targetUser.userId === user?.userId || deletingUserId === targetUser.userId || deletingUserId !== null || isCreating || isUpdating}
-                      >
-                        <FaTrash /> 삭제
-                      </S.IconButton>
-                    </S.ActionButtons>
-                  )}
-                </S.UserCardActions>
-              </S.UserCard>
-            ))}
-          </S.MobileCardContainer>
         </>
       )}
 

@@ -1,19 +1,25 @@
 import styled from '@emotion/styled';
 
+// 결의서 목록 페이지와 동일한 레이아웃
 export const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  width: 100%;
+  padding: 24px 24px 24px 40px;
   min-height: 100vh;
+  background: #f8f9fa;
+
+  @media (max-width: 768px) {
+    padding: 16px 16px 16px 40px;
+  }
 
   @media (max-width: 480px) {
     padding: 0;
     width: 100%;
     max-width: 100%;
-    min-height: auto; /* 모바일에서는 컨텐츠 높이에 따라 조정 */
+    min-height: auto;
     background: #f5f5f5;
     padding-top: 56px;
-    padding-bottom: 80px; /* 하단 네비게이션 + 여유 공간 */
+    padding-bottom: 80px;
+    padding-left: 40px;
   }
 `;
 
@@ -129,36 +135,53 @@ export const Button = styled.button`
   }
 `;
 
-export const Table = styled.table`
+// 승인 대기 사용자 테이블
+export const PendingUsersCard = styled.div`
+  background: white;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  padding: 24px;
+  margin-bottom: 24px;
+`;
+
+export const PendingUsersTitle = styled.h2`
+  font-size: 18px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0 0 24px 0;
+`;
+
+export const PendingUsersTable = styled.table`
   width: 100%;
   border-collapse: collapse;
   background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
   thead {
-    background-color: var(--primary-color);
-    color: white;
+    background-color: #f8f9fa;
   }
 
   th {
-    padding: 16px;
+    padding: 12px;
     text-align: left;
-    font-weight: 600;
+    font-weight: 500;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e4e4e4;
   }
 
   tbody tr {
-    border-bottom: 1px solid #e9ecef;
-    transition: background-color 0.2s;
+    border-bottom: 1px solid #e4e4e4;
+    background-color: #f8f9fa;
 
     &:hover {
-      background-color: #f8f9fa;
+      background-color: #f0f0f0;
     }
   }
 
   td {
-    padding: 16px;
+    padding: 12px;
+    font-size: 15px;
+    color: #666666;
   }
 
   @media (max-width: 768px) {
@@ -166,13 +189,149 @@ export const Table = styled.table`
   }
 `;
 
+// 사용자 목록 테이블
+export const UsersTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  overflow: hidden;
+
+  thead {
+    background-color: #f8f9fa;
+  }
+
+  th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e4e4e4;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #e4e4e4;
+    background-color: white;
+
+    &:hover {
+      background-color: #f8f9fa;
+    }
+  }
+
+  td {
+    padding: 12px;
+    font-size: 15px;
+    color: #666666;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+export const CompanySelectCard = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #495057;
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    margin: 0 8px 16px 8px;
+  }
+`;
+
+export const LoadingText = styled.div`
+  text-align: center;
+  padding: 20px;
+  color: #666;
+`;
+
+export const EmptyText = styled.div`
+  text-align: center;
+  padding: 20px;
+  color: #666;
+`;
+
+export const ApproveButton = styled.button`
+  width: 32px;
+  height: 32px;
+  background: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s;
+
+  img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+`;
+
+export const RejectButton = styled.button`
+  width: 32px;
+  height: 32px;
+  background: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s;
+
+  img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+`;
+
+export const Checkbox = styled.input`
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #489bff;
+`;
+
+export const DisabledText = styled.span`
+  color: #999999;
+  font-size: 15px;
+`;
+
+// 피그마 디자인에 맞는 상태 배지 (활성: #f8ebff 배경, #a133e0 텍스트)
 export const StatusBadge = styled.span`
   padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  background-color: ${props => props.active ? '#d4edda' : '#f8d7da'};
-  color: ${props => props.active ? '#155724' : '#721c24'};
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  background-color: ${props => props.active ? '#f8ebff' : '#f0f0f0'};
+  color: ${props => props.active ? '#a133e0' : '#666666'};
 `;
 
 export const ActionButtons = styled.div`
@@ -351,22 +510,26 @@ export const ConfirmButtons = styled.div`
   gap: 12px;
 `;
 
+// 피그마 디자인에 맞는 권한 선택 드롭다운
 export const RoleSelect = styled.select`
   padding: 6px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  font-size: 12px;
   background-color: white;
+  color: #666666;
   cursor: pointer;
   transition: all 0.2s;
+  min-width: 100px;
   
   &:hover:not(:disabled) {
-    border-color: var(--primary-color);
+    border-color: #489bff;
   }
   
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    background-color: #f8f9fa;
   }
 
   @media (max-width: 480px) {
