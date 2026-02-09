@@ -24,10 +24,10 @@ export const Container = styled.div`
 `;
 
 export const InfoBox = styled.div`
-  padding: 20px 24px;
+  padding: 24px;
   background: #f8f9fa;
   border-radius: 4px;
-  border: 1px solid #e4e4e4;
+  border: none;
   margin-bottom: 24px;
   
   p {
@@ -39,7 +39,7 @@ export const InfoBox = styled.div`
   }
 
   p + p {
-    margin-top: 4px;
+    margin-top: 0;
   }
 
   @media (max-width: 480px) {
@@ -86,53 +86,54 @@ export const AddButton = styled.button`
 
 export const TableContainer = styled.div`
   overflow-x: auto;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  background-color: white;
-  box-shadow: var(--shadow);
+  border-radius: 4px;
+  border: 1px solid #e4e4e4;
+  background-color: transparent;
+  box-shadow: none;
   margin-bottom: 24px;
 
   @media (max-width: 768px) {
-    border-radius: 8px;
+    border-radius: 4px;
   }
 
   @media (max-width: 480px) {
     margin: 0 16px 16px;
-    border-radius: 8px;
+    border-radius: 4px;
   }
 `;
 
 export const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  background-color: white;
+  background-color: transparent;
 
   thead {
-    background-color: var(--light-color);
+    background-color: transparent;
 
     th {
       padding: 16px 12px;
-      border-bottom: 2px solid var(--border-color);
-      color: var(--dark-color);
-      font-weight: 600;
+      border-bottom: none;
+      color: #333333;
+      font-weight: 500;
       font-size: 14px;
       text-align: left;
     }
   }
 
   tbody tr {
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: none;
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: rgba(0, 123, 255, 0.02);
+      background-color: transparent;
     }
   }
 
   tbody td {
     padding: 16px 12px;
-    color: var(--dark-color);
-    font-size: 14px;
+    color: #666666;
+    font-size: 16px;
+    font-weight: 400;
   }
 
   @media (max-width: 768px) {
