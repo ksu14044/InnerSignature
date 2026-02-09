@@ -492,17 +492,24 @@ export const FormLabel = styled.label`
   font-size: 14px;
   line-height: 16.8px;
   
-  /* 에스터리스크 스타일 */
+  /* 에스터리스크 스타일 - 기본적으로 표시 */
   &::after {
     content: '*';
     color: #d72d30;
     margin-left: 2px;
   }
   
-  /* 에스터리스크가 없는 경우 (예: 체크박스) */
+  /* 에스터리스크가 없는 경우 (예: 체크박스, 선택사항) */
   &:has(input[type="checkbox"])::after {
     display: none;
   }
+  
+  /* $noAsterisk prop이 있을 때 에스터리스크 숨김 */
+  ${props => props.$noAsterisk && `
+    &::after {
+      display: none;
+    }
+  `}
 `;
 
 export const FormInput = styled.input`

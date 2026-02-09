@@ -341,6 +341,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
         accountName: mapping.accountName || ''
       });
     } else {
+      // 매핑 추가 모드: 모든 상태를 명확히 초기화
       setEditingMapping(null);
       setMappingFormData({
         category: '',
@@ -355,6 +356,12 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
   const handleCloseMappingModal = () => {
     setIsMappingModalOpen(false);
     setEditingMapping(null);
+    setMappingFormData({
+      category: '',
+      merchantKeyword: '',
+      accountCode: '',
+      accountName: ''
+    });
   };
 
   const handleMappingSubmit = async (e) => {
@@ -493,7 +500,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
         {activeTab === 'accountCodes' && (
           <S.TabHeaderActions>
             {canEditMapping ? (
-              <S.AddButton onClick={handleOpenMappingModal}>
+              <S.AddButton onClick={() => handleOpenMappingModal()}>
                 <FaPlus />
                 <span>매핑 추가</span>
               </S.AddButton>
@@ -606,7 +613,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
                 </S.FormGroup>
                 
                 <S.FormGroup>
-                  <S.FormLabel>표지순서</S.FormLabel>
+                  <S.FormLabel $noAsterisk>표지순서</S.FormLabel>
                   <S.FormInput
                     type="number"
                     min="0"
@@ -715,7 +722,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
                 <S.ModalBody>
                   <form onSubmit={handleMappingSubmit}>
                     <S.FormGroup>
-                      <S.FormLabel>카테고리 *</S.FormLabel>
+                      <S.FormLabel>카테고리</S.FormLabel>
                       <S.FormInput
                         type="text"
                         value={mappingFormData.category}
@@ -726,7 +733,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
                     </S.FormGroup>
                     
                     <S.FormGroup>
-                      <S.FormLabel>가맹점 키워드 (선택사항)</S.FormLabel>
+                      <S.FormLabel $noAsterisk>가맹점 키워드 (선택사항)</S.FormLabel>
                       <S.FormInput
                         type="text"
                         value={mappingFormData.merchantKeyword}
@@ -737,7 +744,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
                     </S.FormGroup>
                     
                     <S.FormGroup>
-                      <S.FormLabel>계정 코드 *</S.FormLabel>
+                      <S.FormLabel>계정 코드</S.FormLabel>
                       <S.FormInput
                         type="text"
                         value={mappingFormData.accountCode}
@@ -748,7 +755,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
                     </S.FormGroup>
                     
                     <S.FormGroup>
-                      <S.FormLabel>계정명 *</S.FormLabel>
+                      <S.FormLabel>계정명</S.FormLabel>
                       <S.FormInput
                         type="text"
                         value={mappingFormData.accountName}
