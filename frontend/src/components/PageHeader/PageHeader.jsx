@@ -70,9 +70,11 @@ const PageHeader = ({
           </S.NotificationContainer>
         </S.PageHeaderRight>
       </S.PageHeader>
-      {subTitle && (
+      {(subTitle || subTitleActions) && (
         <S.PageSubHeader>
-          <S.PageSubHeaderText>{subTitle}</S.PageSubHeaderText>
+          {subTitle && (
+            <S.PageSubHeaderText>{subTitle}</S.PageSubHeaderText>
+          )}
           {subTitleActions && (
             <S.PageSubHeaderActions>
               {subTitleActions}

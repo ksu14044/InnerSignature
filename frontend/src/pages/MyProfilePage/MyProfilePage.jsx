@@ -5,6 +5,7 @@ import { getCurrentUser, updateCurrentUser, changePassword, getUserCompanies, ge
 import { FaSearch, FaTimes, FaCheck, FaTrash, FaArrowLeft } from 'react-icons/fa';
 import CompanyRegistrationModal from '../../components/CompanyRegistrationModal/CompanyRegistrationModal';
 import CompanySearchModal from '../../components/CompanySearchModal/CompanySearchModal';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import * as S from './style';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 
@@ -268,26 +269,42 @@ const MyProfilePage = () => {
 
   return (
     <S.Container>
+      <PageHeader
+        title="내 정보"
+        subTitleActions={(
+          <>
+            <S.SubHeaderButton
+              type="button"
+              onClick={() => setIsCompanySearchModalOpen(true)}
+            >
+              회사 검색
+            </S.SubHeaderButton>
+            {canRegisterCompany && (
+              <S.SubHeaderPrimaryButton
+                type="button"
+                onClick={() => setIsCompanyModalOpen(true)}
+              >
+                회사 등록
+              </S.SubHeaderPrimaryButton>
+            )}
+          </>
+        )}
+        pendingApprovals={[]}
+        pendingUsers={[]}
+      />
+
       <S.ProfileCard data-tourid="tour-company-section">
         <S.CardTitle>소속 회사</S.CardTitle>
         
-        {/* CEO/ADMIN이면 항상 회사 등록 버튼 표시, 회사가 없을 때만 안내 문구 노출 */}
-        {canRegisterCompany && (
-          <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-            {showNoCompanyText && (
-              <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#495057' }}>
-                회사가 등록되지 않았습니다.
-              </div>
-            )}
-            <S.Button 
-              primary 
-              onClick={() => setIsCompanyModalOpen(true)}
-              style={{ padding: '10px 20px', fontSize: '14px', fontWeight: 'bold' }}
-              data-tourid="tour-register-company-button"
-            >
-              회사 등록하기
-            </S.Button>
-          </div>
+        {/* CEO/ADMIN이면 회사가 없을 때만 안내 문구 및 버튼 노출 */}
+        {canRegisterCompany && showNoCompanyText && (
+          <S.Button 
+            primary 
+            onClick={() => setIsCompanyModalOpen(true)}
+            data-tourid="tour-register-company-button"
+          >
+            회사가 등록되지 않았습니다. 회사 등록하기
+          </S.Button>
         )}
         
         {/* 승인된 회사 목록 */}

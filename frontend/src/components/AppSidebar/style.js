@@ -16,6 +16,68 @@ export const Sidebar = styled.aside`
 export const LogoSpacer = styled.div`
   height: 88px;
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  justify-content: flex-start;
+`;
+
+export const LogoImage = styled.img`
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+`;
+
+export const SidebarCompanySelector = styled.div`
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+`;
+
+export const SidebarCompanySelectorButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  color: #333333;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
+export const SidebarCompanyDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background-color: white;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  overflow: hidden;
+`;
+
+export const SidebarCompanyDropdownItem = styled.div`
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  background-color: ${props => props.selected ? '#f0f0f0' : 'white'};
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
 `;
 
 export const CompanySelector = styled.div`

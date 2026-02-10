@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchPendingApprovals } from '../../api/expenseApi';
 import { getPendingUsers, approveUser } from '../../api/userApi';
+import { FaChevronDown, FaCheck } from 'react-icons/fa';
 import * as S from './style';
 
 const ICON_BASE = '/이너사인_이미지 (1)/아이콘/24px_알림_사이드바';
@@ -94,8 +95,40 @@ const AppSidebar = () => {
   return (
     <>
       <S.Sidebar>
-        {/* 로고 영역(요구사항: 88px 비워두기) */}
-        <S.LogoSpacer />
+        {/* 로고 영역 */}
+        <S.LogoSpacer>
+          <S.LogoImage src="/favicon6.png" alt="InnerSignature Logo" />
+          {companies && companies.length > 1 && (
+            <S.SidebarCompanySelector data-company-dropdown>
+              <S.SidebarCompanySelectorButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>
+                <span>{companyName}</span>
+                <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />
+              </S.SidebarCompanySelectorButton>
+              {isCompanyDropdownOpen && (
+                <S.SidebarCompanyDropdown>
+                  {companies.map((company) => (
+                    <S.SidebarCompanyDropdownItem
+                      key={company.companyId}
+                      selected={company.companyId === user.companyId}
+                      onClick={async () => {
+                        try {
+                          await switchCompany(company.companyId);
+                          setIsCompanyDropdownOpen(false);
+                          window.location.reload();
+                        } catch (error) {
+                          alert('회사 전환에 실패했습니다.');
+                        }
+                      }}
+                    >
+                      {company.companyId === user.companyId && <FaCheck style={{ marginRight: '8px', color: '#007bff' }} />}
+                      {company.companyName}
+                    </S.SidebarCompanyDropdownItem>
+                  ))}
+                </S.SidebarCompanyDropdown>
+              )}
+            </S.SidebarCompanySelector>
+          )}
+        </S.LogoSpacer>
         <S.Menu>
           <S.MenuItem
             as={NavLink}

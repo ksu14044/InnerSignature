@@ -128,6 +128,7 @@ export const PageSubHeaderActions = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-left: auto;
 
   @media (max-width: 480px) {
     width: 100%;

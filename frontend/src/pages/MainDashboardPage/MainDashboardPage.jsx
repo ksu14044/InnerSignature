@@ -15,7 +15,7 @@ import TaxAccountantDashboardSection from '../../components/DashboardSections/Ta
 import AdminDashboardSection from '../../components/DashboardSections/AdminDashboardSection';
 import CEODashboardSection from '../../components/DashboardSections/CEODashboardSection';
 import PageHeader from '../../components/PageHeader/PageHeader';
-import { FaPlus, FaEye, FaChevronUp, FaCalendarAlt, FaChevronDown, FaChevronLeft, FaChevronRight, FaBell, FaList, FaBuilding, FaCheck } from 'react-icons/fa';
+import { FaPlus, FaEye, FaChevronUp, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaBell, FaList, FaBuilding, FaCheck } from 'react-icons/fa';
 
 const MainDashboardPage = () => {
   const { user } = useAuth();
@@ -36,7 +36,6 @@ const MainDashboardPage = () => {
   const [totalCredit, setTotalCredit] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
-  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [recentExpenses, setRecentExpenses] = useState([]);
@@ -166,24 +165,6 @@ const MainDashboardPage = () => {
 
     loadNotifications();
   }, [user?.userId, user?.role]);
-
-  // 회사 드롭다운 외부 클릭 시 닫기
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isCompanyDropdownOpen && !event.target.closest('[data-company-dropdown]')) {
-        setIsCompanyDropdownOpen(false);
-      }
-    };
-
-    if (isCompanyDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isCompanyDropdownOpen]);
-
 
   // 구독 및 크레딧 정보 로드 (CEO, ADMIN만)
   useEffect(() => {
@@ -411,7 +392,7 @@ const MainDashboardPage = () => {
     return <LoadingOverlay fullScreen={true} message="로딩 중..." />;
   }
 
-  const { companies, switchCompany } = useAuth();
+  const { companies } = useAuth();
 
   return (
     <S.Container>
@@ -436,35 +417,10 @@ const MainDashboardPage = () => {
           
           {/* 액션 버튼 섹션 - 역할별로 다른 버튼 표시 */}
           <S.DashboardActionSection>
-            {companies && companies.length > 1 && (
-              <S.DashboardCompanySelector data-company-dropdown>
-                <S.DashboardCompanySelectorButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>
-                  <span>{companies.find(c => c.companyId === user.companyId)?.companyName || '회사 선택'}</span>
-                  <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />
-                </S.DashboardCompanySelectorButton>
-                {isCompanyDropdownOpen && (
-                  <S.DashboardCompanyDropdown>
-                    {companies.map((company) => (
-                      <S.DashboardCompanyDropdownItem
-                        key={company.companyId}
-                        selected={company.companyId === user.companyId}
-                        onClick={async () => {
-                          try {
-                            await switchCompany(company.companyId);
-                            setIsCompanyDropdownOpen(false);
-                            window.location.reload();
-                          } catch (error) {
-                            alert('회사 전환에 실패했습니다.');
-                          }
-                        }}
-                      >
-                        {company.companyId === user.companyId && <FaCheck style={{ marginRight: '8px', color: '#007bff' }} />}
-                        {company.companyName}
-                      </S.DashboardCompanyDropdownItem>
-                    ))}
-                  </S.DashboardCompanyDropdown>
-                )}
-              </S.DashboardCompanySelector>
+            {companies && companies.length > 0 && (
+              <S.DashboardCompanyName>
+                {companies.find(c => c.companyId === user.companyId)?.companyName || '회사 선택'}
+              </S.DashboardCompanyName>
             )}
             <S.ActionButtons>
               {user?.role === 'USER' && (

@@ -1552,53 +1552,11 @@ export const DashboardNotificationBadgeCount = styled.span`
   justify-content: center;
 `;
 
-// 회사 선택 드롭다운 스타일 (피그마 디자인 기반)
-export const DashboardCompanySelector = styled.div`
-  position: relative;
-`;
-
-export const DashboardCompanySelectorButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
-  background: none;
-  border: none;
+// 회사 이름 표시 (드롭다운 제거)
+export const DashboardCompanyName = styled.div`
   font-size: 20px;
   font-weight: 700;
   color: #333333;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    opacity: 0.8;
-  }
-`;
-
-export const DashboardCompanyDropdown = styled.div`
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  background-color: white;
-  border: 1px solid #e4e4e4;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 200px;
-  z-index: 1000;
-  overflow: hidden;
-`;
-
-export const DashboardCompanyDropdownItem = styled.div`
-  padding: 12px 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  background-color: ${props => props.selected ? '#f0f0f0' : 'white'};
-
-  &:hover {
-    background-color: #f5f5f5;
-  }
 `;
 
 // 액션 버튼 섹션 (DashboardHeader 아래)
