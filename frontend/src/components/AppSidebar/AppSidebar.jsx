@@ -98,13 +98,16 @@ const AppSidebar = () => {
         {/* 로고 영역 */}
         <S.LogoSpacer>
           <S.LogoImage src="/favicon6.png" alt="InnerSignature Logo" />
-          {companies && companies.length > 1 && (
+          {companies && companies.length >= 1 && (
             <S.SidebarCompanySelector data-company-dropdown>
-              <S.SidebarCompanySelectorButton onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}>
+              <S.SidebarCompanySelectorButton
+                onClick={companies.length > 1 ? () => setIsCompanyDropdownOpen(!isCompanyDropdownOpen) : undefined}
+                style={{ cursor: companies.length > 1 ? 'pointer' : 'default' }}
+              >
                 <span>{companyName}</span>
-                <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />
+                {companies.length > 1 && <FaChevronDown style={{ fontSize: '12px', marginLeft: '4px' }} />}
               </S.SidebarCompanySelectorButton>
-              {isCompanyDropdownOpen && (
+              {companies.length > 1 && isCompanyDropdownOpen && (
                 <S.SidebarCompanyDropdown>
                   {companies.map((company) => (
                     <S.SidebarCompanyDropdownItem
