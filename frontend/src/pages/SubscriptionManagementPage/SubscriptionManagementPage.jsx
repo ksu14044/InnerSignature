@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaExclamationTriangle } from 'react-icons/fa';
+import { FaExclamationTriangle } from 'react-icons/fa';
 import { getCurrentSubscription, cancelSubscription, updateSubscription, getPlans, createSubscription, getPayments } from '../../api/subscriptionApi';
 import { getCredits, getTotalAvailableAmount } from '../../api/creditApi';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import PaymentConfirmModal from '../../components/PaymentConfirmModal/PaymentConfirmModal';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import * as S from './style';
 
 const SubscriptionManagementPage = () => {
@@ -312,111 +313,114 @@ const SubscriptionManagementPage = () => {
 
   return (
     <S.Container>
-      <S.Header>
-        <S.HeaderLeft>
-          <S.Title>구독 관리</S.Title>
-        </S.HeaderLeft>
-        <S.HeaderRight>
-          <S.ProfileButton onClick={() => navigate('/profile')}>
-            <FaUser /> 내 정보
-          </S.ProfileButton>
-        </S.HeaderRight>
-      </S.Header>
-
+      <PageHeader title="구독" />
+      
       {error && <S.ErrorMessage>{error}</S.ErrorMessage>}
 
-      {/* 탭 버튼 */}
-      <S.TabSection>
-        <S.TabButton active={activeTab === 'subscription'} onClick={() => setActiveTab('subscription')}>
-          현재 구독
-        </S.TabButton>
-        <S.TabButton active={activeTab === 'plans'} onClick={() => setActiveTab('plans')}>
-          플랜 선택
-        </S.TabButton>
-        <S.TabButton active={activeTab === 'payments'} onClick={() => setActiveTab('payments')}>
-          결제 내역
-        </S.TabButton>
-        <S.TabButton active={activeTab === 'credits'} onClick={() => setActiveTab('credits')}>
-          크레딧 관리
-        </S.TabButton>
-      </S.TabSection>
+      {/* 탭 헤더 바 */}
+      <S.TabHeaderBar>
+        <S.TabSection>
+          <S.TabButton active={activeTab === 'subscription'} onClick={() => setActiveTab('subscription')}>
+            현재 구독
+          </S.TabButton>
+          <S.TabButton active={activeTab === 'plans'} onClick={() => setActiveTab('plans')}>
+            플랜 선택
+          </S.TabButton>
+          <S.TabButton active={activeTab === 'payments'} onClick={() => setActiveTab('payments')}>
+            결제 내역
+          </S.TabButton>
+          <S.TabButton active={activeTab === 'credits'} onClick={() => setActiveTab('credits')}>
+            크레딧 관리
+          </S.TabButton>
+        </S.TabSection>
+      </S.TabHeaderBar>
 
       {/* 현재 구독 탭 */}
       {activeTab === 'subscription' && (subscription ? (
-        <S.SubscriptionInfo>
-          <S.InfoSection>
-            <S.InfoLabel>현재 플랜</S.InfoLabel>
-            <S.InfoValue>{subscription.plan?.planName || '알 수 없음'}</S.InfoValue>
-          </S.InfoSection>
-          
-          <S.InfoSection>
-            <S.InfoLabel>구독 상태</S.InfoLabel>
-            <S.InfoValue>
-              <S.StatusBadge status={subscription.status}>
-                {subscription.status === 'ACTIVE' ? '활성' : 
-                 subscription.status === 'EXPIRED' ? '만료' : 
-                 subscription.status === 'CANCELLED' ? '취소됨' : subscription.status}
-              </S.StatusBadge>
-            </S.InfoValue>
-          </S.InfoSection>
+        <>
+          {/* 현재 구독 정보 카드 */}
+          <S.SubscriptionInfo>
+            <S.SubscriptionCardHeader>
+              <S.SubscriptionCardTitle>현재 구독</S.SubscriptionCardTitle>
+            </S.SubscriptionCardHeader>
+            <S.SubscriptionCardContent>
+              <S.InfoSection>
+                <S.InfoLabel>현재 플랜</S.InfoLabel>
+                <S.InfoValue>{subscription.plan?.planName || '알 수 없음'}</S.InfoValue>
+              </S.InfoSection>
+              
+              <S.InfoSection>
+                <S.InfoLabel>구독 상태</S.InfoLabel>
+                <S.InfoValue>
+                  <S.StatusBadge status={subscription.status}>
+                    {subscription.status === 'ACTIVE' ? '활성' : 
+                     subscription.status === 'EXPIRED' ? '만료' : 
+                     subscription.status === 'CANCELLED' ? '취소됨' : subscription.status}
+                  </S.StatusBadge>
+                </S.InfoValue>
+              </S.InfoSection>
 
-          <S.InfoSection>
-            <S.InfoLabel>시작일</S.InfoLabel>
-            <S.InfoValue>{subscription.startDate || '-'}</S.InfoValue>
-          </S.InfoSection>
+              <S.InfoSection>
+                <S.InfoLabel>시작일</S.InfoLabel>
+                <S.InfoValue>{subscription.startDate || '-'}</S.InfoValue>
+              </S.InfoSection>
 
-          <S.InfoSection>
-            <S.InfoLabel>만료일</S.InfoLabel>
-            <S.InfoValue>
-              {subscription.endDate ? (
-                <S.ExpiryContainer>
-                  <span>{subscription.endDate}</span>
-                  {(() => {
-                    const endDate = new Date(subscription.endDate);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    endDate.setHours(0, 0, 0, 0);
-                    const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-                    
-                    if (daysLeft < 0) {
-                      return <S.DangerBadge>만료됨</S.DangerBadge>;
-                    } else if (daysLeft <= 7) {
-                      return <S.WarningBadge>⚠️ {daysLeft}일 남음</S.WarningBadge>;
-                    } else if (daysLeft <= 30) {
-                      return <S.InfoBadge>{daysLeft}일 남음</S.InfoBadge>;
-                    }
-                    return null;
-                  })()}
-                </S.ExpiryContainer>
-              ) : (
-                '-'
+              <S.InfoSection>
+                <S.InfoLabel>만료일</S.InfoLabel>
+                <S.InfoValue>
+                  {subscription.endDate ? (
+                    <S.ExpiryContainer>
+                      <span>{subscription.endDate}</span>
+                      {(() => {
+                        const endDate = new Date(subscription.endDate);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        endDate.setHours(0, 0, 0, 0);
+                        const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+                        
+                        if (daysLeft < 0) {
+                          return <S.DangerBadge>만료됨</S.DangerBadge>;
+                        } else if (daysLeft <= 7) {
+                          return <S.WarningBadge>{daysLeft}일 남음</S.WarningBadge>;
+                        } else if (daysLeft <= 30) {
+                          return <S.InfoBadge>{daysLeft}일 남음</S.InfoBadge>;
+                        }
+                        return null;
+                      })()}
+                    </S.ExpiryContainer>
+                  ) : (
+                    '-'
+                  )}
+                </S.InfoValue>
+              </S.InfoSection>
+
+              <S.InfoSection>
+                <S.InfoLabel>자동 갱신</S.InfoLabel>
+                <S.InfoValue>{subscription.autoRenew ? '예' : '아니오'}</S.InfoValue>
+              </S.InfoSection>
+
+              {subscription.plan && (
+                <S.InfoSection>
+                  <S.InfoLabel>최대 사용자 수</S.InfoLabel>
+                  <S.InfoValue>
+                    {subscription.plan.maxUsers ? `${subscription.plan.maxUsers}명` : '무제한'}
+                  </S.InfoValue>
+                </S.InfoSection>
               )}
-            </S.InfoValue>
-          </S.InfoSection>
 
-          <S.InfoSection>
-            <S.InfoLabel>자동 갱신</S.InfoLabel>
-            <S.InfoValue>{subscription.autoRenew ? '예' : '아니오'}</S.InfoValue>
-          </S.InfoSection>
-
-          {subscription.plan && (
-            <S.InfoSection>
-              <S.InfoLabel>최대 사용자 수</S.InfoLabel>
-              <S.InfoValue>
-                {subscription.plan.maxUsers ? `${subscription.plan.maxUsers}명` : '무제한'}
-              </S.InfoValue>
-            </S.InfoSection>
-          )}
-
-          <S.InfoSection>
-            <S.InfoLabel>사용 가능한 크레딧</S.InfoLabel>
-            <S.InfoValue>
-              <S.CreditAmount>{totalCredit.toLocaleString()}원</S.CreditAmount>
-              <S.CreditLink onClick={() => navigate('/credits')}>
-                크레딧 내역 보기 →
-              </S.CreditLink>
-            </S.InfoValue>
-          </S.InfoSection>
+              <S.InfoSection>
+                <S.InfoLabel>사용 가능한 크레딧</S.InfoLabel>
+                <S.InfoValue>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                    <S.CreditAmount>{totalCredit.toLocaleString()}원</S.CreditAmount>
+                    <S.CreditLink onClick={() => setActiveTab('credits')}>
+                      크레딧 내역 보기
+                    </S.CreditLink>
+                  </div>
+                </S.InfoValue>
+              </S.InfoSection>
+            </S.SubscriptionCardContent>
+          </S.SubscriptionInfo>
 
           {/* 다운그레이드 예정 안내 */}
           {subscription.pendingPlanId && subscription.pendingPlan && subscription.pendingChangeDate && (
@@ -433,59 +437,100 @@ const SubscriptionManagementPage = () => {
             </S.PendingPlanNotice>
           )}
 
-          <S.Actions>
-            <S.PlanChangeSection>
+          {/* 플랜 변경 섹션 */}
+          <S.PlanChangeSection>
+            <S.PlanChangeHeader>
               <S.SectionTitle>플랜 변경</S.SectionTitle>
+            </S.PlanChangeHeader>
+            <S.PlanChangeContent>
               <S.PlansGrid>
                 {plans.map(plan => {
                   const isCurrent = plan.planId === subscription.planId;
                   return (
-                    <S.PlanCard 
-                      key={plan.planId}
-                      selected={isCurrent}
-                      featured={plan.planCode === 'PRO'}
-                      onClick={() => !isCurrent && handleChangePlan(plan.planId)}
-                    >
-                      {plan.planCode === 'PRO' && <S.FeaturedBadge>추천</S.FeaturedBadge>}
+                    <S.PlanCardItemWrapper key={plan.planId}>
+                      {plan.planCode === 'PRO' && (
+                        <S.RecommendedBadge>
+                          <S.RecommendedText>추천</S.RecommendedText>
+                        </S.RecommendedBadge>
+                      )}
+                      <S.PlanCardContainer>
+                        <S.PlanCardWrapper featured={plan.planCode === 'PRO'}>
+                        <S.PlanCard 
+                          selected={isCurrent}
+                          featured={plan.planCode === 'PRO'}
+                          onClick={() => !isCurrent && handleChangePlan(plan.planId)}
+                        >
+                        {isCurrent && <S.CurrentPlanBadge>현재 플랜</S.CurrentPlanBadge>}
                       <S.PlanHeader>
-                        <S.PlanName>{plan.planName}</S.PlanName>
+                        <S.PlanName selected={isCurrent}>{plan.planName}</S.PlanName>
                         <S.PlanPrice>
                           {plan.price === 0 ? (
-                            <S.FreePrice>무료</S.FreePrice>
+                            <S.FreePrice selected={isCurrent}>무료</S.FreePrice>
                           ) : (
                             <>
-                              <S.PriceAmount>{plan.price.toLocaleString()}</S.PriceAmount>
-                              <S.PriceUnit>원/월</S.PriceUnit>
+                              <S.PriceAmount selected={isCurrent} featured={plan.planCode === 'PRO'}>{plan.price.toLocaleString()}</S.PriceAmount>
+                              <S.PriceUnit selected={isCurrent}>/월</S.PriceUnit>
                             </>
                           )}
                         </S.PlanPrice>
                       </S.PlanHeader>
                       <S.PlanFeatures>
-                        <S.Feature>
-                          <S.FeatureIcon>✓</S.FeatureIcon>
-                          <S.FeatureText>최대 {plan.maxUsers ? `${plan.maxUsers}명` : '무제한'} 사용자</S.FeatureText>
-                        </S.Feature>
+                        {plan.maxUsers && (
+                          <S.Feature selected={isCurrent}>
+                            <S.FeatureIcon selected={isCurrent}>ㆍ</S.FeatureIcon>
+                            <S.FeatureText selected={isCurrent}>사용자 최대 {plan.maxUsers}명</S.FeatureText>
+                          </S.Feature>
+                        )}
+                        {!plan.maxUsers && (
+                          <S.Feature selected={isCurrent}>
+                            <S.FeatureIcon selected={isCurrent}>ㆍ</S.FeatureIcon>
+                            <S.FeatureText selected={isCurrent}>사용자 무제한</S.FeatureText>
+                          </S.Feature>
+                        )}
+                        {plan.features && Object.entries(plan.features).map(([key, value]) => (
+                          value && (
+                            <S.Feature key={key} selected={isCurrent}>
+                              <S.FeatureIcon selected={isCurrent}>ㆍ</S.FeatureIcon>
+                              <S.FeatureText selected={isCurrent}>
+                                {key === 'expense_tracking' ? '지출 관리' :
+                                 key === 'tax_report' ? '세무 보고서' :
+                                 key === 'audit_log' ? '감사로그' :
+                                 key === 'advanced_analytics' ? '고급 분석' :
+                                 key === 'priority_support' ? '우선 지원' : key}
+                              </S.FeatureText>
+                            </S.Feature>
+                          )
+                        ))}
                       </S.PlanFeatures>
                       <S.PlanAction>
                         {isCurrent ? (
                           <S.CurrentButton disabled>현재 플랜</S.CurrentButton>
                         ) : (
-                          <S.SelectButton onClick={(e) => { e.stopPropagation(); handleChangePlan(plan.planId); }}>
+                          <S.SelectButton 
+                            featured={plan.planCode === 'PRO'}
+                            onClick={(e) => { e.stopPropagation(); handleChangePlan(plan.planId); }}
+                          >
                             플랜 변경
                           </S.SelectButton>
                         )}
                       </S.PlanAction>
-                    </S.PlanCard>
+                        </S.PlanCard>
+                        </S.PlanCardWrapper>
+                      </S.PlanCardContainer>
+                    </S.PlanCardItemWrapper>
                   );
                 })}
               </S.PlansGrid>
-            </S.PlanChangeSection>
+            </S.PlanChangeContent>
+          </S.PlanChangeSection>
 
+          {/* 구독 취소 버튼 */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
             <S.CancelButton onClick={handleCancelSubscription}>
               구독 취소
             </S.CancelButton>
-          </S.Actions>
-        </S.SubscriptionInfo>
+          </div>
+        </>
       ) : (
         <S.NoSubscription>
           <S.NoSubscriptionText>활성 구독이 없습니다.</S.NoSubscriptionText>
@@ -507,8 +552,15 @@ const SubscriptionManagementPage = () => {
               {plans.map(plan => {
                 const isCurrent = currentSubscription?.planId === plan.planId;
                 return (
-                  <S.PlanCard key={plan.planId} featured={plan.planCode === 'PRO'} selected={isCurrent}>
-                    {plan.planCode === 'PRO' && <S.FeaturedBadge>추천</S.FeaturedBadge>}
+                  <S.PlanCardItemWrapper key={plan.planId}>
+                    {plan.planCode === 'PRO' && (
+                      <S.RecommendedBadge>
+                        <S.RecommendedText>추천</S.RecommendedText>
+                      </S.RecommendedBadge>
+                    )}
+                    <S.PlanCardContainer>
+                      <S.PlanCardWrapper featured={plan.planCode === 'PRO'}>
+                        <S.PlanCard featured={plan.planCode === 'PRO'} selected={isCurrent}>
                     <S.PlanHeader>
                       <S.PlanName>{plan.planName}</S.PlanName>
                       <S.PlanPrice>
@@ -516,25 +568,33 @@ const SubscriptionManagementPage = () => {
                           <S.FreePrice>무료</S.FreePrice>
                         ) : (
                           <>
-                            <S.PriceAmount>{plan.price.toLocaleString()}</S.PriceAmount>
-                            <S.PriceUnit>원/월</S.PriceUnit>
+                            <S.PriceAmount featured={plan.planCode === 'PRO'}>{plan.price.toLocaleString()}</S.PriceAmount>
+                            <S.PriceUnit>/월</S.PriceUnit>
                           </>
                         )}
                       </S.PlanPrice>
                     </S.PlanHeader>
                     <S.PlanFeatures>
-                      <S.Feature>
-                        <S.FeatureIcon>✓</S.FeatureIcon>
-                        <S.FeatureText>최대 {plan.maxUsers ? `${plan.maxUsers}명` : '무제한'} 사용자</S.FeatureText>
-                      </S.Feature>
+                      {plan.maxUsers && (
+                        <S.Feature>
+                          <S.FeatureIcon>ㆍ</S.FeatureIcon>
+                          <S.FeatureText>사용자 최대 {plan.maxUsers}명</S.FeatureText>
+                        </S.Feature>
+                      )}
+                      {!plan.maxUsers && (
+                        <S.Feature>
+                          <S.FeatureIcon>ㆍ</S.FeatureIcon>
+                          <S.FeatureText>사용자 무제한</S.FeatureText>
+                        </S.Feature>
+                      )}
                       {plan.features && Object.entries(plan.features).map(([key, value]) => (
                         value && (
                           <S.Feature key={key}>
-                            <S.FeatureIcon>✓</S.FeatureIcon>
+                            <S.FeatureIcon>ㆍ</S.FeatureIcon>
                             <S.FeatureText>
                               {key === 'expense_tracking' ? '지출 관리' :
-                               key === 'tax_report' ? '세무 보고서' :
-                               key === 'audit_log' ? '감사 로그' :
+                               key === 'tax_report' ? '세무보고서' :
+                               key === 'audit_log' ? '감사로그' :
                                key === 'advanced_analytics' ? '고급 분석' :
                                key === 'priority_support' ? '우선 지원' : key}
                             </S.FeatureText>
@@ -547,14 +607,18 @@ const SubscriptionManagementPage = () => {
                         <S.CurrentButton disabled>현재 플랜</S.CurrentButton>
                       ) : (
                         <S.SelectButton 
+                          featured={plan.planCode === 'PRO'}
                           onClick={() => handleSelectPlan(plan.planId)}
                           disabled={creating}
                         >
-                          {creating ? '처리 중...' : plan.price === 0 ? '무료로 시작하기' : '결제하기'}
+                          {creating ? '처리 중...' : plan.price === 0 ? '무료 플랜 이용하기' : '결제하기'}
                         </S.SelectButton>
                       )}
                     </S.PlanAction>
-                  </S.PlanCard>
+                        </S.PlanCard>
+                      </S.PlanCardWrapper>
+                    </S.PlanCardContainer>
+                  </S.PlanCardItemWrapper>
                 );
               })}
             </S.PlansGrid>
@@ -575,7 +639,7 @@ const SubscriptionManagementPage = () => {
                 <S.TableRow>
                   <S.TableHeaderCell>결제일</S.TableHeaderCell>
                   <S.TableHeaderCell>금액</S.TableHeaderCell>
-                  <S.TableHeaderCell>결제 수단</S.TableHeaderCell>
+                  <S.TableHeaderCell>결제수단</S.TableHeaderCell>
                   <S.TableHeaderCell>상태</S.TableHeaderCell>
                 </S.TableRow>
               </S.TableHeader>
@@ -583,17 +647,9 @@ const SubscriptionManagementPage = () => {
                 {payments.map(payment => (
                   <S.TableRow key={payment.paymentId}>
                     <S.TableCell>{formatDate(payment.paymentDate)}</S.TableCell>
-                    <S.TableCell>{payment.amount?.toLocaleString()}원</S.TableCell>
-                    <S.TableCell>
-                      <S.PaymentMethod color={getPaymentMethodColor(payment.paymentMethod)}>
-                        {getPaymentMethodLabel(payment.paymentMethod)}
-                      </S.PaymentMethod>
-                    </S.TableCell>
-                    <S.TableCell>
-                      <S.StatusBadge color={getStatusColor(payment.paymentStatus)}>
-                        {getStatusLabel(payment.paymentStatus)}
-                      </S.StatusBadge>
-                    </S.TableCell>
+                    <S.TableCell style={{ fontWeight: '500', textAlign: 'right' }}>{payment.amount?.toLocaleString()}원</S.TableCell>
+                    <S.TableCell>{getPaymentMethodLabel(payment.paymentMethod)}</S.TableCell>
+                    <S.TableCell>{getStatusLabel(payment.paymentStatus)}</S.TableCell>
                   </S.TableRow>
                 ))}
               </S.TableBody>
@@ -610,9 +666,9 @@ const SubscriptionManagementPage = () => {
             <S.TotalCreditAmount>{totalCredit.toLocaleString()}원</S.TotalCreditAmount>
           </S.TotalCreditCard>
           {credits.length === 0 ? (
-            <S.EmptyState>
+            <div style={{ padding: '40px 24px', textAlign: 'center' }}>
               <S.EmptyText>크레딧 내역이 없습니다.</S.EmptyText>
-            </S.EmptyState>
+            </div>
           ) : (
             <S.CreditsTable>
               <S.TableHeader>
