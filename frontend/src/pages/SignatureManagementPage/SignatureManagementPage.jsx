@@ -264,7 +264,7 @@ const SignatureManagementPage = () => {
                 onClick={() => handleSelectSignatureType('STAMP')}
               >
                 <S.TypeIcon>
-                  <img src="/이너사인_이미지 (1)/아이콘/20px_기타_입력/선택.png" alt="도장" />
+                  <img src="/이너사인_이미지 (1)/도장삽입.png" alt="도장" />
                 </S.TypeIcon>
                 <S.TypeContent>
                   <S.TypeTitle>도장</S.TypeTitle>
@@ -277,7 +277,7 @@ const SignatureManagementPage = () => {
                 onClick={() => handleSelectSignatureType('SIGNATURE')}
               >
                 <S.TypeIcon>
-                  <img src="/이너사인_이미지 (1)/아이콘/20px_기타_입력/선택.png" alt="서명" />
+                  <img src="/이너사인_이미지 (1)/서명삽입.png" alt="서명" />
                 </S.TypeIcon>
                 <S.TypeContent>
                   <S.TypeTitle>서명</S.TypeTitle>
