@@ -450,12 +450,12 @@ export const PlanCard = styled.div`
   padding: 32px 24px 24px;
   border: ${props => {
     if (props.featured) return 'none';
-    return props.selected ? '1px solid #333333' : '1px solid #e4e4e4';
+    return '1px solid #e4e4e4';
   }};
   border-radius: ${props => props.featured ? '4px' : '4px'};
-  background: ${props => props.selected ? '#333333' : 'white'};
+  background: white;
   transition: all 0.2s;
-  cursor: ${props => props.selected ? 'default' : 'pointer'};
+  cursor: pointer;
   width: 100%;
   height: 100%;
   box-sizing: border-box;
@@ -465,7 +465,7 @@ export const PlanCard = styled.div`
   margin: 0;
 
   &:hover {
-    ${props => !props.selected && !props.featured && `
+    ${props => !props.featured && `
       border-color: #489bff;
       box-shadow: 0 4px 12px rgba(72, 155, 255, 0.15);
     `}
@@ -484,7 +484,7 @@ export const CurrentPlanBadge = styled.div`
   top: 9px;
   right: 9px;
   background: transparent;
-  color: #ffffff;
+  color: #333333;
   padding: 0;
   border-radius: 0;
   font-size: 14px;
@@ -504,7 +504,7 @@ export const PlanName = styled.h3`
   font-size: 18px;
   font-weight: 700;
   margin: 0;
-  color: ${props => props.selected ? '#ffffff' : '#333333'};
+  color: #333333;
   line-height: 27px;
 `;
 
@@ -520,7 +520,6 @@ export const PriceAmount = styled.span`
   font-size: 32px;
   font-weight: 700;
   color: ${props => {
-    if (props.selected) return '#ffffff';
     if (props.featured) return '#489bff';
     return '#333333';
   }};
@@ -530,7 +529,7 @@ export const PriceAmount = styled.span`
 export const PriceUnit = styled.span`
   font-size: 14px;
   font-weight: 500;
-  color: ${props => props.selected ? 'rgba(255, 255, 255, 0.7)' : '#666666'};
+  color: #666666;
   line-height: 16.8px;
   margin-left: 4px;
 `;
@@ -538,7 +537,7 @@ export const PriceUnit = styled.span`
 export const FreePrice = styled.span`
   font-size: 32px;
   font-weight: 700;
-  color: ${props => props.selected ? '#ffffff' : '#333333'};
+  color: #333333;
   line-height: 48px;
 `;
 
@@ -555,7 +554,7 @@ export const Feature = styled.div`
   margin-bottom: 8px;
   font-size: 16px;
   font-weight: 400;
-  color: ${props => props.selected ? 'rgba(255, 255, 255, 0.9)' : '#666666'};
+  color: #666666;
   line-height: 19.2px;
   
   &:last-child {
@@ -564,14 +563,14 @@ export const Feature = styled.div`
 `;
 
 export const FeatureIcon = styled.span`
-  color: ${props => props.selected ? 'rgba(255, 255, 255, 0.9)' : '#666666'};
+  color: #666666;
   font-weight: 400;
   margin-right: 0;
 `;
 
 export const FeatureText = styled.span`
   flex: 1;
-  color: ${props => props.selected ? 'rgba(255, 255, 255, 0.9)' : '#666666'};
+  color: #666666;
 `;
 
 // 플랜 액션 버튼 (피그마 디자인)

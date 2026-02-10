@@ -456,42 +456,41 @@ const SubscriptionManagementPage = () => {
                       <S.PlanCardContainer>
                         <S.PlanCardWrapper featured={plan.planCode === 'PRO'}>
                         <S.PlanCard 
-                          selected={isCurrent}
                           featured={plan.planCode === 'PRO'}
                           onClick={() => !isCurrent && handleChangePlan(plan.planId)}
                         >
                         {isCurrent && <S.CurrentPlanBadge>현재 플랜</S.CurrentPlanBadge>}
                       <S.PlanHeader>
-                        <S.PlanName selected={isCurrent}>{plan.planName}</S.PlanName>
+                        <S.PlanName>{plan.planName}</S.PlanName>
                         <S.PlanPrice>
                           {plan.price === 0 ? (
-                            <S.FreePrice selected={isCurrent}>무료</S.FreePrice>
+                            <S.FreePrice>무료</S.FreePrice>
                           ) : (
                             <>
-                              <S.PriceAmount selected={isCurrent} featured={plan.planCode === 'PRO'}>{plan.price.toLocaleString()}</S.PriceAmount>
-                              <S.PriceUnit selected={isCurrent}>/월</S.PriceUnit>
+                              <S.PriceAmount featured={plan.planCode === 'PRO'}>{plan.price.toLocaleString()}</S.PriceAmount>
+                              <S.PriceUnit>/월</S.PriceUnit>
                             </>
                           )}
                         </S.PlanPrice>
                       </S.PlanHeader>
                       <S.PlanFeatures>
                         {plan.maxUsers && (
-                          <S.Feature selected={isCurrent}>
-                            <S.FeatureIcon selected={isCurrent}>ㆍ</S.FeatureIcon>
-                            <S.FeatureText selected={isCurrent}>사용자 최대 {plan.maxUsers}명</S.FeatureText>
+                          <S.Feature>
+                            <S.FeatureIcon>ㆍ</S.FeatureIcon>
+                            <S.FeatureText>사용자 최대 {plan.maxUsers}명</S.FeatureText>
                           </S.Feature>
                         )}
                         {!plan.maxUsers && (
-                          <S.Feature selected={isCurrent}>
-                            <S.FeatureIcon selected={isCurrent}>ㆍ</S.FeatureIcon>
-                            <S.FeatureText selected={isCurrent}>사용자 무제한</S.FeatureText>
+                          <S.Feature>
+                            <S.FeatureIcon>ㆍ</S.FeatureIcon>
+                            <S.FeatureText>사용자 무제한</S.FeatureText>
                           </S.Feature>
                         )}
                         {plan.features && Object.entries(plan.features).map(([key, value]) => (
                           value && (
-                            <S.Feature key={key} selected={isCurrent}>
-                              <S.FeatureIcon selected={isCurrent}>ㆍ</S.FeatureIcon>
-                              <S.FeatureText selected={isCurrent}>
+                            <S.Feature key={key}>
+                              <S.FeatureIcon>ㆍ</S.FeatureIcon>
+                              <S.FeatureText>
                                 {key === 'expense_tracking' ? '지출 관리' :
                                  key === 'tax_report' ? '세무 보고서' :
                                  key === 'audit_log' ? '감사로그' :
@@ -560,7 +559,8 @@ const SubscriptionManagementPage = () => {
                     )}
                     <S.PlanCardContainer>
                       <S.PlanCardWrapper featured={plan.planCode === 'PRO'}>
-                        <S.PlanCard featured={plan.planCode === 'PRO'} selected={isCurrent}>
+                        <S.PlanCard featured={plan.planCode === 'PRO'}>
+                        {isCurrent && <S.CurrentPlanBadge>현재 플랜</S.CurrentPlanBadge>}
                     <S.PlanHeader>
                       <S.PlanName>{plan.planName}</S.PlanName>
                       <S.PlanPrice>
