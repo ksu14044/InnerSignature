@@ -236,12 +236,6 @@ const AppSidebar = () => {
             <span>내 정보</span>
           </S.MenuItem>
         </S.Menu>
-
-        <S.BottomArea>
-          <S.LogoutButton type="button" onClick={handleLogout}>
-            로그아웃
-          </S.LogoutButton>
-        </S.BottomArea>
       </S.Sidebar>
 
       {/* 서명 대기 모달 (기존 AppHeader 로직 유지) */}
