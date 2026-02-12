@@ -673,7 +673,7 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
               </S.NoAccessIcon>
               <S.NoAccessMessage>
                 접근 권한이 없습니다.<br />
-                계정 코드 매핑/수정은 세무 상담사 또는 시스템 관리자 권한이 필요합니다.
+                계정 코드 매핑/수정은 <strong>세무 상담사 또는 시스템 관리자 권한</strong>이 필요합니다.
               </S.NoAccessMessage>
             </S.NoAccessContainer>
           ) : (
