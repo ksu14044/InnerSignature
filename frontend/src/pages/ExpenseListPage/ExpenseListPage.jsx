@@ -795,41 +795,72 @@ const ExpenseListPage = () => {
         <S.NotificationModal onClick={handlers.closeNotificationModal}>
           <S.NotificationModalContent onClick={(e) => e.stopPropagation()}>
             <S.NotificationModalHeader>
-              <h3>서명 대기 건 ({pendingApprovals.length}건)</h3>
+              <h3>알림</h3>
               <button onClick={handlers.closeNotificationModal}>×</button>
             </S.NotificationModalHeader>
             <S.NotificationModalBody>
-              {pendingApprovalsLoading ? (
-                <p>로딩 중...</p>
-              ) : pendingApprovals.length === 0 ? (
-                <p>서명 대기 중인 건이 없습니다.</p>
-              ) : (
-                <S.NotificationList>
-                  {pendingApprovals.map((item) => (
-                    <S.NotificationItem
-                      key={item.expenseReportId}
-                      onClick={() => {
-                        navigate(`/detail/${item.expenseReportId}`);
-                        handlers.closeNotificationModal();
-                      }}
-                    >
-                      <S.NotificationItemTitle>
-                        {(item.summaryDescription && item.summaryDescription.trim() !== '')
-                          ? item.summaryDescription
-                          : (item.firstDescription && item.firstDescription.trim() !== '')
-                            ? item.firstDescription
-                            : '-'}
-                      </S.NotificationItemTitle>
-                      <S.NotificationItemInfo>
-                        <span>문서번호: {item.expenseReportId}</span>
-                        <span>작성자: {item.drafterName}</span>
-                        <span>작성일: {item.reportDate}</span>
-                        <span>금액: {item.totalAmount.toLocaleString()}원</span>
-                      </S.NotificationItemInfo>
-                    </S.NotificationItem>
-                  ))}
-                </S.NotificationList>
-              )}
+              {/* 서명 대기 건 섹션 */}
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ margin: '0 0 8px', fontSize: '15px' }}>
+                  서명 대기 건 ({pendingApprovals.length}건)
+                </h4>
+                {pendingApprovalsLoading ? (
+                  <p>로딩 중...</p>
+                ) : pendingApprovals.length === 0 ? (
+                  <p>서명 대기 중인 건이 없습니다.</p>
+                ) : (
+                  <S.NotificationList>
+                    {pendingApprovals.map((item) => (
+                      <S.NotificationItem
+                        key={item.expenseReportId}
+                        onClick={() => {
+                          navigate(`/detail/${item.expenseReportId}`);
+                          handlers.closeNotificationModal();
+                        }}
+                      >
+                        <S.NotificationItemTitle>
+                          {(item.summaryDescription && item.summaryDescription.trim() !== '')
+                            ? item.summaryDescription
+                            : (item.firstDescription && item.firstDescription.trim() !== '')
+                              ? item.firstDescription
+                              : '-'}
+                        </S.NotificationItemTitle>
+                        <S.NotificationItemInfo>
+                          <span>문서번호: {item.expenseReportId}</span>
+                          <span>작성자: {item.drafterName}</span>
+                          <span>작성일: {item.reportDate}</span>
+                          <span>금액: {item.totalAmount.toLocaleString()}원</span>
+                        </S.NotificationItemInfo>
+                      </S.NotificationItem>
+                    ))}
+                  </S.NotificationList>
+                )}
+              </div>
+
+              {/* 승인 대기 사용자 섹션 */}
+              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '12px', marginTop: '4px' }}>
+                <h4 style={{ margin: '0 0 8px', fontSize: '15px' }}>
+                  승인 대기 사용자 ({pendingUsers.length}건)
+                </h4>
+                {pendingUsers.length === 0 ? (
+                  <p>승인 대기 중인 사용자가 없습니다.</p>
+                ) : (
+                  <S.NotificationList>
+                    {pendingUsers.map((pendingUser) => (
+                      <S.NotificationItem key={pendingUser.userId}>
+                        <S.NotificationItemTitle>
+                          {pendingUser.koreanName} ({pendingUser.username})
+                        </S.NotificationItemTitle>
+                        <S.NotificationItemInfo>
+                          <span>역할: {pendingUser.role}</span>
+                          <span>직급: {pendingUser.position || '-'}</span>
+                          <span>이메일: {pendingUser.email || '-'}</span>
+                        </S.NotificationItemInfo>
+                      </S.NotificationItem>
+                    ))}
+                  </S.NotificationList>
+                )}
+              </div>
             </S.NotificationModalBody>
           </S.NotificationModalContent>
         </S.NotificationModal>

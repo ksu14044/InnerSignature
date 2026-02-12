@@ -247,8 +247,6 @@ const TaxSummaryPage = () => {
     <S.Container>
       <PageHeader
         title="세무 요약"
-        pendingApprovals={[]}
-        pendingUsers={[]}
       />
 
       {/* 자료 수집 및 전표 다운로드 섹션 */}

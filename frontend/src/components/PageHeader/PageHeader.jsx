@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCurrentSubscription } from '../../api/subscriptionApi';
+import { fetchPendingApprovals } from '../../api/expenseApi';
+import { getPendingUsers } from '../../api/userApi';
 import * as S from './style';
 
 /**
@@ -9,27 +11,41 @@ import * as S from './style';
  * @param {string} title - 페이지 제목
  * @param {string} subTitle - 페이지 서브 제목 (선택사항)
  * @param {ReactNode} subTitleActions - 서브 제목 옆에 표시할 액션 버튼들 (선택사항)
- * @param {Array} pendingApprovals - 서명 대기 건 목록
- * @param {Array} pendingUsers - 승인 대기 사용자 목록
+ * @param {Array} pendingApprovals - (선택) 서명 대기 건 목록. 주어지지 않으면 헤더가 직접 조회
+ * @param {Array} pendingUsers - (선택) 승인 대기 사용자 목록. 주어지지 않으면 헤더가 직접 조회
  * @param {Function} onNotificationClick - 알림 아이콘 클릭 핸들러
  * @param {Function} onApprovalClick - 승인 모달 열기 핸들러 (선택사항)
+ * @param {boolean} enableNotifications - 헤더에서 알림을 표시/조회할지 여부 (기본값: true)
  */
 const PageHeader = ({ 
   title, 
   subTitle,
   subTitleActions,
-  pendingApprovals = [], 
-  pendingUsers = [],
+  pendingApprovals, 
+  pendingUsers,
   onNotificationClick,
-  onApprovalClick
+  onApprovalClick,
+  enableNotifications = true
 }) => {
   const navigate = useNavigate();
   const { user, logout, companies } = useAuth();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const dropdownRef = useRef(null);
-  
-  const totalNotifications = pendingApprovals.length + pendingUsers.length;
+  const [internalPendingApprovals, setInternalPendingApprovals] = useState([]);
+  const [internalPendingUsers, setInternalPendingUsers] = useState([]);
+
+  // 외부에서 전달된 값이 있으면 우선 사용, 없으면 내부 상태 사용
+  const effectivePendingApprovals = Array.isArray(pendingApprovals)
+    ? pendingApprovals
+    : internalPendingApprovals;
+  const effectivePendingUsers = Array.isArray(pendingUsers)
+    ? pendingUsers
+    : internalPendingUsers;
+
+  const totalNotifications = !enableNotifications
+    ? 0
+    : (effectivePendingApprovals.length + effectivePendingUsers.length);
 
   // 구독 정보 로드
   useEffect(() => {
@@ -50,6 +66,41 @@ const PageHeader = ({
     }
   }, [user]);
 
+  // 알림 데이터 로드 (공통 헤더용)
+  useEffect(() => {
+    if (!enableNotifications || !user?.userId) return;
+
+    const loadNotifications = async () => {
+      try {
+        // 서명 대기 건
+        const approvalsRes = await fetchPendingApprovals(user.userId);
+        if (approvalsRes?.success) {
+          setInternalPendingApprovals(approvalsRes.data || []);
+        } else {
+          setInternalPendingApprovals([]);
+        }
+
+        // 승인 대기 사용자 (CEO, ADMIN만)
+        if (user.role === 'CEO' || user.role === 'ADMIN') {
+          const usersRes = await getPendingUsers();
+          if (usersRes?.success) {
+            setInternalPendingUsers(usersRes.data || []);
+          } else {
+            setInternalPendingUsers([]);
+          }
+        } else {
+          setInternalPendingUsers([]);
+        }
+      } catch (error) {
+        console.error('알림 데이터 로드 실패:', error);
+        setInternalPendingApprovals([]);
+        setInternalPendingUsers([]);
+      }
+    };
+
+    loadNotifications();
+  }, [enableNotifications, user?.userId, user?.role]);
+
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -68,17 +119,21 @@ const PageHeader = ({
   }, [isProfileDropdownOpen]);
 
   const handleNotificationClick = () => {
-    if (totalNotifications === 0) return;
-    
+    if (!enableNotifications || totalNotifications === 0) return;
+
+    // 페이지에서 커스텀 핸들러를 넘긴 경우 우선 사용
     if (onNotificationClick) {
       onNotificationClick();
-    } else {
-      // 기본 동작: 서명 대기 건이 있으면 알림 모달, 없으면 승인 모달
-      if (pendingApprovals.length > 0 && onNotificationClick) {
-        onNotificationClick();
-      } else if (pendingUsers.length > 0 && onApprovalClick) {
-        onApprovalClick();
-      }
+      return;
+    }
+
+    // 기본 동작:
+    // - 서명 대기 건이 있으면 지출결의서 목록 페이지의 알림 모달 오픈
+    // - 없고 승인 대기 사용자만 있으면 승인 모달 오픈
+    if (effectivePendingApprovals.length > 0) {
+      navigate('/expenses?openNotifications=true');
+    } else if (effectivePendingUsers.length > 0) {
+      navigate('/expenses?openApprovals=true');
     }
   };
 

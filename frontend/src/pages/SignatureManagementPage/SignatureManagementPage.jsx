@@ -194,10 +194,6 @@ const SignatureManagementPage = () => {
             <FaPlus /> 도장·서명 추가
           </S.AddButton>
         }
-        pendingApprovals={[]}
-        pendingUsers={[]}
-        onNotificationClick={() => {}}
-        onApprovalClick={() => {}}
       />
 
       {savedSignatures.length === 0 ? (

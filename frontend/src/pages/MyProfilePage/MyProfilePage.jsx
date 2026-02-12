@@ -289,8 +289,6 @@ const MyProfilePage = () => {
             )}
           </>
         )}
-        pendingApprovals={[]}
-        pendingUsers={[]}
       />
 
       <S.ProfileCard data-tourid="tour-company-section">

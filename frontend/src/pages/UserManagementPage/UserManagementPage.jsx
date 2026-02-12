@@ -342,8 +342,6 @@ const UserManagementPage = () => {
     <S.Container>
       <PageHeader
         title="사용자 관리"
-        pendingApprovals={[]}
-        pendingUsers={[]}
       />
 
       {/* 모바일용 새 사용자 추가 버튼 */}

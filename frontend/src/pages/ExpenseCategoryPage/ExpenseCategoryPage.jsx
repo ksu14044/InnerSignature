@@ -475,8 +475,6 @@ const ExpenseCategoryPage = ({ hideHeader = false }) => {
     <S.Container>
       <PageHeader
         title="지출 항목 관리"
-        pendingApprovals={[]}
-        pendingUsers={[]}
       />
       
       {/* 탭 헤더 바 */}
