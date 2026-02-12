@@ -4,6 +4,100 @@ import { API_CONFIG } from '../config/api';
 const BASE_URL = API_CONFIG.EXPENSES_BASE_URL;
 const USER_BASE_URL = API_CONFIG.USERS_BASE_URL;
 
+// Content-Disposition 헤더에서 파일명 추출하는 헬퍼 함수
+const extractFilenameFromHeaders = (headers, defaultFilename) => {
+  // 헤더 접근 (대소문자 무시)
+  let contentDisposition = null;
+  if (headers) {
+    // 모든 헤더 키를 확인 (대소문자 무시)
+    const headerKeys = Object.keys(headers);
+    for (const key of headerKeys) {
+      if (key.toLowerCase() === 'content-disposition') {
+        contentDisposition = headers[key];
+        break;
+      }
+    }
+  }
+  
+  if (contentDisposition) {
+    console.log('Content-Disposition 헤더 발견:', contentDisposition);
+    try {
+      // RFC 5987 형식: filename="fallback"; filename*=UTF-8''encoded
+      // 먼저 filename*=UTF-8'' 형식 찾기 (우선순위)
+      
+      // 문자열에서 직접 찾기 (더 확실한 방법)
+      const utf8Pattern = "filename*=UTF-8''";
+      const utf8Index = contentDisposition.indexOf(utf8Pattern);
+      if (utf8Index !== -1) {
+        // filename*=UTF-8'' 다음 부분 추출
+        const startIndex = utf8Index + utf8Pattern.length;
+        // 세미콜론이 있으면 세미콜론 전까지, 없으면 끝까지
+        const endIndex = contentDisposition.indexOf(';', startIndex);
+        const encodedFilename = endIndex !== -1 
+          ? contentDisposition.substring(startIndex, endIndex).trim()
+          : contentDisposition.substring(startIndex).trim();
+        
+        if (encodedFilename) {
+          try {
+            const decoded = decodeURIComponent(encodedFilename);
+            console.log('파일명 추출 성공 (UTF-8, 문자열 파싱):', decoded, '원본:', encodedFilename);
+            return decoded;
+          } catch (e) {
+            console.warn("UTF-8 파일명 디코딩 실패:", e, encodedFilename);
+          }
+        }
+      }
+      
+      // 정규식으로도 시도 (fallback)
+      let utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+?)(?:;|$)/i);
+      if (!utf8Match || !utf8Match[1]) {
+        utf8Match = contentDisposition.match(/filename\*=UTF-8''(.+)$/i);
+      }
+      if (utf8Match && utf8Match[1]) {
+        try {
+          const decoded = decodeURIComponent(utf8Match[1].trim());
+          console.log('파일명 추출 성공 (UTF-8, 정규식):', decoded, '원본:', utf8Match[1]);
+          return decoded;
+        } catch (e) {
+          console.warn("UTF-8 파일명 디코딩 실패:", e, utf8Match[1]);
+        }
+      } else {
+        console.log('UTF-8 파일명 매칭 실패, 다른 형식 시도. Content-Disposition:', contentDisposition);
+      }
+      
+      // filename*= 형식 (다른 인코딩)
+      const encodedMatch = contentDisposition.match(/filename\*=([^;]+)(?:;|$)/i);
+      if (encodedMatch && encodedMatch[1]) {
+        const parts = encodedMatch[1].split("''");
+        if (parts.length === 2) {
+          try {
+            const decoded = decodeURIComponent(parts[1]);
+            console.log('파일명 추출 성공 (인코딩):', decoded);
+            return decoded;
+          } catch (e) {
+            console.warn("인코딩된 파일명 디코딩 실패:", e);
+          }
+        }
+      }
+      
+      // 일반 filename="..." 형식
+      const filenameMatch = contentDisposition.match(/filename=["']?([^"';]+)["']?/i);
+      if (filenameMatch && filenameMatch[1]) {
+        console.log('파일명 추출 성공 (일반):', filenameMatch[1]);
+        return filenameMatch[1];
+      }
+      
+      console.warn('파일명 추출 실패, 기본값 사용. Content-Disposition:', contentDisposition);
+    } catch (e) {
+      console.warn("파일명 추출 중 오류:", e, contentDisposition);
+    }
+  } else {
+    console.warn('Content-Disposition 헤더를 찾을 수 없습니다. headers:', headers);
+  }
+  console.log('기본 파일명 사용:', defaultFilename);
+  return defaultFilename;
+};
+
 // 0. ADMIN 역할 사용자 조회 (Deprecated)
 export const fetchAdminUsers = async () => {
   try {
@@ -718,8 +812,10 @@ export const collectTaxData = async (startDate = null, endDate = null, onProgres
     const link = document.createElement('a');
     link.href = url;
     
-    // 파일명 생성
-    const filename = `세무전표_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    // Content-Disposition 헤더에서 파일명 추출
+    const defaultFilename = `세무전표_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    const filename = extractFilenameFromHeaders(response.headers, defaultFilename);
+    
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
@@ -859,8 +955,10 @@ export const downloadJournalEntries = async (startDate = null, endDate = null, o
     const link = document.createElement('a');
     link.href = url;
     
-    // 파일명 생성
-    const filename = `전표_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    // Content-Disposition 헤더에서 파일명 추출
+    const defaultFilename = `전표_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    const filename = extractFilenameFromHeaders(response.headers, defaultFilename);
+    
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
@@ -927,8 +1025,10 @@ export const downloadTaxReviewFile = async (jobId, startDate = null, endDate = n
     const link = document.createElement('a');
     link.href = url;
     
-    // 파일명 생성
-    const filename = `세무검토_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    // Content-Disposition 헤더에서 파일명 추출
+    const defaultFilename = `세무검토_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    const filename = extractFilenameFromHeaders(response.headers, defaultFilename);
+    
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
@@ -987,12 +1087,14 @@ export const downloadTaxReviewList = async (startDate = null, endDate = null, fo
     const link = document.createElement('a');
     link.href = url;
     
-    // 파일명 생성
+    // Content-Disposition 헤더에서 파일명 추출
     let formatLabel = '전체상세';
     if (format === 'simple') formatLabel = '간단요약';
     else if (format === 'import') formatLabel = '더존Import';
     
-    const filename = `세무검토_${formatLabel}_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    const defaultFilename = `세무검토_${formatLabel}_${startDate || '전체'}_${endDate || '전체'}.xlsx`;
+    const filename = extractFilenameFromHeaders(response.headers, defaultFilename);
+    
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();

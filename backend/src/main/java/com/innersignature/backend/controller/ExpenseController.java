@@ -17,6 +17,7 @@ import com.innersignature.backend.dto.TaxStatusDto;
 import com.innersignature.backend.dto.UserExpenseStatsDto;
 import com.innersignature.backend.service.ExpenseService;
 import com.innersignature.backend.service.ProgressService;
+import com.innersignature.backend.mapper.CompanyMapper;
 import com.innersignature.backend.util.SecurityUtil;
 import com.innersignature.backend.util.SecurityLogger;
 import io.swagger.v3.oas.annotations.Operation;
@@ -66,6 +67,7 @@ public class ExpenseController {
     private static final Logger logger = LoggerFactory.getLogger(ExpenseController.class);
     private final ExpenseService expenseService;
     private final ProgressService progressService;
+    private final CompanyMapper companyMapper;
 
     /**
      * 한글 파일명을 RFC 5987 형식으로 인코딩하여 Content-Disposition 헤더값을 생성합니다.
@@ -74,18 +76,36 @@ public class ExpenseController {
      */
     private String createContentDispositionHeader(String filename) {
         try {
-            // RFC 5987 형식으로 명시적 인코딩 (Nginx 프록시 환경에서도 안정적)
+            // RFC 5987 형식으로 명시적 인코딩
             String encoded = java.net.URLEncoder.encode(filename, StandardCharsets.UTF_8)
-                    .replace("+", "%20"); // 공백을 %20으로 변환
-            String asciiFallback = filename.replaceAll("[^\\x00-\\x7F]", "_"); // ASCII fallback
+                    .replace("+", "%20");
             
-            // RFC 5987 형식: filename="fallback"; filename*=UTF-8''encoded
+            // ASCII fallback: 한글을 영문으로 변환
+            // "세무자료수집" -> "tax_collection" 같은 변환
+            String asciiFallback = filename
+                    .replace("세무자료수집", "tax_collection")
+                    .replace("지출내역", "expense_report")
+                    .replace("전표", "journal")
+                    .replace("세무검토", "tax_review")
+                    .replace("세무전표", "tax_journal");
+            
+            // 나머지 한글은 제거
+            asciiFallback = asciiFallback.replaceAll("[^\\x00-\\x7F]", "");
+            asciiFallback = asciiFallback.replaceAll("_{2,}", "_").replaceAll("^_+|_+$", "");
+            
+            if (asciiFallback.isEmpty()) {
+                asciiFallback = "download.xlsx";
+            }
+            
             return String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s", 
                     asciiFallback, encoded);
         } catch (Exception e) {
             logger.warn("파일명 인코딩 실패, 기본 형식 사용: {}", filename, e);
-            // 실패 시 ASCII만 사용
-            String safeFilename = filename.replaceAll("[^\\x00-\\x7F]", "_");
+            String safeFilename = filename.replaceAll("[^\\x00-\\x7F]", "");
+            safeFilename = safeFilename.replaceAll("_{2,}", "_").replaceAll("^_+|_+$", "");
+            if (safeFilename.isEmpty()) {
+                safeFilename = "download.xlsx";
+            }
             return "attachment; filename=\"" + safeFilename + "\"";
         }
     }
@@ -1078,6 +1098,7 @@ public class ExpenseController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         Long currentUserId = SecurityUtil.getCurrentUserId();
+        Long currentCompanyId = SecurityUtil.getCurrentCompanyId();
         logger.info("세무 자료 일괄 수집 및 다운로드 요청 - startDate: {}, endDate: {}, userId: {}", startDate, endDate, currentUserId);
         
         try {
@@ -1088,12 +1109,40 @@ public class ExpenseController {
             File excelFile = expenseService.exportFullTaxReview(startDate, endDate, currentUserId);
             Resource resource = new FileSystemResource(excelFile);
             
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            String filename = String.format("세무자료수집_%s_%s.xlsx",
-                    startDate != null ? startDate.format(formatter) : "전체",
-                    endDate != null ? endDate.format(formatter) : "전체");
+            // 회사 이름 조회
+            String companyName = "";
+            if (currentCompanyId != null) {
+                try {
+                    com.innersignature.backend.dto.CompanyDto company = companyMapper.findById(currentCompanyId);
+                    if (company != null && company.getCompanyName() != null) {
+                        companyName = "_" + company.getCompanyName();
+                        logger.info("회사 정보 조회 성공 - companyId: {}, companyName: {}", currentCompanyId, company.getCompanyName());
+                    } else {
+                        logger.warn("회사 정보가 null입니다 - companyId: {}", currentCompanyId);
+                    }
+                } catch (Exception e) {
+                    logger.error("회사 정보 조회 실패 - companyId: {}, error: {}", currentCompanyId, e.getMessage(), e);
+                }
+            } else {
+                logger.warn("currentCompanyId가 null입니다. JWT 토큰에 companyId가 포함되어 있는지 확인하세요.");
+            }
             
-            logger.info("세무 자료 일괄 수집 및 다운로드 완료 - userId: {}", currentUserId);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            // 회사명이 있는 경우에만 파일명에 포함
+            String filename;
+            if (companyName.isEmpty()) {
+                filename = String.format("세무자료수집_%s_%s.xlsx",
+                        startDate != null ? startDate.format(formatter) : "전체",
+                        endDate != null ? endDate.format(formatter) : "전체");
+            } else {
+                filename = String.format("세무자료수집%s_%s_%s.xlsx",
+                        companyName,
+                        startDate != null ? startDate.format(formatter) : "전체",
+                        endDate != null ? endDate.format(formatter) : "전체");
+            }
+            
+            logger.info("세무 자료 일괄 수집 및 다운로드 완료 - userId: {}, companyId: {}, companyName: {}, filename: {}", 
+                    currentUserId, currentCompanyId, companyName.isEmpty() ? "(없음)" : companyName, filename);
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
@@ -1158,17 +1207,46 @@ public class ExpenseController {
         }
         
         Long currentUserId = SecurityUtil.getCurrentUserId();
+        Long currentCompanyId = SecurityUtil.getCurrentCompanyId();
         
         try {
             File excelFile = expenseService.exportExpensesToExcel(startDateParsed, endDateParsed, currentUserId);
             Resource resource = new FileSystemResource(excelFile);
             
-            String filename = String.format("지출내역_%s_%s.xlsx",
-                    startDateParsed != null ? startDateParsed.format(formatter) : "전체",
-                    endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            // 회사 이름 조회
+            String companyName = "";
+            if (currentCompanyId != null) {
+                try {
+                    com.innersignature.backend.dto.CompanyDto company = companyMapper.findById(currentCompanyId);
+                    if (company != null && company.getCompanyName() != null) {
+                        companyName = "_" + company.getCompanyName();
+                        logger.info("회사 정보 조회 성공 - companyId: {}, companyName: {}", currentCompanyId, company.getCompanyName());
+                    } else {
+                        logger.warn("회사 정보가 null입니다 - companyId: {}", currentCompanyId);
+                    }
+                } catch (Exception e) {
+                    logger.error("회사 정보 조회 실패 - companyId: {}, error: {}", currentCompanyId, e.getMessage(), e);
+                }
+            } else {
+                logger.warn("currentCompanyId가 null입니다. JWT 토큰에 companyId가 포함되어 있는지 확인하세요.");
+            }
             
-            logger.info("엑셀 다운로드 요청 - userId: {}, startDate: {}, endDate: {}", 
-                    currentUserId, startDateParsed, endDateParsed);
+            // 회사명이 있는 경우에만 파일명에 포함
+            String filename;
+            if (companyName.isEmpty()) {
+                filename = String.format("지출내역_%s_%s.xlsx",
+                        startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                        endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            } else {
+                filename = String.format("지출내역%s_%s_%s.xlsx",
+                        companyName,
+                        startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                        endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            }
+            
+            logger.info("엑셀 다운로드 요청 - userId: {}, companyId: {}, companyName: {}, filename: {}, startDate: {}, endDate: {}", 
+                    currentUserId, currentCompanyId, companyName.isEmpty() ? "(없음)" : companyName, filename, 
+                    startDateParsed, endDateParsed);
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
@@ -1213,17 +1291,45 @@ public class ExpenseController {
         }
         
         Long currentUserId = SecurityUtil.getCurrentUserId();
+        Long currentCompanyId = SecurityUtil.getCurrentCompanyId();
         
         try {
             File excelFile = expenseService.exportJournalEntriesToExcel(startDateParsed, endDateParsed, currentUserId);
             Resource resource = new FileSystemResource(excelFile);
             
-            String filename = String.format("전표_%s_%s.xlsx",
-                    startDateParsed != null ? startDateParsed.format(formatter) : "전체",
-                    endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            // 회사 이름 조회
+            String companyName = "";
+            if (currentCompanyId != null) {
+                try {
+                    com.innersignature.backend.dto.CompanyDto company = companyMapper.findById(currentCompanyId);
+                    if (company != null && company.getCompanyName() != null) {
+                        companyName = "_" + company.getCompanyName();
+                        logger.info("회사 정보 조회 성공 - companyId: {}, companyName: {}", currentCompanyId, company.getCompanyName());
+                    } else {
+                        logger.warn("회사 정보가 null입니다 - companyId: {}", currentCompanyId);
+                    }
+                } catch (Exception e) {
+                    logger.error("회사 정보 조회 실패 - companyId: {}, error: {}", currentCompanyId, e.getMessage(), e);
+                }
+            } else {
+                logger.warn("currentCompanyId가 null입니다. JWT 토큰에 companyId가 포함되어 있는지 확인하세요.");
+            }
             
-            logger.info("전표 다운로드 요청 - userId: {}, startDate: {}, endDate: {}", 
-                    currentUserId, startDateParsed, endDateParsed);
+            // 회사명이 있는 경우에만 파일명에 포함
+            String filename;
+            if (companyName.isEmpty()) {
+                filename = String.format("전표_%s_%s.xlsx",
+                        startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                        endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            } else {
+                filename = String.format("전표%s_%s_%s.xlsx",
+                        companyName,
+                        startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                        endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            }
+            
+            logger.info("전표 다운로드 요청 - userId: {}, companyId: {}, companyName: {}, filename: {}, startDate: {}, endDate: {}", 
+                    currentUserId, currentCompanyId, companyName.isEmpty() ? "(없음)" : companyName, filename, startDateParsed, endDateParsed);
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
@@ -1434,17 +1540,45 @@ public class ExpenseController {
         }
         
         Long currentUserId = SecurityUtil.getCurrentUserId();
+        Long currentCompanyId = SecurityUtil.getCurrentCompanyId();
         
         try {
             File excelFile = expenseService.exportFullTaxReview(startDateParsed, endDateParsed, currentUserId);
             Resource resource = new FileSystemResource(excelFile);
             
-            String filename = String.format("세무검토_%s_%s.xlsx",
-                    startDateParsed != null ? startDateParsed.format(formatter) : "전체",
-                    endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            // 회사 이름 조회
+            String companyName = "";
+            if (currentCompanyId != null) {
+                try {
+                    com.innersignature.backend.dto.CompanyDto company = companyMapper.findById(currentCompanyId);
+                    if (company != null && company.getCompanyName() != null) {
+                        companyName = "_" + company.getCompanyName();
+                        logger.info("회사 정보 조회 성공 - companyId: {}, companyName: {}", currentCompanyId, company.getCompanyName());
+                    } else {
+                        logger.warn("회사 정보가 null입니다 - companyId: {}", currentCompanyId);
+                    }
+                } catch (Exception e) {
+                    logger.error("회사 정보 조회 실패 - companyId: {}, error: {}", currentCompanyId, e.getMessage(), e);
+                }
+            } else {
+                logger.warn("currentCompanyId가 null입니다. JWT 토큰에 companyId가 포함되어 있는지 확인하세요.");
+            }
             
-            logger.info("세무 검토 자료 다운로드 요청 - userId: {}, startDate: {}, endDate: {}, format: {}", 
-                    currentUserId, startDateParsed, endDateParsed, format);
+            // 회사명이 있는 경우에만 파일명에 포함
+            String filename;
+            if (companyName.isEmpty()) {
+                filename = String.format("세무검토_%s_%s.xlsx",
+                        startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                        endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            } else {
+                filename = String.format("세무검토%s_%s_%s.xlsx",
+                        companyName,
+                        startDateParsed != null ? startDateParsed.format(formatter) : "전체",
+                        endDateParsed != null ? endDateParsed.format(formatter) : "전체");
+            }
+            
+            logger.info("세무 검토 자료 다운로드 요청 - userId: {}, companyId: {}, companyName: {}, filename: {}, startDate: {}, endDate: {}, format: {}", 
+                    currentUserId, currentCompanyId, companyName.isEmpty() ? "(없음)" : companyName, filename, startDateParsed, endDateParsed, format);
             
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))

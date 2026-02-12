@@ -119,7 +119,7 @@ public class SecurityConfig {
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setExposedHeaders(Arrays.asList("Authorization")); // JWT 토큰 헤더 노출
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition")); // JWT 토큰 헤더 및 파일 다운로드 헤더 노출
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

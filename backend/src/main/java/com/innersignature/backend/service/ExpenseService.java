@@ -54,6 +54,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.util.IOUtils;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -74,6 +75,7 @@ public class ExpenseService {
     private final CompanyCardService companyCardService; // 회사 카드 서비스
     private final UserCardService userCardService; // 개인 카드 서비스
     private final AccountCodeService accountCodeService; // 계정 코드 매핑 서비스
+    private final com.innersignature.backend.mapper.CompanyMapper companyMapper; // 회사 정보 조회용
 
     // 분리된 서비스들
     private final ExpenseReportService expenseReportService;
@@ -2301,9 +2303,9 @@ public class ExpenseService {
         // 엑셀 파일 생성 분기
         String projectRoot = System.getProperty("user.dir");
         if ("tax-review".equals(exportType)) {
-            return createTaxReviewWorkbook(expenseReports, detailsMap, receiptsByDetailMap, projectRoot);
+            return createTaxReviewWorkbook(expenseReports, detailsMap, receiptsByDetailMap, projectRoot, companyId);
         } else {
-            return createBasicExpenseWorkbook(expenseReports, detailsMap, projectRoot);
+            return createBasicExpenseWorkbook(expenseReports, detailsMap, projectRoot, companyId);
         }
     }
     
@@ -2392,10 +2394,32 @@ public class ExpenseService {
      */
     private File createBasicExpenseWorkbook(List<ExpenseReportDto> expenseReports,
                                           Map<Long, List<ExpenseDetailDto>> detailsMap,
-                                          String projectRoot) throws IOException {
+                                          String projectRoot,
+                                          Long companyId) throws IOException {
         // 엑셀 파일 생성
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("지출내역");
+
+        // 회사 정보 조회
+        String companyName = "";
+        if (companyId != null) {
+            try {
+                com.innersignature.backend.dto.CompanyDto company = companyMapper.findById(companyId);
+                if (company != null && company.getCompanyName() != null) {
+                    companyName = company.getCompanyName();
+                }
+            } catch (Exception e) {
+                logger.warn("회사 정보 조회 실패 - companyId: {}, error: {}", companyId, e.getMessage());
+            }
+        }
+
+        // 제목 스타일
+        CellStyle titleStyle = workbook.createCellStyle();
+        Font titleFont = workbook.createFont();
+        titleFont.setBold(true);
+        titleFont.setFontHeightInPoints((short) 14);
+        titleStyle.setFont(titleFont);
+        titleStyle.setAlignment(HorizontalAlignment.CENTER);
 
         // 헤더 스타일
         CellStyle headerStyle = workbook.createCellStyle();
@@ -2417,8 +2441,34 @@ public class ExpenseService {
         dataStyle.setBorderLeft(BorderStyle.THIN);
         dataStyle.setBorderRight(BorderStyle.THIN);
 
+        // 총합 행 스타일
+        CellStyle totalStyle = workbook.createCellStyle();
+        Font totalFont = workbook.createFont();
+        totalFont.setBold(true);
+        totalFont.setFontHeightInPoints((short) 12);
+        totalStyle.setFont(totalFont);
+        totalStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+        totalStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        totalStyle.setBorderBottom(BorderStyle.THIN);
+        totalStyle.setBorderTop(BorderStyle.THIN);
+        totalStyle.setBorderLeft(BorderStyle.THIN);
+        totalStyle.setBorderRight(BorderStyle.THIN);
+
+        int currentRow = 0;
+
+        // 제목 행 생성 (회사 이름 포함)
+        if (!companyName.isEmpty()) {
+            Row titleRow = sheet.createRow(currentRow++);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue("지출내역 - " + companyName);
+            titleCell.setCellStyle(titleStyle);
+            // 제목 셀 병합 (전체 열에 걸쳐서)
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 10));
+            currentRow++;
+        }
+
         // 헤더 행 생성
-        Row headerRow = sheet.createRow(0);
+        Row headerRow = sheet.createRow(currentRow++);
         // 상세내역 단위로 매칭할 수 있도록 상세내역ID 컬럼을 추가
         String[] headers = {"문서번호", "상세내역ID", "작성일", "제목", "작성자", "상태", "총액", "항목", "적요", "금액", "비고"};
         for (int i = 0; i < headers.length; i++) {
@@ -2427,8 +2477,10 @@ public class ExpenseService {
             cell.setCellStyle(headerStyle);
         }
 
-        // 데이터 행 생성
-        int rowNum = 1;
+        // 데이터 행 생성 및 금액 합계 계산
+        int rowNum = currentRow;
+        double totalAmount = 0.0;
+        int amountColumnIndex = 9; // 금액 열 인덱스
 
         for (ExpenseReportDto report : expenseReports) {
             List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
@@ -2442,11 +2494,32 @@ public class ExpenseService {
                 // 상세 내역이 있는 경우
                 for (int i = 0; i < details.size(); i++) {
                     Row row = sheet.createRow(rowNum);
-                    createDataRow(row, report, details.get(i), i, dataStyle);
+                    ExpenseDetailDto detail = details.get(i);
+                    createDataRow(row, report, detail, i, dataStyle);
+                    // 금액 합계 계산
+                    if (detail != null && detail.getAmount() != null) {
+                        totalAmount += detail.getAmount();
+                    }
                     rowNum++;
                 }
             }
         }
+
+        // 총합 행 추가
+        Row totalRow = sheet.createRow(rowNum);
+        // 앞의 열들은 비우고 적요 열에 "총합" 표시, 금액 열에 총액 표시
+        for (int i = 0; i < amountColumnIndex; i++) {
+            Cell cell = totalRow.createCell(i);
+            cell.setCellStyle(totalStyle);
+        }
+        // 적요 열에 "총합" 표시
+        Cell totalLabelCell = totalRow.createCell(amountColumnIndex - 1);
+        totalLabelCell.setCellValue("총합");
+        totalLabelCell.setCellStyle(totalStyle);
+        // 금액 열에 총액 표시
+        Cell totalAmountCell = totalRow.createCell(amountColumnIndex);
+        totalAmountCell.setCellValue(totalAmount);
+        totalAmountCell.setCellStyle(totalStyle);
 
         // 열 너비 자동 조정
         for (int i = 0; i < headers.length; i++) {
@@ -2461,7 +2534,7 @@ public class ExpenseService {
         }
         workbook.close();
 
-        logger.info("기본 지출 엑셀 파일 생성 완료 - 파일명: {}, 건수: {}", tempFile.getName(), expenseReports.size());
+        logger.info("기본 지출 엑셀 파일 생성 완료 - 파일명: {}, 건수: {}, 총액: {}", tempFile.getName(), expenseReports.size(), totalAmount);
 
         return tempFile;
     }
@@ -2472,18 +2545,19 @@ public class ExpenseService {
     private File createTaxReviewWorkbook(List<ExpenseReportDto> expenseReports,
                                        Map<Long, List<ExpenseDetailDto>> detailsMap,
                                        Map<Long, List<ReceiptDto>> receiptsByDetailMap,
-                                       String projectRoot) throws IOException {
+                                       String projectRoot,
+                                       Long companyId) throws IOException {
         // 엑셀 파일 생성
         Workbook workbook = new XSSFWorkbook();
 
         // Sheet 1: 전체 증빙 내역
-        createFullDetailSheet(workbook, expenseReports, detailsMap, receiptsByDetailMap, projectRoot);
+        createFullDetailSheet(workbook, expenseReports, detailsMap, receiptsByDetailMap, projectRoot, companyId);
 
         // Sheet 2: 부가세 검토 항목
         createVatReviewSheet(workbook, expenseReports, detailsMap);
 
         // Sheet 4: 카테고리별 집계
-        createCategorySummarySheet(workbook, expenseReports, detailsMap);
+        createCategorySummarySheet(workbook, expenseReports, detailsMap, companyId);
 
         // Sheet 5: 더존 Import 형식
         createDaejonImportSheet(workbook, expenseReports, detailsMap);
@@ -3758,7 +3832,7 @@ public class ExpenseService {
             progressService.updateProgress(jobId, 60, "엑셀 파일을 생성하는 중...");
 
             String projectRoot = System.getProperty("user.dir");
-            File excelFile = createTaxReviewWorkbook(expenseReports, detailsMap, receiptsByDetailMap, projectRoot);
+            File excelFile = createTaxReviewWorkbook(expenseReports, detailsMap, receiptsByDetailMap, projectRoot, companyId);
 
             // 진행률 업데이트: 90% - 파일 생성 완료
             progressService.updateProgress(jobId, 90, "파일 생성 완료. 준비 중...");
@@ -3804,16 +3878,51 @@ public class ExpenseService {
     private void createFullDetailSheet(Workbook workbook, List<ExpenseReportDto> expenseReports,
                                       Map<Long, List<ExpenseDetailDto>> detailsMap,
                                       Map<Long, List<ReceiptDto>> receiptsByDetailMap,
-                                      String projectRoot) throws IOException {
+                                      String projectRoot,
+                                      Long companyId) throws IOException {
         Sheet sheet = workbook.createSheet("전체 증빙 내역");
         
+        // 회사 정보 조회
+        String companyName = "";
+        if (companyId != null) {
+            try {
+                com.innersignature.backend.dto.CompanyDto company = companyMapper.findById(companyId);
+                if (company != null && company.getCompanyName() != null) {
+                    companyName = company.getCompanyName();
+                }
+            } catch (Exception e) {
+                logger.warn("회사 정보 조회 실패 - companyId: {}, error: {}", companyId, e.getMessage());
+            }
+        }
+        
         // 스타일 설정
+        CellStyle titleStyle = workbook.createCellStyle();
+        Font titleFont = workbook.createFont();
+        titleFont.setBold(true);
+        titleFont.setFontHeightInPoints((short) 14);
+        titleStyle.setFont(titleFont);
+        titleStyle.setAlignment(HorizontalAlignment.CENTER);
+        
         CellStyle headerStyle = createHeaderStyle(workbook);
         CellStyle dataStyle = createDataStyle(workbook);
         CellStyle numberStyle = createNumberStyle(workbook);
         
-        // 헤더 행
-        Row headerRow = sheet.createRow(0);
+        // 총합 행 스타일
+        CellStyle totalStyle = workbook.createCellStyle();
+        Font totalFont = workbook.createFont();
+        totalFont.setBold(true);
+        totalFont.setFontHeightInPoints((short) 12);
+        totalStyle.setFont(totalFont);
+        totalStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+        totalStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        totalStyle.setBorderBottom(BorderStyle.THIN);
+        totalStyle.setBorderTop(BorderStyle.THIN);
+        totalStyle.setBorderLeft(BorderStyle.THIN);
+        totalStyle.setBorderRight(BorderStyle.THIN);
+        totalStyle.setDataFormat(numberStyle.getDataFormat());
+        
+        int currentRow = 0;
+        
         String[] headers = {
             "문서번호", "상세내역ID", "사용일자", "작성자",
             "카테고리", "상호명", "적요",
@@ -3822,14 +3931,28 @@ public class ExpenseService {
             "비고"
         };
         
+        // 제목 행 생성 (회사 이름 포함)
+        if (!companyName.isEmpty()) {
+            Row titleRow = sheet.createRow(currentRow++);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue("전체 증빙 내역 - " + companyName);
+            titleCell.setCellStyle(titleStyle);
+            // 제목 셀 병합 (전체 열에 걸쳐서)
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, headers.length - 1));
+        }
+        
+        // 헤더 행
+        Row headerRow = sheet.createRow(currentRow++);
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
             cell.setCellStyle(headerStyle);
         }
         
-        // 데이터 행 생성
-        int rowNum = 1;
+        // 데이터 행 생성 및 금액 합계 계산
+        int rowNum = currentRow;
+        double totalAmount = 0.0;
+        int amountColumnIndex = 7; // 결재금액 열 인덱스
 
         for (ExpenseReportDto report : expenseReports) {
             List<ExpenseDetailDto> details = detailsMap.getOrDefault(report.getExpenseReportId(), Collections.emptyList());
@@ -3838,15 +3961,39 @@ public class ExpenseService {
                 // 상세항목 없을 때
                 Row row = sheet.createRow(rowNum++);
                 fillFullDetailRow(row, report, null, dataStyle, numberStyle);
+                // 금액 합계 계산
+                if (report.getTotalAmount() != null) {
+                    totalAmount += report.getTotalAmount();
+                }
             } else {
                 // 상세항목별로 각각 한 줄씩
                 for (int i = 0; i < details.size(); i++) {
                     ExpenseDetailDto detail = details.get(i);
                     Row row = sheet.createRow(rowNum++);
                     fillFullDetailRow(row, report, detail, dataStyle, numberStyle);
+                    // 금액 합계 계산
+                    if (detail != null && detail.getAmount() != null) {
+                        totalAmount += detail.getAmount();
+                    }
                 }
             }
         }
+        
+        // 총합 행 추가
+        Row totalRow = sheet.createRow(rowNum);
+        // 앞의 열들은 비우고 적요 열에 "총합" 표시, 결재금액 열에 총액 표시
+        for (int i = 0; i < amountColumnIndex; i++) {
+            Cell cell = totalRow.createCell(i);
+            cell.setCellStyle(totalStyle);
+        }
+        // 적요 열에 "총합" 표시
+        Cell totalLabelCell = totalRow.createCell(amountColumnIndex - 1);
+        totalLabelCell.setCellValue("총합");
+        totalLabelCell.setCellStyle(totalStyle);
+        // 결재금액 열에 총액 표시
+        Cell totalAmountCell = totalRow.createCell(amountColumnIndex);
+        totalAmountCell.setCellValue(totalAmount);
+        totalAmountCell.setCellStyle(totalStyle);
         
         // 열 너비 자동 조정
         for (int i = 0; i < headers.length; i++) {
@@ -4232,21 +4379,69 @@ public class ExpenseService {
      * Sheet 4: 카테고리별 집계 생성
      */
     private void createCategorySummarySheet(Workbook workbook, List<ExpenseReportDto> expenseReports,
-                                           Map<Long, List<ExpenseDetailDto>> detailsMap) {
+                                           Map<Long, List<ExpenseDetailDto>> detailsMap,
+                                           Long companyId) {
         Sheet sheet = workbook.createSheet("카테고리별 집계");
+        
+        // 회사 정보 조회
+        String companyName = "";
+        if (companyId != null) {
+            try {
+                com.innersignature.backend.dto.CompanyDto company = companyMapper.findById(companyId);
+                if (company != null && company.getCompanyName() != null) {
+                    companyName = company.getCompanyName();
+                }
+            } catch (Exception e) {
+                logger.warn("회사 정보 조회 실패 - companyId: {}, error: {}", companyId, e.getMessage());
+            }
+        }
+        
+        // 스타일 설정
+        CellStyle titleStyle = workbook.createCellStyle();
+        Font titleFont = workbook.createFont();
+        titleFont.setBold(true);
+        titleFont.setFontHeightInPoints((short) 14);
+        titleStyle.setFont(titleFont);
+        titleStyle.setAlignment(HorizontalAlignment.CENTER);
         
         CellStyle headerStyle = createHeaderStyle(workbook);
         CellStyle dataStyle = createDataStyle(workbook);
         CellStyle numberStyle = createNumberStyle(workbook);
         
-        // 헤더 행
-        Row headerRow = sheet.createRow(0);
+        // 총합 행 스타일
+        CellStyle totalStyle = workbook.createCellStyle();
+        Font totalFont = workbook.createFont();
+        totalFont.setBold(true);
+        totalFont.setFontHeightInPoints((short) 12);
+        totalStyle.setFont(totalFont);
+        totalStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+        totalStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        totalStyle.setBorderBottom(BorderStyle.THIN);
+        totalStyle.setBorderTop(BorderStyle.THIN);
+        totalStyle.setBorderLeft(BorderStyle.THIN);
+        totalStyle.setBorderRight(BorderStyle.THIN);
+        totalStyle.setDataFormat(numberStyle.getDataFormat());
+        
+        int currentRow = 0;
+        
         String[] headers = {
             "카테고리", "건수", "총액",
             "부가세", "공제가능액", "공제불가액",
             "계정코드", "계정과목"
         };
         
+        // 제목 행 생성 (회사 이름 포함)
+        if (!companyName.isEmpty()) {
+            Row titleRow = sheet.createRow(currentRow++);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue("카테고리별 집계 - " + companyName);
+            titleCell.setCellStyle(titleStyle);
+            // 제목 셀 병합 (전체 열에 걸쳐서)
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, headers.length - 1));
+        }
+        
+        // 헤더 행
+        Row headerRow = sheet.createRow(currentRow++);
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
@@ -4272,13 +4467,26 @@ public class ExpenseService {
             }
         }
         
-        // 집계 데이터 출력
-        int rowNum = 1;
+        // 집계 데이터 출력 및 총합 계산
+        int rowNum = currentRow;
+        int totalCount = 0;
+        double totalAmount = 0.0;
+        double totalVat = 0.0;
+        double totalDeductibleVat = 0.0;
+        double totalNonDeductibleVat = 0.0;
+        
         for (Map.Entry<String, CategorySummary> entry : summaryMap.entrySet()) {
             Row row = sheet.createRow(rowNum++);
             int col = 0;
             Cell cell;
             CategorySummary summary = entry.getValue();
+            
+            // 총합 계산
+            totalCount += summary.count;
+            totalAmount += summary.totalAmount;
+            totalVat += summary.totalVat;
+            totalDeductibleVat += summary.deductibleVat;
+            totalNonDeductibleVat += summary.nonDeductibleVat;
             
             cell = row.createCell(col++);
             cell.setCellValue(entry.getKey());
@@ -4313,6 +4521,47 @@ public class ExpenseService {
             cell.setCellValue(accountCode);
             cell.setCellStyle(dataStyle);
         }
+        
+        // 총합 행 추가
+        Row totalRow = sheet.createRow(rowNum);
+        int col = 0;
+        Cell cell;
+        
+        // 카테고리 열에 "총합" 표시
+        cell = totalRow.createCell(col++);
+        cell.setCellValue("총합");
+        cell.setCellStyle(totalStyle);
+        
+        // 건수
+        cell = totalRow.createCell(col++);
+        cell.setCellValue(totalCount);
+        cell.setCellStyle(totalStyle);
+        
+        // 총액
+        cell = totalRow.createCell(col++);
+        cell.setCellValue(totalAmount);
+        cell.setCellStyle(totalStyle);
+        
+        // 부가세
+        cell = totalRow.createCell(col++);
+        cell.setCellValue(totalVat);
+        cell.setCellStyle(totalStyle);
+        
+        // 공제가능액
+        cell = totalRow.createCell(col++);
+        cell.setCellValue(totalDeductibleVat);
+        cell.setCellStyle(totalStyle);
+        
+        // 공제불가액
+        cell = totalRow.createCell(col++);
+        cell.setCellValue(totalNonDeductibleVat);
+        cell.setCellStyle(totalStyle);
+        
+        // 계정코드, 계정과목은 비워둠
+        cell = totalRow.createCell(col++);
+        cell.setCellStyle(totalStyle);
+        cell = totalRow.createCell(col++);
+        cell.setCellStyle(totalStyle);
         
         // 열 너비 자동 조정
         for (int i = 0; i < headers.length; i++) {
