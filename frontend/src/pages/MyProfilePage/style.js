@@ -99,28 +99,38 @@ export const CardTitle = styled.h2`
 
 export const FormGroup = styled.div`
   margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 
   label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     font-weight: 500;
     color: #333333;
     font-size: 14px;
+    min-width: 80px;
+    flex-shrink: 0;
   }
 
   @media (max-width: 480px) {
     margin-bottom: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
 
     label {
       font-size: 13px;
-      margin-bottom: 6px;
+      margin-bottom: 0;
       color: #666;
+      min-width: auto;
     }
   }
 `;
 
 export const Input = styled.input`
-  width: 100%;
+  flex: 1;
   height: 36px;
   padding: 8px 10px;
   border: 1px solid #e4e4e4;
@@ -145,6 +155,7 @@ export const Input = styled.input`
   }
 
   @media (max-width: 480px) {
+    width: 100%;
     padding: 12px;
     font-size: 14px;
     border-radius: 6px;
@@ -162,6 +173,12 @@ export const HelpText = styled.p`
   margin: 4px 0 0 0;
   font-size: 12px;
   color: #666666;
+  width: 100%;
+  flex-basis: 100%;
+`;
+
+export const RequiredMark = styled.span`
+  color: #D72D30;
 `;
 
 export const ButtonGroup = styled.div`
@@ -233,6 +250,26 @@ export const Loading = styled.div`
   color: var(--secondary-color);
 `;
 
+export const CompanyHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  ${CardTitle} {
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 12px;
+  }
+`;
+
 export const CompanySection = styled.div`
   margin-bottom: 20px;
 
@@ -242,22 +279,46 @@ export const CompanySection = styled.div`
 `;
 
 export const CompanySectionTitle = styled.h3`
-  margin-bottom: 10px;
+  margin: 0;
   font-size: 14px;
   font-weight: 500;
   color: #333333;
+  white-space: nowrap;
+  margin-right: 16px;
+
+  @media (max-width: 768px) {
+    margin-right: 0;
+  }
 
   @media (max-width: 480px) {
     font-size: 15px;
-    margin-bottom: 12px;
-    padding: 0 4px;
+  }
+`;
+
+export const CompanyCardsContainer = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+export const FormContainer = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 768px) {
+    width: 100%;
   }
 `;
 
 export const CompanyCard = styled.div`
   padding: 15px;
-  margin-bottom: 10px;
-  border: 1px solid #e4e4e4;
+  border: ${props => props.isCurrent ? '1px solid #489bff' : '1px solid #e4e4e4'};
   border-radius: 4px;
   background-color: #ffffff;
   display: flex;
@@ -269,11 +330,32 @@ export const CompanyCard = styled.div`
     flex-direction: column;
     align-items: stretch;
     padding: 12px;
-    margin-bottom: 8px;
     border-radius: 12px;
-    border: ${props => props.isCurrent ? '2px solid #28a745' : '1px solid #e0e0e0'};
     gap: 12px;
   }
+`;
+
+export const CompanyCardContent = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+export const CompanyBadgeRow = styled.div`
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+`;
+
+export const CompanyPillBadge = styled.span`
+  background-color: #489bff;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: inline-block;
 `;
 
 export const CompanyInfo = styled.div`
@@ -314,19 +396,59 @@ export const CompanyDetails = styled.div`
 
 export const CompanyActions = styled.div`
   display: flex;
-  gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 0;
 
   @media (max-width: 480px) {
     width: 100%;
     flex-direction: column;
     gap: 6px;
-    
-    button {
-      width: 100%;
-      justify-content: center;
+    align-items: stretch;
+  }
+`;
+
+export const CompanyActionButton = styled.button`
+  background: none;
+  border: none;
+  color: #333333;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 8px 12px;
+  transition: color 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    color: #489bff;
+  }
+
+  ${props => props.isDanger && `
+    color: #dc3545;
+    &:hover {
+      color: #c82333;
     }
+  `}
+
+  @media (max-width: 480px) {
+    width: 100%;
+    text-align: left;
+    padding: 10px 0;
+    border-bottom: 1px solid #e4e4e4;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+`;
+
+export const CompanyActionDivider = styled.span`
+  width: 1px;
+  height: 16px;
+  background-color: #e4e4e4;
+  margin: 0 4px;
+
+  @media (max-width: 480px) {
+    display: none;
   }
 `;
 

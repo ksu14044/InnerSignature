@@ -292,7 +292,77 @@ const MyProfilePage = () => {
       />
 
       <S.ProfileCard data-tourid="tour-company-section">
-        <S.CardTitle>소속 회사</S.CardTitle>
+        <S.CompanyHeader>
+          <S.CardTitle>소속회사</S.CardTitle>
+          {companies.length > 0 && (
+            <>
+              <S.CompanySectionTitle>승인된 회사</S.CompanySectionTitle>
+              <S.CompanyCardsContainer>
+                {companies.map((company) => {
+                  const isCurrent = company.companyId === authUser?.companyId;
+                  return (
+                    <S.CompanyCard key={company.companyId} isCurrent={isCurrent}>
+                      <S.CompanyCardContent>
+                        <S.CompanyBadgeRow>
+                          {company.isPrimary && (
+                            <S.CompanyPillBadge>기본</S.CompanyPillBadge>
+                          )}
+                          {isCurrent && (
+                            <S.CompanyPillBadge>현재 회사</S.CompanyPillBadge>
+                          )}
+                        </S.CompanyBadgeRow>
+                        <S.CompanyInfo>
+                          <S.CompanyNameRow>
+                            {company.companyName}
+                          </S.CompanyNameRow>
+                          <S.CompanyDetails>
+                            역할 {getRoleLabel(company.role)} 직급 {company.position || '-'}
+                          </S.CompanyDetails>
+                        </S.CompanyInfo>
+                      </S.CompanyCardContent>
+                      <S.CompanyActions>
+                        {!isCurrent && (
+                          <>
+                            <S.CompanyActionButton 
+                              onClick={async () => {
+                                try {
+                                  await switchCompany(company.companyId);
+                                  alert('회사가 전환되었습니다.');
+                                  window.location.reload();
+                                } catch (error) {
+                                  alert('회사 전환에 실패했습니다.');
+                                }
+                              }}
+                            >
+                              전환
+                            </S.CompanyActionButton>
+                            <S.CompanyActionDivider />
+                          </>
+                        )}
+                        {!company.isPrimary && (
+                          <>
+                            <S.CompanyActionButton 
+                              onClick={() => handleSetPrimaryCompany(company.companyId)}
+                            >
+                              기본
+                            </S.CompanyActionButton>
+                            <S.CompanyActionDivider />
+                          </>
+                        )}
+                        <S.CompanyActionButton 
+                          onClick={() => handleRemoveCompany(company.companyId)}
+                          isDanger
+                        >
+                          탈퇴
+                        </S.CompanyActionButton>
+                      </S.CompanyActions>
+                    </S.CompanyCard>
+                  );
+                })}
+              </S.CompanyCardsContainer>
+            </>
+          )}
+        </S.CompanyHeader>
         
         {/* CEO/ADMIN이면 회사가 없을 때만 안내 문구 및 버튼 노출 */}
         {canRegisterCompany && showNoCompanyText && (
@@ -303,65 +373,6 @@ const MyProfilePage = () => {
           >
             회사가 등록되지 않았습니다. 회사 등록하기
           </S.Button>
-        )}
-        
-        {/* 승인된 회사 목록 */}
-        {companies.length > 0 && (
-          <S.CompanySection>
-            <S.CompanySectionTitle>승인된 회사</S.CompanySectionTitle>
-            {companies.map((company) => (
-              <S.CompanyCard key={company.companyId} isCurrent={company.companyId === authUser?.companyId}>
-                <S.CompanyInfo>
-                  <S.CompanyNameRow>
-                    {company.companyId === authUser?.companyId && (
-                      <S.CurrentBadge>현재</S.CurrentBadge>
-                    )}
-                    {company.companyName}
-                    {company.isPrimary && <span style={{ color: '#007bff', fontSize: '12px', marginLeft: '4px' }}>(기본)</span>}
-                  </S.CompanyNameRow>
-                  <S.CompanyDetails>
-                    역할: {getRoleLabel(company.role)} | 직급: {company.position || '-'}
-                  </S.CompanyDetails>
-                </S.CompanyInfo>
-                <S.CompanyActions>
-                  {company.companyId !== authUser?.companyId && (
-                    <S.Button 
-                      onClick={async () => {
-                        try {
-                          await switchCompany(company.companyId);
-                          alert('회사가 전환되었습니다.');
-                          window.location.reload();
-                        } catch (error) {
-                          alert('회사 전환에 실패했습니다.');
-                        }
-                      }}
-                      primary
-                    >
-                      전환
-                    </S.Button>
-                  )}
-                  {company.companyId === authUser?.companyId && (
-                    <span style={{ color: '#28a745', fontWeight: 'bold', fontSize: '13px', padding: '8px' }}>
-                      현재 회사
-                    </span>
-                  )}
-                  {!company.isPrimary && (
-                    <S.Button 
-                      onClick={() => handleSetPrimaryCompany(company.companyId)}
-                    >
-                      기본 설정
-                    </S.Button>
-                  )}
-                  <S.Button 
-                    onClick={() => handleRemoveCompany(company.companyId)}
-                    style={{ backgroundColor: '#dc3545', color: 'white' }}
-                  >
-                    <FaTrash /> 탈퇴
-                  </S.Button>
-                </S.CompanyActions>
-              </S.CompanyCard>
-            ))}
-          </S.CompanySection>
         )}
 
         {/* 승인 대기 회사 목록 */}
@@ -386,16 +397,6 @@ const MyProfilePage = () => {
 
         {/* 회사 검색 및 지원 */}
         <div>
-          <S.SearchContainer data-tourid="tour-company-search">
-            <S.Button 
-              onClick={() => setIsCompanySearchModalOpen(true)} 
-              primary
-              style={{ width: '100%', padding: '12px', fontSize: '15px' }}
-            >
-              <FaSearch /> 회사 검색
-            </S.Button>
-          </S.SearchContainer>
-
           {applyForm.companyId && (
             <div style={{ 
               padding: '20px', 
@@ -466,113 +467,121 @@ const MyProfilePage = () => {
       />
       
       <S.ProfileCard data-tourid="tour-basic-info">
-        <S.CardTitle>기본 정보</S.CardTitle>
-        <form onSubmit={handleSubmit}>
-          <S.FormGroup>
-            <label>아이디</label>
-            <S.Input
-              type="text"
-              value={formData.username}
-              disabled
-            />
-          </S.FormGroup>
+        <S.CompanyHeader>
+          <S.CardTitle>기본 정보</S.CardTitle>
+          <S.FormContainer>
+            <form onSubmit={handleSubmit}>
+              <S.FormGroup>
+                <label>아이디</label>
+                <S.Input
+                  type="text"
+                  value={formData.username}
+                  disabled
+                />
+              </S.FormGroup>
 
-          <S.FormGroup>
-            <label>이름 *</label>
-            <S.Input
-              type="text"
-              value={formData.koreanName}
-              onChange={(e) => setFormData({ ...formData, koreanName: e.target.value })}
-              required
-            />
-          </S.FormGroup>
+              <S.FormGroup>
+                <label>이름 <S.RequiredMark>*</S.RequiredMark></label>
+                <S.Input
+                  type="text"
+                  value={formData.koreanName}
+                  onChange={(e) => setFormData({ ...formData, koreanName: e.target.value })}
+                  required
+                />
+              </S.FormGroup>
 
-          <S.FormGroup>
-            <label>이메일</label>
-            <S.Input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="예: user@example.com"
-            />
-          </S.FormGroup>
+              <S.FormGroup>
+                <label>이메일</label>
+                <S.Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="예: user@example.com"
+                />
+              </S.FormGroup>
 
-          <S.FormGroup>
-            <label>직급</label>
-            <S.Input
-              type="text"
-              value={formData.position}
-              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-              placeholder="예: 사원, 대리, 과장, 부장 등"
-            />
-          </S.FormGroup>
+              <S.FormGroup>
+                <label>직급</label>
+                <S.Input
+                  type="text"
+                  value={formData.position}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                  placeholder="예: 사원, 대리, 과장, 부장 등"
+                />
+              </S.FormGroup>
 
-          <S.FormGroup>
-            <label>권한</label>
-            <S.Input
-              type="text"
-              value={getRoleLabel(formData.role)}
-              disabled
-            />
-            <S.HelpText>권한은 관리자에게 문의하세요.</S.HelpText>
-          </S.FormGroup>
+              <S.FormGroup>
+                <label>권한</label>
+                <S.Input
+                  type="text"
+                  value={getRoleLabel(formData.role)}
+                  disabled
+                />
+                <S.HelpText>권한은 관리자에게 문의하세요.</S.HelpText>
+              </S.FormGroup>
 
-          <S.ButtonGroup>
-            <S.Button type="button" onClick={() => navigate('/expenses')}>
-              취소
-            </S.Button>
-            <S.Button type="submit" primary disabled={saving || changingPassword} data-tourid="tour-save-button">
-              {saving ? '저장 중...' : '저장'}
-            </S.Button>
-          </S.ButtonGroup>
-        </form>
+              <S.ButtonGroup>
+                <S.Button type="button" onClick={() => navigate('/expenses')}>
+                  취소
+                </S.Button>
+                <S.Button type="submit" primary disabled={saving || changingPassword} data-tourid="tour-save-button">
+                  {saving ? '저장 중...' : '저장'}
+                </S.Button>
+              </S.ButtonGroup>
+            </form>
+          </S.FormContainer>
+        </S.CompanyHeader>
       </S.ProfileCard>
 
       <S.ProfileCard data-tourid="tour-password-change">
-        <S.CardTitle>비밀번호 변경</S.CardTitle>
-        <form onSubmit={handlePasswordChange}>
-          <S.FormGroup>
-            <label>현재 비밀번호 *</label>
-            <S.Input
-              type="password"
-              value={passwordData.currentPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-              required
-              placeholder="현재 비밀번호를 입력하세요"
-            />
-          </S.FormGroup>
+        <S.CompanyHeader>
+          <S.CardTitle>비밀번호 변경</S.CardTitle>
+          <S.FormContainer>
+            <form onSubmit={handlePasswordChange}>
+              <S.FormGroup>
+                <label>현재 비밀번호 <S.RequiredMark>*</S.RequiredMark></label>
+                <S.Input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  required
+                  placeholder="현재 비밀번호를 입력하세요"
+                />
+              </S.FormGroup>
 
-          <S.FormGroup>
-            <label>새 비밀번호 *</label>
-            <S.Input
-              type="password"
-              value={passwordData.newPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-              required
-              placeholder="새 비밀번호를 입력하세요"
-            />
-          </S.FormGroup>
+              <S.FormGroup>
+                <label>새 비밀번호 <S.RequiredMark>*</S.RequiredMark></label>
+                <S.Input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  required
+                  placeholder="새 비밀번호를 입력하세요"
+                />
+              </S.FormGroup>
 
-          <S.FormGroup>
-            <label>새 비밀번호 확인 *</label>
-            <S.Input
-              type="password"
-              value={passwordData.confirmPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-              required
-              placeholder="새 비밀번호를 다시 입력하세요"
-            />
-          </S.FormGroup>
+              <S.FormGroup>
+                <label>새 비밀번호 확인 <S.RequiredMark>*</S.RequiredMark></label>
+                <S.Input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  required
+                  placeholder="새 비밀번호를 다시 입력하세요"
+                />
+              </S.FormGroup>
 
-          <S.ButtonGroup>
-            <S.Button type="button" onClick={() => setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })}>
-              초기화
-            </S.Button>
-            <S.Button type="submit" primary disabled={saving || changingPassword} data-tourid="tour-password-submit-button">
-              {changingPassword ? '변경 중...' : '비밀번호 변경'}
-            </S.Button>
-          </S.ButtonGroup>
-        </form>
+              <S.ButtonGroup>
+                <S.Button type="button" onClick={() => setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })}>
+                  초기화
+                </S.Button>
+                <S.Button type="submit" primary disabled={saving || changingPassword} data-tourid="tour-password-submit-button">
+                  {changingPassword ? '변경 중...' : '비밀번호 변경'}
+                </S.Button>
+              </S.ButtonGroup>
+            </form>
+          </S.FormContainer>
+        </S.CompanyHeader>
       </S.ProfileCard>
 
       
